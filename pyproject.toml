@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qlport"
+version = "0.1.0"
+description = "Formal translation between observability query languages (Datadog <-> PromQL)"
+requires-python = ">=3.10"
+dependencies = [
+  "lark>=1.1",
+  "numpy>=1.26",
+  "pandas>=2.0",
+  "matplotlib>=3.8",
+  "requests>=2.31",
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "jupytext>=1.16", "nbclient>=0.10", "nbformat>=5.9", "nbconvert>=7.0", "ipykernel>=6.29"]
+regular = ["greenery>=4.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+qlport = ["grammars/*.lark"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]   # tests find the package even without an editable install

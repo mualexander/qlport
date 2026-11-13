@@ -1,0 +1,94 @@
+% TODO: reframe for the Datadog -> PromQL direction: the barrier constrains PromQL -> Datadog;
+% in the main direction Prometheus stores strictly more (Datadog data = phi(D)).
+% ---------------------------------------------------------------------------
+% Ingestion mapping and phi-relative soundness  (drop into Section 3 of the paper)
+% Requires the macros from the proposal: \sem, \Lang, \IR
+% ---------------------------------------------------------------------------
+
+\paragraph{Scope: forward portability.}
+The goal is portability of \emph{queries going forward}: once an organization
+dual-writes (or switches) its telemetry, a translated query must mean the same thing
+as the original on the data each system receives from then on. Migrating stored history
+is out of scope. The two systems still do not store the same thing, however, so
+soundness must be stated relative to how each system ingests data.
+
+\begin{definition}[Ingestion mapping]
+A Prometheus counter series $s=(\lambda,\langle (t_1,v_1),\dots,(t_n,v_n)\rangle)$ stores
+cumulative values. Datadog stores \texttt{COUNT} points that are per-interval deltas. For a
+reset policy $\rho\in\{\mathsf{zero},\mathsf{drop}\}$ define
+\[
+\phi_\rho(s) = \big(\lambda,\ \langle (t_i,\ \delta_\rho(v_{i-1},v_i)) : 2\le i\le n,\ \delta_\rho(v_{i-1},v_i)\neq\bot \rangle\big),
+\]
+\[
+\delta_\rho(u,v)=\begin{cases}
+v-u & v\ge u\\
+v & v<u,\ \rho=\mathsf{zero}\quad\text{(reset to zero, as PromQL assumes)}\\
+\bot & v<u,\ \rho=\mathsf{drop}\quad\text{(interval discarded)}
+\end{cases}
+\]
+Gauges map by the identity. $\phi_\rho$ extends to databases series by series:
+$\phi_\rho(D)=\{\phi_\rho(s): s\in D\}$. The first sample is omitted, matching Datadog's
+documented cumulative-to-delta conversion; which $\rho$ Datadog implements is
+undocumented and is determined empirically (Section~7).
+\end{definition}
+
+\begin{definition}[$\phi$-relative $\varepsilon$-soundness]
+Let $\mathcal{C}\subseteq\mathcal{D}$ be a class of databases. A translation $T$ is
+\emph{$\varepsilon$-sound for $\phi$ on $\mathcal{C}$} if
+\[
+\forall q\in L(G_A).\; T(q)\neq\bot \Rightarrow \forall D\in\mathcal{C},\ t\in\mathbb{T}.\;\;
+d\big(\sem{q}_A(D,t),\ \sem{T(q)}_B(\phi(D),t)\big)\le\varepsilon .
+\]
+The proposal's Definition~3 is the special case $\phi=\mathrm{id}$, $\mathcal{C}=\mathcal{D}$.
+\end{definition}
+
+\begin{definition}[$\phi$-invariance]
+A query $q$ is \emph{$\phi$-invariant on $\mathcal{C}$} if for all $D,D'\in\mathcal{C}$ and
+all $t$: $\phi(D)=\phi(D')\Rightarrow \sem{q}_A(D,t)=\sem{q}_A(D',t)$; that is, $\sem{q}_A$
+factors through $\phi$.
+\end{definition}
+
+\begin{proposition}[Information barrier]
+If $q$ is not $\phi$-invariant on $\mathcal{C}$, then no translation is $\varepsilon$-sound
+for $\phi$ on $\mathcal{C}$ with $T(q)\neq\bot$, for any
+$\varepsilon<\tfrac12\, d\big(\sem{q}_A(D,t),\sem{q}_A(D',t)\big)$, where $(D,D',t)$ witnesses
+the failure of invariance.
+\end{proposition}
+\begin{proof}
+Take $D,D'\in\mathcal{C}$ and $t$ with $\phi(D)=\phi(D')$ and $r=\sem{q}_A(D,t)\neq
+r'=\sem{q}_A(D',t)$. Any target query $q_B=T(q)$ receives the same input on both, so
+$\sem{q_B}_B(\phi(D),t)=\sem{q_B}_B(\phi(D'),t)=:x$. Because $d$ is a metric on results
+with matching label sets (and $\infty$ otherwise), the triangle inequality gives
+$d(r,r')\le d(r,x)+d(x,r')$, so $\max\{d(r,x),d(r',x)\}\ge \tfrac12 d(r,r')>\varepsilon$.
+\end{proof}
+
+\noindent
+The proposition is independent of syntax: it holds for \emph{every} target query, so a
+query that fails it is untranslatable because of what the target system stores, not
+because of how its language is written. This is the formal sense in which part of the
+lock-in is semantic.
+
+\begin{corollary}\label{cor:raw}
+Raw counter selectors (\texttt{http\_requests\_total} with no range function), and any
+function of absolute counter values, are not $\phi_\rho$-invariant on $\mathcal{D}$:
+adding a constant to every sample leaves $\phi_\rho(D)$ unchanged. The translator returns
+$\bot$ with diagnostic \texttt{PHI\_ABSOLUTE}.
+\end{corollary}
+
+\begin{corollary}\label{cor:rate}
+PromQL \texttt{rate} is not $\phi_\rho$-invariant on $\mathcal{D}$. When a series begins
+inside the window, Prometheus limits start-of-window extrapolation using the absolute
+first sample value $v_1$ (``duration to zero''), and $v_1$ is erased by $\phi_\rho$.
+\texttt{rate} is $\phi_\rho$-invariant on the class $\mathcal{C}_{\text{warm}}$ of databases
+where no counter series begins within a window being evaluated.
+\end{corollary}
+
+\begin{remark}[Soundness over all databases is too strong for \texttt{rate}]
+Even on $\mathcal{C}_{\text{warm}}$, \texttt{rate}$\to$\texttt{as\_rate()} is not
+$\varepsilon$-sound over all databases for any $\varepsilon<1$ under relative error:
+if the whole increase falls between the last sample before the window and the first
+sample inside it, PromQL returns $0$ while Datadog counts the delta. Useful bounds must
+therefore restrict the data class, e.g.\ to counters whose per-scrape increments vary by at
+most a factor $\beta$, and state $\varepsilon$ as a function of $\beta$, the scrape interval
+$s$ and the window $w$.
+\end{remark}

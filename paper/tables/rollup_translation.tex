@@ -1,0 +1,30 @@
+\begin{tabular}{@{}lrlrrr@{}}
+\toprule
+Workload & $\Delta$ (s) & PromQL candidate & Exact & Median $d$ & Max $d$ \\
+\midrule
+steady & 60 & \texttt{rate(x[$\Delta$])} & 100\% & 0.000 & 0.000 \\
+steady & 60 & \texttt{(x - x offset $\Delta$) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+steady & 60 & \texttt{increase(x[$\Delta$] anchored) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+steady & 300 & \texttt{rate(x[$\Delta$])} & 100\% & 0.000 & 0.000 \\
+steady & 300 & \texttt{(x - x offset $\Delta$) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+steady & 300 & \texttt{increase(x[$\Delta$] anchored) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+poisson & 60 & \texttt{rate(x[$\Delta$])} & 0\% & 0.142 & 0.322 \\
+poisson & 60 & \texttt{(x - x offset $\Delta$) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+poisson & 60 & \texttt{increase(x[$\Delta$] anchored) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+poisson & 300 & \texttt{rate(x[$\Delta$])} & 0\% & 0.013 & 0.056 \\
+poisson & 300 & \texttt{(x - x offset $\Delta$) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+poisson & 300 & \texttt{increase(x[$\Delta$] anchored) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+bursty & 60 & \texttt{rate(x[$\Delta$])} & 0\% & 0.137 & 0.750 \\
+bursty & 60 & \texttt{(x - x offset $\Delta$) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+bursty & 60 & \texttt{increase(x[$\Delta$] anchored) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+bursty & 300 & \texttt{rate(x[$\Delta$])} & 0\% & 0.017 & 0.065 \\
+bursty & 300 & \texttt{(x - x offset $\Delta$) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+bursty & 300 & \texttt{increase(x[$\Delta$] anchored) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+bursty + restarts & 60 & \texttt{rate(x[$\Delta$])} & 0\% & 0.137 & 0.750 \\
+bursty + restarts & 60 & \texttt{(x - x offset $\Delta$) / $\Delta$} & 98\% & 0.000 & 1.156 \\
+bursty + restarts & 60 & \texttt{increase(x[$\Delta$] anchored) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+bursty + restarts & 300 & \texttt{rate(x[$\Delta$])} & 0\% & 0.017 & 0.065 \\
+bursty + restarts & 300 & \texttt{(x - x offset $\Delta$) / $\Delta$} & 92\% & 0.000 & 1.679 \\
+bursty + restarts & 300 & \texttt{increase(x[$\Delta$] anchored) / $\Delta$} & 100\% & 0.000 & 0.000 \\
+\bottomrule
+\end{tabular}

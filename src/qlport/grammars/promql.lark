@@ -1,0 +1,73 @@
+// PromQL core grammar (starter). Precedence is encoded in the rule levels, lowest first,
+// as in Rich Example 11.19. Built with parser="lalr": a conflict-free table is the
+// mechanical proof that this grammar is LALR(1), hence unambiguous.
+// Source of truth to compare against: prometheus/promql/parser/generated_parser.y
+
+?start: expr
+
+?expr: or_expr
+?or_expr: and_expr | or_expr OR modifiers and_expr                 -> binop
+?and_expr: cmp_expr | and_expr SETOP modifiers cmp_expr            -> binop
+?cmp_expr: add_expr | cmp_expr CMPOP modifiers add_expr            -> binop
+?add_expr: mul_expr | add_expr ADDOP modifiers mul_expr            -> binop
+?mul_expr: unary | mul_expr MULOP modifiers unary                  -> binop
+?unary: pow_expr | ADDOP unary                                     -> neg
+?pow_expr: postfix | postfix POW modifiers unary                   -> binop   // right-assoc
+
+modifiers: [BOOL] [matching]
+matching: (ON | IGNORING) "(" [label_list] ")" [group]
+group: (GROUP_LEFT | GROUP_RIGHT) ["(" [label_list] ")"]
+
+?postfix: atom
+        | postfix "[" DURATION "]"                     -> range
+        | postfix "[" DURATION ":" [DURATION] "]"      -> subquery
+        | postfix OFFSET DURATION                      -> offset
+
+?atom: NUMBER                                          -> number
+     | STRING                                          -> string
+     | selector
+     | aggregation
+     | call
+     | "(" expr ")"
+
+selector: METRIC [label_matchers] | label_matchers
+label_matchers: "{" [matcher ("," matcher)* [","]] "}"
+matcher: LABEL MATCHOP STRING
+
+aggregation: AGGOP grouping "(" args ")"
+           | AGGOP "(" args ")" [grouping]
+grouping: (BY | WITHOUT) "(" [label_list] ")"
+call: FUNC "(" [args] ")"
+args: expr ("," expr)*
+label_list: LABEL ("," LABEL)*
+
+// ---- terminals. Keywords get priority over identifiers and need \b, otherwise
+// max_over_time lexes as MAX + "_over_time" and group_left as GROUP + "_left".
+AGGOP.3: /(sum|avg|min|max|count_values|count|stddev|stdvar|topk|bottomk|quantile|group)\b/
+OR.3: /or\b/
+SETOP.3: /(and|unless)\b/
+BY.3: /by\b/
+WITHOUT.3: /without\b/
+ON.3: /on\b/
+IGNORING.3: /ignoring\b/
+GROUP_LEFT.3: /group_left\b/
+GROUP_RIGHT.3: /group_right\b/
+OFFSET.3: /offset\b/
+BOOL.3: /bool\b/
+
+FUNC.2: /[a-z_][a-z0-9_]*(?=\s*\()/
+METRIC: /[a-zA-Z_:][a-zA-Z0-9_:]*/
+LABEL: /[a-zA-Z_][a-zA-Z0-9_]*/
+
+DURATION.2: /([0-9]+(ms|s|m|h|d|w|y))+/
+NUMBER: /[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?/
+STRING: /"([^"\\]|\\.)*"/ | /'([^'\\]|\\.)*'/
+
+MATCHOP: "=~" | "!~" | "!=" | "="
+CMPOP: "==" | "!=" | "<=" | ">=" | "<" | ">"
+ADDOP: "+" | "-"
+MULOP: "*" | "/" | "%" | "atan2"
+POW: "^"
+
+%ignore /\s+/
+%ignore /#[^\n]*/

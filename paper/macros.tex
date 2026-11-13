@@ -1,0 +1,34 @@
+% Packages and macros shared with the proposal.
+\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{mathpazo}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,stmaryrd}
+\usepackage{booktabs,tabularx,array}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit}
+\usepackage{listings}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{enumitem}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{xurl}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\newtheorem*{problem}{Problem Statement}
+
+\newcommand{\sem}[1]{\llbracket #1 \rrbracket}
+\newcommand{\Lang}{\mathcal{L}}
+\newcommand{\IR}{\mathsf{IR}}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+\lstdefinestyle{q}{basicstyle=\ttfamily\footnotesize,columns=fullflexible,keepspaces=true,breaklines=true}
+\lstset{style=q}

@@ -1,0 +1,94 @@
+From 408ce19404d0aa86a588f9db9697aa8cdda4b15d Mon Sep 17 00:00:00 2001
+From: Marshall Uy Alexander <marshall@alexander.net>
+Date: Thu, 12 Nov 2026 23:05:01 -0800
+Subject: [PATCH] Run everything in a project venv
+
+Ubuntu's system Python is externally managed (PEP 668), so pip install -e failed
+and tests could not import qlport. make now creates .venv, installs into it,
+registers a Jupyter kernel for the notebooks, and pytest adds src/ to the path.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01GhYxyCmRcLrbBAaxwwqJt4
+---
+ Makefile       | 29 +++++++++++++++++++++--------
+ README.md      |  2 +-
+ pyproject.toml |  1 +
+ 3 files changed, 23 insertions(+), 9 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index a186639..69d573c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,22 +1,32 @@
+-PY ?= python3
++VENV    := .venv
++PY      := $(VENV)/bin/python
++KERNEL  := qlport
+ NOTEBOOKS := $(sort $(wildcard notebooks/[0-9]*.py))
+ 
+-.PHONY: install test notebooks paper all clean
++.PHONY: install test notebooks paper all clean distclean
+ 
+-install:
+-	$(PY) -m pip install -e ".[dev,regular]"
++# Ubuntu's system Python is "externally managed" (PEP 668), so everything runs in .venv.
++$(VENV)/.installed: pyproject.toml
++	python3 -m venv $(VENV)
++	$(PY) -m pip install -q --upgrade pip
++	$(PY) -m pip install -q -e ".[dev,regular]"
++	$(PY) -m ipykernel install --user --name $(KERNEL) --display-name "Python (qlport)" >/dev/null
++	touch $@
+ 
+-test:
++install: $(VENV)/.installed
++
++test: install
+ 	$(PY) -m pytest -q
+ 
+-# Notebooks are stored as jupytext .py files; convert and execute each one in place.
+-notebooks:
++# Notebooks are stored as jupytext .py files; convert and execute each one with the venv kernel.
++notebooks: install
+ 	@for nb in $(NOTEBOOKS); do \
+ 	  echo "== $$nb"; \
+-	  $(PY) -m jupytext --to ipynb --execute --set-kernel - "$$nb" || exit 1; \
++	  $(PY) -m jupytext --to ipynb --set-kernel $(KERNEL) --execute "$$nb" >/dev/null || exit 1; \
+ 	done
+ 
+ paper:
++	@command -v pdflatex >/dev/null || { echo "pdflatex not found: sudo apt install texlive-latex-extra texlive-fonts-recommended"; exit 1; }
+ 	cd paper && pdflatex -interaction=nonstopmode -halt-on-error main.tex >/dev/null \
+ 	  && pdflatex -interaction=nonstopmode -halt-on-error main.tex >/dev/null \
+ 	  && echo "paper/main.pdf built"
+@@ -26,3 +36,6 @@ all: test notebooks paper
+ clean:
+ 	rm -f paper/*.aux paper/*.log paper/*.out paper/*.toc
+ 	rm -f notebooks/*.ipynb
++
++distclean: clean
++	rm -rf $(VENV)
+diff --git a/README.md b/README.md
+index aeff7a3..cb16d76 100644
+--- a/README.md
++++ b/README.md
+@@ -41,7 +41,7 @@ scripts/           one-off fetchers (corpus download, etc.)
+ ## Commands
+ 
+ ```
+-make install     # editable install + dev tools
++make install     # creates .venv, editable install, registers the "qlport" Jupyter kernel
+ make test        # pytest
+ make notebooks   # execute every notebook end to end (regenerates figures/tables)
+ make paper       # build paper/main.pdf
+diff --git a/pyproject.toml b/pyproject.toml
+index 478de5f..af705af 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -28,3 +28,4 @@ qlport = ["grammars/*.lark"]
+ 
+ [tool.pytest.ini_options]
+ testpaths = ["tests"]
++pythonpath = ["src"]   # tests find the package even without an editable install
+-- 
+2.43.0
+

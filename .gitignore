@@ -1,0 +1,23 @@
+# secrets
+.env
+
+# python
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.venv/
+
+# notebooks: the .py (jupytext) file is the source of truth
+notebooks/*.ipynb
+.ipynb_checkpoints/
+
+# latex build products (keep generated figures/tables, they are paper inputs)
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.synctex.gz
+
+# derived data can be regenerated; raw recordings and corpus are committed
+data/processed/*
+!data/processed/.gitkeep

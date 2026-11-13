@@ -1,0 +1,21 @@
+\section{Translation (RQ2)}
+\label{sec:translation}
+\todo{The IR and its denotations; syntax-directed lowering and emission; the gap
+catalogue table (notebook 03).}
+
+\subsection{Exact translation of Datadog rollups}
+Table~\ref{tab:rollup} compares three PromQL candidates for Datadog's
+\texttt{.as\_rate()} rollup over synthetic workloads (notebook 02).
+
+\begin{table}[h]\centering\footnotesize
+\input{tables/rollup_translation}
+\caption{Agreement of PromQL candidates with Datadog's \texttt{.as\_rate()} rollup.
+``Exact'' is the share of buckets with $d=0$.}
+\label{tab:rollup}
+\end{table}
+
+\begin{figure}[h]\centering
+\includegraphics[width=0.6\linewidth]{figures/rate_error_vs_window}
+\caption{Error of \texttt{rate()} against Datadog as the rollup interval grows.}
+\label{fig:rate-error}
+\end{figure}
