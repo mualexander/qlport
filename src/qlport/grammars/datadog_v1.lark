@@ -1,0 +1,37 @@
+// Datadog metrics query grammar (starter, inferred from documentation).
+// There is no published grammar; each production below must be confirmed against the
+// live query editor and the integrations-core dashboard corpus (paper §4).
+//
+//   sum:http.requests{status:5*,!env:dev} by {service}.as_rate().rollup(sum, 60)
+//   abs(avg:system.load.1{*}) * 2
+
+?start: expr
+
+?expr: term | expr ADDOP term                       -> binop
+?term: factor | term MULOP factor                   -> binop
+?factor: query
+       | NUMBER                                     -> number
+       | FUNC "(" expr ("," arg)* ")"               -> wrap
+       | "(" expr ")"
+
+query: space_agg ":" METRIC scope [grouping] method*
+space_agg: SPACEAGG
+scope: "{" tag ("," tag)* "}"
+tag: STAR | TAG
+grouping: BY "{" KEY ("," KEY)* "}"
+method: "." FUNC "(" [arg ("," arg)*] ")"
+?arg: NUMBER -> number | KEY -> word | STRING -> string
+
+SPACEAGG.3: /(sum|avg|min|max)\b/
+BY.3: /by\b/
+FUNC.2: /[a-z_][a-z0-9_]*(?=\s*\()/
+METRIC.1: /[a-zA-Z][a-zA-Z0-9_.]*/
+TAG: /!?[a-zA-Z0-9_.\-\/]+(:[a-zA-Z0-9_.\-\/*?]*)?/
+KEY: /[a-zA-Z][a-zA-Z0-9_.\-\/]*/
+STAR: "*"
+NUMBER: /[0-9]+(\.[0-9]+)?/
+STRING: /"([^"\\]|\\.)*"/
+ADDOP: "+" | "-"
+MULOP: "*" | "/"
+
+%ignore /\s+/

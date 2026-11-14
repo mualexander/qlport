@@ -18,6 +18,10 @@ paper/*.out
 paper/*.toc
 paper/*.synctex.gz
 
-# derived data can be regenerated; raw recordings and corpus are committed
+# derived data can be regenerated; raw recordings and the extracted corpus are committed
 data/processed/*
 !data/processed/.gitkeep
+
+# downloaded dashboard trees: ~40 MB, re-fetchable from the commits pinned in
+# data/corpus/SOURCES.md. data/corpus/queries.jsonl is what the notebooks read.
+data/corpus/sources/
