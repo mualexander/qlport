@@ -1,0 +1,13 @@
+\begin{tabular}{@{}lll@{}}
+\toprule
+Feature & Datadog & PromQL \\
+\midrule
+\texttt{M\_AS\_COUNT} & \texttt{sum:esxi.vm.count\{*\}.as\_count()} & \texttt{sum(esxi\_vm\_count - esxi\_vm\_count offset 60s)} \\
+\texttt{M\_AS\_RATE} & \texttt{sum:n8n.cache.hits.count\{*\}.as\_rate()} & \texttt{(sum(n8n\_cache\_hits\_count - n8n\_cache\_hits\_co\dots{}} \\
+\texttt{M\_ROLLUP\_INTERVAL} & \texttt{avg:mongodb.uptime\{*,*\}.rollup(avg, 60)} & \texttt{avg(avg\_over\_time(mongodb\_uptime[60s]))} \\
+\texttt{GROUP\_BY} & \texttt{fluentd.retry\_count\{*\} by \{host\}} & \texttt{avg by (host) (avg\_over\_time(fluentd\_retry\_co\dots{}} \\
+\texttt{SCOPE\_NEG} & \texttt{sum:iis.errors.locked\{!site:total,*\}} & \texttt{sum(avg\_over\_time(iis\_errors\_locked\{site!="to\dots{}} \\
+\texttt{SCOPE\_GLOB} & \texttt{sum:snmp.devices\_monitored\{agent\_host:*\}} & \texttt{sum(avg\_over\_time(snmp\_devices\_monitored\{agen\dots{}} \\
+\texttt{ARITH} & \texttt{-sum:tomcat.bytes\_rcvd\{*\}} & \texttt{-sum(avg\_over\_time(tomcat\_bytes\_rcvd[60s]))} \\
+\bottomrule
+\end{tabular}

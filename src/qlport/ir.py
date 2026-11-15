@@ -59,10 +59,20 @@ class BinOp:
 
 @dataclass(frozen=True)
 class Rollup:
-    """Time aggregation into epoch-aligned buckets of width `interval` (Datadog's rollup)."""
+    """Time aggregation into epoch-aligned buckets of width `interval` (Datadog's rollup).
+
+    `interval=None` means Datadog's automatic interval, which it derives from the
+    dashboard's time range: the query does not state it, so the IR does not invent it
+    and the back end has to be told what to assume.
+
+    `per_second` is Datadog's `.as_rate()`: the bucket total divided by the interval.
+    It rides on this node rather than a separate Scale because the divisor is the
+    interval, which is not known until the back end resolves it.
+    """
     op: Literal["sum", "avg", "min", "max", "count"]
-    interval: float
+    interval: float | None
     expr: Expr
+    per_second: bool = False
 
 
 @dataclass(frozen=True)

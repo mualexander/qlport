@@ -18,6 +18,13 @@ class Gap(str, Enum):
     RATE_EXTRAPOLATION = "rate extrapolation differs; only ε-sound"
     REGEX_NOT_GLOB = "regular expression has no equivalent glob"
     ROLLUP_ALIGNMENT = "rollup buckets cannot be aligned with the target's windows"
+    SCOPE_DISJUNCTION = "disjunctive scope is not one label-matcher conjunction"
+    LABEL_NAME_GLOB = "wildcard over tag keys, not tag values"
+    AGG_ROLLUP_ORDER = "space and time aggregation do not commute for this aggregator"
+    FILL_INTERPOLATION = "fill() interpolation has no target equivalent"
+    ROLLUP_DEFAULT = "Datadog's automatic rollup interval is undocumented"
+    COUNTER_RESET = "cumulative difference misreads a counter reset"
+    ANCHORED_UNVERIFIED = "anchored range semantics not yet verified against Prometheus"
     UNSUPPORTED_FUNCTION = "function not modelled yet"
     # measurement status, not a translation failure
     UNTESTED_LOOKBACK = "lookback longer than the test run; translated but not testable"
