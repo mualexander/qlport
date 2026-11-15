@@ -4,8 +4,7 @@ The counter rules come from notebook 02, which measured them against a reference
 evaluator of Datadog's rollup on four workloads:
 
   Rollup(sum, Δ, counter)        ->  x - x offset Δs            exact without a reset
-                                 or  increase(x[Δs] anchored)   exact with resets, under
-                                                                our model of `anchored`
+                                 or  increase(x[Δs] anchored)   exact with resets too
   Scale(1/Δ, Rollup(sum, Δ, .))  ->  (x - x offset Δs) / Δ      i.e. Datadog `.as_rate()`
                                  or  rate(x[Δs])                ε-sound only
 
@@ -24,8 +23,10 @@ emitter does instead is state the preconditions its exactness rests on, as cavea
 * `ROLLUP_DEFAULT` -- when the interval was assumed rather than read from
   `.rollup(agg, interval)`, the result is only as good as the assumption.
 * `COUNTER_RESET` -- the cumulative difference is exact on every bucket without a
-  reset (notebook 02) and undercounts across one. `anchored=True` trades this for
-  `ANCHORED_UNVERIFIED`: reset-aware, but checked only against our own model so far.
+  reset (notebook 02) and undercounts across one. `anchored=True` removes that caveat
+  for `ANCHORED_VERSION`: the modifier is reset-exact, verified against a real
+  Prometheus by `scripts/verify_anchored.py`, but it only exists from 3.7.0 on. It is
+  off by default so the output runs anywhere; turn it on when the target is 3.7+.
 """
 from __future__ import annotations
 
@@ -125,10 +126,11 @@ class _Emitter:
     def _bucket_total(self, inner: ir.Expr, width: float) -> str:
         """Datadog's sum of deltas over (t-Δ, t] as a cumulative difference."""
         if self.anchored:
-            # Proposal 0052, behind --enable-feature=promql-extended-range-selectors.
-            # Reset-aware, but its semantics are only verified against our own model,
-            # so the surface syntax here is provisional.
-            self.note(Gap.ANCHORED_UNVERIFIED)
+            # Proposal 0052. Introduced in Prometheus 3.7.0 behind
+            # --enable-feature=promql-extended-range-selectors, and always-on since the
+            # modifiers went stable in September 2026, so the flag is now a no-op.
+            # Reset-exact, and checked against a real server in notebook 02.
+            self.note(Gap.ANCHORED_VERSION)
             return f"increase({self.expr(inner)}[{duration(width)}] anchored)"
         self.note(Gap.COUNTER_RESET)
         base = self.expr(inner)

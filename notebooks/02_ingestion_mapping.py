@@ -23,7 +23,8 @@
 # 2. How far off is the "obvious" translation, `rate()`?
 # 3. How do counter resets affect each candidate?
 #
-# Outputs: `paper/tables/rollup_translation.tex`, `paper/figures/rate_error_vs_window.pdf`.
+# Outputs: `paper/tables/rollup_translation.tex`, `paper/figures/rate_error_vs_window.pdf`,
+# `paper/tables/model_verification.tex`, `paper/tables/rollup_translation_live.tex`.
 
 # %%
 from pathlib import Path
@@ -133,9 +134,112 @@ FIGURES.mkdir(parents=True, exist_ok=True)
 fig.savefig(FIGURES / "rate_error_vs_window.pdf")
 
 # %% [markdown]
+# ## Against a real Prometheus
+# Everything above reads PromQL through `semantics/promql_eval.py`, which is a *model*.
+# `increase(x[Δ] anchored)` was written from the text of Prometheus proposal 0052, so a
+# claim about it was a claim about our own code.
+#
+# `scripts/verify_anchored.py` closes that: it renders each workload as OpenMetrics,
+# backfills it into a TSDB with `promtool tsdb create-blocks-from openmetrics`, serves it
+# from a pinned Prometheus with no scrape targets, and reads each candidate back with one
+# range query evaluated on the same epoch-aligned grid used above. Responses are cached in
+# `data/raw/anchored/`, which is all this notebook reads.
+#
+# Two separate questions follow, and they are worth keeping apart: whether our model of
+# PromQL is right (model vs. server), and whether the translation is right (server vs.
+# Datadog). Only the second is a claim about the paper's thesis; the first is a claim
+# about our instruments.
+
+# %%
+import glob
+
+from qlport.harness.prometheus import read_raw, series_from_response
+from qlport.semantics.model import Series
+
+LIVE = sorted(glob.glob(str(ROOT / "data" / "raw" / "anchored" / "*.json")))
+MODELS = {
+    "rate(x[Δ])": lambda s, t, D: pq.rate(s.ts, s.vs, t, D),
+    "(x - x offset Δ) / Δ": lambda s, t, D: pq.offset_diff_rate(s.ts, s.vs, t, D),
+    "increase(x[Δ] anchored) / Δ": lambda s, t, D: pq.increase_anchored(s.ts, s.vs, t, D) / D,
+}
+print(f"{len(LIVE)} cached runs" if LIVE else
+      "no cache: run `python scripts/verify_anchored.py` (needs Docker)")
+
+# %%
+rows = []
+for path in LIVE:
+    rec = read_raw(path)
+    t0, D = rec["t0"], rec["interval"]
+    s = Series({}, np.array(rec["series"]["ts"]), np.array(rec["series"]["vs"]),
+               kind="counter")
+    p = phi_series(s)
+    for name, model in MODELS.items():
+        key = name.replace("Δ", "D")
+        for t_abs, server in series_from_response(rec["candidates"][key]["response"]).items():
+            t = t_abs - t0
+            rows.append(dict(workload=rec["workload"], interval=int(D), candidate=name,
+                             version=rec["prometheus_version"],
+                             model_err=reldiff(server, model(s, t, D)),
+                             truth_err=reldiff(server, dd.as_rate(p.ts, p.vs, t, D))))
+live = pd.DataFrame(rows)
+live.groupby("candidate")[["model_err", "truth_err"]].max()
+
+# %% [markdown]
+# ### Is our model of PromQL right? (RQ-hygiene, not a result)
+# One row per candidate, over every bucket of every workload. `NaN mismatch` counts the
+# buckets where the server returned a value and the model declined to, or the reverse:
+# an empty cell is as much a semantic claim as a number, so it is counted too.
+
+# %%
+ver = []
+for name, sub in live.groupby("candidate", sort=False):
+    finite = sub.model_err.dropna()
+    ver.append(f"\\texttt{{{name.replace('Δ', '$\\Delta$')}}} & {len(sub):,} & "
+               f"{finite.max():.2e} & {int(sub.model_err.isna().sum())} \\\\")
+lines = [r"\begin{tabular}{@{}lrrr@{}}", r"\toprule",
+         r"PromQL candidate & Buckets & Max $d$ vs. server & NaN mismatch \\",
+         r"\midrule", *ver, r"\bottomrule", r"\end{tabular}"]
+(TABLES / "model_verification.tex").write_text("\n".join(lines) + "\n")
+print("\n".join(lines))
+version = live.version.iloc[0] if len(live) else "n/a"
+print(f"\nverified against Prometheus {version}")
+
+# %% [markdown]
+# ### Is the translation right? (the result)
+# The same comparison as the table above, but with the PromQL side read from the server
+# instead of computed by us. This is the version §3 should cite.
+
+# %%
+live_summary = (live.groupby(["workload", "interval", "candidate"], sort=False)["truth_err"]
+                .agg(exact=lambda e: (e < 1e-12).mean(), median="median", max="max")
+                .reset_index())
+lines = [r"\begin{tabular}{@{}lrlrrr@{}}", r"\toprule",
+         r"Workload & $\Delta$ (s) & PromQL candidate & Exact & Median $d$ & Max $d$ \\",
+         r"\midrule"]
+for _, r in live_summary.iterrows():
+    exact = f"{r.exact:.0%}".replace("%", r"\%")
+    cand = r.candidate.replace("Δ", r"$\Delta$")
+    lines.append(f"{r.workload} & {int(r.interval)} & \\texttt{{{cand}}} & {exact} & "
+                 f"{r['median']:.3f} & {r['max']:.3f} \\\\")
+lines += [r"\bottomrule", r"\end{tabular}"]
+(TABLES / "rollup_translation_live.tex").write_text("\n".join(lines) + "\n")
+print(live_summary.to_string(index=False))
+
+
+# %% [markdown]
 # ## Findings (to carry into §3 and §5)
 # * `(x - x offset Δ) / Δ` is **exact** on every bucket without a reset, whatever the traffic shape.
-# * The anchored form is exact with resets too, **under our model** of `anchored`.
-#   Verify against real Prometheus (`--enable-feature=promql-extended-range-selectors`).
-# * `rate()` is ε-sound only, and its error depends on traffic shape and Δ/scrape.
-# * Open: which reset policy Datadog actually uses (trial-account test).
+# * `increase(x[Δ] anchored) / Δ` is exact **with** resets too, and this is now checked
+#   against a real Prometheus rather than against our model of it: over every bucket of
+#   every workload the server and `promql_eval` agree to float64 precision, with no bucket
+#   where one produced a value and the other did not. The reset-aware form is therefore
+#   safe to cite, and `emit/promql.py` can offer it as more than a guess.
+# * `anchored` is no longer experimental. It arrived in Prometheus 3.7.0 behind
+#   `--enable-feature=promql-extended-range-selectors`, and that flag became a no-op when
+#   the modifiers went always-on in September 2026, so the only precondition left is a
+#   server at 3.7 or newer. §3 should drop the "experimental" framing and say that.
+# * `rate()` is ε-sound only, and its error depends on traffic shape and Δ/scrape. The
+#   live table confirms it is never exact outside the perfectly steady workload.
+# * Open: which reset policy Datadog actually uses (trial-account test). Note what the
+#   restart rows do *not* say — they compare the two PromQL forms against `φ` under our
+#   assumed `ρ`, so they show the anchored form tracks that φ, not that Datadog agrees.

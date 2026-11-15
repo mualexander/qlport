@@ -142,12 +142,14 @@ def test_the_cumulative_difference_declares_the_reset_precondition():
     assert Gap.COUNTER_RESET not in caveats("avg:x{*}.rollup(avg, 60)")
 
 
-def test_anchored_form_is_opt_in_and_declares_itself_unverified():
+def test_anchored_form_is_opt_in_and_trades_reset_risk_for_a_version_floor():
     e = lower(parse("datadog", "sum:x{*}.as_count().rollup(sum, 60)"))
     assert "anchored" not in emit(e)
     anchored = emit_detail(e, anchored=True)
     assert "anchored" in anchored.promql
-    assert Gap.ANCHORED_UNVERIFIED in anchored.caveats
+    # verified reset-exact against a real server, so the reset caveat is gone, but the
+    # modifier only exists from Prometheus 3.7.0 on
+    assert Gap.ANCHORED_VERSION in anchored.caveats
     assert Gap.COUNTER_RESET not in anchored.caveats
 
 

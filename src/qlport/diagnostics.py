@@ -24,7 +24,7 @@ class Gap(str, Enum):
     FILL_INTERPOLATION = "fill() interpolation has no target equivalent"
     ROLLUP_DEFAULT = "Datadog's automatic rollup interval is undocumented"
     COUNTER_RESET = "cumulative difference misreads a counter reset"
-    ANCHORED_UNVERIFIED = "anchored range semantics not yet verified against Prometheus"
+    ANCHORED_VERSION = "anchored range selectors need Prometheus 3.7 or newer"
     UNSUPPORTED_FUNCTION = "function not modelled yet"
     # measurement status, not a translation failure
     UNTESTED_LOOKBACK = "lookback longer than the test run; translated but not testable"

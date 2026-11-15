@@ -1,0 +1,9 @@
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+PromQL candidate & Buckets & Max $d$ vs. server & NaN mismatch \\
+\midrule
+\texttt{rate(x[$\Delta$])} & 1,688 & 8.60e-14 & 0 \\
+\texttt{(x - x offset $\Delta$) / $\Delta$} & 1,688 & 0.00e+00 & 0 \\
+\texttt{increase(x[$\Delta$] anchored) / $\Delta$} & 1,688 & 7.95e-16 & 0 \\
+\bottomrule
+\end{tabular}

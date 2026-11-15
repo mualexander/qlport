@@ -1,0 +1,163 @@
+"""The Prometheus harness, and a regression test on the verification it produced.
+
+The last test is the point of the file: `scripts/verify_anchored.py` established that
+`semantics/promql_eval.py` models real PromQL, and that result is only worth anything
+if it keeps holding. It reads the cached responses in `data/raw/` -- no Docker, no
+network -- so a change to the evaluators that breaks the correspondence fails here
+rather than quietly invalidating paper §3.
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+from qlport.harness.prometheus import (
+    openmetrics, quantise, read_raw, series_from_response,
+)
+from qlport.metrics import reldiff
+from qlport.semantics import datadog_eval as dd
+from qlport.semantics import promql_eval as pq
+from qlport.semantics.ingest import phi_series
+from qlport.semantics.model import Series
+
+ROOT = Path(__file__).resolve().parent.parent
+ANCHORED = ROOT / "data" / "raw" / "anchored"
+
+MODELS = {
+    "rate(x[D])": lambda s, t, D: pq.rate(s.ts, s.vs, t, D),
+    "(x - x offset D) / D": lambda s, t, D: pq.offset_diff_rate(s.ts, s.vs, t, D),
+    "increase(x[D] anchored) / D": lambda s, t, D: pq.increase_anchored(s.ts, s.vs, t, D) / D,
+}
+
+
+def counter(ts, vs, **labels) -> Series:
+    return Series(labels, np.array(ts, dtype=float), np.array(vs, dtype=float),
+                  kind="counter")
+
+
+# --- exposition ----------------------------------------------------------------------
+def test_openmetrics_names_the_counter_and_suffixes_the_samples():
+    out = openmetrics(counter([15.0, 30.0], [1.0, 2.0]), "qlport_requests", 1000.0)
+    lines = out.splitlines()
+    assert lines[0] == "# TYPE qlport_requests counter"
+    assert lines[1].startswith("qlport_requests_total 1 1015.000")
+    assert lines[-1] == "# EOF"
+
+
+def test_openmetrics_renders_labels():
+    out = openmetrics(counter([15.0], [1.0], job="api", env="prod"), "m", 0.0)
+    assert 'm_total{env="prod",job="api"} 1 15.000' in out
+
+
+def test_openmetrics_round_trips_the_float_exactly():
+    """Fewer digits would hand the server a different series from the model's."""
+    v = 5000.123456789012
+    out = openmetrics(counter([15.0], [v]), "m", 0.0)
+    assert float(out.splitlines()[1].split()[1]) == v
+
+
+def test_openmetrics_refuses_a_non_counter():
+    gauge = Series({}, np.array([1.0]), np.array([1.0]), kind="gauge")
+    with pytest.raises(ValueError):
+        openmetrics(gauge, "m", 0.0)
+
+
+# --- quantisation --------------------------------------------------------------------
+def test_quantise_rounds_to_whole_milliseconds():
+    got = quantise(counter([1.00049, 2.0005], [1.0, 2.0]))
+    assert list(got.ts) == [1.0, 2.001]
+    assert got.kind == "counter"
+
+
+def test_quantise_refuses_to_collide_two_samples():
+    with pytest.raises(ValueError, match="collided"):
+        quantise(counter([1.00001, 1.00002], [1.0, 2.0]))
+
+
+# --- reading responses ---------------------------------------------------------------
+def test_series_from_response_is_keyed_by_timestamp():
+    raw = {"status": "success", "data": {"resultType": "matrix", "result": [
+        {"metric": {}, "values": [[100.0, "1.5"], [160.0, "2.5"]]}]}}
+    assert series_from_response(raw) == {100.0: 1.5, 160.0: 2.5}
+
+
+def test_series_from_response_handles_an_empty_result():
+    raw = {"status": "success", "data": {"resultType": "matrix", "result": []}}
+    assert series_from_response(raw) == {}
+
+
+def test_series_from_response_raises_on_an_error():
+    raw = {"status": "error", "errorType": "bad_data", "error": "parse error"}
+    with pytest.raises(ValueError, match="parse error"):
+        series_from_response(raw)
+
+
+def test_series_from_response_refuses_more_than_one_series():
+    raw = {"status": "success", "data": {"result": [
+        {"metric": {"a": "1"}, "values": [[1.0, "1"]]},
+        {"metric": {"a": "2"}, "values": [[1.0, "2"]]}]}}
+    with pytest.raises(ValueError, match="one series"):
+        series_from_response(raw)
+
+
+# --- the verification, as a regression test -------------------------------------------
+RUNS = sorted(ANCHORED.glob("*.json"))
+
+
+def test_the_verification_cache_is_present():
+    assert RUNS, "run scripts/verify_anchored.py (needs Docker)"
+
+
+@pytest.mark.parametrize("path", RUNS, ids=lambda p: p.stem)
+def test_promql_models_agree_with_a_real_prometheus(path):
+    """Every candidate, every bucket: our evaluator and the server, to float64.
+
+    A NaN mismatch counts as a failure in either direction -- declining to produce a
+    value is as much a semantic claim as producing one.
+    """
+    rec = read_raw(path)
+    t0, width = rec["t0"], rec["interval"]
+    s = counter(rec["series"]["ts"], rec["series"]["vs"])
+    for label, model in MODELS.items():
+        got = series_from_response(rec["candidates"][label]["response"])
+        assert got, f"{label} returned nothing"
+        for t_abs, server in got.items():
+            ours = model(s, t_abs - t0, width)
+            assert not np.isnan(ours), f"{label} at {t_abs - t0}: server has a value, model does not"
+            assert reldiff(server, ours) < 1e-12, f"{label} at {t_abs - t0}: {server} vs {ours}"
+
+
+@pytest.mark.parametrize("path", RUNS, ids=lambda p: p.stem)
+def test_the_anchored_form_reproduces_datadog_on_every_bucket(path):
+    """The §3 claim, read off the server rather than the model.
+
+    The cumulative difference is checked only where no reset falls in the window; the
+    anchored form is checked everywhere, which is the whole reason it is interesting.
+    """
+    rec = read_raw(path)
+    t0, width = rec["t0"], rec["interval"]
+    s = counter(rec["series"]["ts"], rec["series"]["vs"])
+    p = phi_series(s)
+    anchored = series_from_response(
+        rec["candidates"]["increase(x[D] anchored) / D"]["response"])
+    for t_abs, server in anchored.items():
+        truth = dd.as_rate(p.ts, p.vs, t_abs - t0, width)
+        assert reldiff(server, truth) < 1e-12, f"bucket {t_abs - t0}: {server} vs {truth}"
+
+
+def test_the_runs_record_which_server_answered():
+    """A measurement nobody can attribute is not reproducible."""
+    for path in RUNS:
+        rec = read_raw(path)
+        assert rec["prometheus_version"].startswith("3.")
+        assert rec["image_digest"].count("@sha256:") == 1
+        assert rec["grid"]["start"] % rec["interval"] == 0, "grid is not epoch-aligned"
+
+
+def test_the_cache_is_valid_json_and_names_every_candidate():
+    for path in RUNS:
+        rec = json.loads(path.read_text())
+        assert set(rec["candidates"]) == set(MODELS)
