@@ -10,6 +10,7 @@ from enum import Enum
 class Gap(str, Enum):
     # information barrier (paper §3): the target system does not store what the query reads
     PHI_ABSOLUTE = "query reads absolute counter values erased by ingestion"
+    METRIC_TYPE_UNKNOWN = "translation depends on a metric type the dashboard never states"
     PHI_SERIES_START = "result depends on where a series begins inside the window"
     # expressiveness gaps: data exists, target language cannot say it
     OFFSET = "time-shifted selector has no target equivalent"

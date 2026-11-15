@@ -110,10 +110,12 @@ def test_a_refused_operand_refuses_the_whole_expression():
 
 
 def test_unknown_metric_type_refuses_a_sum_over_time():
-    # Rollup(sum) built directly over a metric whose kind was never established
+    # Rollup(sum) built directly over a metric whose kind was never established. This is
+    # not PHI_ABSOLUTE: §3 reserves that for reading absolute counter values, and here
+    # the obstacle is that a dashboard never records whether a metric is a COUNT.
     e = ir.Rollup("sum", 60.0, ir.Agg("sum", (), "by", ir.Select("x")))
     got = emit_detail(e)
-    assert isinstance(got, Bottom) and got.gap is Gap.PHI_ABSOLUTE
+    assert isinstance(got, Bottom) and got.gap is Gap.METRIC_TYPE_UNKNOWN
 
 
 def test_missing_rollup_interval_is_refused_not_guessed():

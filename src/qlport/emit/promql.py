@@ -159,7 +159,10 @@ class _Emitter:
 
         if e.op == "sum":
             if not _is_counter(inner):
-                _refuse(Gap.PHI_ABSOLUTE,
+                # Not the information barrier of paper §3: the data is there, we just
+                # cannot tell from a dashboard whether this metric was submitted as
+                # COUNT, and the rule to use depends on that.
+                _refuse(Gap.METRIC_TYPE_UNKNOWN,
                         "summing over time needs a counter, and the type is unknown")
             body = self._bucket_total(inner, width)
         else:

@@ -3,19 +3,13 @@
 \todo{The IR and its denotations; syntax-directed lowering and emission; the gap
 catalogue table (notebook 03).}
 
-\subsection{Exact translation of Datadog rollups}
-Table~\ref{tab:rollup} compares three PromQL candidates for Datadog's
-\texttt{.as\_rate()} rollup over synthetic workloads (notebook 02).
-
-\begin{table}[h]\centering\footnotesize
-\input{tables/rollup_translation}
-\caption{Agreement of PromQL candidates with Datadog's \texttt{.as\_rate()} rollup.
-``Exact'' is the share of buckets with $d=0$.}
-\label{tab:rollup}
-\end{table}
-
-\begin{figure}[h]\centering
-\includegraphics[width=0.6\linewidth]{figures/rate_error_vs_window}
-\caption{Error of \texttt{rate()} against Datadog as the rollup interval grows.}
-\label{fig:rate-error}
-\end{figure}
+\subsection{Counter rollups}
+The rules for \texttt{.as\_count()}, \texttt{.as\_rate()} and \texttt{.rollup(sum,
+$\Delta$)} are established in Section~\ref{sec:ingestion}, where they belong: which
+PromQL expressions may translate a Datadog rollup at all is a question about the
+ingestion mapping, not about the emitter. Propositions~\ref{prop:offset}
+and~\ref{prop:anchored} give the two exact forms and Table~\ref{tab:rollup-live} the
+measurements. What the emitter adds is the choice between them and the preconditions it
+reports: \texttt{COUNTER\_RESET} on the cumulative difference,
+\texttt{ANCHORED\_VERSION} on the anchored form, and \texttt{ROLLUP\_ALIGNMENT} on
+both.

@@ -1,18 +1,20 @@
-% TODO: reframe for the Datadog -> PromQL direction: the barrier constrains PromQL -> Datadog;
-% in the main direction Prometheus stores strictly more (Datadog data = phi(D)).
 % ---------------------------------------------------------------------------
-% Ingestion mapping and phi-relative soundness  (drop into Section 3 of the paper)
-% Requires the macros from the proposal: \sem, \Lang, \IR
+% Ingestion mapping and phi-relative soundness, for the main direction
+% (Datadog -> PromQL). Requires \sem, \Lang from macros.tex.
+% Numbers come from notebook 02 and data/raw/anchored/ (scripts/verify_anchored.py).
 % ---------------------------------------------------------------------------
+
+\subsection{Ingestion and $\phi$-relative soundness}
+\label{sec:ingestion}
 
 \paragraph{Scope: forward portability.}
 The goal is portability of \emph{queries going forward}: once an organization
 dual-writes (or switches) its telemetry, a translated query must mean the same thing
 as the original on the data each system receives from then on. Migrating stored history
 is out of scope. The two systems still do not store the same thing, however, so
-soundness must be stated relative to how each system ingests data.
+soundness must be stated relative to how each ingests data.
 
-\begin{definition}[Ingestion mapping]
+\begin{definition}[Ingestion mapping]\label{def:phi}
 A Prometheus counter series $s=(\lambda,\langle (t_1,v_1),\dots,(t_n,v_n)\rangle)$ stores
 cumulative values. Datadog stores \texttt{COUNT} points that are per-interval deltas. For a
 reset policy $\rho\in\{\mathsf{zero},\mathsf{drop}\}$ define
@@ -28,67 +30,224 @@ v & v<u,\ \rho=\mathsf{zero}\quad\text{(reset to zero, as PromQL assumes)}\\
 \]
 Gauges map by the identity. $\phi_\rho$ extends to databases series by series:
 $\phi_\rho(D)=\{\phi_\rho(s): s\in D\}$. The first sample is omitted, matching Datadog's
-documented cumulative-to-delta conversion; which $\rho$ Datadog implements is
-undocumented and is determined empirically (Section~7).
+documented cumulative-to-delta conversion~\citep{datadog}; which $\rho$ Datadog
+implements is undocumented and is determined empirically (Section~\ref{sec:evaluation}).
 \end{definition}
 
-\begin{definition}[$\phi$-relative $\varepsilon$-soundness]
-Let $\mathcal{C}\subseteq\mathcal{D}$ be a class of databases. A translation $T$ is
-\emph{$\varepsilon$-sound for $\phi$ on $\mathcal{C}$} if
+\paragraph{The dual-write model.}
+In the migration this paper is about, one stream of counter observations reaches both
+systems. Prometheus stores the cumulative series $D$; Datadog stores $\phi_\rho(D)$. A
+Datadog query therefore reads $\phi_\rho(D)$ and its PromQL translation reads $D$. Write
+$\sem{\cdot}_{\mathrm{DD}}$ and $\sem{\cdot}_{\mathrm{PQ}}$ for the two denotations.
+
+\begin{definition}[$\phi$-relative $\varepsilon$-soundness]\label{def:phi-sound}
+Let $\mathcal{C}\subseteq\mathcal{D}$ be a class of databases. A translation $T$ from
+Datadog to PromQL is \emph{$\varepsilon$-sound for $\phi_\rho$ on $\mathcal{C}$} if
 \[
-\forall q\in L(G_A).\; T(q)\neq\bot \Rightarrow \forall D\in\mathcal{C},\ t\in\mathbb{T}.\;\;
-d\big(\sem{q}_A(D,t),\ \sem{T(q)}_B(\phi(D),t)\big)\le\varepsilon .
+\forall q\in \Lang(G_{\mathrm{DD}}).\; T(q)\neq\bot \Rightarrow \forall D\in\mathcal{C},\ t\in\mathbb{T}.\;\;
+d\big(\sem{q}_{\mathrm{DD}}(\phi_\rho(D),t),\ \sem{T(q)}_{\mathrm{PQ}}(D,t)\big)\le\varepsilon .
 \]
-The proposal's Definition~3 is the special case $\phi=\mathrm{id}$, $\mathcal{C}=\mathcal{D}$.
+The proposal's Definition~3 is the special case $\phi_\rho=\mathrm{id}$,
+$\mathcal{C}=\mathcal{D}$.
 \end{definition}
 
-\begin{definition}[$\phi$-invariance]
-A query $q$ is \emph{$\phi$-invariant on $\mathcal{C}$} if for all $D,D'\in\mathcal{C}$ and
-all $t$: $\phi(D)=\phi(D')\Rightarrow \sem{q}_A(D,t)=\sem{q}_A(D',t)$; that is, $\sem{q}_A$
-factors through $\phi$.
+\begin{definition}[$\phi$-invariance]\label{def:phi-inv}
+A PromQL expression $p$ is \emph{$\phi_\rho$-invariant on $\mathcal{C}$} if for all
+$D,D'\in\mathcal{C}$ and all $t$:
+$\phi_\rho(D)=\phi_\rho(D')\Rightarrow \sem{p}_{\mathrm{PQ}}(D,t)=\sem{p}_{\mathrm{PQ}}(D',t)$;
+that is, $\sem{p}_{\mathrm{PQ}}$ factors through $\phi_\rho$.
 \end{definition}
 
-\begin{proposition}[Information barrier]
-If $q$ is not $\phi$-invariant on $\mathcal{C}$, then no translation is $\varepsilon$-sound
-for $\phi$ on $\mathcal{C}$ with $T(q)\neq\bot$, for any
-$\varepsilon<\tfrac12\, d\big(\sem{q}_A(D,t),\sem{q}_A(D',t)\big)$, where $(D,D',t)$ witnesses
-the failure of invariance.
+\noindent
+Invariance is what makes an expression \emph{usable as a translation} here. The source
+query cannot distinguish two databases with the same $\phi_\rho$ image, so a sound
+translation must not distinguish them either.
+
+\begin{proposition}[Admissibility]\label{prop:admissible}
+Let $q$ be a Datadog query and $p=T(q)\neq\bot$. If $p$ is not $\phi_\rho$-invariant on
+$\mathcal{C}$, witnessed by $D,D'\in\mathcal{C}$ and $t$, then $T$ is not
+$\varepsilon$-sound for $\phi_\rho$ on $\mathcal{C}$ for any
+$\varepsilon<\tfrac12\,d\big(\sem{p}_{\mathrm{PQ}}(D,t),\sem{p}_{\mathrm{PQ}}(D',t)\big)$.
 \end{proposition}
 \begin{proof}
-Take $D,D'\in\mathcal{C}$ and $t$ with $\phi(D)=\phi(D')$ and $r=\sem{q}_A(D,t)\neq
-r'=\sem{q}_A(D',t)$. Any target query $q_B=T(q)$ receives the same input on both, so
-$\sem{q_B}_B(\phi(D),t)=\sem{q_B}_B(\phi(D'),t)=:x$. Because $d$ is a metric on results
-with matching label sets (and $\infty$ otherwise), the triangle inequality gives
-$d(r,r')\le d(r,x)+d(x,r')$, so $\max\{d(r,x),d(r',x)\}\ge \tfrac12 d(r,r')>\varepsilon$.
+Since $\phi_\rho(D)=\phi_\rho(D')$, the source query receives the same input in both
+cases:
+\[
+r:=\sem{q}_{\mathrm{DD}}(\phi_\rho(D),t)=\sem{q}_{\mathrm{DD}}(\phi_\rho(D'),t).
+\]
+Soundness would give $d(r,\sem{p}_{\mathrm{PQ}}(D,t))\le\varepsilon$ and
+$d(r,\sem{p}_{\mathrm{PQ}}(D',t))\le\varepsilon$. Because $d$ is a metric on results with
+matching label sets (and $\infty$ otherwise), the triangle inequality yields
+\[
+d\big(\sem{p}_{\mathrm{PQ}}(D,t),\sem{p}_{\mathrm{PQ}}(D',t)\big)\le 2\varepsilon . \qedhere
+\]
+\end{proof}
+
+\begin{remark}[The barrier is directional]\label{rem:directional}
+The same inequality reads differently in the two directions, and the difference is the
+reason this paper takes Datadog $\to$ PromQL as the main one.
+
+In the \emph{reverse} direction the source is PromQL, reading $D$, and the target is
+Datadog, reading $\phi_\rho(D)$. The constraint then falls on the \emph{source}: a PromQL
+query that is not $\phi_\rho$-invariant has no sound Datadog translation at all, for any
+target query whatsoever, because every candidate receives the same input on two
+databases the source query separates. That is an information barrier in the strict
+sense, and it is independent of syntax: such a query is untranslatable because of what
+the target system stores, not because of how its language is written. This is the formal
+sense in which part of the lock-in is semantic.
+
+In the \emph{main} direction no source query is blocked this way. Prometheus stores $D$
+and Datadog's view $\phi_\rho(D)$ is a function of it, so the target system never holds
+less than the source did. What Proposition~\ref{prop:admissible} constrains instead is
+the \emph{choice of target expression}: a PromQL expression that reads absolute counter
+values cannot translate any Datadog query, because no Datadog query can see them.
+Sufficient information, however, is not the same as sufficient expressiveness --- to
+reproduce $\sem{q}_{\mathrm{DD}}(\phi_\rho(D),t)$ from $D$, PromQL must be able to
+\emph{say} the composite $\sem{q}_{\mathrm{DD}}\circ\phi_\rho$. Every refusal the
+translator of Section~\ref{sec:translation} issues in this direction is accordingly an
+expressiveness gap rather than an informational one, which is what its gap catalogue
+bears out.
+\end{remark}
+
+\begin{corollary}[Raw selectors are inadmissible]\label{cor:raw}
+Let $\mathcal{C}_{\mathrm{flat}}$ be the databases with no counter reset. On
+$\mathcal{C}_{\mathrm{flat}}$, shifting every sample of a series by a constant $c$ leaves
+$\phi_\rho$ unchanged while changing the value of a raw selector. Hence a bare counter
+selector (\texttt{http\_requests\_total} with no range function), and any function of
+absolute counter values, is not $\phi_\rho$-invariant, and no such expression is a sound
+translation of any Datadog query. The translator never emits one; an input forcing one
+returns $\bot$ with diagnostic \texttt{PHI\_ABSOLUTE}.
+\end{corollary}
+
+\begin{corollary}[\texttt{rate} is inadmissible in general]\label{cor:rate}
+PromQL \texttt{rate} is not $\phi_\rho$-invariant on $\mathcal{D}$. When a series begins
+inside the window, Prometheus limits start-of-window extrapolation using the absolute
+first sample value $v_1$ (``duration to zero'')~\citep{promql}, and $v_1$ is erased by
+$\phi_\rho$. It
+\emph{is} $\phi_\rho$-invariant on the class $\mathcal{C}_{\mathrm{warm}}$ of databases
+in which no counter series begins within a window being evaluated, because the remaining
+inputs to the extrapolation --- the increase over the window and the sample spacing ---
+all survive $\phi_\rho$.
+\end{corollary}
+
+\noindent
+Corollary~\ref{cor:rate} is worth stating carefully, because it marks the limit of what
+invariance buys. Invariance is \emph{necessary} for a sound translation and not
+sufficient: on $\mathcal{C}_{\mathrm{warm}}$ the expression \texttt{rate(x[$\Delta$])} is
+admissible and still not exact, since extrapolating to the window edges computes a
+different quantity from the bucket sum Datadog reports. Admissibility rules candidates
+out; exactness has to be established separately.
+
+\subsubsection{Two exact forms}
+
+Datadog's \texttt{.as\_count()} with rollup interval $\Delta$ reports
+$\Sigma_\Delta(t)=\sum\{\,\delta : (t_i,\delta)\in\phi_\rho(s),\ t_i\in(t-\Delta,t]\,\}$,
+and \texttt{.as\_rate()} reports $\Sigma_\Delta(t)/\Delta$. Both reduce to the same
+cumulative difference, which is the single most useful fact in this direction: the
+corpus of Section~\ref{sec:evaluation} uses \texttt{.as\_count()} about $6.6$ times as
+often as \texttt{.as\_rate()}.
+
+\begin{proposition}[Cumulative difference]\label{prop:offset}
+Let $\mathcal{C}_{\Delta}$ be the databases in which no counter series resets within
+$(t-\Delta,t]$, and assume Prometheus's lookback covers the sample spacing. Then on
+$\mathcal{C}_{\Delta}$ the expression \texttt{x - x offset $\Delta$} is
+$\phi_\rho$-invariant and equals $\Sigma_\Delta(t)$ exactly.
+\end{proposition}
+\begin{proof}
+An instant selector at $u$ returns $v_{\ell(u)}$ for $\ell(u)=\max\{i:t_i\le u\}$. With no
+reset in the window, $\delta_\rho(v_{i-1},v_i)=v_i-v_{i-1}$ for every $t_i\in(t-\Delta,t]$,
+so the sum telescopes: $\Sigma_\Delta(t)=v_{\ell(t)}-v_{\ell(t-\Delta)}$, which is the
+value of the expression. It is $\phi_\rho$-invariant on $\mathcal{C}_\Delta$ because it
+has been shown equal to a function of $\phi_\rho(s)$ alone.
+\end{proof}
+
+\begin{proposition}[Anchored increase]\label{prop:anchored}
+Let $\rho=\mathsf{zero}$. Then \texttt{increase(x[$\Delta$] anchored)} equals
+$\Sigma_{\mathsf{zero},\Delta}(t)$ on all of $\mathcal{D}$, and is $\phi_{\mathsf{zero}}$-invariant.
+\end{proposition}
+\begin{proof}
+The \texttt{anchored} modifier~\citep{prom0052} pins the left window boundary to the last
+sample at or before $t-\Delta$, performs no extrapolation, and on a decrease
+$v_i<v_{i-1}$ contributes
+$v_i$ rather than $v_i-v_{i-1}$. Term by term this is exactly $\delta_{\mathsf{zero}}$, so
+the sum over $t_i\in(t-\Delta,t]$ is $\Sigma_{\mathsf{zero},\Delta}(t)$, a function of
+$\phi_{\mathsf{zero}}(s)$ alone.
 \end{proof}
 
 \noindent
-The proposition is independent of syntax: it holds for \emph{every} target query, so a
-query that fails it is untranslatable because of what the target system stores, not
-because of how its language is written. This is the formal sense in which part of the
-lock-in is semantic.
+Propositions~\ref{prop:offset} and~\ref{prop:anchored} explain the measurements rather
+than merely accompanying them. The cumulative difference is exact exactly where its
+invariance class holds --- no reset inside the window --- and the anchored form, whose
+reset handling \emph{is} $\delta_{\mathsf{zero}}$, is exact everywhere. Both are
+confirmed in Table~\ref{tab:rollup-live}: over four synthetic workloads at two rollup
+intervals, the cumulative difference agrees with Datadog on every bucket of the
+reset-free workloads and falls to $91$--$98\%$ once counters restart, with relative
+error as large as $1.68$, while the anchored form is exact on every bucket of every
+workload. \texttt{rate} is exact only on perfectly regular traffic.
 
-\begin{corollary}\label{cor:raw}
-Raw counter selectors (\texttt{http\_requests\_total} with no range function), and any
-function of absolute counter values, are not $\phi_\rho$-invariant on $\mathcal{D}$:
-adding a constant to every sample leaves $\phi_\rho(D)$ unchanged. The translator returns
-$\bot$ with diagnostic \texttt{PHI\_ABSOLUTE}.
-\end{corollary}
+\begin{table}[h]\centering\footnotesize
+\input{tables/rollup_translation_live}
+\caption{Agreement of three PromQL candidates with Datadog's \texttt{.as\_rate()} rollup,
+read from a Prometheus~3.15.0 server rather than from a model of PromQL. ``Exact'' is the
+share of epoch-aligned buckets with $d=0$. Workloads are six hours of $15$\,s scrapes;
+``restarts'' zeroes the counter once an hour.}
+\label{tab:rollup-live}
+\end{table}
 
-\begin{corollary}\label{cor:rate}
-PromQL \texttt{rate} is not $\phi_\rho$-invariant on $\mathcal{D}$. When a series begins
-inside the window, Prometheus limits start-of-window extrapolation using the absolute
-first sample value $v_1$ (``duration to zero''), and $v_1$ is erased by $\phi_\rho$.
-\texttt{rate} is $\phi_\rho$-invariant on the class $\mathcal{C}_{\text{warm}}$ of databases
-where no counter series begins within a window being evaluated.
-\end{corollary}
+\paragraph{Verifying the instruments.}
+Propositions~\ref{prop:offset} and~\ref{prop:anchored} are claims about PromQL, so
+checking them against our own evaluator would be circular. Each workload is therefore
+backfilled into a Prometheus TSDB, and every candidate is read back from the server on the
+same epoch-aligned grid. Table~\ref{tab:model-verification} compares the two: across
+$1{,}688$ buckets the reference evaluators and the server agree to floating-point
+precision, and there is no bucket where one produced a value and the other declined ---
+an empty result is as much a semantic claim as a number. The modelled and measured
+versions of Table~\ref{tab:rollup-live} agree on every summary statistic.
+
+\begin{table}[h]\centering\footnotesize
+\input{tables/model_verification}
+\caption{The reference evaluators of \texttt{semantics/promql\_eval.py} against
+Prometheus~3.15.0 on identical samples. ``NaN mismatch'' counts buckets where exactly one
+of the two returned a value.}
+\label{tab:model-verification}
+\end{table}
+
+\begin{remark}[\texttt{anchored} is no longer experimental]
+The \texttt{anchored} modifier of~\citet{prom0052} arrived in Prometheus~3.7.0 behind
+\texttt{-{}-enable-feature=promql-extended-range-selectors}, and that flag became a no-op
+when the extended range selectors were made always-on in September~2026. The only
+precondition Proposition~\ref{prop:anchored} carries in practice is therefore a server at
+$3.7$ or newer, which the translator reports as the diagnostic
+\texttt{ANCHORED\_VERSION} rather than as an experimental caveat.
+\end{remark}
 
 \begin{remark}[Soundness over all databases is too strong for \texttt{rate}]
-Even on $\mathcal{C}_{\text{warm}}$, \texttt{rate}$\to$\texttt{as\_rate()} is not
-$\varepsilon$-sound over all databases for any $\varepsilon<1$ under relative error:
-if the whole increase falls between the last sample before the window and the first
-sample inside it, PromQL returns $0$ while Datadog counts the delta. Useful bounds must
-therefore restrict the data class, e.g.\ to counters whose per-scrape increments vary by at
-most a factor $\beta$, and state $\varepsilon$ as a function of $\beta$, the scrape interval
-$s$ and the window $w$.
+Even on $\mathcal{C}_{\mathrm{warm}}$, \texttt{rate} is not $\varepsilon$-sound over all
+databases for any $\varepsilon<1$ under relative error: if the whole increase falls
+between the last sample before the window and the first sample inside it, one system
+returns $0$ while the other counts the delta. Useful bounds must therefore restrict the
+data class, e.g.\ to counters whose per-scrape increments vary by at most a factor
+$\beta$, and state $\varepsilon$ as a function of $\beta$, the scrape interval $s$ and
+the window $w$. Figure~\ref{fig:rate-error} shows how the error shrinks as $\Delta$ grows
+relative to the scrape interval.
 \end{remark}
+
+\begin{figure}[h]\centering
+\includegraphics[width=0.6\linewidth]{figures/rate_error_vs_window}
+\caption{Error of \texttt{rate()} against Datadog as the rollup interval grows, at a
+$15$\,s scrape interval. \texttt{rate} is the only candidate whose error depends on the
+data.}
+\label{fig:rate-error}
+\end{figure}
+
+\paragraph{What remains assumed.}
+Two things above are stated relative to facts about Datadog that its documentation does
+not settle, and both are measured in Section~\ref{sec:evaluation} rather than argued
+here. First, $\rho$: Proposition~\ref{prop:anchored} holds for
+$\rho=\mathsf{zero}$, and the restart rows of Table~\ref{tab:rollup-live} compare the
+PromQL candidates against $\phi_{\mathsf{zero}}$ --- they show the anchored form tracks
+that $\phi$, not that Datadog agrees with it. Second, bucket alignment: $\Sigma_\Delta$
+above presumes Datadog's buckets are right-closed and epoch-aligned, which is why every
+comparison here is made on the epoch-aligned grid. A PromQL range window follows the
+evaluation step instead, so off that grid the two systems are summing different sample
+sets; the translator records this as \texttt{ROLLUP\_ALIGNMENT} on every rollup it emits.
