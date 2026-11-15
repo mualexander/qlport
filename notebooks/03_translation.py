@@ -258,20 +258,6 @@ tabular("lll", ["Feature", "Datadog", "PromQL"], rows,
 for r in rows:
     print(r[0])
 
-# %% [markdown]
-# ### What one undocumented default costs
-# `AGG_ROLLUP_ORDER` refusals, split by whether the query stated its rollup. The rows
-# with no `.rollup(...)` are refused only because Datadog's default time aggregator had
-# to be assumed; the others are genuine non-commuting pairs the query asked for.
-
-# %%
-aro = tr[tr.gap == "AGG_ROLLUP_ORDER"].assign(
-    stated=lambda d: d.norm.str.contains(r"\.rollup\(", regex=True))
-print(aro.groupby("stated")["n"].agg(occurrences="sum", distinct="size").to_string())
-assumed = int(aro.loc[~aro.stated, "n"].sum())
-print(f"\n{assumed:,} occurrences ({assumed / total_n:.1%} of the corpus) hinge on the "
-      f"assumed default time aggregator alone")
-
 # %%
 fig, ax = plt.subplots(figsize=(5.2, 2.9))
 shares = tr.groupby("outcome")["n"].sum().reindex(order).fillna(0) / total_n
@@ -310,10 +296,11 @@ print("wrote paper/figures/coverage_by_gap.pdf")
 #   boolean query over tags, and a PromQL selector is a conjunction of matchers. `OR`
 #   and `IN (...)` need either a regex over one label or a set union of selectors, and
 #   neither is a drop-in for a scope sitting under an aggregation.
-# * Space and time aggregation do not commute for `max:`/`min:`/`count:`, and PromQL
-#   can only put the rollup inside the aggregation without a subquery. Datadog's own
-#   order is undocumented, so these are refused rather than guessed — and the cell
-#   below prices that one unknown: almost all of those refusals are queries with no
-#   explicit `.rollup(...)` at all, refused only because we had to assume the default
-#   time aggregator. Settling it on a trial account is the single cheapest way to move
-#   κ, which is a result about the vendor's documentation as much as its language.
+# * Datadog evaluates a query "first by time, then by space": a rollup reduces each
+#   series alone and the space aggregator wraps the result. PromQL's range functions
+#   have exactly that shape, so `max:x{*}.rollup(avg, 60)` is `max(avg_over_time(x[60s]))`
+#   and the two layers never have to commute. An earlier version of this translator had
+#   the order the other way round and refused 348 occurrences on the strength of a
+#   commutation argument that the real semantics never raises; the documented order is
+#   worth stating in §5 precisely because getting it backwards costs four points of κ
+#   while leaving every emitted translation looking plausible.

@@ -21,7 +21,6 @@ class Gap(str, Enum):
     ROLLUP_ALIGNMENT = "rollup buckets cannot be aligned with the target's windows"
     SCOPE_DISJUNCTION = "disjunctive scope is not one label-matcher conjunction"
     LABEL_NAME_GLOB = "wildcard over tag keys, not tag values"
-    AGG_ROLLUP_ORDER = "space and time aggregation do not commute for this aggregator"
     FILL_INTERPOLATION = "fill() interpolation has no target equivalent"
     ROLLUP_DEFAULT = "Datadog's automatic rollup interval is undocumented"
     COUNTER_RESET = "cumulative difference misreads a counter reset"

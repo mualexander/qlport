@@ -19,6 +19,11 @@ Two things the front end has to decide that the query text does not say:
 Every query gets a `Rollup`, including one with no method at all: Datadog always
 aggregates in time, and its documented default aggregator is `avg`. Emitting the bare
 instant selector instead would quietly claim that Datadog shows raw samples.
+
+The `Rollup` goes *inside* the `Agg`. Datadog evaluates "first by time, then by space":
+the rollup reduces each series on its own, and the space aggregator then combines those
+reduced values. Nesting it the other way round would describe a different query, and
+would raise a commutation question that the real order never asks.
 """
 from __future__ import annotations
 
@@ -184,11 +189,14 @@ def _query(node: Tree) -> ir.Expr:
     # dashboard JSON never states.
     kind = "counter" if m.as_rate or m.time_agg == "sum" else "unknown"
     e: ir.Expr = ir.Select(metric_name(str(metric)), _scope(scope.children[0]), kind=kind)
-
     keys = tuple(label_name(str(k)) for k in grouping.children[1:]) if grouping else ()
-    e = ir.Agg(space_agg, keys, "by", e)
 
-    return ir.Rollup(m.time_agg or DEFAULT_TIME_AGG, m.interval, e, per_second=m.as_rate)
+    # Time first, per series; then space. `.as_rate()`'s division by the interval sits
+    # on the inner node for the same reason -- it is part of the time aggregation. The
+    # placement is only observable for `count:`, where dividing after the space
+    # aggregation would scale a count of series by the interval.
+    e = ir.Rollup(m.time_agg or DEFAULT_TIME_AGG, m.interval, e, per_second=m.as_rate)
+    return ir.Agg(space_agg, keys, "by", e)
 
 
 def _expr(node) -> ir.Expr:

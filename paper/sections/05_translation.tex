@@ -13,3 +13,25 @@ measurements. What the emitter adds is the choice between them and the precondit
 reports: \texttt{COUNTER\_RESET} on the cumulative difference,
 \texttt{ANCHORED\_VERSION} on the anchored form, and \texttt{ROLLUP\_ALIGNMENT} on
 both.
+
+\subsection{Where the rollup sits}
+One structural fact about Datadog decides the shape of every translated query, and it is
+easy to get backwards. A Datadog query is evaluated ``first by time, then by
+space''~\citep{datadog}: the rollup reduces each series on its own, and the space
+aggregator (\texttt{sum:}, \texttt{avg:}, \texttt{max:}, \texttt{min:},
+\texttt{count:}, with its optional \texttt{by \{...\}}) then combines those reduced
+values. PromQL's range functions have the same shape, so the translation is direct:
+\begin{center}\footnotesize
+\texttt{max:x\{*\}.rollup(avg, 60)}\quad$\longmapsto$\quad\texttt{max(avg\_over\_time(x[60s]))}
+\end{center}
+
+Nesting the two layers the other way round --- space aggregation first, rollup outside
+--- describes a different query, and raises a question the real semantics never asks:
+whether the two aggregators commute. They do for $(\mathsf{sum},\mathsf{sum})$,
+$(\mathsf{max},\mathsf{max})$ and $(\mathsf{min},\mathsf{min})$, and not for
+$\mathsf{max}$ or $\mathsf{count}$ over an averaging rollup, where PromQL would need a
+subquery to put the rollup outside. An earlier version of this translator was built that
+way and refused $348$ query occurrences --- four points of $\kappa$ --- on the strength
+of that commutation argument. Every translation it \emph{did} emit was still correct,
+because where the aggregators commute the two orders coincide, which is exactly what
+makes the error hard to notice: the failure shows up only in the refusals.

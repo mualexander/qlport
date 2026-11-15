@@ -48,7 +48,7 @@ def caveats(q: str, **kw) -> set[Gap]:
      "sum(http_requests - http_requests offset 300s)"),
     # .as_rate() is that over the interval (notebook 02, exact without a reset)
     ("sum:http.requests{*}.as_rate().rollup(sum, 60)",
-     "(sum(http_requests - http_requests offset 60s)) / 60"),
+     "sum((http_requests - http_requests offset 60s) / 60)"),
     # space aggregation keeps its grouping, with the rollup pushed inside it
     ("sum:http.requests{env:prod} by {service}.as_count().rollup(sum, 60)",
      'sum by (service) (http_requests{env="prod"} - http_requests{env="prod"} offset 60s)'),
@@ -64,6 +64,32 @@ def caveats(q: str, **kw) -> set[Gap]:
 ])
 def test_translation_rules(ddq, want):
     assert translate(ddq) == want
+
+
+@pytest.mark.parametrize("ddq,want", [
+    # Datadog evaluates "first by time, then by space": the rollup reduces each series
+    # alone and the space aggregator wraps it. These all used to be refused on the
+    # mistaken grounds that the two layers had to commute.
+    ("max:x{*}.rollup(avg, 60)", "max(avg_over_time(x[60s]))"),
+    ("min:x{*}.rollup(avg, 60)", "min(avg_over_time(x[60s]))"),
+    ("count:x{*}.rollup(avg, 60)", "count(avg_over_time(x[60s]))"),
+    ("max:x{*}.as_count().rollup(sum, 60)", "max(x - x offset 60s)"),
+    ("count:x{*}.as_count().rollup(sum, 60)", "count(x - x offset 60s)"),
+    # the example worked through step by step in Datadog's own weighted() docs:
+    # average each series over 10s first, then sum per kube_container_name
+    ("sum:kubernetes.cpu.requests{*} by {kube_container_name}.rollup(avg, 10)",
+     "sum by (kube_container_name) (avg_over_time(kubernetes_cpu_requests[10s]))"),
+])
+def test_time_aggregation_is_inside_space_aggregation(ddq, want):
+    assert translate(ddq) == want
+
+
+def test_as_rate_divides_per_series_not_after_space_aggregation():
+    """The division is part of the time aggregation, so it sits inside the \
+    aggregator. Only `count:` can tell the difference, and putting it outside would
+    scale a count of series by the interval."""
+    assert translate("count:x{*}.as_rate().rollup(sum, 60)") == \
+        "count((x - x offset 60s) / 60)"
 
 
 @pytest.mark.parametrize("term,want", [
@@ -94,10 +120,6 @@ def test_scope_terms_become_label_matchers(term, want):
     ("p95:x{*}.as_count()", Gap.UNSUPPORTED_FUNCTION),
     ("top(avg:x{*}, 10, 'mean', 'desc')", Gap.UNSUPPORTED_FUNCTION),
     ("per_minute(sum:x{*})", Gap.UNSUPPORTED_FUNCTION),
-    # space max and time sum do not commute, and PromQL cannot put the rollup outside
-    # the aggregation without a subquery
-    ("max:x{*}.as_count()", Gap.AGG_ROLLUP_ORDER),
-    ("count:x{*}.as_count()", Gap.AGG_ROLLUP_ORDER),
 ])
 def test_refusals_carry_a_gap(ddq, gap):
     got = translate(ddq)
@@ -113,7 +135,7 @@ def test_unknown_metric_type_refuses_a_sum_over_time():
     # Rollup(sum) built directly over a metric whose kind was never established. This is
     # not PHI_ABSOLUTE: §3 reserves that for reading absolute counter values, and here
     # the obstacle is that a dashboard never records whether a metric is a COUNT.
-    e = ir.Rollup("sum", 60.0, ir.Agg("sum", (), "by", ir.Select("x")))
+    e = ir.Agg("sum", (), "by", ir.Rollup("sum", 60.0, ir.Select("x")))
     got = emit_detail(e)
     assert isinstance(got, Bottom) and got.gap is Gap.METRIC_TYPE_UNKNOWN
 
@@ -244,7 +266,7 @@ def test_as_rate_is_as_count_over_the_interval():
                rate_fn=steady(10), jitter=0)
     p = phi_series(s)
     out = translate("sum:x{*}.as_rate().rollup(sum, 60)")
-    assert out.endswith("/ 60")
+    assert "/ 60)" in out      # per series, inside the space aggregation
     errs = [abs(pq.offset_diff_rate(s.ts, s.vs, t, 60.0) - dd.as_rate(p.ts, p.vs, t, 60.0))
             for t in dd.bucket_ends(600, s.ts[-1], 60.0)]
     assert errs and np.nanmax(errs) < 1e-9

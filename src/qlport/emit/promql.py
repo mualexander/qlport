@@ -11,6 +11,11 @@ evaluator of Datadog's rollup on four workloads:
 `.as_count()` is the undivided form and outnumbers `.as_rate()` in the corpus by about
 6.6 to 1, so it is the rule that matters most.
 
+Datadog evaluates a query "first by time, then by space", so a rollup reduces each
+series alone and the space aggregator wraps it: `max:x{*}.rollup(avg, 60)` is
+`max(avg_over_time(x[60s]))`. PromQL's range functions have the same shape, which is
+why no subquery is needed and why the two orders never have to commute.
+
 Nothing here is merely ε-sound. The exact cumulative difference is always available in
 standard PromQL, so `rate(x[Δs])` -- the translation everyone reaches for first -- is
 never the best this emitter can do; notebook 02 measures how far off it is. What the
@@ -38,14 +43,6 @@ from ..diagnostics import Bottom, Gap
 
 _RANGE_FNS = {"avg": "avg_over_time", "min": "min_over_time",
               "max": "max_over_time", "count": "count_over_time"}
-
-# Datadog aggregates across series first and then rolls up in time. Pushing the rollup
-# inside the aggregation, which is the only shape PromQL can express without a
-# subquery, is valid only when the two operations commute, as (space, time) pairs:
-_COMMUTE_EXACT = frozenset({("sum", "sum"), ("max", "max"), ("min", "min")})
-# avg is linear, so these commute up to the sampling grid -- the same grid question
-# ROLLUP_ALIGNMENT already records against every rollup.
-_COMMUTE_ALIGNED = frozenset({("sum", "avg"), ("avg", "sum"), ("avg", "avg")})
 
 
 @dataclass(frozen=True)
@@ -146,30 +143,25 @@ class _Emitter:
         return float(self.default_rollup)
 
     def _rollup(self, e: ir.Rollup) -> str:
+        """Datadog's time aggregation: one series in, one series out.
+
+        It reduces each series on its own and any space aggregation wraps the result,
+        which is what PromQL's range functions already do -- so there is no rollup to
+        push anywhere and no commutation question to answer.
+        """
         width = self._interval(e)
         self.note(Gap.ROLLUP_ALIGNMENT)
-
-        inner, keys, mode = e.expr, (), "by"
-        op_outer = None
-        if isinstance(inner, ir.Agg):
-            pair = (inner.op, e.op)
-            if pair not in _COMMUTE_EXACT and pair not in _COMMUTE_ALIGNED:
-                _refuse(Gap.AGG_ROLLUP_ORDER, f"{inner.op}: outside .rollup({e.op})")
-            keys, mode, op_outer, inner = inner.keys, inner.mode, inner.op, inner.expr
-
         if e.op == "sum":
-            if not _is_counter(inner):
+            if not _is_counter(e.expr):
                 # Not the information barrier of paper §3: the data is there, we just
                 # cannot tell from a dashboard whether this metric was submitted as
                 # COUNT, and the rule to use depends on that.
                 _refuse(Gap.METRIC_TYPE_UNKNOWN,
                         "summing over time needs a counter, and the type is unknown")
-            body = self._bucket_total(inner, width)
+            body = self._bucket_total(e.expr, width)
         else:
-            body = f"{_RANGE_FNS[e.op]}({self.expr(inner)}[{duration(width)}])"
-
-        out = body if op_outer is None else _agg(op_outer, keys, mode, body)
-        return f"{_atom(out)} / {_number(width)}" if e.per_second else out
+            body = f"{_RANGE_FNS[e.op]}({self.expr(e.expr)}[{duration(width)}])"
+        return f"{_atom(body)} / {_number(width)}" if e.per_second else body
 
     # -- dispatch ------------------------------------------------------------
     def expr(self, e: ir.Expr) -> str:
