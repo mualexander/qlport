@@ -1,6 +1,235 @@
 \section{Grammars (RQ1)}
 \label{sec:grammars}
-\todo{Core productions in Rich's notation; precedence encoding; LALR(1) construction
-with no conflicts (from \texttt{qlport.parse}); conflicts met and resolved (e.g.\ keyword
-prefixes such as \texttt{max\_over\_time}); Datadog grammar inference and corpus parse
-rate (notebook 01).}
+
+Both languages are context-free, which is the premise Rich's §48.1 supplies for treating
+query languages as formal languages at all~\citep{rich2008}. The sharper question, and
+the one RQ1 asks, is whether each admits a \emph{deterministic} parser with one token of
+lookahead --- an LALR(1) grammar. A positive answer buys two things the rest of the paper
+needs: the grammar is unambiguous, so a query has exactly one parse tree to translate;
+and parsing is linear, so the corpus of \S\ref{sec:evaluation} can be processed in bulk.
+
+The answer differs by language, and the difference is a finding rather than an artefact
+of how we wrote the rules. The inferred Datadog grammar is conflict-free. PromQL is not,
+and its single conflict is forced by the language as specified.
+
+\subsection{Core productions}
+
+Figure~\ref{fig:productions} gives the shape of each grammar in Rich's notation,
+abridged to the productions that carry the structure; the full grammars are
+\texttt{src/qlport/grammars/*.lark}.
+
+\begin{figure}[htbp]\centering\footnotesize
+\begin{minipage}{0.47\linewidth}
+\textbf{Datadog (metrics)}
+\begin{lstlisting}
+query     -> spaceagg? ':'? metric scope
+             grouping? method*
+spaceagg  -> sum | avg | min | max
+           | count | pNN
+scope     -> '{' sexpr '}'
+sexpr     -> sexpr 'or' sand | sand
+sand      -> sand (',' | 'and') snot | snot
+snot      -> ('!' | 'not') snot | satom
+satom     -> tag | '(' sexpr ')' | member
+member    -> TAG 'not'? 'in'
+             '(' tag (',' tag)* ')'
+grouping  -> 'by' '{' KEY (',' KEY)* '}'
+method    -> '.' FUNC '(' arg* ')'
+\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{0.47\linewidth}
+\textbf{PromQL}
+\begin{lstlisting}
+expr    -> or_e
+or_e    -> or_e 'or' mod and_e | and_e
+and_e   -> and_e SETOP mod cmp_e | cmp_e
+cmp_e   -> cmp_e CMPOP mod add_e | add_e
+add_e   -> add_e ADDOP mod mul_e | mul_e
+mul_e   -> mul_e MULOP mod unary | unary
+unary   -> ADDOP unary | pow_e
+pow_e   -> postfix POW mod unary | postfix
+postfix -> atom
+         | postfix '[' DURATION ']'
+         | postfix '[' DURATION ':'
+                       DURATION? ']'
+         | postfix 'offset' ADDOP? DURATION
+         | postfix '@' at_arg
+\end{lstlisting}
+\end{minipage}
+\caption{Core productions. PromQL's operator precedence is encoded in the layering of
+\texttt{or\_e} through \texttt{pow\_e}, lowest binding first, as in Rich's
+Example~11.19; \texttt{mod} carries the optional \texttt{bool} and vector-matching
+modifiers. Datadog's scope is a boolean query over tags, layered the same way so that
+\texttt{and} binds tighter than \texttt{or}.}
+\label{fig:productions}
+\end{figure}
+
+Encoding precedence in the rule levels rather than in a separate precedence declaration
+is what keeps the grammar unambiguous by construction: a flat
+$\mathit{expr} \rightarrow \mathit{expr}\ \mathrm{OP}\ \mathit{expr}$ has no
+deterministic parse, and a parser generator asked to build it must either report a
+conflict or silently pick one reading. Two further points of Figure~\ref{fig:productions}
+are worth drawing out, because both were forced by the corpus rather than by the
+documentation. Datadog's scope is not a list of tag terms but a boolean query over them,
+with comma and \texttt{and} as the same operator (\S\ref{sec:datadog-inference}). And the
+space aggregator is optional: a bare metric name is a legal query, which the published
+examples never show.
+
+\subsection{Is the table conflict-free?}
+
+Table~\ref{tab:grammar-stats} reports the constructed tables. A methodological note
+first, because the answer depends on it: the parser generator we use (Lark) reports
+shift/reduce and reduce/reduce conflicts, and collisions between terminals, only in a
+strict mode that is off by default. With it off, conflicts are resolved silently by
+preferring a shift, so a grammar that builds has demonstrated nothing about ambiguity.
+The last column of Table~\ref{tab:grammar-stats} is therefore produced under strict
+mode; the parsers used elsewhere in this work keep the permissive mode deliberately, for
+the reason given in \S\ref{sec:promql-conflict}. That the strict check is doing real work
+is itself checked: perturbing either grammar into an ambiguous production, or adding a
+terminal that matches the same strings as an existing one, is caught in both cases.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/grammar_stats}
+\caption{Constructed LALR(1) tables. v1 is the grammar inferred from vendor
+documentation alone; v2 adds the productions the corpus showed were missing
+(\S\ref{sec:datadog-inference}).}
+\label{tab:grammar-stats}
+\end{table}
+
+\noindent
+\textbf{Datadog is conflict-free LALR(1)}, in both versions, with no terminal
+collisions. Because no reference grammar is published for the language, this is a result
+and not a reproduction: the grammar of Figure~\ref{fig:productions} is, as far as we are
+aware, the first published grammar for Datadog's metrics query language, and it is
+deterministic.
+
+\subsubsection{The one PromQL conflict}
+\label{sec:promql-conflict}
+
+PromQL's table carries exactly one conflict, a shift/reduce on the left parenthesis, and
+it is not an accident of our encoding. The vector-matching modifier
+\texttt{group\_left} takes an \emph{optional} parenthesised label list, so after
+\texttt{group\_left} an opening parenthesis may begin either that list or a
+parenthesised right operand:
+\begin{center}\footnotesize
+\texttt{a * on(x) group\_left (y) b}\qquad vs.\qquad\texttt{a * on(x) group\_left (b)}
+\end{center}
+One token of lookahead cannot distinguish them, and the ambiguity is in the language
+rather than in the grammar: making the label list mandatory removes the conflict
+entirely, which is how we identify it as the cause, but it also rejects
+\texttt{group\_left b}, which the language allows.
+
+The resolution is to shift --- to read the parenthesis as the label list --- and the
+consequence is that \texttt{a * on(x) group\_left (b)} is rejected even though a reader
+can see the intended parse. That is not a liberty we take: Prometheus~3.15.0 rejects the
+same expression with \texttt{1:25: parse error: unexpected end of input}, having consumed
+\texttt{(b)} as the label list and then found no operand, which is exactly the route our
+parser takes to the same verdict. Accepting it would make our grammar \emph{more}
+permissive than the language it describes. The four neighbouring forms that Prometheus
+accepts are accepted here too, and all five cases are pinned by test.
+
+So RQ1's answer for PromQL is ``LALR(1) modulo one documented resolution'', not
+``conflict-free'' --- and the resolution is the one the reference implementation already
+makes. A language whose own grammar cannot be parsed deterministically without a
+tie-break is a small piece of evidence for this paper's thesis in its own right: the
+difficulty is in the language design, not in the tooling.
+
+\subsection{Lexical decisions}
+
+Keyword-rich query languages put most of the difficulty in the lexer rather than the
+parser, and both grammars needed terminals shaped by word boundaries, lookaheads and
+priorities. Table~\ref{tab:grammar-decisions} records them the same way
+\S\ref{sec:datadog-inference} records the missing productions: each decision is
+perturbed back to the form it would naively take, and a query from the corpus is
+re-parsed to show what breaks. A row that still parsed would mean the decision was dead
+weight; none is.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/grammar_decisions}
+\caption{Load-bearing lexical decisions. Each row perturbs one terminal to its naive
+form and re-parses the witness, which the real grammar accepts.}
+\label{tab:grammar-decisions}
+\end{table}
+
+\noindent
+The last row is worth singling out because it contradicts a reasonable assumption. Lark
+breaks a tie between two terminals that match at the same position by priority before
+length, not longest-match-first: a high-priority \texttt{STAR} terminal for the match-all
+scope \texttt{\{*\}} therefore splits the wildcard tag key \texttt{*-location} into
+\texttt{STAR} followed by \texttt{TAG}. Folding the wildcard into the tag terminal and
+letting the lowering layer recognise \texttt{*} is the fix, which makes match-all a
+lexical property of a scope term rather than a production of its own.
+
+\subsection{Inferring the Datadog grammar}
+\label{sec:datadog-inference}
+
+PromQL has a published grammar to compare against~\citep{promql}. Datadog's metrics
+query language has none, so its grammar has to be inferred and the inference has to be
+checked. We did it in two stages, and report both, because the gap between them is the
+measurement.
+
+Grammar v1 was written from the documentation and the published examples alone, before
+the corpus existed. Running it over the corpus (\S\ref{sec:evaluation}) left a
+substantial share of real queries unparsed, and the question is what to conclude from a
+failure. Rather than classify failures by hand, each is explained by the smallest set of
+\emph{repairs} that makes it parse, where every repair is one concrete production or
+terminal change. Grammar v2 is v1 with all of those changes applied. Each row of
+Table~\ref{tab:grammar-gaps} is therefore verified twice: the construct fails under v1
+and is explained by exactly that repair, and v2 parses the same construct with no repair
+at all. The residual --- queries no combination of repairs explains --- is reported
+rather than absorbed.
+
+\begin{table}[htbp]\centering\scriptsize
+\input{tables/grammar_gaps}
+\caption{Constructs the documentation-derived grammar v1 was missing, with the number of
+distinct corpus queries that need each. Every row is a production in v2.}
+\label{tab:grammar-gaps}
+\end{table}
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/parse_coverage}
+\caption{Parse rates over distinct queries. ``Raw'' is the share of shipped dashboard
+queries that parse as written; the instantiated columns substitute dashboard template
+variables first.}
+\label{tab:parse-coverage}
+\end{table}
+
+Two results in Table~\ref{tab:parse-coverage} matter beyond the grammar. First, the
+documentation was a poor guide to the language: v1 parsed $92.6\%$ of instantiated
+Datadog queries and v2 parses $99.9\%$, and the constructs in between are not exotic ---
+the single most common, boolean scopes, appears in $139$ distinct queries, and a metric
+with no aggregator prefix in $93$. A grammar inferred from a vendor's own documentation
+misses a measurable fraction of the vendor's own shipped dashboards.
+
+Second, the gap between the raw and instantiated columns is large in both languages:
+$11.8\%$ against $99.9\%$ for Datadog, $71.2\%$ against $99.1\%$ for PromQL. The reason
+is that dashboard queries are not queries but \emph{templates} --- $87\%$ of Datadog and
+$82\%$ of PromQL corpus queries contain at least one variable such as \texttt{\$host} or
+\texttt{\$\_\_rate\_interval}. A translator for dashboards therefore takes a query
+schema, not a query, and \S\ref{sec:evaluation} measures coverage on the instantiated
+form for that reason.
+
+What remains unparsed is not a grammar gap. The PromQL residual is almost entirely
+queries in which a variable is substituted into the middle of an identifier, so that no
+fixed string is a query at all; the Datadog residual is a single undocumented construct,
+the conditional aggregator \texttt{count(v: v>=0):}, which appears in Datadog's own
+shipped dashboards. Inventing a production for an undocumented construct would be worse
+than reporting it.
+
+\subsection{What the corpus says the languages are}
+
+A grammar describes what is sayable; the corpus says what is said, and the distribution
+is uneven enough to shape the translator. Of the Datadog constructs,
+\texttt{.as\_count()} outnumbers \texttt{.as\_rate()} by about $6.6$ to one, so the
+undivided counter rule of \S\ref{sec:ingestion} is the one that carries a migration;
+\texttt{sum:} and \texttt{avg:} account for $93\%$ of space aggregators between them,
+and \texttt{by \{...\}} appears in $56\%$ of queries. In PromQL, \texttt{rate} and
+\texttt{irate} together are over half of all function calls, while subqueries appear in
+$1\%$ of queries and the \texttt{@} modifier in none at all --- a construct the
+language has and shipped dashboards never reach for.
+
+No construct is used in isolation, which matters more than any single frequency: a real
+query combines a space aggregator, a scope of several terms, a grouping and at least one
+method, so a translator supporting a few features in isolation completes almost nothing.
+Section~\ref{sec:evaluation} gives the full distributions and the resulting
+implementation order, in which coverage is a staircase rather than a curve.

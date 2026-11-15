@@ -18,7 +18,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "jupytext>=1.16", "nbclient>=0.10", "nbformat>=5.9", "nbconvert>=7.0", "ipykernel>=6.29"]
+# interegular: required by lark's strict mode, which is what actually checks the
+# LALR(1) property (RQ1). Without it the check cannot run at all.
+dev = ["pytest>=8", "jupytext>=1.16", "nbclient>=0.10", "nbformat>=5.9", "nbconvert>=7.0", "ipykernel>=6.29", "interegular>=0.3"]
 regular = ["greenery>=4.0"]
 
 [tool.setuptools.packages.find]

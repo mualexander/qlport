@@ -2,21 +2,21 @@
 \toprule
 Language & Missing construct & Repair & Queries & Shortest example \\
 \midrule
-datadog & boolean scope: AND / OR / NOT, IN (...), parentheses & \texttt{BOOL\_SCOPE} & 139 & \texttt{avg:gpu.sm\_active\{cloud\_provider:\dots{}} \\
-datadog & single-quoted string literal & \texttt{SINGLE\_QUOTES} & 126 & \texttt{top(avg:istio.go.threads\{*\}, 10, \dots{}} \\
-datadog & comma-separated list of queries in one request & \texttt{QUERY\_LIST} & 101 & \texttt{sum:riak.node\_gets\{*\},sum:riak.no\dots{}} \\
-datadog & metric with no space-aggregator prefix & \texttt{IMPLICIT\_AGG} & 93 & \texttt{system.load.1\{*\}} \\
-datadog & count: and percentile pNN: aggregators & \texttt{AGG\_SET} & 80 & \texttt{count:slurm.sacct.enabled\{*\}} \\
-datadog & wildcard in the key half of a tag term & \texttt{WILDCARD\_TAG\_KEY} & 24 & \texttt{sum:velero.backup.items\{*-locatio\dots{}} \\
+datadog & boolean scope (AND/OR/NOT, IN, parens) & \texttt{BOOL\_SCOPE} & 139 & \texttt{avg:gpu.sm\_active\{cloud\_p\dots{}} \\
+datadog & single-quoted string literal & \texttt{SINGLE\_QUOTES} & 126 & \texttt{top(avg:istio.go.threads\{\dots{}} \\
+datadog & comma-separated query list & \texttt{QUERY\_LIST} & 101 & \texttt{sum:riak.node\_gets\{*\},sum\dots{}} \\
+datadog & metric with no aggregator prefix & \texttt{IMPLICIT\_AGG} & 93 & \texttt{system.load.1\{*\}} \\
+datadog & count: and pNN: aggregators & \texttt{AGG\_SET} & 80 & \texttt{count:slurm.sacct.enabled\dots{}} \\
+datadog & wildcard in a tag key & \texttt{WILDCARD\_TAG\_KEY} & 24 & \texttt{sum:velero.backup.items\{*\dots{}} \\
 datadog & negated wildcard scope term & \texttt{NEGATED\_WILDCARD} & 9 & \texttt{sum:iis.users.anon\{*,!*\}} \\
-datadog & colon inside a tag value & \texttt{TAG\_COLON} & 3 & \texttt{avg:system.load.1\{field:apps:argo\dots{}} \\
-datadog & whitespace after a negation or around a separator & \texttt{SCOPE\_SPACING} & 2 & \texttt{avg:supabase.node.filesystem.size\dots{}} \\
+datadog & colon inside a tag value & \texttt{TAG\_COLON} & 3 & \texttt{avg:system.load.1\{field:a\dots{}} \\
+datadog & whitespace around ! or a separator & \texttt{SCOPE\_SPACING} & 2 & \texttt{avg:supabase.node.filesys\dots{}} \\
 datadog & leading unary sign & \texttt{UNARY\_SIGN} & 2 & \texttt{-sum:tomcat.bytes\_rcvd\{*\}} \\
-datadog & negative numeric argument & \texttt{NEGATIVE\_ARG} & 1 & \texttt{100*(sum:docker.containers.runnin\dots{}} \\
-promql & keywords are case-insensitive & \texttt{KEYWORD\_CASE} & 67 & \texttt{SUM(envoy\_server\_memory\_allocated)} \\
-promql & signed offset duration & \texttt{SIGNED\_OFFSET} & 8 & \texttt{sum(sum\_over\_time((grafanacloud\_m\dots{}} \\
-promql & quoted (UTF-8) label name in a matcher or label list & \texttt{QUOTED\_LABEL} & 2 & \texttt{max(otelcol\_process\_uptimetmplvar\dots{}} \\
-promql & number with no digit before the point & \texttt{LEADING\_DOT\_NUMBER} & 2 & \texttt{histogram\_quantile(.95,sum(rate(h\dots{}} \\
-promql & backtick-quoted raw string & \texttt{BACKTICK\_STRING} & 1 & \texttt{min by (namespace,service, integr\dots{}} \\
+datadog & negative numeric argument & \texttt{NEGATIVE\_ARG} & 1 & \texttt{100*(sum:docker.container\dots{}} \\
+promql & keywords are case-insensitive & \texttt{KEYWORD\_CASE} & 67 & \texttt{SUM(envoy\_server\_memory\_a\dots{}} \\
+promql & signed offset duration & \texttt{SIGNED\_OFFSET} & 8 & \texttt{sum(sum\_over\_time((grafan\dots{}} \\
+promql & quoted (UTF-8) label name & \texttt{QUOTED\_LABEL} & 2 & \texttt{max(otelcol\_process\_uptim\dots{}} \\
+promql & number with no leading digit & \texttt{LEADING\_DOT\_NUMBER} & 2 & \texttt{histogram\_quantile(.95,su\dots{}} \\
+promql & backtick-quoted raw string & \texttt{BACKTICK\_STRING} & 1 & \texttt{min by (namespace,service\dots{}} \\
 \bottomrule
 \end{tabular}

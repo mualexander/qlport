@@ -1,7 +1,13 @@
 """RQ1: both grammars build as LALR(1) tables (no conflicts) and parse representative queries."""
 import pytest
 
-from qlport.parse import get_parser, parse
+from qlport.parse import get_parser, lalr_conflicts, parse
+
+
+def _grammar_text(lang: str, version: str = "v2") -> str:
+    from importlib.resources import files
+    name = f"{lang}.lark" if version == "v2" else f"{lang}_{version}.lark"
+    return files("qlport.grammars").joinpath(name).read_text()
 
 PROMQL = [
     # v2: case-insensitive keywords, signed offset, bare-dot float, raw strings,
@@ -55,11 +61,81 @@ DATADOG = [
 
 @pytest.mark.parametrize("version", ["v1", "v2"])
 @pytest.mark.parametrize("lang", ["promql", "datadog"])
-def test_grammar_is_lalr1(lang, version):
-    # RQ1: Lark raises GrammarError on any shift/reduce or reduce/reduce conflict, so
-    # construction succeeding is the proof. v1 is kept conflict-free too, because the
-    # gap table of paper §4 is measured against it.
+def test_grammar_builds(lang, version):
+    # Construction with the default strict=False only shows the grammar is usable;
+    # whether it is LALR(1) is asked separately, below.
     get_parser(lang, version)
+
+
+@pytest.mark.parametrize("version", ["v1", "v2"])
+def test_promql_has_exactly_one_lalr_conflict(version):
+    """PromQL is not conflict-free, and the one conflict is inherent to the language.
+
+    `group_left` takes an OPTIONAL parenthesised label list, so after `group_left` a
+    `(` can begin either that list or a parenthesised right operand. One token of
+    lookahead cannot tell them apart. Lark resolves it by shifting -- taking the label
+    list -- which is exactly what the reference implementation does.
+
+    The assertion is deliberately tight. A second conflict appearing here would mean a
+    grammar change introduced an ambiguity, which is the thing RQ1 claims is absent.
+    """
+    got = lalr_conflicts("promql", version)
+    assert got is not None and "Shift/Reduce conflict for terminal LPAR" in got, got
+
+
+@pytest.mark.parametrize("version", ["v1", "v2"])
+def test_datadog_grammar_is_conflict_free(version):
+    """RQ1 for the inferred Datadog grammar: no LALR(1) conflict, no terminal collision.
+
+    Worth stating separately from PromQL's single conflict: the Datadog grammar is the
+    one with no published reference to compare against, so its conflict-freedom is a
+    result rather than a reproduction.
+    """
+    assert lalr_conflicts("datadog", version) is None
+
+
+def test_the_conflict_check_is_not_vacuous():
+    """Strict mode must be doing the work the previous tests credit it with.
+
+    A check that passes on a grammar it never examined would be worthless, so perturb
+    the real grammar two ways and require each to be caught: an ambiguous production
+    (shift/reduce) and two terminals matching the same strings (collision).
+    """
+    from lark import Lark
+    from lark.exceptions import GrammarError, LexError
+
+    base = _grammar_text("datadog")
+
+    def strict(text):
+        return Lark(text, parser="lalr", lexer="contextual", strict=True,
+                    propagate_positions=True, maybe_placeholders=True)
+
+    ambiguous = base.replace("term MULOP unary", "term MULOP term")
+    assert ambiguous != base
+    with pytest.raises(GrammarError, match="Shift/Reduce"):
+        strict(ambiguous)
+
+    colliding = base.replace("%ignore", r"DUPE: /[a-zA-Z][a-zA-Z0-9_.]*/" "\n%ignore")
+    colliding = colliding.replace("?arg: signed_number | KEY -> word",
+                                  "?arg: signed_number | DUPE -> word | KEY -> word")
+    assert colliding != base
+    with pytest.raises(LexError, match="Collision"):
+        strict(colliding)
+
+
+def test_the_conflict_resolves_as_the_reference_implementation_does():
+    """`a * on(x) group_left (b)` is rejected, and Prometheus 3.15.0 rejects it too.
+
+    Checked against a real server: it answers
+    `1:25: parse error: unexpected end of input`. Our parser consumes `(b)` as the
+    label list and then has no right operand, reaching the same conclusion by the same
+    route. Accepting it would make us *more* permissive than PromQL.
+    """
+    for ok in ("a * on(x) group_left(y) b", "a * on(x) group_left b",
+               "a * on(x) group_left() b", "a * on(x) group_left (y) (b)"):
+        parse("promql", ok)
+    with pytest.raises(Exception):
+        parse("promql", "a * on(x) group_left (b)")
 
 
 def test_unknown_grammar_version_is_rejected():

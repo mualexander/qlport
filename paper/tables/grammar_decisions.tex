@@ -1,0 +1,10 @@
+\begin{tabular}{@{}llll@{}}
+\toprule
+Language & Decision & Witness & Naive form \\
+\midrule
+promql & keyword terminals carry \textbackslash{}b & \texttt{max\_over\_time(x[5m])} & UnexpectedToken \\
+promql & FUNC needs a following paren & \texttt{up\{job="x"\}} & UnexpectedToken \\
+datadog & aggregator looks ahead for the colon & \texttt{sum.of.things\{*\}} & UnexpectedToken \\
+datadog & no separate STAR terminal & \texttt{avg:x\{*-zone\}} & UnexpectedToken \\
+\bottomrule
+\end{tabular}

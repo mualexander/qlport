@@ -185,7 +185,7 @@ reset-free workloads and falls to $91$--$98\%$ once counters restart, with relat
 error as large as $1.68$, while the anchored form is exact on every bucket of every
 workload. \texttt{rate} is exact only on perfectly regular traffic.
 
-\begin{table}[h]\centering\footnotesize
+\begin{table}[htbp]\centering\footnotesize
 \input{tables/rollup_translation_live}
 \caption{Agreement of three PromQL candidates with Datadog's \texttt{.as\_rate()} rollup,
 read from a Prometheus~3.15.0 server rather than from a model of PromQL. ``Exact'' is the
@@ -204,7 +204,7 @@ precision, and there is no bucket where one produced a value and the other decli
 an empty result is as much a semantic claim as a number. The modelled and measured
 versions of Table~\ref{tab:rollup-live} agree on every summary statistic.
 
-\begin{table}[h]\centering\footnotesize
+\begin{table}[htbp]\centering\footnotesize
 \input{tables/model_verification}
 \caption{The reference evaluators of \texttt{semantics/promql\_eval.py} against
 Prometheus~3.15.0 on identical samples. ``NaN mismatch'' counts buckets where exactly one
@@ -232,7 +232,7 @@ the window $w$. Figure~\ref{fig:rate-error} shows how the error shrinks as $\Del
 relative to the scrape interval.
 \end{remark}
 
-\begin{figure}[h]\centering
+\begin{figure}[htbp]\centering
 \includegraphics[width=0.6\linewidth]{figures/rate_error_vs_window}
 \caption{Error of \texttt{rate()} against Datadog as the rollup interval grows, at a
 $15$\,s scrape interval. \texttt{rate} is the only candidate whose error depends on the

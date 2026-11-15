@@ -702,23 +702,23 @@ REPAIRS: dict[str, tuple[tuple[str, Any], ...]] = {
 }
 
 REPAIR_DOC = {
-    "IMPLICIT_AGG": "metric with no space-aggregator prefix",
-    "AGG_SET": "count: and percentile pNN: aggregators",
-    "BOOL_SCOPE": "boolean scope: AND / OR / NOT, IN (...), parentheses",
-    "QUERY_LIST": "comma-separated list of queries in one request",
+    "IMPLICIT_AGG": "metric with no aggregator prefix",
+    "AGG_SET": "count: and pNN: aggregators",
+    "BOOL_SCOPE": "boolean scope (AND/OR/NOT, IN, parens)",
+    "QUERY_LIST": "comma-separated query list",
     "SINGLE_QUOTES": "single-quoted string literal",
     "TAG_COLON": "colon inside a tag value",
-    "SCOPE_SPACING": "whitespace after a negation or around a separator",
+    "SCOPE_SPACING": "whitespace around ! or a separator",
     "NEGATED_WILDCARD": "negated wildcard scope term",
     "UNARY_SIGN": "leading unary sign",
     "NEGATIVE_ARG": "negative numeric argument",
-    "WILDCARD_TAG_KEY": "wildcard in the key half of a tag term",
+    "WILDCARD_TAG_KEY": "wildcard in a tag key",
     "BACKTICK_STRING": "backtick-quoted raw string",
     "KEYWORD_CASE": "keywords are case-insensitive",
-    "QUOTED_LABEL": "quoted (UTF-8) label name in a matcher or label list",
+    "QUOTED_LABEL": "quoted (UTF-8) label name",
     "SIGNED_OFFSET": "signed offset duration",
-    "LEADING_DOT_NUMBER": "number with no digit before the point",
-    "TEMPLATED_SYNTAX": "template variable standing for syntax, not a value",
+    "LEADING_DOT_NUMBER": "number with no leading digit",
+    "TEMPLATED_SYNTAX": "variable standing for syntax",
 }
 
 

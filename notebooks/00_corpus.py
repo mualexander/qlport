@@ -50,7 +50,7 @@ for p in (TABLES, FIGURES, PROCESSED):
     p.mkdir(parents=True, exist_ok=True)
 
 TOP_N = 20          # rows per language in the paper's feature table and figure
-EXAMPLE_CHARS = 34  # excerpt width in the blocker table
+EXAMPLE_CHARS = 26  # excerpt width in the gap table
 
 queries = c.read_queries(CORPUS / "queries.jsonl")
 df = pd.DataFrame([q.__dict__ for q in queries])
