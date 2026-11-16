@@ -395,6 +395,7 @@ print("wrote paper/figures/coverage_by_gap.pdf")
 # about and so cannot be abstracted.
 
 # %%
+import collections                            # noqa: E402
 from collections import Counter               # noqa: E402
 from qlport.ir import shape, shape_slots       # noqa: E402
 
@@ -433,3 +434,49 @@ assert len(shapes) == 331, len(shapes)
 assert milestones[0.5] == 6 and milestones[0.8] == 22, milestones
 assert milestones[0.9] == 49 and milestones[0.95] == 104, milestones
 print("shape-reduction assertions hold")
+
+
+# %% [markdown]
+# ### Is one representative per shape enough?
+#
+# The reduction above is only sound if every query in a shape class translates the same
+# way — otherwise testing one member says nothing about the others. That is checkable
+# rather than arguable: emit every translated query, mask the identifiers and numbers,
+# and count how many distinct emitted forms each class has. One apiece means a
+# representative suffices.
+
+# %%
+def _masked(text: str) -> str:
+    """Emitted PromQL with identifiers, literals and numbers masked.
+
+    Selector labels are sorted first: a conjunction of matchers has no order, so two
+    members emitting them differently are not translating differently.
+    """
+    keep = {"by", "without", "offset", "anchored", "and", "or", "unless",
+            "sum", "avg", "min", "max", "count", "rate", "increase",
+            "avg_over_time", "min_over_time", "max_over_time", "count_over_time"}
+    text = re.sub(r"\{([^{}]*)\}",
+                  lambda m: "{" + ",".join(sorted(m.group(1).split(","))) + "}", text)
+    t = re.sub(r'"[^"]*"', '"V"', text)
+    t = re.sub(r"\b[A-Za-z_:][A-Za-z0-9_:]*\b",
+               lambda m: m.group(0) if m.group(0) in keep else "N", t)
+    return re.sub(r"\d+", "#", t)
+
+
+forms = collections.defaultdict(set)
+for row in tr[tr.outcome == "translated"].itertuples():
+    try:
+        lowered = lower_all(parse("datadog", row.norm, "v2"))
+    except Exception:
+        continue
+    for e in lowered:
+        if isinstance(e, Bottom):
+            continue
+        em = emit_detail(e, default_rollup=DEFAULT_ROLLUP)
+        if not isinstance(em, Bottom):
+            forms[shape(e)].add(_masked(em.promql))
+
+divergent = {s: f for s, f in forms.items() if len(f) > 1}
+print(f"{len(forms):,} shape classes; {len(divergent)} emit more than one form")
+assert not divergent, list(divergent.values())[:2]
+print("one representative per shape covers its class")

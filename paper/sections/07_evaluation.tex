@@ -455,10 +455,13 @@ in this corpus: $6$ shapes cover half the occurrences, $22$ cover $80\%$, $49$ c
 $90\%$ and $104$ cover $95\%$. A median query has one metric slot and one tag key, so at
 three label values apiece the top $50$ shapes need roughly $150$ synthetic series, the
 top $104$ about $320$, and all $331$ about $1{,}200$ --- a scale a single account
-sustains. The obstacle is not size
-but soundness: the substitution has to commute with translation, which holds for a
-syntax-directed translator provided the substituted names are injective under the
-mangling of \S\ref{sec:lowering}.
+sustains. The reduction is only sound if every query in a class
+translates the same way, and that is checkable rather than arguable: emitting all of
+them and masking the identifiers leaves each of the $331$ classes with exactly one form,
+so a representative stands for its class. Establishing that found a wart worth fixing ---
+the emitter decided parenthesisation by scanning its own output for operators, so a
+hyphen inside a tag value such as \texttt{result:hit-wait} was read as one and wrapped
+the expression in parentheses that meant nothing.
 
 \subsection{Threats to validity}
 \label{sec:threats}

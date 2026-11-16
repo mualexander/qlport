@@ -96,9 +96,21 @@ def _agg(op: str, keys: tuple[str, ...], mode: str, inner: str) -> str:
     return f"{op} {mode} ({', '.join(keys)}) ({inner})"
 
 
+def _blank_strings(text: str) -> str:
+    """The text with the contents of quoted literals replaced by dots.
+
+    Used only to decide parenthesisation. A label value is opaque: `result="hit-wait"`
+    contains a hyphen that is not an operator, and reading it as one wraps the whole
+    expression in parentheses that mean nothing. Harmless to a server and not harmless
+    to a reader comparing two translations.
+    """
+    return re.sub(r'"(?:[^"\\]|\\.)*"', lambda m: '"' + "." * (len(m.group(0)) - 2) + '"',
+                  text)
+
+
 def _atom(text: str) -> str:
     """Parenthesise unless the text is already a single bracketed term."""
-    if not re.search(r"[-+*/]| (?:and|or|unless) ", text):
+    if not re.search(r"[-+*/]| (?:and|or|unless) ", _blank_strings(text)):
         return text
     depth = 0
     for i, ch in enumerate(text):

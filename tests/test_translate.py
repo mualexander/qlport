@@ -429,3 +429,23 @@ def test_the_same_code_refuses_when_no_rule_can_be_chosen_at_all():
                ir.Rollup("sum", 60.0, ir.Select("x", (), kind="unknown")))
     got = emit_detail(e)
     assert isinstance(got, Bottom) and got.gap is Gap.METRIC_TYPE_UNKNOWN
+
+
+# --- parenthesisation looks at structure, not at label values -------------------
+def test_a_hyphen_in_a_label_value_is_not_an_operator():
+    """`result:hit-wait` must not make the emitter parenthesise.
+
+    The parenthesiser reads the rendered text, so anything inside a quoted literal can
+    be mistaken for an operator. Two queries of identical structure then emit
+    differently, which is how this was found: a corpus shape class whose members
+    disagreed only in the punctuation of one tag value.
+    """
+    plain = translate("sum:x{result:miss}.as_rate().rollup(avg, 15)")
+    hyphen = translate("sum:x{result:hit-wait}.as_rate().rollup(avg, 15)")
+    assert plain == 'sum(avg_over_time(x{result="miss"}[15s]) / 15)'
+    assert hyphen == 'sum(avg_over_time(x{result="hit-wait"}[15s]) / 15)'
+
+
+def test_a_real_operator_still_parenthesises():
+    got = translate("sum:x{*} / sum:y{*}")
+    assert "(" in got and ")" in got
