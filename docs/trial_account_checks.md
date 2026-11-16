@@ -25,7 +25,7 @@ confirmation.
 | Automatic rollup interval | **Answered as a lookup table**, not a formula | [Rollup](https://docs.datadoghq.com/dashboards/functions/rollup/) |
 | Default time aggregator | Partly: `avg` is the enforced default; `.as_count()` sets it to `sum`; COUNT/RATE get `.as_count()` appended **in the UI only** | [Rollup](https://docs.datadoghq.com/dashboards/functions/rollup/) |
 | Right- vs left-closure of buckets | **Not documented** | — |
-| Reset policy ρ | **Not documented** | — |
+| Reset policy ρ | **Answered by the agent source: ρ = zero on the OpenMetrics path** (ρ = clamp on the classic path) | [`monotonic_count.go`](https://github.com/DataDog/datadog-agent/blob/dcc0fd8530af/pkg/metrics/monotonic_count.go), [`base_scraper.py`](https://github.com/DataDog/integrations-core/blob/c2ab66f9a708/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/scraper/base_scraper.py) |
 
 ### Aggregation order: a bug, not an unknown — now fixed
 
@@ -74,10 +74,22 @@ an implication, not a statement.
 
 ## What only you can do
 
+**Status: the trial exists** (US1, so `DD_SITE=datadoghq.com`; 14 days from 15 November
+2026). The org has no metrics yet — the catalogue is empty — so nothing below can be read
+off the UI until data flows.
+
+**The order has changed.** Step 0 settled ρ from the source, so E1 — the experiment the
+agent install is for — is now a confirmation of a known answer. E2 is the highest-stakes
+*unsettled* question, because §3.1's Σ_Δ assumes right-closed buckets and nothing
+documents that, and E2 needs only direct submission. So the agent install is no longer the
+critical path; an API key and an application key are.
+
+
 I cannot create the account or handle the key. Before any of this runs:
 
-1. Create a Datadog trial (14 days) and an API key, and an application key for the
-   query API.
+1. ~~Create a Datadog trial.~~ Done. Still needed: an API key, and an *application*
+   key for the query API (Organization Settings → API Keys / Application Keys). Both are
+   required — the query API rejects an API key alone.
 2. Put them in `.env` as `DD_API_KEY` / `DD_APP_KEY` and `DD_SITE` (the site matters:
    `datadoghq.com` vs `datadoghq.eu` have different API hosts). `.env` is gitignored;
    the scripts read it and never log it.
@@ -86,30 +98,81 @@ I cannot create the account or handle the key. Before any of this runs:
    keep the tag cardinality at one or two series.
 
 Everything below then runs from `scripts/trial_checks.py`, caching raw API responses
-under `data/raw/datadog/` so the notebooks stay offline (README rule 3).
+under `data/raw/datadog/` so the notebooks stay offline (README rule 3):
 
-## Step 0 — read the agent source first (free, offline)
+```
+python scripts/trial_checks.py e2    # right- or left-closed buckets
+python scripts/trial_checks.py e3    # default time aggregator for a COUNT
+python scripts/trial_checks.py e4    # the automatic rollup interval
+```
 
-The reset policy is the one question with real stakes for §3.1, and the agent is open
-source, so the *intended* behaviour is readable without an account:
+Each exits non-zero if its result is inconclusive, and prints the interpretation. Add
+`--dry-run` to see the payloads and queries without keys or network.
 
-- `DataDog/datadog-agent`, `pkg/metrics` — `MonotonicCount` and how the aggregator
-  computes successive differences.
-- `DataDog/integrations-core`, `datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/`
-  — what the OpenMetrics V2 check does with a counter sample lower than the previous one,
-  and what it does with the first sample after start.
+## Step 0 — read the agent source — **done**
 
-The `monotonic_count` documentation hints that a lower value is read as a reset and the
-sample is **dropped**, which would mean ρ = drop — and therefore that *neither* the
-cumulative difference nor the anchored form matches the agent path across a reset,
-because both assume ρ = zero. If the source confirms that, §3.1 Proposition 3 needs its
-hypothesis changed rather than its proof, and the honest headline becomes that the two
-systems disagree across a reset in a way no PromQL expression can repair. That is a
-stronger result than the current one, not a weaker one, so this reading is worth doing
-carefully before spending trial days.
+ρ is settled for the modelled path, and the guess that motivated this section was wrong.
+Pinned at `datadog-agent` [`dcc0fd8530af`](https://github.com/DataDog/datadog-agent/blob/dcc0fd8530af/pkg/metrics/monotonic_count.go)
+and `integrations-core` [`c2ab66f9a708`](https://github.com/DataDog/integrations-core/blob/c2ab66f9a708/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/scraper/base_scraper.py).
+
+`MonotonicCount.addSample` has two modes, selected per sample by a `FlushFirstValue` flag:
+
+```go
+diff := mc.currentSample - mc.previousSample
+if (mc.hasPreviousSample || mc.flushFirstValue) && diff >= 0. {
+        mc.value += diff
+} else if mc.flushFirstValue {
+        mc.value = mc.currentSample
+}
+```
+
+- **Flag set.** A sample below its predecessor contributes its own value, "the assumption
+  being that the underlying raw counter was reset from 0" — this is **ρ = zero**, exactly
+  PromQL's assumption.
+- **Flag clear.** The decrease contributes nothing and the point is still emitted, so the
+  reset interval carries δ = 0. That is **ρ = clamp**, which is *not* ρ = drop: nothing is
+  discarded. `monotonic_count_test.go` pins both ("flush the lower value as-is" against
+  "flush 0"), as does the accumulating case, where resets at two points of one interval
+  give `17 = (12-9) + (20-10) + (17-13)`.
+
+The OpenMetrics V2 scraper sets `self.flush_first_value = True` after each successful
+scrape, so **every scrape from the second onward runs with the flag set**: the agent path
+this paper models implements ρ = zero and §3.1 Proposition 3 stands as written. Two
+exceptions, both of which the flag logic makes explicit rather than hiding:
+
+- The **first** scrape runs with the flag clear, so its sample is not flushed at all —
+  which is the `drop` branch, but for the series' first interval, not for a reset. The
+  exception is `use_process_start_time`, where `first_scrape_handler` sets the flag mid-scrape
+  if `process_start_time_seconds` exceeds the agent's own start time; it buffers counter
+  metrics so the flip lands before they are transformed.
+- A **failed** scrape resets the flag to `False`, so the next successful scrape drops its
+  interval too. A transient scrape failure therefore injects a φ discontinuity that no
+  PromQL expression models and no query can see.
+
+### What this changes
+
+1. Definition 1's index set is wrong, not incomplete in a harmless way: ρ = drop is not
+   what either agent path does to a reset. The real alternatives are
+   ρ ∈ {zero, clamp}, with `drop` describing the first interval and the post-failure
+   interval. §3.1 should say so and keep Proposition 3 on ρ = zero.
+2. Proposition 3 needs one hypothesis it does not currently state. Under the flag,
+   `mc.value = mc.currentSample` **overwrites** the accumulation rather than adding to it,
+   so if two scrapes land in one flush interval and the second resets, the increase
+   accumulated before the reset is discarded — φ_zero as defined would keep it. Exactness
+   therefore needs *at most one sample per flush interval*, which the default 15 s check
+   and 15 s flush satisfy but a finer check interval would not.
+3. `COUNTER_RESET` stays a real caveat, and only on the cumulative difference, as §7 has
+   it. The feared outcome — neither candidate exact, a new gap code — does not arise.
+
+A useful side-finding: the commit that last touched this file (#59132, 2026-11-10) adds
+`isDecomposable` with the comment that "deltas flushed for the parts of a window sum up to
+the delta of the window, as the previous sample is kept across flushes". That is Datadog
+asserting the decomposability Σ_Δ relies on, and it is citable.
 
 Reading the source establishes intent; it does not establish what the backend stores.
-E1 still confirms it end to end.
+E1 still confirms it end to end — and is now a confirmation of a known answer rather than
+a four-way discrimination, so the ρ = drop and raw-difference columns of its table are
+there only to catch a surprise.
 
 ## The rigs
 
@@ -123,7 +186,7 @@ the same interval. Both systems then hold the same samples, which is the dual-wr
 model of §3.1. Must run in real time: the intake rejects points more than ~1 h old, and
 the agent's conversion is what is under test.
 
-**Rig B (direct submission), for E2–E4.** `POST /api/v2/series` with `type: 3` (count)
+**Rig B (direct submission), for E2–E4.** `POST /api/v2/series` with `type: 1` (count)
 and explicit timestamps. This bypasses the agent, so it says nothing about ρ, but it
 gives exact control of sample timestamps — which E2 needs and the agent cannot provide.
 
@@ -149,19 +212,30 @@ are not conflated by a special case at 0.
 
 ## E2 — are buckets right- or left-closed? (Rig B)
 
-Submit a single COUNT point of value 1000 at a timestamp that is exactly a multiple of
-60, with no other points within ±120 s. Read `.rollup(sum, 60)` over a window spanning
-both neighbouring buckets.
+**Two probes, not one.** Writing this up exposed that a single point cannot answer it,
+because *two* conventions are unknown at once: whether a bucket is right-closed `(t−Δ, t]`
+or left-closed `[t, t+Δ)`, and whether the timestamp Datadog reports for a bucket is its
+start or its end. A point at exactly t\* is reported at t\* under **both** "right-closed,
+labelled by end" and "left-closed, labelled by start" — the two hypotheses are
+indistinguishable from it.
 
-| Closure | Bucket holding 1000 |
-|---|---|
-| right-closed `(t−Δ, t]` | the one **ending** at t\* |
-| left-closed `[t, t+Δ)` | the one **starting** at t\* |
+A second point in **mid-bucket** separates them, because t\*+Δ/2 lies in the same bucket
+under either closure, so where it is reported depends only on the labelling. With the
+labelling fixed, the on-grid point then fixes the closure:
 
-The returned `pointlist` timestamps also reveal the grid directly, which independently
-confirms the documented UNIX alignment; the single-point probe is what disambiguates
-which edge the returned timestamp labels. Repeat with t\* offset by 30 s to confirm that
-alignment does not follow the query window.
+| | on-grid point at t\* | mid-bucket point at t\*+Δ/2 |
+|---|---|---|
+| right-closed, labelled by start | t\*−Δ | t\* |
+| right-closed, labelled by end | t\* | t\*+Δ |
+| left-closed, labelled by start | t\* | t\* |
+| left-closed, labelled by end | t\*+Δ | t\*+Δ |
+
+All four rows are distinct as pairs. So E2 submits two points, on two metrics so each gets
+its own query: value 1000 at a multiple of 60, and value 1000 at that plus 30, read back
+with `.rollup(sum, 60)` over a window spanning both neighbouring buckets.
+`interpret_closure` in `harness/datadog.py` does the inference and returns *all* hypotheses
+consistent with the pair, so an unmodelled answer comes back inconclusive rather than
+rounded to the nearest guess.
 
 ## E3 — the default time aggregator for a COUNT over the API (Rig B)
 
@@ -169,29 +243,45 @@ The documentation says `avg` is the enforced default but that COUNT and RATE met
 `.as_count()` appended *in the UI*. Whether a bare API query does the same is not
 documented, and `METRIC_TYPE_UNKNOWN` depends on it.
 
-Submit four COUNT points in one 60 s bucket with deltas 1, 2, 3, 10. Query the metric
-with no modifier at all, then with `.as_count()`, then with `.as_rate()`:
+Submit four COUNT points with deltas 1, 2, 3, 10. Query the metric with no modifier at
+all, then with `.as_count()`, then with `.as_rate()`:
 
 | Behaviour | Bare query returns |
 |---|---|
 | `avg` of the deltas | 4 |
 | `sum` (as if `.as_count()`) | 16 |
-| `sum/Δ` (as if `.as_rate()`) | 0.267 |
+| `sum/Δ` (as if `.as_rate()`) | 16/Δ — 0.267 at Δ = 60 |
+
+The third row is why this cannot assume Δ = 60: a bare query is exactly the query whose
+interval Datadog chooses, so the denominator is E4's unknown. The four points therefore go
+into four *consecutive seconds* well inside a bucket (t\*+31…34), which keeps them in one
+bucket at every interval Datadog plausibly picks, and the prediction is read against the
+interval the response reports. `interpret_default_aggregator` checks that all four samples
+sit strictly inside one bucket of that interval and refuses to name an aggregator
+otherwise — comparing a partial bucket against a whole-bucket prediction would name one
+confidently and wrongly.
 
 ## E4 — confirm the automatic interval table (Rig B)
 
-Submit a point every 10 s for two hours. Query with no `.rollup()` over ranges of 1 min,
-5 min, 1 h, 4 h and 1 d, and read the spacing of the returned `pointlist`. Compare
-against the API column of the documented table (e.g. 20 s for "the past hour"). Also
-submit `.rollup(sum, 1)` over a 1 d range to see whether a finer-than-enforced interval
-is rejected with an error or silently widened.
+Submit a point every 10 s across the **past** hour — 351 points, inside the intake's
+backfill window, so this costs one request batch rather than two hours of sitting with it.
+The plan originally called for two hours of real time; that is unnecessary, because the
+interval Datadog reports is a function of the *query range*, not of the data, so a 4 h or
+1 d range can be asked about on an hour of data and the far buckets simply come back null.
+
+Query with no `.rollup()` over ranges of 1 min, 5 min, 1 h, 4 h and 1 d, reading both the
+response's own `interval` field and the modal spacing of the returned `pointlist` — they
+are separate claims and the API is not promised to agree with the widget table (e.g. 20 s
+for "the past hour"). Also submit `.rollup(sum, 1)` over a 1 d range to see whether a
+finer-than-enforced interval is rejected with an error or silently widened.
 
 ## What each outcome changes
 
 | Result | Changes |
 |---|---|
-| ρ = zero | §3.1 Prop 3 stands as written; `COUNTER_RESET` stays a real caveat on the cumulative difference only |
-| ρ = drop | §3.1 Prop 3's hypothesis becomes ρ = drop and the proof needs redoing; **neither** candidate is exact across a reset; a new gap code for the mismatch; the restart rows of `rollup_translation_live.tex` need recomputing against φ_drop (the data is cached, so this is a notebook re-run, not a new experiment) |
+| ρ = zero (**expected** — the source says so) | §3.1 Prop 3 stands as written; `COUNTER_RESET` stays a real caveat on the cumulative difference only. Confirms the source reading end to end |
+| ρ = clamp | The backend disagrees with the OpenMetrics scraper's own flag, i.e. the flag is not reaching the aggregator. δ = 0 across the reset means the cumulative difference overstates by exactly the post-reset value; `COUNTER_RESET` widens from a caveat to a bound |
+| ρ = drop, or a raw difference | Contradicts the source at a pinned commit. Re-read before believing it, then record the agent version as the discriminating variable |
 | right-closed | Σ_Δ in §3.1 stands; `ROLLUP_ALIGNMENT` stays a statement about the evaluation grid only |
 | left-closed | Σ_Δ's half-open interval flips, and every rollup translation gains a half-bucket offset |
 | bare API query behaves as `.as_count()` | `METRIC_TYPE_UNKNOWN` narrows to genuinely ambiguous gauges |
@@ -217,10 +307,17 @@ is rejected with an error or silently widened.
 
 - `src/qlport/harness/expose.py` — the scripted counter endpoint. Pure and testable
   without an account; the value schedule is a function of time.
-- `src/qlport/harness/datadog.py` — submit points, run queries, cache raw JSON. Mirrors
-  `harness/prometheus.py`, including a `series_from_response` that keys by timestamp.
-- `scripts/trial_checks.py` — orchestrate E1–E4, one subcommand each, writing
-  `data/raw/datadog/<experiment>.json` with the agent digest and schedule recorded.
+- `src/qlport/harness/datadog.py` — **written.** Submit points, run queries, cache raw
+  JSON; mirrors `harness/prometheus.py`, with a `pointlist` that keys by timestamp and
+  keeps null buckets, since in E2 the nulls are the measurement. Covered offline by
+  `tests/test_harness_datadog.py`, which pins the metric-type enum and the
+  seconds/milliseconds asymmetry.
+- `scripts/trial_checks.py` — **written.** One subcommand each, writing
+  `data/raw/datadog/<experiment>.json` with the site, UTC collection time, submitted
+  payloads, every raw response and the interpretation. `--dry-run` prints what it would
+  send and touches neither the network nor the keys, so the payload shapes are reviewable
+  without an account. E2–E4 run; `e1` exits with a pointer, since Rig A is not built and
+  ρ is settled.
 - A section in notebook 02 (for ρ) and notebook 05 (for the rest) reading only the
   cache, plus regression tests over it, exactly as `tests/test_harness.py` does for the
   Prometheus verification.
