@@ -14,9 +14,10 @@ what has been read from what is still unmeasured, and points here for the experi
   **Settled by E2: left-closed, named by the start.** Epoch alignment was already
   documented; the closure was not, and the assumption was wrong.
 - The rollup interval is assumed when the query does not state one, reported as
-  `ROLLUP_DEFAULT` (96.9% of translations).
+  `ROLLUP_DEFAULT` (96.9% of translations). **Measured by E4:** 20 s over an hour, 60 s
+  over four hours, 300 s over a day. The assumed 60 s is a four-hour view.
 - §6's regex → glob classification assumes a glob's `*` matches the empty string, which
-  decides whether `.+` or `.*` is the one with no glob (E5 below).
+  decides whether `.+` or `.*` is the one with no glob. **Settled by E5: it does.**
 
 Reading the documentation properly turns out to answer more of this than expected, and
 to contradict one thing the code currently does. **Read the "already answered" section
@@ -270,7 +271,19 @@ with `.rollup(sum, 60)` over a window spanning both neighbouring buckets.
 consistent with the pair, so an unmodelled answer comes back inconclusive rather than
 rounded to the nearest guess.
 
-## E3 — the default time aggregator for a COUNT over the API (Rig B)
+## E3 — the default time aggregator for a COUNT over the API (Rig B) — **done: avg**
+
+**Answer: `avg`.** Four deltas of 1, 2, 3, 10 come back as 4, their mean, not 16. So the
+enforced `avg` default applies and the `.as_count()` the UI appends does *not* extend to
+the API. This **confirms** `METRIC_TYPE_UNKNOWN` rather than narrowing it: Datadog
+averages stored deltas, `avg_over_time` averages running totals, and the precondition on
+76.3% of translations is load-bearing.
+
+One fix was needed first. A 240 s query window made Datadog choose a **1 s** rollup,
+which put each of the four samples in its own bucket; the window is now an hour, which is
+both coarse enough and what a dashboard would use.
+
+### The original design
 
 The documentation says `avg` is the enforced default but that COUNT and RATE metrics get
 `.as_count()` appended *in the UI*. Whether a bare API query does the same is not
@@ -294,7 +307,27 @@ sit strictly inside one bucket of that interval and refuses to name an aggregato
 otherwise — comparing a partial bucket against a whole-bucket prediction would name one
 confidently and wrongly.
 
-## E4 — confirm the automatic interval table (Rig B)
+## E4 — confirm the automatic interval table (Rig B) — **done**
+
+**Answer: the interval is a function of the query range**, and the documented widget
+table's API column is right where they overlap.
+
+| range | reported `interval` | observed spacing |
+|---|---|---|
+| 1 min | 1 s | 10 s (the data's own spacing) |
+| 5 min | 2 s | 10 s |
+| 1 h | **20 s** | 20 s |
+| 4 h | 60 s | 60 s |
+| 1 d | 300 s | 300 s |
+
+Two consequences. `DEFAULT_ROLLUP = 60.0` corresponds to a **four-hour** dashboard view,
+so it is right for that range and wrong by 3× for the one-hour view the documentation is
+written around — `ROLLUP_DEFAULT` is a conditional assumption, not an unverified one.
+And a finer interval than the range allows is **rejected**, not silently widened:
+`.rollup(sum, 1)` over a day fails with `86400 epochs above limit of 45000`, so the cap
+is on points per query. An error is better than quietly coarser data.
+
+### The original design
 
 Submit a point every 10 s across the **past** hour — 351 points, inside the intake's
 backfill window, so this costs one request batch rather than two hours of sitting with it.
@@ -308,7 +341,17 @@ are separate claims and the API is not promised to agree with the widget table (
 for "the past hour"). Also submit `.rollup(sum, 1)` over a 1 d range to see whether a
 finer-than-enforced interval is rejected with an error or silently widened.
 
-## E5 — does a glob's `*` match the empty string? (Rig B)
+## E5 — does a glob's `*` match the empty string? (Rig B) — **done: yes**
+
+**Answer: `*` matches the empty string.** `probe:web-*` selects the series whose tag value
+is exactly `web-` as well as `web-1`. So `.*` has a glob, `.+` has none, and §6's figures
+stand as computed; `STAR_MATCHES_EMPTY = True` in `regular.py` is the right reading.
+
+Two fixes were needed first: the control query is `by {probe}` and so returns two series,
+which the single-series poller refused; and Datadog returns a scope as a comma-separated
+tag list (`probe:web-,run:r123`), so matching the scope string whole found nothing.
+
+### The original design
 
 Paper §6 needs this and the documentation does not give it. "Prefix, suffix, and
 substring wildcard tag value filtering are supported", with `pod_name: web-*` as the

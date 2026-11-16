@@ -247,7 +247,13 @@ correct for a gauge and the emitter now records
 because a rule \emph{can} be chosen here; for a $\mathsf{sum}$ rollup none can, and the
 same code is a refusal there instead.
 
-The condition was silent until now, and it is not rare: it holds of
+The condition is not a precaution. Asked of a real account, a bare query on a
+\texttt{COUNT} metric returns the \emph{mean} of four stored deltas and not their sum,
+so Datadog applies its enforced \texttt{avg} default rather than the \texttt{.as\_count()}
+its user interface appends --- averaging deltas where \texttt{avg\_over\_time} averages
+running totals (\texttt{scripts\slash trial\_checks.py e3}).
+
+The condition was also silent until now, and it is not rare: it holds of
 $6{,}389$ translated occurrences, $76.3\%$ of them
 (Table~\ref{tab:translation-caveats}), because Datadog's default time aggregator is
 $\mathsf{avg}$ and most queries state no method at all. Recording it does not move

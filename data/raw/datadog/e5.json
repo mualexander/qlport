@@ -1,0 +1,221 @@
+{
+ "acks": [
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  }
+ ],
+ "interpretation": {
+  "conclusive": true,
+  "reading": "`*` matches the empty string: `.*` has a glob and `.+` does not",
+  "regular_py_constant_should_be": true,
+  "selected": [
+   "web-",
+   "web-1"
+  ],
+  "star_matches_empty": true
+ },
+ "provenance": {
+  "api": {
+   "query": "/api/v1/query",
+   "submit": "/api/v2/series"
+  },
+  "collected_at": "2026-11-16T17:29:48+00:00",
+  "experiment": "e5",
+  "metric_type": 1,
+  "probes": {
+   "empty-suffix": "web-",
+   "one-char-suffix": "web-1"
+  },
+  "reinterpreted": "interpretation recomputed from the cached responses after fixing scope parsing",
+  "run": "r1794849840",
+  "site": "datadoghq.com",
+  "t_star": 1794849840.0
+ },
+ "responses": {
+  "control": {
+   "from": 1794848940.0,
+   "query": "sum:qlport.e5.star{run:r1794849840} by {probe}",
+   "raw": {
+    "from_date": 1794848940000,
+    "group_by": [
+     "probe"
+    ],
+    "message": "",
+    "query": "sum:qlport.e5.star{run:r1794849840} by {probe}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e5.star",
+      "end": 1794849849000,
+      "expression": "sum:qlport.e5.star{probe:web-1,run:r1794849840}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e5.star",
+      "pointlist": [
+       [
+        1794849840000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:web-1,run:r1794849840",
+      "start": 1794849840000,
+      "tag_set": [
+       "probe:web-1"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e5.star",
+      "end": 1794849849000,
+      "expression": "sum:qlport.e5.star{probe:web-,run:r1794849840}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e5.star",
+      "pointlist": [
+       [
+        1794849840000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:web-,run:r1794849840",
+      "start": 1794849840000,
+      "tag_set": [
+       "probe:web-"
+      ],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1794850740000,
+    "values": []
+   },
+   "to": 1794850740.0
+  },
+  "globbed": {
+   "from": 1794848940.0,
+   "query": "sum:qlport.e5.star{probe:web-*,run:r1794849840} by {probe}",
+   "raw": {
+    "from_date": 1794848940000,
+    "group_by": [
+     "probe"
+    ],
+    "message": "",
+    "query": "sum:qlport.e5.star{probe:web-*,run:r1794849840} by {probe}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e5.star",
+      "end": 1794849849000,
+      "expression": "sum:qlport.e5.star{probe:web-,run:r1794849840,probe:web-*}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e5.star",
+      "pointlist": [
+       [
+        1794849840000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:web-,run:r1794849840,probe:web-*",
+      "start": 1794849840000,
+      "tag_set": [
+       "probe:web-"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e5.star",
+      "end": 1794849849000,
+      "expression": "sum:qlport.e5.star{probe:web-1,run:r1794849840,probe:web-*}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e5.star",
+      "pointlist": [
+       [
+        1794849840000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:web-1,run:r1794849840,probe:web-*",
+      "start": 1794849840000,
+      "tag_set": [
+       "probe:web-1"
+      ],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1794850740000,
+    "values": []
+   },
+   "to": 1794850740.0
+  }
+ },
+ "selected": {
+  "probe:web-,run:r1794849840,probe:web-*": 1.0,
+  "probe:web-1,run:r1794849840,probe:web-*": 1.0
+ },
+ "stored": {
+  "probe:web-,run:r1794849840": 1.0,
+  "probe:web-1,run:r1794849840": 1.0
+ },
+ "submitted": [
+  {
+   "series": [
+    {
+     "metric": "qlport.e5.star",
+     "points": [
+      {
+       "timestamp": 1794849840,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1794849840",
+      "probe:web-"
+     ],
+     "type": 1
+    }
+   ]
+  },
+  {
+   "series": [
+    {
+     "metric": "qlport.e5.star",
+     "points": [
+      {
+       "timestamp": 1794849840,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1794849840",
+      "probe:web-1"
+     ],
+     "type": 1
+    }
+   ]
+  }
+ ]
+}

@@ -46,6 +46,15 @@ whether its metric is a counter or a gauge, which is metadata held elsewhere in 
 product. So the translation is exact, but exact relative to two facts the query omits.
 Only $142$ occurrences in the whole corpus depend on neither.
 
+A third instance arrived from an unrelated direction, which is what makes the pattern
+worth calling a property of the language rather than an artefact of two rules.
+\S\ref{sec:gaps} shows that \texttt{top(...)} \emph{is} expressible in PromQL, so it stays
+on the engineering side of the ledger --- but the expression that denotes it needs the
+dashboard's time range twice over, once as a window and once as an \texttt{@} anchor, and
+the query states neither. Three constructs, arrived at independently, all turn out to be
+translatable only relative to context the query does not carry. Each of the three would
+be exactly self-contained in PromQL.
+
 This is a property of the language, not of the translator, and not one PromQL shares: a
 PromQL expression names its own window and carries its reset semantics in the function it
 calls. The switching cost here is therefore not that the target cannot say what the source
@@ -166,10 +175,19 @@ a claim about, and it moved the evaluation instant of every translated query off
 bucket boundary. A reader should take from that less confidence in the remaining
 assumption, not more.
 
-That remaining one is whether a glob's \texttt{*} matches the empty string, which decides
-which of \texttt{.+} and \texttt{.*} has no glob (Remark~\ref{rem:star-empty}), worth
-$124$ occurrences of \S\ref{sec:regular}'s headline figure in either direction. It is
-specified with its prediction recorded in advance and is not run.
+The other two have since been measured as well, and both confirmed what the paper
+assumed rather than overturning it. A glob's \texttt{*} does match the empty string, so
+\texttt{.+} is the regular expression with no glob and \S\ref{sec:regular}'s figures stand
+as computed. And a bare API query on a \texttt{COUNT} metric applies the enforced
+\texttt{avg} default rather than the \texttt{.as\_count()} the user interface appends, so
+Datadog averages stored deltas where \texttt{avg\_over\_time} averages running totals ---
+which confirms that \texttt{METRIC\_TYPE\_UNKNOWN} is load-bearing rather than
+precautionary, and does not narrow it.
+
+That leaves one assumption of the original four, and it is a different kind: that
+Datadog's backend stores what its agent sends. $\rho$ is read from the agent's source
+rather than observed end to end, and no experiment short of the dual-write test closes
+it.
 
 Finally, the comparison of $2.0\%$ against $2.4\%$ in \S\ref{sec:gaps} is a comparison
 between a property of the languages and a property of one translator's state on one

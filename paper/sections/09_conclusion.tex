@@ -38,14 +38,18 @@ Prometheus~3.15.0, and the anchoring of label-matcher regular expressions. One t
 read from source rather than measured: Datadog's reset policy, taken from its open-source
 agent at a pinned commit.
 
-Two things are measured against the vendor itself: Datadog's reset policy, confirmed from
-its agent's source, and its bucket convention --- buckets are left-closed and named by
-their start, which is the opposite of what this work assumed until it asked.
+Five things are measured against the vendor itself rather than assumed: the bucket
+convention (left-closed and named by its start, the opposite of what this work assumed
+until it asked), the automatic rollup interval as a function of the query range, the
+default time aggregator of a bare query on a counter, whether a glob's \texttt{*} matches
+the empty string, and --- from the agent's source rather than the API --- the reset
+policy. Four of the five confirmed what the paper had assumed; the bucket convention did
+not, and \S\ref{sec:ingestion} now carries the corrected one. A sixth, whether
+\texttt{top(...)} is expressible at all, was settled against a real Prometheus rather
+than against Datadog, and decides which column $139$ corpus occurrences belong in.
 
-What remains assumed is smaller than when this work started but has not vanished. A
-glob's \texttt{*} is taken to match the empty string, which decides which of \texttt{.+}
-and \texttt{.*} has no glob at all; the experiment is specified with its prediction
-recorded in advance and is not run. Above all, the whole paper compares
+What remains assumed is one thing, and it is the one no single query settles: that
+Datadog's backend stores what its agent sends. Only the dual-write test closes it. Above all, the whole paper compares
 one translator against a model of Datadog rather than against Datadog: the differential
 test over the corpus --- each translated pair run against both systems on identical input
 --- is designed and not executed, and until it is, $\kappa$ measures what the translator

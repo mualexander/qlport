@@ -271,3 +271,96 @@ def test_the_interpretation_follows_from_the_recorded_buckets(e2):
                               e2["reported_at"]["midbucket"][0],
                               mid_submitted_at=prov["probes"]["midbucket"])
     assert again["consistent_with"] == e2["interpretation"]["consistent_with"]
+
+
+# --------------------- E3 and E5, recorded (paper §5 and §6) ------------------
+
+
+def _cached(name: str) -> dict:
+    path = E2.parent / f"{name}.json"
+    if not path.exists():  # pragma: no cover - run scripts/trial_checks.py <name>
+        pytest.skip(f"{name}.json not recorded; run scripts/trial_checks.py {name}")
+    return json.loads(path.read_text())
+
+
+def test_a_bare_api_query_on_a_count_averages_the_deltas():
+    """E3, which confirms rather than narrows METRIC_TYPE_UNKNOWN.
+
+    The documentation says `avg` is the enforced default but that COUNT metrics get
+    `.as_count()` appended *in the UI*. If the API did the same, the emitter's caveat
+    would narrow to genuinely ambiguous gauges. It does not: four deltas of 1, 2, 3, 10
+    come back as 4, their mean, not 16. So Datadog averages the stored deltas while
+    `avg_over_time` averages the cumulative series, and the preconditions §5 reports on
+    three quarters of the output are load-bearing.
+    """
+    got = _cached("e3")["interpretation"]
+    assert got["conclusive"], got
+    assert got["behaved_as"] == ["avg"], got
+    assert got["value"] == pytest.approx(4.0)
+
+
+def test_a_glob_star_matches_the_empty_string():
+    """E5, which settles the reading §6's largest refusal class turns on.
+
+    A glob has one wildcard, which either requires a character or does not, so `.*` and
+    `.+` cannot both be expressible. `probe:web-*` selects the series whose tag value is
+    exactly `web-`, so `*` matches the empty string: `.*` has a glob and `.+` has none.
+    """
+    got = _cached("e5")["interpretation"]
+    assert got["conclusive"], got
+    assert got["star_matches_empty"] is True, got
+    assert {"web-", "web-1"} <= set(got["selected"]), got
+
+
+def test_the_measured_reading_is_the_one_regular_py_takes():
+    # §6's table was computed under this constant; if the measurement and the constant
+    # ever disagree, the table is describing the wrong language.
+    from qlport.regular import STAR_MATCHES_EMPTY
+    assert _cached("e5")["interpretation"]["star_matches_empty"] is STAR_MATCHES_EMPTY
+
+
+def test_e5_distinguished_the_two_probes_before_concluding():
+    # A glob that selects nothing looks the same as a point that never arrived; the
+    # control query is what separates them.
+    e5 = _cached("e5")
+    assert len(e5["stored"]) == 2, e5["stored"]
+
+
+def test_the_automatic_rollup_interval_is_a_function_of_the_query_range():
+    """E4. The interval a bare query gets, measured rather than assumed.
+
+    The documentation publishes a time-frame table for *widgets* without promising the
+    API agrees; it does, at least at one hour, where both say 20 s.
+    """
+    got = _cached("e4")["interpretation"]["reported_by_range"]
+    assert got["1h"] == 20, got
+    assert got["4h"] == 60, got
+    assert got["1d"] == 300, got
+    # Coarser range, coarser bucket -- monotone, which is what makes a single assumed
+    # default wrong in a knowable direction rather than arbitrarily.
+    order = ["1m", "5m", "1h", "4h", "1d"]
+    widths = [got[k] for k in order]
+    assert widths == sorted(widths), got
+
+
+def test_the_assumed_default_corresponds_to_a_four_hour_view():
+    """Why `ROLLUP_DEFAULT` is a real cost and not a formality.
+
+    The translator assumes 60 s when the query states no interval. That is the right
+    answer for a four-hour dashboard and wrong by a factor of three for the one-hour
+    view, which is the range the documented table is written around.
+    """
+    got = _cached("e4")["interpretation"]["reported_by_range"]
+    assert got["4h"] == 60
+    assert got["1h"] != 60
+
+
+def test_a_finer_interval_than_enforced_is_refused_not_widened():
+    """The second half of E4, and the better of the two outcomes for a translator.
+
+    Silently widening would make a translated query quietly disagree with its source;
+    an error is visible. The limit is on points per query, not on the interval itself.
+    """
+    tf = _cached("e4")["too_fine_rollup"]
+    assert tf["accepted"] is False, tf
+    assert "limit" in tf["error"], tf["error"]

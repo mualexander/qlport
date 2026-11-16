@@ -7,6 +7,7 @@ every raw response under data/raw/datadog/ so the notebooks stay offline (README
   python scripts/trial_checks.py e2            # right- or left-closed buckets?
   python scripts/trial_checks.py e3            # default time aggregator for a COUNT
   python scripts/trial_checks.py e4            # the automatic rollup interval
+  python scripts/trial_checks.py e5            # does a glob's `*` match empty?
   python scripts/trial_checks.py e2 --dry-run  # print what would be sent, touch nothing
 
 Needs DD_API_KEY, DD_APP_KEY and DD_SITE in .env (gitignored). Keys are read at call
@@ -212,7 +213,11 @@ def e3(creds: Credentials, *, dry: bool) -> dict:
     acks = _submit_all(creds, payloads, dry=dry)
 
     variants = {"bare": "", "as_count": ".as_count()", "as_rate": ".as_rate()"}
-    start, end = t_star - 120, t_star + 120
+    # The automatic interval is a function of the query range (E4's subject), and a
+    # narrow range buys a *finer* one: a 240 s window returned a 1 s rollup, which put
+    # each of the four samples in its own bucket and made the comparison meaningless.
+    # An hour is coarse enough to hold them together and is what a dashboard would use.
+    start, end = t_star - 1800, t_star + 1800
     if dry:
         for name, suffix in variants.items():
             print(f"# then query  sum:{metric}{{*}}{suffix}"
@@ -308,6 +313,119 @@ def e4(creds: Credentials, *, dry: bool) -> dict:
     return out
 
 
+# ------------------------------------------------------------------ E5
+
+def _series_by_scope(raw: dict) -> dict[str, float]:
+    """Total per returned series, keyed by the scope Datadog names it with.
+
+    `pointlist` deliberately refuses a multi-series response; this experiment wants one,
+    because the question is *which* series a glob selects.
+    """
+    out: dict[str, float] = {}
+    for s in raw.get("series") or []:
+        pts = [v for _t, v in (s.get("pointlist") or []) if v is not None]
+        out[str(s.get("scope", "?"))] = float(sum(pts))
+    return out
+
+
+def e5(creds: Credentials, *, dry: bool) -> dict:
+    """Does a Datadog glob's `*` match the empty string?
+
+    Paper §6 needs this and the documentation does not give it. "Prefix, suffix, and
+    substring wildcard tag value filtering are supported", with `pod_name: web-*` as the
+    prefix example, says nothing about whether `web-*` also matches `web-` itself.
+
+    It decides which of the two most common PromQL regexes has no glob. A glob has one
+    wildcard, which either requires a character or does not, so `.*` and `.+` cannot both
+    be expressible: under one reading `.+` has none, under the other `.*` has none.
+
+    Two series of one metric, distinguished by a `probe` tag: one valued `web-`, the
+    other `web-1`. A control query with no glob establishes that both were stored --
+    without it, a glob that selects nothing is indistinguishable from a point that never
+    arrived, which is the failure mode that made E2's first run inconclusive.
+    """
+    t_star = _grid(_now() - SETTLE)
+    run = f"r{int(t_star)}"
+    metric = "qlport.e5.star"
+    probes = {"empty-suffix": "web-", "one-char-suffix": "web-1"}
+    payloads = [count_payload(metric, [(t_star, 1.0)],
+                              tags=TAGS + [f"run:{run}", f"probe:{v}"])
+                for v in probes.values()]
+    acks = _submit_all(creds, payloads, dry=dry)
+
+    control = f"sum:{metric}{{run:{run}}} by {{probe}}"
+    globbed = f"sum:{metric}{{probe:web-*,run:{run}}} by {{probe}}"
+    start, end = t_star - 900, t_star + 900
+    if dry:
+        print(f"# then query  {control}   from {start:.0f} to {end:.0f}  (control)")
+        print(f"# then query  {globbed}   from {start:.0f} to {end:.0f}  (the question)")
+        return {}
+
+    # `pointlist` deliberately refuses a multi-series response and the control query is
+    # `by {probe}`, so this experiment needs its own wait rather than `_await_all`.
+    deadline = _now() + POLL_TIMEOUT
+    raws = {"control": query(creds, control, start, end)}
+    while len(_series_by_scope(raws["control"])) < len(probes) and _now() < deadline:
+        time.sleep(POLL_EVERY)
+        raws["control"] = query(creds, control, start, end)
+    raws["globbed"] = query(creds, globbed, start, end)
+
+    stored = _series_by_scope(raws["control"])
+    selected = _series_by_scope(raws["globbed"])
+    out: dict = {
+        "provenance": _provenance(creds, experiment="e5", t_star=t_star, run=run,
+                                  probes=probes),
+        "submitted": payloads, "acks": acks,
+        "responses": {k: {"query": control if k == "control" else globbed,
+                          "from": start, "to": end, "raw": v}
+                      for k, v in raws.items()},
+        "stored": stored, "selected": selected,
+    }
+    out["interpretation"] = _interpret_star(probes, stored, selected)
+    return out
+
+
+def _probe_values(scopes) -> set[str]:
+    """The `probe` tag values in a set of Datadog scope strings.
+
+    A scope comes back as a comma-separated tag list -- `probe:web-,run:r123` -- and the
+    run tag is there precisely because runs must not see each other, so matching a scope
+    string whole finds nothing.
+    """
+    out = set()
+    for scope in scopes:
+        for term in str(scope).split(","):
+            key, sep, value = term.strip().partition(":")
+            # A filtered query echoes its own filter term back in the scope, so
+            # `probe:web-*` appears beside the real tag values; a glob is not one.
+            if sep and key == "probe" and "*" not in value:
+                out.add(value)
+    return out
+
+
+def _interpret_star(probes: dict, stored: dict, selected: dict) -> dict:
+    """Did `web-*` select the series whose tag value is exactly `web-`?"""
+    stored_v, selected_v = _probe_values(stored), _probe_values(selected)
+    missing = [v for v in probes.values() if v not in stored_v]
+    if missing:
+        return {"conclusive": False,
+                "why": f"the control query did not return probe values {missing}; "
+                       "nothing can be concluded from a glob that selects nothing"}
+    empty_v, one_v = probes["empty-suffix"], probes["one-char-suffix"]
+    if one_v not in selected_v:
+        return {"conclusive": False,
+                "why": f"`web-*` did not even select probe:{one_v}, so it is not "
+                       "behaving as a prefix wildcard at all"}
+    matches_empty = empty_v in selected_v
+    return {"conclusive": True,
+            "star_matches_empty": matches_empty,
+            "selected": sorted(selected_v),
+            "reading": ("`*` matches the empty string: `.*` has a glob and `.+` does not"
+                        if matches_empty else
+                        "`*` requires at least one character: `.+` has a glob and `.*` does not"),
+            "regular_py_constant_should_be": matches_empty}
+
+
 # ------------------------------------------------------------------ E1
 
 def e1(creds: Credentials, *, dry: bool) -> dict:
@@ -324,7 +442,7 @@ def e1(creds: Credentials, *, dry: bool) -> dict:
     )
 
 
-EXPERIMENTS = {"e1": e1, "e2": e2, "e3": e3, "e4": e4}
+EXPERIMENTS = {"e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5}
 
 
 def main(argv: list[str] | None = None) -> int:

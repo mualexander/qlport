@@ -1,0 +1,440 @@
+{
+ "cases": [
+  {
+   "by": "max",
+   "constant": true,
+   "expr": "q and on(svc) topk(2, max_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "b",
+    "e"
+   ],
+   "n": 2,
+   "selected": {
+    "at end": [
+     "b",
+     "e"
+    ],
+    "midway": [
+     "b",
+     "e"
+    ],
+    "near start": [
+     "b",
+     "e"
+    ]
+   }
+  },
+  {
+   "by": "max",
+   "constant": true,
+   "expr": "q and on(svc) topk(3, max_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "a",
+    "b",
+    "e"
+   ],
+   "n": 3,
+   "selected": {
+    "at end": [
+     "a",
+     "b",
+     "e"
+    ],
+    "midway": [
+     "a",
+     "b",
+     "e"
+    ],
+    "near start": [
+     "a",
+     "b",
+     "e"
+    ]
+   }
+  },
+  {
+   "by": "mean",
+   "constant": true,
+   "expr": "q and on(svc) topk(2, avg_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "a",
+    "b"
+   ],
+   "n": 2,
+   "selected": {
+    "at end": [
+     "a",
+     "b"
+    ],
+    "midway": [
+     "a",
+     "b"
+    ],
+    "near start": [
+     "a",
+     "b"
+    ]
+   }
+  },
+  {
+   "by": "mean",
+   "constant": true,
+   "expr": "q and on(svc) topk(3, avg_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "a",
+    "b",
+    "c"
+   ],
+   "n": 3,
+   "selected": {
+    "at end": [
+     "a",
+     "b",
+     "c"
+    ],
+    "midway": [
+     "a",
+     "b",
+     "c"
+    ],
+    "near start": [
+     "a",
+     "b",
+     "c"
+    ]
+   }
+  },
+  {
+   "by": "min",
+   "constant": true,
+   "expr": "q and on(svc) topk(2, min_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "a",
+    "c"
+   ],
+   "n": 2,
+   "selected": {
+    "at end": [
+     "a",
+     "c"
+    ],
+    "midway": [
+     "a",
+     "c"
+    ],
+    "near start": [
+     "a",
+     "c"
+    ]
+   }
+  },
+  {
+   "by": "min",
+   "constant": true,
+   "expr": "q and on(svc) topk(3, min_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "a",
+    "b",
+    "c"
+   ],
+   "n": 3,
+   "selected": {
+    "at end": [
+     "a",
+     "b",
+     "c"
+    ],
+    "midway": [
+     "a",
+     "b",
+     "c"
+    ],
+    "near start": [
+     "a",
+     "b",
+     "c"
+    ]
+   }
+  },
+  {
+   "by": "sum",
+   "constant": true,
+   "expr": "q and on(svc) topk(2, sum_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "a",
+    "b"
+   ],
+   "n": 2,
+   "selected": {
+    "at end": [
+     "a",
+     "b"
+    ],
+    "midway": [
+     "a",
+     "b"
+    ],
+    "near start": [
+     "a",
+     "b"
+    ]
+   }
+  },
+  {
+   "by": "sum",
+   "constant": true,
+   "expr": "q and on(svc) topk(3, sum_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "a",
+    "b",
+    "c"
+   ],
+   "n": 3,
+   "selected": {
+    "at end": [
+     "a",
+     "b",
+     "c"
+    ],
+    "midway": [
+     "a",
+     "b",
+     "c"
+    ],
+    "near start": [
+     "a",
+     "b",
+     "c"
+    ]
+   }
+  },
+  {
+   "by": "last",
+   "constant": true,
+   "expr": "q and on(svc) topk(2, last_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "a",
+    "b"
+   ],
+   "n": 2,
+   "selected": {
+    "at end": [
+     "a",
+     "b"
+    ],
+    "midway": [
+     "a",
+     "b"
+    ],
+    "near start": [
+     "a",
+     "b"
+    ]
+   }
+  },
+  {
+   "by": "last",
+   "constant": true,
+   "expr": "q and on(svc) topk(3, last_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "a",
+    "b",
+    "c"
+   ],
+   "n": 3,
+   "selected": {
+    "at end": [
+     "a",
+     "b",
+     "c"
+    ],
+    "midway": [
+     "a",
+     "b",
+     "c"
+    ],
+    "near start": [
+     "a",
+     "b",
+     "c"
+    ]
+   }
+  }
+ ],
+ "naive": [
+  {
+   "constant": false,
+   "expr": "topk(2, q)",
+   "n": 2,
+   "selected": {
+    "at end": [
+     "a",
+     "b"
+    ],
+    "midway": [
+     "a",
+     "b"
+    ],
+    "near start": [
+     "a",
+     "c"
+    ]
+   }
+  },
+  {
+   "constant": true,
+   "expr": "topk(3, q)",
+   "n": 3,
+   "selected": {
+    "at end": [
+     "a",
+     "b",
+     "c"
+    ],
+    "midway": [
+     "a",
+     "b",
+     "c"
+    ],
+    "near start": [
+     "a",
+     "b",
+     "c"
+    ]
+   }
+  }
+ ],
+ "provenance": {
+  "anchor": 1700001140,
+  "collected_at": "2026-11-16T17:50:47+00:00",
+  "image": "prom/prometheus:v3.15.0",
+  "image_digest": "prom/prometheus@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e",
+  "n_points": 20,
+  "prometheus_version": "3.15.0",
+  "range_seconds": 1200,
+  "series": {
+   "a": [
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0
+   ],
+   "b": [
+    10.0,
+    19.0,
+    28.0,
+    37.0,
+    46.0,
+    55.0,
+    64.0,
+    73.0,
+    82.0,
+    91.0,
+    100.0,
+    109.0,
+    118.0,
+    127.0,
+    136.0,
+    145.0,
+    154.0,
+    163.0,
+    172.0,
+    181.0
+   ],
+   "c": [
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0
+   ],
+   "d": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "e": [
+    200.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  "step": 60,
+  "t0": 1700000000
+ }
+}

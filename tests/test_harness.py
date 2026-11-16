@@ -271,3 +271,65 @@ def test_the_matcher_run_records_which_server_answered():
     rec = _matcher_cache()
     assert rec["prometheus_version"].startswith("3.")
     assert rec["image_digest"].startswith("prom/prometheus@sha256:")
+
+
+# --------------------- top(): expressible, and what it costs (paper §7) -------
+
+TOPK = Path(__file__).resolve().parent.parent / "data" / "raw" / "topk" / "ranking.json"
+
+
+@pytest.fixture(scope="module")
+def topk_run() -> dict:
+    if not TOPK.exists():  # pragma: no cover - run scripts/verify_topk.py
+        pytest.skip("ranking.json not recorded; run scripts/verify_topk.py (needs Docker)")
+    return json.loads(TOPK.read_text())
+
+
+def test_top_is_expressible_in_promql(topk_run):
+    """The claim §7 classifies `top(...)` on, read off a real server.
+
+    Datadog ranks by an aggregation over the whole range; PromQL's `topk` ranks per
+    instant. They are different operators, so this could have been a language gap -- and
+    139 occurrences moving to that column would invert §8's comparison. It is not: the
+    `@`-pinned construction reproduces the ranking exactly.
+    """
+    assert topk_run["cases"], "no ranking cases recorded"
+    for case in topk_run["cases"]:
+        assert case["matches_model"], case
+        assert case["constant"], case
+
+
+def test_every_ranking_function_was_covered(topk_run):
+    covered = {c["by"] for c in topk_run["cases"]}
+    assert {"max", "mean", "min", "sum", "last"} <= covered, covered
+
+
+def test_the_pinned_ranking_is_constant_while_the_naive_one_is_not(topk_run):
+    """Why the `@` modifier is load-bearing rather than decorative."""
+    assert all(c["constant"] for c in topk_run["cases"])
+    # At least one naive case must drift, or the workload fails to separate the two
+    # operators and the comparison above proves nothing.
+    assert any(not c["constant"] for c in topk_run["naive"]), topk_run["naive"]
+
+
+def test_the_expression_needs_a_range_and_an_anchor(topk_run):
+    """The point §8 takes from this: the translation is not self-contained.
+
+    Both the window width and the `@` anchor come from the dashboard's time range, which
+    the Datadog query text does not carry -- the same omission as the rollup interval.
+    """
+    prov = topk_run["provenance"]
+    assert prov["range_seconds"] and prov["anchor"]
+    for case in topk_run["cases"]:
+        assert f"[{prov['range_seconds']}s]" in case["expr"], case["expr"]
+        assert f"@ {prov['anchor']}" in case["expr"], case["expr"]
+
+
+def test_the_ranking_window_covers_the_first_sample(topk_run):
+    """A range selector is left-open, so a width of exactly (n-1)*step drops it.
+
+    That is where the spike separating `max` from `mean` lives, so getting this wrong
+    silently makes the two rankings agree and the experiment prove nothing.
+    """
+    prov = topk_run["provenance"]
+    assert prov["range_seconds"] > (prov["n_points"] - 1) * prov["step"]
