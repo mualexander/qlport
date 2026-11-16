@@ -442,3 +442,81 @@ def test_neither_modifier_does_anything_to_a_gauge(e6, modified, plain):
     that depends on the type carries METRIC_TYPE_UNKNOWN.
     """
     assert _only(e6, modified) == _approx(_only(e6, plain))
+
+
+# ------------------- the recorded E1 measurement (the reset policy, end to end)
+
+
+E1 = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog" / "e1.json"
+
+
+@pytest.fixture(scope="module")
+def e1() -> dict:
+    if not E1.exists():  # pragma: no cover - run scripts/reset_policy.py
+        pytest.skip("e1.json not recorded; run scripts/reset_policy.py")
+    return json.loads(E1.read_text())
+
+
+def test_the_reset_policy_is_zero_and_nothing_else_fits(e1):
+    """rho = zero, measured through a real agent rather than read off its source.
+
+    A counter exposed at 1000 drops to 100 inside one bucket. Datadog stores 103 over
+    that bucket against four points, which is the increment before the reset, the new
+    value reported as the reset interval's own count, and the two increments after it.
+    Clamping would store 3, discarding the interval would store 3 over three points, and
+    a backend keeping the signed difference would store -897. All three are ruled out by
+    the reading, not argued away.
+    """
+    case = e1["cases"]["to100"]
+    assert case["consistent_with"] == ["zero"]
+    assert case["reset_bucket_observed"] == [103.0, 4]
+    assert case["reset_bucket_predicted"]["clamp"] == [3.0, 4]
+    assert case["reset_bucket_predicted"]["drop"] == [3.0, 3]
+    assert case["reset_bucket_predicted"]["raw"] == [-897.0, 4]
+
+
+def test_a_reset_to_zero_shows_no_special_case(e1):
+    # `zero` and `clamp` give the same answer when the new value is zero, so this case
+    # cannot choose between them -- it is here to catch a backend that treats a reset to
+    # zero differently from a reset to anything else. It does not.
+    case = e1["cases"]["to0"]
+    assert set(case["consistent_with"]) == {"zero", "clamp"}
+    assert case["reset_bucket_observed"] == [3.0, 4]
+
+
+def test_the_control_counter_rules_nothing_out_and_reads_four_increments(e1):
+    """A counter that never resets: every policy fits, which is the point.
+
+    Its value is that a bucket of it must read four increments of one. That is what
+    shows the run is reading the buckets the reset is in, so a disagreement elsewhere is
+    about the system rather than about the rig.
+    """
+    case = e1["cases"]["none"]
+    assert set(case["consistent_with"]) == {"zero", "clamp", "drop", "raw"}
+    full = [v for b, v in case["observed_buckets"].items()
+            if float(b) in case["complete_buckets"]]
+    assert full and all(v == [4.0, 4] for v in full), full
+
+
+def test_datadog_and_prometheus_agree_across_the_reset(e1):
+    """The claim §3.1 could previously only make about the model.
+
+    Both systems scrape one endpoint; Datadog stores the deltas its agent computed and
+    Prometheus stores the cumulative series. `increase(x[60s] anchored)` over Prometheus
+    returns what Datadog stored, on every complete bucket of every case --- including
+    the bucket the reset falls in, where it returns 103.
+    """
+    for name, case in e1["cases"].items():
+        assert case["prometheus_differs_on"] == {}, (name, case["prometheus_differs_on"])
+        assert len(case["prometheus_agrees_on"]) == len(case["complete_buckets"]), name
+    to100 = e1["cases"]["to100"]
+    at_reset = to100["prometheus_anchored"][str(float(to100["reset_bucket"]))]
+    assert at_reset == 103.0
+
+
+def test_the_run_met_the_warm_up_the_design_committed_to(e1):
+    # The spec asks for at least ten minutes before the reset, because the agent omits
+    # its first sample; a run that cut the warm-up short would be scoring a different
+    # experiment from the one the prediction table was written for.
+    assert e1["provenance"]["warmup"] >= 600.0
+    assert sum(1 for e in e1["exposition"] if e["agent"]) > 40

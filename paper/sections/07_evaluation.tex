@@ -406,21 +406,30 @@ residual in Table~\ref{tab:parse-coverage}.
 Two of the facts this paper's rollup translations rest on are facts about Datadog's
 implementation rather than about either language, and Datadog's documentation settles
 neither. They are stated as assumptions in Section~\ref{sec:ingestion} and carried as
-diagnostics in Table~\ref{tab:translation-caveats}. One of them has since been settled
-from a source other than an experiment, and the difference between the two is worth
-keeping visible.
+diagnostics in Table~\ref{tab:translation-caveats}. Both have since been settled, one of
+them first from a source other than an experiment and then by one, and the difference
+between the two kinds of evidence is worth keeping visible.
 
-\emph{The reset policy $\rho$, settled by reading.} Datadog's agent is open source, so
-what it does with a counter decrease is readable even though it is undocumented:
-Remark~\ref{rem:rho} establishes $\rho=\mathsf{zero}$ for the OpenMetrics ingestion path,
-which is what Proposition~\ref{prop:anchored} assumes. This was not the expected answer.
-The prediction recorded in advance was $\rho=\mathsf{drop}$, on which \emph{neither}
-candidate would have been exact across a reset; the policy that the agent does implement
-alongside $\mathsf{zero}$ turns out to be $\mathsf{clamp}$, and $\mathsf{drop}$ is not a
-reset policy at all. What reading the agent does not establish is that the backend stores
-what the agent sends, and the restart rows of Table~\ref{tab:rollup-live} accordingly
-still show \texttt{increase(x[$\Delta$] anchored)} tracking $\phi_{\mathsf{zero}}$ exactly
-rather than Datadog agreeing with it.
+\emph{The reset policy $\rho$, settled by reading and then by measurement.} Datadog's
+agent is open source, so what it does with a counter decrease is readable even though it
+is undocumented: Remark~\ref{rem:rho} establishes $\rho=\mathsf{zero}$ for the
+OpenMetrics ingestion path, which is what Proposition~\ref{prop:anchored} assumes. This
+was not the expected answer. The prediction recorded in advance was
+$\rho=\mathsf{drop}$, on which \emph{neither} candidate would have been exact across a
+reset; the policy that the agent does implement alongside $\mathsf{zero}$ turns out to be
+$\mathsf{clamp}$, and $\mathsf{drop}$ is not a reset policy at all.
+
+Reading the agent does not establish that the backend stores what the agent sends, and
+that step stood open longer than any other in this paper --- not for want of a design,
+but because the experiment needs a counter that resets, and the replay of
+Section~\ref{sec:replay} cannot supply one: a real request counter does not restart
+inside half an hour. E1 supplies one on purpose. A scripted counter climbs to $1000$ and
+drops to $100$ inside a single bucket while a real agent and a real Prometheus scrape the
+same endpoint. Datadog stores $103$ over that bucket, which is $\delta_{\mathsf{zero}}$
+and is distinct from what each of the three rivals predicts; and
+\texttt{increase(x[$\Delta$] anchored)} over Prometheus returns $103$ for the same
+bucket, on every complete bucket of all three counters. The restart rows of
+Table~\ref{tab:rollup-live} therefore no longer stand on the model alone.
 
 \emph{Bucket closure, settled by measurement.} $\Sigma_\Delta$ presumes a bucket
 convention, and the one it presumed was wrong. Submitting a point on an exact bucket

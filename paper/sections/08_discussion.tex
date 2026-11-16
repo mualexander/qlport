@@ -206,13 +206,22 @@ self-contained when this is noticed; it was never self-contained, and the appear
 a quarter of it was came from the one piece of syntax that looks like a type declaration
 and is not.
 
-That leaves one assumption of the original four, and it is a different kind: that
-Datadog's backend stores what its agent sends. $\rho$ is read from the agent's source
-rather than observed end to end. The dual-write test was the experiment that would have
-closed it and has since been run; it did not close it, because the behaviour at issue
+The last assumption of the original four was of a different kind: that Datadog's backend
+stores what its agent sends. $\rho$ was read from the agent's source rather than observed
+end to end, and the dual-write replay could not close it, because the behaviour at issue
 appears only when a counter resets and a real request counter does not reset inside a
-half-hour window. Settling it needs a workload built to restart, which is the one place
-in this paper where a synthetic generator remains the only instrument.
+half-hour window. It is now closed by the one experiment in this paper for which a
+synthetic generator is the right instrument rather than a concession: a counter made to
+restart on purpose, scraped across the reset by a real agent and a real Prometheus at
+once (Remark~\ref{rem:rho}). Datadog stores $103$ over the bucket holding the reset,
+which only $\mathsf{zero}$ predicts, and Prometheus returns the same number for the same
+bucket.
+
+It is worth being plain about what that does and does not retire. It confirms the reading
+of the agent rather than overturning it, so no figure moves --- which makes it the fourth
+of six vendor measurements to confirm rather than correct. And it is a measurement of one
+ingestion path on one account: the OpenMetrics check converting a Prometheus counter,
+which is the path this paper models and not the only one Datadog has.
 
 Finally, the comparison of $2.0\%$ against $2.4\%$ in \S\ref{sec:gaps} is a comparison
 between a property of the languages and a property of one translator's state on one

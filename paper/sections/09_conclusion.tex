@@ -43,8 +43,9 @@ convention (left-closed and named by its start, the opposite of what this work a
 until it asked), the automatic rollup interval as a function of the query range, the
 default time aggregator of a bare query on a counter, whether a glob's \texttt{*} matches
 the empty string, where \texttt{.as\_rate()} sits relative to the rollup and to the space
-aggregation, and --- from the agent's source rather than the API --- the reset policy.
-Four of the six confirmed what the paper had assumed. Two did not: the bucket convention,
+aggregation, and the reset policy --- read first from the agent's source and then put to
+a running agent, which agreed with the reading. Four of the six confirmed what the paper
+had assumed. Two did not: the bucket convention,
 and \texttt{.as\_rate()}, which turned out to divide the aggregated result rather than
 each series, and whose presence in a query turned out not to establish the metric's type
 at all, because Datadog accepts the modifier on a gauge and ignores it. A seventh,
@@ -54,9 +55,11 @@ in.
 
 One thing that was assumed throughout is now measured. The counter rules are checked
 against Datadog itself, by replaying a real request trace into both systems and comparing
-bucket by bucket (\S\ref{sec:replay}): both exact forms are exact, \texttt{rate} is not,
-and the reset policy is the one part the replay cannot reach, because a request counter
-does not restart in half an hour.
+bucket by bucket (\S\ref{sec:replay}): both exact forms are exact and \texttt{rate} is
+not. The one part a replay cannot reach is the reset policy, because a request counter
+does not restart in half an hour; that took a counter built to restart, scraped across
+the reset by a real agent and a real Prometheus at once, and it is the last assumption of
+\S\ref{sec:ingestion} to be retired (Remark~\ref{rem:rho}).
 
 The same construction has since been run at corpus scale, and it is the reason $\kappa$
 can now be read as a statement about translations that were checked rather than merely

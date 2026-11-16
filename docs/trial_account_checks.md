@@ -198,7 +198,31 @@ the agent's conversion is what is under test.
 and explicit timestamps. This bypasses the agent, so it says nothing about ρ, but it
 gives exact control of sample timestamps — which E2 needs and the agent cannot provide.
 
-## E1 — the reset policy ρ (Rig A)
+## E1 — the reset policy ρ (Rig A) — **done: ρ = zero**
+
+**Answer: ρ = zero, measured end to end through a real agent.** Over the bucket holding
+the reset Datadog stored **103 across four points**, which is δ_zero and is distinct from
+every rival: clamp predicts 3 over four points, drop 3 over three, and a raw signed
+difference −897. The reset-to-0 case read 3, consistent with zero and clamp and ruling
+out a special case at zero; the never-resetting control read four increments of one in
+every bucket. Cached in `data/raw/datadog/e1.json`, regression-tested in
+`tests/test_harness_datadog.py`, with the prediction table itself pinned in
+`tests/test_reset.py`. Run by `scripts/reset_policy.py`.
+
+This confirms Remark `rem:rho`'s reading of the agent source rather than overturning it,
+so no figure in the paper moved. Two things are worth recording anyway:
+
+- **Prometheus agreed on every complete bucket**, the reset bucket included, where
+  `increase(x[60s] anchored)` returned 103. §3.1's restart claim had until now been the
+  model tracking φ_zero rather than Datadog agreeing with it; that gap is closed.
+- **The agent's first configuration measured nothing.** Naming `type: monotonic_count`
+  on the metric asked the OpenMetrics v2 check for a transformer, and there is no such
+  transformer type; the check errored rather than silently measuring something else,
+  which is the good case. A Prometheus counter is already sent as a monotonic count, so
+  the mapping needs no type at all.
+
+### The original design
+
 
 Expose a counter incrementing by 1 per scrape, then at one scrape drop the exposed value
 from 1000 to 100, then resume incrementing by 1. Place the reset at the second of the

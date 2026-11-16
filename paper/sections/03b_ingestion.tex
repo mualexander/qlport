@@ -35,9 +35,11 @@ $\rho$ it holds for.
 \end{definition}
 
 \begin{remark}[Which $\rho$, and how we know]\label{rem:rho}
-Datadog's documentation does not say what becomes of a counter decrease, but its agent is
-open source, so the question is settled by reading rather than by
-experiment~\citep{ddagent}. The conversion carries a per-sample flag. With the flag set, a
+Datadog's documentation does not say what becomes of a counter decrease. Its agent is
+open source, so the question can be answered by reading it~\citep{ddagent}, and then put
+to a running one; both were done and they agree. The reading first.
+
+The conversion carries a per-sample flag. With the flag set, a
 sample below its predecessor contributes its own value, on the agent's stated assumption
 that the counter restarted from zero --- this is $\delta_{\mathsf{zero}}$ term for term.
 With the flag clear, the decrease contributes nothing and the point is still emitted,
@@ -55,6 +57,21 @@ expired in the meantime. Either way a transient failure perturbs $\phi(D)$ in a 
 nothing applied to $D$ reproduces, and Proposition~\ref{prop:admissible} gives no warning,
 because the discrepancy is between the two stored databases rather than between two
 queries. No refusal can flag it and no translation can repair it.
+
+Reading the agent establishes what it intends to send, not what the backend stores, and
+the two are different claims. E1 closes the gap by putting a real agent in the loop. A
+local endpoint exposes a counter that climbs by one per scrape to $1000$ and then, inside
+one rollup bucket, drops to $100$; a Datadog Agent runs an OpenMetrics check against it
+and a Prometheus scrapes the same endpoint. Over the bucket holding the reset Datadog
+stores $\mathbf{103}$ across four points --- the increment before the reset, the new
+value reported as the reset interval's own count, and the two increments after it. That
+is $\delta_{\mathsf{zero}}$ and nothing else: $\mathsf{clamp}$ predicts $3$ over four
+points, discarding the interval predicts $3$ over three, and a backend keeping the signed
+difference predicts $-897$. The four predictions were recorded before the run and are
+regression-tested in \texttt{tests\slash test\_reset.py}. A second counter resetting to
+exactly $0$ rather than $100$ reads $3$, which is what $\mathsf{zero}$ requires and rules
+out a special case at zero; a third that never resets reads four increments of one in
+every bucket, which is what shows the run is reading the bucket it means to.
 \end{remark}
 
 \begin{remark}[$\phi_\rho$ is a model per flush interval]\label{rem:flush}
@@ -377,14 +394,16 @@ invisible in exactly the configuration real deployments have, and decisive in th
 synthetic workloads of Table~\ref{tab:rollup-live} happen to use.
 
 What this does not do is also worth stating. A request counter does not reset in half an
-hour, so \texttt{COUNTER\_RESET} is not exercised here and the restart rows of
-Table~\ref{tab:rollup-live} remain the evidence for that case. It is one window of one
+hour, so \texttt{COUNTER\_RESET} is not exercised here; the restart rows of
+Table~\ref{tab:rollup-live} and the scripted reset of E1 (Remark~\ref{rem:rho}) are the
+evidence for that case. It is one window of one
 trace at one rollup interval. And it tests the counter rules, not translation coverage:
 $\kappa$ is what it was.
 
-\paragraph{What remains assumed.}
-This section began with two facts about Datadog that its documentation does not settle.
-Neither is still an assumption, and neither turned out the way it was guessed.
+\paragraph{What was assumed, and what is left.}
+This section began with two facts about Datadog that its documentation does not settle,
+and carried a third about its backend. None is still an assumption, and the two it began
+with did not turn out the way they were guessed.
 
 Bucket closure is no longer among them. Remark~\ref{rem:closure} settles it by
 measurement: buckets are left-closed and named by their start, which is the opposite of
@@ -397,10 +416,11 @@ obvious choice once the closure is known --- disagrees on every bucket where a s
 lands on the boundary too, which is the ordinary case. The translator records
 \texttt{ROLLUP\_ALIGNMENT} on every rollup it emits for that reason.
 
-What is left is the one thing above that nothing here settles: whether Datadog's backend
-stores what its agent sends. $\rho$ is read off the agent (Remark~\ref{rem:rho}), not
-observed end to end, so the restart rows of Table~\ref{tab:rollup-live} still show the
-anchored form tracking $\phi_{\mathsf{zero}}$ rather than Datadog agreeing with it.
-Section~\ref{sec:not-measured} records the prediction committed to in advance and what
-closing that step would still take: a workload built to restart, since the dual-write
-test has been run and a real request counter does not reset inside its window.
+Nothing is left. The last of the three --- whether Datadog's backend stores what its
+agent sends --- stood until a counter was made to reset on purpose, which is what the
+replay above cannot do and what E1 does (Remark~\ref{rem:rho}). Both systems scrape one
+endpoint across the reset; Datadog stores $103$ over the bucket holding it, and
+\texttt{increase($x$[$60$s] anchored)} over Prometheus returns $103$ for the same bucket,
+as it does on every complete bucket of all three counters. So the restart rows of
+Table~\ref{tab:rollup-live} no longer stand alone: the anchored form tracks
+$\phi_{\mathsf{zero}}$, and Datadog agrees with it where a counter actually restarts.
