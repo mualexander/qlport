@@ -36,7 +36,8 @@ from dataclasses import dataclass
 
 __all__ = [
     "STAR_MATCHES_EMPTY", "GlobConversion", "glob_to_regex", "globs_to_regex",
-    "equivalent", "unanchor", "regex_to_globs", "regex_to_glob",
+    "equivalent", "unanchor", "drop_redundant_escapes", "regex_to_globs",
+    "regex_to_glob",
     "single_glob_by_search", "shortest_word", "shortest_words", "SearchTooLarge",
 ]
 
@@ -97,6 +98,32 @@ def equivalent(regex_a: str, regex_b: str) -> bool:
     """Decide L(a) = L(b) by DFA equivalence (Rich Thm 9.5)."""
     from greenery import parse  # optional dependency, extra "regular"
     return parse(regex_a).equivalent(parse(regex_b))
+
+
+# Characters that genuinely need a backslash. Anything else escaped is redundant.
+_NEEDS_ESCAPE = frozenset(".^$*+?()[]{}|\\")
+
+
+def drop_redundant_escapes(r: str) -> str:
+    """Remove backslashes that escape characters which never needed one.
+
+    `re.escape` escapes freely --- it emits `\\-` for a hyphen --- and a regex that has
+    been through it, or through a hand that was being careful, carries escapes the
+    decision procedure's parser rejects outright. The escape means nothing to the
+    language either way, so dropping it changes no denotation and lets a regex be
+    decided rather than reported as unparseable. Alphanumerics keep their backslash,
+    since `\\d` and `\\1` are not redundant.
+    """
+    out, i = [], 0
+    while i < len(r):
+        if r[i] == "\\" and i + 1 < len(r):
+            nxt = r[i + 1]
+            out.append(("\\" + nxt) if (nxt.isalnum() or nxt in _NEEDS_ESCAPE) else nxt)
+            i += 2
+        else:
+            out.append(r[i])
+            i += 1
+    return "".join(out)
 
 
 def unanchor(r: str) -> str | None:
@@ -258,6 +285,7 @@ def regex_to_globs(r: str) -> GlobConversion:
     body = unanchor(r)
     if body is None:
         return GlobConversion(r, reason="interior-anchor")
+    body = drop_redundant_escapes(body)
     try:
         from greenery import parse
     except ImportError:  # pragma: no cover - declared in the "regular" extra

@@ -253,3 +253,29 @@ def test_the_cross_check_was_run_under_the_reading_the_paper_states(crosscheck):
     prov = crosscheck["provenance"]
     assert prov["star_matches_empty"] is STAR_MATCHES_EMPTY
     assert prov["max_union"] == MAX_UNION
+
+
+def test_redundant_escapes_are_dropped_before_deciding():
+    """`re.escape` output must be decidable, not reported as unparseable.
+
+    A hyphen never needs a backslash, but a regex that has been through `re.escape`
+    carries one, and the decision procedure's parser rejects it. The escape changes no
+    denotation, so dropping it turns an "unparsed" into an answer.
+    """
+    from qlport.regular import drop_redundant_escapes
+    assert drop_redundant_escapes(r"kube\-system") == "kube-system"
+    assert drop_redundant_escapes(r"a\.b") == r"a\.b"        # a dot does need it
+    assert drop_redundant_escapes(r"\d+") == r"\d+"          # and so does a class
+    assert drop_redundant_escapes(r"a\*b") == r"a\*b"
+
+
+def test_an_escaped_hyphen_regex_now_decides():
+    got = regex_to_globs(r"generic\-router|generic\-device")
+    assert got.kind == "union", got.reason
+    assert got.globs == ("generic-device", "generic-router")
+
+
+def test_dropping_escapes_does_not_change_the_language():
+    from qlport.regular import drop_redundant_escapes
+    for r in (r"kube\-system", r"a\-b|c\-d", r"x\-"):
+        assert equivalent(r.replace("\\-", "-"), drop_redundant_escapes(r))
