@@ -9,9 +9,17 @@ rather than a crash.
 Two things the front end has to decide that the query text does not say:
 
 * **The metric's type.** A dashboard's JSON never states whether a metric was
-  submitted as COUNT or GAUGE. `.as_count()` and `.as_rate()` only apply to COUNT, so
-  their presence is taken as evidence; otherwise the kind stays "unknown" and the
-  back end refuses the counter rules rather than guessing.
+  submitted as COUNT or GAUGE. `.as_count()` and `.as_rate()` are *documented* for
+  COUNT, so their presence is taken as evidence; otherwise the kind stays "unknown"
+  and the back end refuses the counter rules rather than guessing.
+
+  That evidence is weaker than it looks, and E6 is what weighed it. Submitting a GAUGE
+  and querying it with each modifier returns the plain rollup unchanged --- Datadog
+  accepts both on a gauge and silently ignores them, rather than rejecting the query.
+  So `.as_count()` records what the dashboard's author believed the metric to be, not
+  what it is, and no amount of reading the query settles the question. The kind set
+  here is therefore an assumption in every case, never a fact, and the back end carries
+  METRIC_TYPE_UNKNOWN on the translations that rest on it.
 * **The rollup interval.** Datadog derives it from the dashboard's time range when
   `.rollup(agg, interval)` does not give one, so the `Rollup` carries `interval=None`
   and the back end is the one that has to be told what to assume.
@@ -219,10 +227,11 @@ class _Methods:
     time_agg: str | None = None
     interval: float | None = None
     as_rate: bool = False
-    # `.as_count()` and `.as_rate()` apply only to COUNT metrics, so either one is
-    # evidence of the type. That evidence has to be kept separately from `time_agg`,
-    # which a later `.rollup(agg, n)` overwrites: `.as_count().rollup(avg, 60)` ends
-    # with time_agg "avg" and is still a counter.
+    # `.as_count()` and `.as_rate()` are documented for COUNT metrics, so either one
+    # is evidence --- though E6 measured both as silent no-ops on a GAUGE, so it is
+    # evidence of the author's belief and not of the type. That evidence has to be kept
+    # separately from `time_agg`, which a later `.rollup(agg, n)` overwrites:
+    # `.as_count().rollup(avg, 60)` ends with time_agg "avg" and is still a counter.
     typed_counter: bool = False
 
 
@@ -282,17 +291,21 @@ def _query(node: Tree) -> ir.Expr:
         _refuse(Gap.UNSUPPORTED_FUNCTION, f"{space_agg}:")   # pNN: percentiles
     m = _methods(methods)
 
-    # Only a COUNT metric can be rolled up by summing, and `.as_count()` /
-    # `.as_rate()` only apply to COUNT, so either is evidence of the type the
-    # dashboard JSON never states.
+    # Only a COUNT metric is meaningfully rolled up by summing, and `.as_count()` /
+    # `.as_rate()` are documented for COUNT, so either is evidence of the type the
+    # dashboard JSON never states. Evidence, not proof: see the module docstring.
+    # Everything downstream treats this as an assumption and says so.
     kind = "counter" if m.typed_counter or m.time_agg == "sum" else "unknown"
     e: ir.Expr = ir.Select(metric_name(str(metric)), _scope(scope.children[0]), kind=kind)
     keys = tuple(label_name(str(k)) for k in grouping.children[1:]) if grouping else ()
 
-    # Time first, per series; then space. `.as_rate()`'s division by the interval sits
-    # on the inner node for the same reason -- it is part of the time aggregation. The
-    # placement is only observable for `count:`, where dividing after the space
-    # aggregation would scale a count of series by the interval.
+    # Time first, per series; then space. `.as_rate()`'s division by the interval rides
+    # on the inner node because the divisor is the rollup interval, which the back end
+    # resolves -- not because the division belongs inside the space aggregation. E6
+    # measured `count:m{*} by {g}.as_rate()` as 1/R against 1 without the modifier, so
+    # Datadog divides the aggregated result; the back end places it there. The
+    # distinction is invisible for sum, avg, min and max, which commute with scaling,
+    # and visible only for `count:`, which is blind to its operand's values.
     e = ir.Rollup(m.time_agg or DEFAULT_TIME_AGG, m.interval, e, per_second=m.as_rate)
     return ir.Agg(space_agg, keys, "by", e)
 

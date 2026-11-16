@@ -76,9 +76,15 @@ class Instantiation:
         return not self.reason
 
 
-def _selects(node: ir.Select) -> tuple[dict[str, str], str]:
-    """The labels a series must carry to be selected, or a reason it cannot be built."""
+def _selects(node: ir.Select) -> tuple[dict[str, str], set[str], str]:
+    """The labels a series must carry to be selected, or a reason it cannot be built.
+
+    The second element names the labels the scope requires to be *present* without
+    pinning a value --- Datadog's `!tag:`. A grouping key constrained only that way is
+    still free to vary, since any non-empty value satisfies it.
+    """
     labels: dict[str, str] = {}
+    soft: set[str] = set()
     for m in node.matchers:
         if m.op == "=":
             labels[m.label] = m.value
@@ -88,15 +94,25 @@ def _selects(node: ir.Select) -> tuple[dict[str, str], str]:
             else:
                 value = _value_matching(m.value)
                 if value is None:
-                    return {}, f"cannot satisfy regex matcher {m.label}=~{m.value!r}"
+                    return {}, set(), f"cannot satisfy regex matcher {m.label}=~{m.value!r}"
                 labels[m.label] = value
         elif m.op in ("!=", "!~"):
-            # Satisfied by absence, which needs no label at all -- but only if nothing
-            # else in the query requires that label to exist.
+            if m.op == "!=" and m.value == "":
+                # Datadog's `!tag:` becomes `{tag!=""}`, and Prometheus reads an absent
+                # label as the empty string --- so absence does *not* satisfy this one.
+                # The series has to carry the label with some non-empty value. Leaving
+                # it off made the PromQL side select nothing while Datadog returned
+                # data, which the corpus-scale differential test reported as missing
+                # data rather than as the harness bug it was.
+                if m.label not in labels:
+                    labels[m.label] = FILL
+                    soft.add(m.label)
+            # Otherwise satisfied by absence, which needs no label at all -- but only
+            # if nothing else in the query requires that label to exist.
             continue
         else:
-            return {}, f"unsupported matcher op {m.op!r}"
-    return labels, ""
+            return {}, set(), f"unsupported matcher op {m.op!r}"
+    return labels, soft, ""
 
 
 def instantiate(e: ir.Expr, *, group_values: int = GROUP_VALUES) -> Instantiation:
@@ -133,13 +149,16 @@ def instantiate(e: ir.Expr, *, group_values: int = GROUP_VALUES) -> Instantiatio
     specs: list[SeriesSpec] = []
     seen: set[tuple] = set()
     for sel in selects:
-        base, why = _selects(sel)
+        base, soft, why = _selects(sel)
         if why:
             return Instantiation(reason=why)
         # Vary the grouping keys so the aggregation combines more than one series. A
         # grouping key the scope already pins to a value keeps that value: the query
-        # asked for it, and overriding it would make the query select nothing.
-        free = [k for k in group_keys if k not in base]
+        # asked for it, and overriding it would make the query select nothing. A key the
+        # scope only requires to be non-empty is not pinned, so it varies like any
+        # other --- otherwise a query grouping by the very tag it tests for presence
+        # would be instantiated as a single series and its aggregation left untested.
+        free = [k for k in group_keys if k not in base or k in soft]
         n = group_values if free else 1
         for i in range(n):
             labels = dict(base)

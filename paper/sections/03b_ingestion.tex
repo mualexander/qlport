@@ -401,5 +401,6 @@ What is left is the one thing above that nothing here settles: whether Datadog's
 stores what its agent sends. $\rho$ is read off the agent (Remark~\ref{rem:rho}), not
 observed end to end, so the restart rows of Table~\ref{tab:rollup-live} still show the
 anchored form tracking $\phi_{\mathsf{zero}}$ rather than Datadog agreeing with it.
-Section~\ref{sec:not-measured} gives the experiment that would close that step and the
-predictions it is committed to in advance.
+Section~\ref{sec:not-measured} records the prediction committed to in advance and what
+closing that step would still take: a workload built to restart, since the dual-write
+test has been run and a real request counter does not reset inside its window.

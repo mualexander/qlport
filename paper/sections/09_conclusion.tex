@@ -38,15 +38,19 @@ Prometheus~3.15.0, and the anchoring of label-matcher regular expressions. One t
 read from source rather than measured: Datadog's reset policy, taken from its open-source
 agent at a pinned commit.
 
-Five things are measured against the vendor itself rather than assumed: the bucket
+Six things are measured against the vendor itself rather than assumed: the bucket
 convention (left-closed and named by its start, the opposite of what this work assumed
 until it asked), the automatic rollup interval as a function of the query range, the
 default time aggregator of a bare query on a counter, whether a glob's \texttt{*} matches
-the empty string, and --- from the agent's source rather than the API --- the reset
-policy. Four of the five confirmed what the paper had assumed; the bucket convention did
-not, and \S\ref{sec:ingestion} now carries the corrected one. A sixth, whether
-\texttt{top(...)} is expressible at all, was settled against a real Prometheus rather
-than against Datadog, and decides which column $139$ corpus occurrences belong in.
+the empty string, where \texttt{.as\_rate()} sits relative to the rollup and to the space
+aggregation, and --- from the agent's source rather than the API --- the reset policy.
+Four of the six confirmed what the paper had assumed. Two did not: the bucket convention,
+and \texttt{.as\_rate()}, which turned out to divide the aggregated result rather than
+each series, and whose presence in a query turned out not to establish the metric's type
+at all, because Datadog accepts the modifier on a gauge and ignores it. A seventh,
+whether \texttt{top(...)} is expressible at all, was settled against a real Prometheus
+rather than against Datadog, and decides which column $139$ corpus occurrences belong
+in.
 
 One thing that was assumed throughout is now measured. The counter rules are checked
 against Datadog itself, by replaying a real request trace into both systems and comparing
@@ -54,22 +58,18 @@ bucket by bucket (\S\ref{sec:replay}): both exact forms are exact, \texttt{rate}
 and the reset policy is the one part the replay cannot reach, because a request counter
 does not restart in half an hour.
 
-What is left is the same construction at corpus scale. Until it is done, $\kappa$
-measures what the translator is willing to translate rather than what it translates
-correctly, and that distinction is the honest limit of this paper's headline number. It
-is a bounded job rather than an open-ended one: \S\ref{sec:not-measured} reports that the
-corpus collapses to $331$ distinct query shapes once metric names and tag values are
-abstracted away, of which $49$ carry $90\%$ of the occurrences, so the experiment is a
-few hundred synthetic series rather than a reconstruction of somebody's production
-estate.
+The same construction has since been run at corpus scale, and it is the reason $\kappa$
+can now be read as a statement about translations that were checked rather than merely
+emitted. Abstracting metric names and tag values away collapses the corpus to $322$
+distinct query shapes, few enough that a single trial account holds every series they
+need; each is instantiated, written to both systems and compared bucket by bucket
+(\S\ref{sec:differential}). It found four translation defects that the unit tests and the
+single-trace replay had both missed --- and, three times over, found its own harness
+first, which is the more useful lesson about differential rigs than the agreement rate
+is.
 
 \paragraph{What we would do next.}
-The differential test at corpus scale is the one experiment that would change the
-standing of everything else, and it is no longer blocked on anything but the work.
-\S\ref{sec:replay} shows the construction works, \S\ref{sec:not-measured} shows the scale
-is $331$ shapes, and the reduction's soundness is checked rather than argued: every one
-of those classes emits a single PromQL form, so a representative stands for its class.
-After it, the reverse translator: \S\ref{sec:regular} suggests the interesting results are there, and a
+The reverse translator: \S\ref{sec:regular} suggests the interesting results are there, and a
 $\kappa$ for that direction would turn this paper's asymmetry claim from an argument into
 a measurement. Further out, the method is language-agnostic wherever a language denotes a
 function of a database at an instant, which brings LogQL within reach and leaves SPL
@@ -80,7 +80,7 @@ Is the switching cost a language-design artefact? Partly, and not where we expec
 the direction teams travel it is mostly engineering --- a finding this paper twice nearly
 got wrong in the more quotable direction, once through a structural error in the
 translator and once through a rule it had simply not implemented. The design artefact in that direction is subtler than an expressiveness gap:
-a Datadog query does not say what it means, so almost every translation we emit is exact
+a Datadog query does not say what it means, so every translation we emit is exact
 only relative to context the query omits. The expressiveness gap is real, provable, and in
 the direction teams do not travel. That is the asymmetry: leaving costs work, and returning
 costs something work cannot buy.

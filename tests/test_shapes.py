@@ -92,3 +92,39 @@ def test_duplicate_series_are_not_created_twice():
 
 def test_a_query_with_no_selector_is_refused():
     assert not instantiate(ir.Number(1.0)).ok
+
+
+def _inst(ddq):
+    from qlport.parse import parse
+    from qlport.lower.datadog import lower_all
+    from qlport.harness.shapes import instantiate
+    return instantiate(lower_all(parse("datadog", ddq, "v2"))[0])
+
+
+def test_a_non_empty_requirement_puts_the_label_on_the_series():
+    """Datadog's `!tag:` becomes `{tag!=""}`, which absence does not satisfy.
+
+    Prometheus reads a missing label as the empty string, so a series without the label
+    fails the matcher. Leaving it off made the PromQL side of the differential test
+    select nothing at all while Datadog returned data.
+    """
+    got = _inst("count:m.x{*,!provider:} by {kind}")
+    assert got.ok
+    for spec in got.series:
+        assert spec.labels["provider"] != ""
+
+
+def test_a_grouping_key_that_is_only_required_present_still_varies():
+    # Any non-empty value satisfies `!provider:`, so grouping by the same tag must
+    # still produce several series --- otherwise the aggregation under test is trivial.
+    got = _inst("count:m.x{*,!provider:} by {provider}")
+    assert got.ok
+    assert len({s.labels["provider"] for s in got.series}) > 1
+
+
+def test_a_grouping_key_the_scope_pins_keeps_its_value():
+    # An equality matcher does pin the value, and overriding it would make the query
+    # select nothing.
+    got = _inst("count:m.x{env:prod} by {env}")
+    assert got.ok
+    assert {s.labels["env"] for s in got.series} == {"prod"}

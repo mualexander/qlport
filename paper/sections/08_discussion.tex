@@ -39,12 +39,13 @@ The gap catalogue is the wrong place to look for the design artefact. The caveat
 the right one.
 
 Table~\ref{tab:translation-caveats} reports that $96.9\%$ of translated occurrences carry
-\texttt{ROLLUP\_DEFAULT} and $76.2\%$ carry \texttt{METRIC\_TYPE\_UNKNOWN}. Both say the
+\texttt{ROLLUP\_DEFAULT} and that \emph{all} of them carry
+\texttt{METRIC\_TYPE\_UNKNOWN}. Both say the
 same kind of thing. A Datadog query does not state its own rollup interval --- that comes
 from the dashboard's time range, which is not in the query text --- and it does not state
 whether its metric is a counter or a gauge, which is metadata held elsewhere in the
 product. So the translation is exact, but exact relative to two facts the query omits.
-Only $149$ occurrences in the whole corpus depend on neither.
+No occurrence in the whole corpus depends on neither.
 
 A third instance arrived from an unrelated direction, which is what makes the pattern
 worth calling a property of the language rather than an artefact of two rules.
@@ -192,10 +193,26 @@ Datadog averages stored deltas where \texttt{avg\_over\_time} averages running t
 which confirms that \texttt{METRIC\_TYPE\_UNKNOWN} is load-bearing rather than
 precautionary, and does not narrow it.
 
+A later measurement widened it instead, and is the clearest case in this paper of the
+pattern this section is about. \texttt{.as\_count()} and \texttt{.as\_rate()} are
+documented for \texttt{COUNT} metrics, and we read their presence in a query as settling
+the type the dashboard omits --- which exempted a quarter of the corpus from the caveat.
+Datadog does not enforce the documentation: on a \texttt{GAUGE} it accepts both modifiers
+and ignores them, returning the unmodified rollup. So the syntax that looked like the
+query supplying its own metadata turns out to record only what its author believed, and
+the exemption was an artefact of reading a manual instead of an account. Every translated
+occurrence in the corpus now carries the caveat. The language does not become less
+self-contained when this is noticed; it was never self-contained, and the appearance that
+a quarter of it was came from the one piece of syntax that looks like a type declaration
+and is not.
+
 That leaves one assumption of the original four, and it is a different kind: that
 Datadog's backend stores what its agent sends. $\rho$ is read from the agent's source
-rather than observed end to end, and no experiment short of the dual-write test closes
-it.
+rather than observed end to end. The dual-write test was the experiment that would have
+closed it and has since been run; it did not close it, because the behaviour at issue
+appears only when a counter resets and a real request counter does not reset inside a
+half-hour window. Settling it needs a workload built to restart, which is the one place
+in this paper where a synthetic generator remains the only instrument.
 
 Finally, the comparison of $2.0\%$ against $2.4\%$ in \S\ref{sec:gaps} is a comparison
 between a property of the languages and a property of one translator's state on one

@@ -58,7 +58,7 @@ from qlport.harness.datadog import (                             # noqa: E402
 )
 from qlport.harness.shapes import instantiate                    # noqa: E402
 from qlport.ir import shape                                      # noqa: E402
-from qlport.lower.datadog import lower_all, metric_name          # noqa: E402
+from qlport.lower.datadog import label_name, lower_all, metric_name          # noqa: E402
 from qlport.metrics import reldiff                               # noqa: E402
 from qlport.parse import parse                                   # noqa: E402
 from qlport.semantics import datadog_eval as dd                  # noqa: E402
@@ -77,6 +77,11 @@ INGEST_WAIT = 900.0
 # is to float64 precision rather than bit-identical. The paper's own model-versus-server
 # check uses the same bound.
 TOLERANCE = 1e-12
+# Subtracting two near-equal values loses most of the significand, so a shape whose
+# query is a difference of two aggregates carries far more rounding than one that is
+# not. 1e-9 still catches every real disagreement here by three orders of magnitude --
+# the smallest genuine one found was 0.077 -- while not reporting cancellation as one.
+CANCELLATION_TOLERANCE = 1e-9
 
 
 def run(*cmd: str, **kw):
@@ -146,14 +151,27 @@ def representatives(run_tag: str) -> list[dict]:
             # Two rollups of different widths in one query would need two bucket grids;
             # recorded rather than compared on the wrong one.
             continue
+        # Datadog tag keys may contain dots; PromQL label names may not, so the IR
+        # holds `openai_organization_name` where the query says
+        # `openai.organization.name`. Submitting the normalised spelling while asking
+        # Datadog to group by the dotted one means Datadog groups by a tag that is not
+        # there --- it silently returns one ungrouped series, which the comparison then
+        # reports as groups that did not line up. The tags go out in the query's own
+        # spelling and are mapped back when the response is read.
+        dd_keys = {label_name(t): t
+                   for t in re.findall(r"[A-Za-z_][\w.]*", rec["text"])
+                   if label_name(t) != t}
         out.append({
             "interval": intervals[0],
             "index": i, "occurrences": rec["n"], "datadog_original": rec["text"],
             "datadog": dd_text, "promql": em.promql,
             "caveats": sorted(c.name for c in em.caveats),
             "group_keys": list(inst.group_keys),
+            # original spelling -> the normalised name PromQL uses
+            "dd_group_keys": {dd_keys.get(k, k): k for k in inst.group_keys},
             "series": [{"metric": metric_name(rename[sp.metric]), "dd_metric": rename[sp.metric],
                         "labels": sp.labels,
+                        "dd_labels": {dd_keys.get(k, k): v for k, v in sp.labels.items()},
                         "kind": _kind_for(renamed_ir, metric_name(rename[sp.metric]))}
                        for sp in inst.series],
         })
@@ -270,7 +288,8 @@ def write_datadog(creds, data: dict, run_tag: str) -> int:
     sent = 0
     for (_, _), d in data.items():
         spec = d["spec"]
-        tags = [f"run:{run_tag}"] + [f"{k}:{v}" for k, v in sorted(spec["labels"].items())]
+        tags = ([f"run:{run_tag}"]
+                + [f"{k}:{v}" for k, v in sorted(spec["dd_labels"].items())])
         if spec["kind"] == "counter":
             deltas = np.diff(d["vs"], prepend=d["vs"][0])
             pts = [(float(t), float(v)) for t, v in zip(d["ts"], deltas)][1:]
@@ -319,8 +338,11 @@ def prom_range(base_url: str, expr: str, start: float, end: float, step: float) 
     return out
 
 
-def dd_series(raw: dict, group_keys: list[str]) -> dict:
-    """Each returned series keyed by its grouping tag values.
+def dd_series(raw: dict, keymap: dict) -> dict:
+    """Each returned series keyed by its grouping tag values, in PromQL's spelling.
+
+    `keymap` maps each grouping tag's Datadog spelling to the normalised label name the
+    PromQL side uses, so a tag key containing dots lines up with its counterpart.
 
     `tag_set` carries the grouping tags; `scope` carries the query's filter terms as
     well, so a key that is both filtered and grouped appears twice there -- once with
@@ -336,8 +358,8 @@ def dd_series(raw: dict, group_keys: list[str]) -> dict:
             terms = [x.strip() for x in str(s.get("scope", "")).split(",")]
         for term in terms:
             k, sep, v = str(term).partition(":")
-            if sep and k in group_keys and "*" not in v:
-                tags[k] = v
+            if sep and k in keymap and "*" not in v:
+                tags[keymap[k]] = v
         key = tuple(sorted(tags.items()))
         out[key] = {round(float(t) / 1000.0, 3): (None if v is None else float(v))
                     for t, v in (s.get("pointlist") or [])}
@@ -394,7 +416,7 @@ def main(argv=None) -> int:
                             "detail": f"interval {D:g}s over a {WINDOW:g}s window",
                             "occurrences": r["occurrences"]}
                 raw = query(creds, r["datadog"], time.time() - RANGE, time.time())
-                ddv = dd_series(raw, r["group_keys"])
+                ddv = dd_series(raw, r["dd_group_keys"])
                 pmv = prom_range(base, r["promql"], dd.eval_instant(buckets[0], D),
                                  dd.eval_instant(buckets[-1], D), D)
             except Exception as exc:
@@ -420,13 +442,16 @@ def main(argv=None) -> int:
                         continue
                     compared += 1
                     diffs.append(reldiff(dv, pv))
+            tol = (CANCELLATION_TOLERANCE
+                   if any(op in r["promql"] for op in (" - ", " + ")) else TOLERANCE)
             if not compared:
                 return {"index": r["index"], "status": "unmatched",
                         "detail": f"dd groups={list(ddv)[:2]} pq groups={list(pmv)[:2]}",
                         "occurrences": r["occurrences"]}
             return {"index": r["index"], "status": "compared",
                     "occurrences": r["occurrences"], "buckets": compared,
-                    "exact": sum(1 for d in diffs if d <= TOLERANCE) / compared,
+                    "tolerance": tol,
+                    "exact": sum(1 for d in diffs if d <= tol) / compared,
                     "bit_identical": sum(1 for d in diffs if d == 0) / compared,
                     "median_d": float(np.median(diffs)),
                     "max_d": float(np.max(diffs)),

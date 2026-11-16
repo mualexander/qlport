@@ -364,3 +364,81 @@ def test_a_finer_interval_than_enforced_is_refused_not_widened():
     tf = _cached("e4")["too_fine_rollup"]
     assert tf["accepted"] is False, tf
     assert "limit" in tf["error"], tf["error"]
+
+
+# ------------- the recorded E6 measurement (as_rate's placement and its evidence)
+
+
+E6 = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog" / "as_rate_order.json"
+
+
+@pytest.fixture(scope="module")
+def e6() -> dict:
+    if not E6.exists():  # pragma: no cover - run scripts/as_rate_order.py
+        pytest.skip("as_rate_order.json not recorded; run scripts/as_rate_order.py")
+    return json.loads(E6.read_text())
+
+
+def _approx(x: float):
+    """The recorder rounds to six decimals, so comparisons match that precision."""
+    return pytest.approx(x, abs=1e-6)
+
+
+def _only(e6: dict, key: str) -> float:
+    """The single value every series of a recorded query settled on.
+
+    Each probe submits a constant, so a query that reduces it correctly returns one
+    value per group and the same value in every group; anything else means the probe,
+    not the system, is what the test would be reading.
+    """
+    rec = e6["queries"][key]
+    assert "error" not in rec, f"{key}: {rec.get('error')}"
+    vals = {v for series in rec["values"].values() for v in series}
+    assert len(vals) == 1, f"{key} did not settle on one value: {rec['values']}"
+    return vals.pop()
+
+
+def test_as_rate_divides_the_rolled_up_value_by_the_rollup_interval(e6):
+    """Not each delta by its own submission interval.
+
+    The two readings agree whenever the submission grid equals the rollup width, which
+    is why this went unmeasured for so long: every harness in this project scraped at
+    the rollup interval. E6 submits every 10 s and rolls up over 30 s, which separates
+    them --- 10/30 for the reading the emitter uses, 10/10 for the other.
+    """
+    assert _only(e6, "cnt.rollup_avg") == _approx(10.0)
+    assert _only(e6, "cnt.as_rate.rollup_avg") == _approx(10.0 / 30.0)
+    assert _only(e6, "cnt.as_rate.rollup_avg") != _approx(10.0 / 10.0)
+
+
+def test_as_rate_applies_outside_the_space_aggregation(e6):
+    """Observable only through `count:`, which does not commute with scaling.
+
+    `count:` of three series returns 1 per group. With `.as_rate()` it returns 1/30,
+    so the modifier divided the aggregated result; had it divided each series first,
+    the count would have been unchanged at 1.
+    """
+    assert _only(e6, "grp.count") == _approx(1.0)
+    assert _only(e6, "grp.count.as_rate") == _approx(1.0 / 30.0)
+    # For `sum:` the placement is invisible, which is why it hid there.
+    assert _only(e6, "grp.sum") == _approx(10.0)
+    assert _only(e6, "grp.sum.as_rate") == _approx(10.0 / 30.0)
+
+
+@pytest.mark.parametrize("modified,plain", [
+    ("gau.as_rate", "gau.plain"),
+    ("gau.as_count", "gau.plain"),
+    ("gau.as_rate.rollup_avg", "gau.rollup_avg"),
+    ("gau.as_count.rollup_avg", "gau.rollup_avg"),
+])
+def test_neither_modifier_does_anything_to_a_gauge(e6, modified, plain):
+    """Which is why neither establishes the metric's type.
+
+    Datadog documents `.as_count()` and `.as_rate()` for COUNT metrics, and the front
+    end read their presence as evidence that a metric is one. It accepts them on a
+    GAUGE and ignores them rather than rejecting the query, so a dashboard can carry
+    either over a gauge and show its author something they did not ask for. The
+    presence of the modifier records a belief, not a type --- so every translation
+    that depends on the type carries METRIC_TYPE_UNKNOWN.
+    """
+    assert _only(e6, modified) == _approx(_only(e6, plain))

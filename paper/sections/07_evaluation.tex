@@ -357,10 +357,13 @@ all rather than to list them once in prose. An \texttt{avg}, \texttt{min}, \text
 \texttt{count} rollup reduces the points Datadog stores, which are samples for a gauge and
 per-interval deltas for a counter; the emitted \texttt{*\_over\_time} is exact for the
 first and unrelated to the second, and a dashboard does not record which it is
-(Remark~\ref{rem:gauge}). At $76.2\%$ of translated occurrences it is the second largest
+(Remark~\ref{rem:gauge}). At $100\%$ of translated occurrences it is the largest
 qualification here, and it was missing from this table until the soundness theorem of
 Section~\ref{sec:kernel-soundness} was written down and its hypotheses compared against
-what the emitter actually recorded. $\kappa$ did not move when it was added --- the
+what the emitter actually recorded. It reached $100\%$ later still: the quarter of
+translations that use \texttt{.as\_count()} or \texttt{.as\_rate()} were held to
+establish their own metric type until the modifiers were measured on a gauge and found to
+be silent no-ops (Remark~\ref{rem:gauge}). $\kappa$ did not move when it was added --- the
 expressions are the same ones --- which is exactly why it is worth having: an unrecorded
 precondition costs nothing in any number the paper reports, right up to the point where
 somebody relies on the translation.
@@ -371,7 +374,9 @@ translations resting on nothing but the grid. With the fourth code in place the 
 figure is \emph{none}: every one of those $116$ is an \texttt{avg} rollup and now carries
 \texttt{METRIC\_TYPE\_UNKNOWN} too. No translation in this corpus is exact on the strength
 of the evaluation grid alone, which is a stronger claim than the one it replaces and was
-only invisible because a precondition was.
+only invisible because a precondition was. The same correction then ran to its conclusion:
+with the modifiers' evidential value withdrawn, no translation in this corpus is exact on
+the strength of anything the query itself contains.
 
 \begin{table}[htbp]\centering\scriptsize
 \input{tables/translation_examples}
@@ -435,33 +440,99 @@ exactly when a scrape lands on a boundary, and the translation must be evaluated
 inside the bucket. Evaluating on its right edge --- the obvious repair once the closure is
 known --- is wrong on almost every bucket of an aligned scrape.
 
-The dual-write differential test is run, but not over the corpus.
-Section~\ref{sec:replay} replays a real request trace into both systems and compares the
-counter rules bucket by bucket against Datadog itself, which is what makes the exactness
-claims of Section~\ref{sec:ingestion} claims about Datadog rather than about our reading
-of it. What is still specified and not run is the same construction applied to the
-\emph{corpus}: each translated pair evaluated against both systems on identical input.
-Until it is run, $\kappa$ measures what the translator is willing to translate rather
-than what it translates correctly.
+\emph{The corpus-scale differential test, no longer outstanding.} One further item
+belonged in this subsection until recently, and it was the largest of them: the
+construction of Section~\ref{sec:replay} applied to the whole corpus rather than to one
+replayed trace. Until it ran, $\kappa$ measured what the translator was willing to
+translate rather than what it translated correctly. It has since been run, and the next
+subsection reports it.
 
-It is smaller than it looks, which is worth recording because the obvious estimate is
-badly wrong. The experiment does not need every metric the corpus names to exist in both
+\subsection{Every shape, against both systems}
+\label{sec:differential}
+
+The construction is the one Section~\ref{sec:replay} applies to a single trace, applied
+instead to every distinct query shape the corpus contains. For each shape the harness
+reads off the lowered IR which series the query's own filters select, synthesises them,
+writes the cumulative counter to a local Prometheus and its image under $\phi$ to a real
+Datadog account, then evaluates the Datadog query against Datadog and its translation
+against Prometheus --- on the bucket grid that query's own rollup interval defines --- and
+compares the two readings bucket by bucket.
+
+It is a smaller experiment than it looks, which is worth recording because the obvious
+estimate is badly wrong. It does not need every metric the corpus names to exist in both
 systems. What a differential test exercises is the \emph{operator structure} --- which
 rollup, which aggregation, which matcher shapes --- and two queries that differ only in
 the metric they name are one experiment, not two. Abstracting metric names, tag keys and
-tag values out of the lowered IR collapses the $8{,}579$ translated occurrences to
-\textbf{$331$ distinct shapes}, and they are as unevenly distributed as everything else
-in this corpus: $6$ shapes cover half the occurrences, $22$ cover $80\%$, $49$ cover
-$90\%$ and $104$ cover $95\%$. A median query has one metric slot and one tag key, so at
-three label values apiece the top $50$ shapes need roughly $150$ synthetic series, the
-top $104$ about $320$, and all $331$ about $1{,}200$ --- a scale a single account
-sustains. The reduction is only sound if every query in a class
-translates the same way, and that is checkable rather than arguable: emitting all of
-them and masking the identifiers leaves each of the $331$ classes with exactly one form,
-so a representative stands for its class. Establishing that found a wart worth fixing ---
-the emitter decided parenthesisation by scanning its own output for operators, so a
-hyphen inside a tag value such as \texttt{result:hit-wait} was read as one and wrapped
-the expression in parentheses that meant nothing.
+tag values out of the lowered IR collapses the $8{,}270$ translated occurrences that are
+a single query to \textbf{$322$ distinct shapes}, and they are as unevenly distributed as
+everything else in this corpus: $6$ shapes cover half the occurrences, $23$ cover $80\%$,
+$49$ cover $90\%$ and $103$ cover $95\%$. A median query has one metric slot and two tag
+keys, so at three label values apiece all $322$ shapes need under a thousand synthetic
+series --- a scale a single trial account sustains, which is why the experiment turned
+out not to need a reconstruction of somebody's production estate. The reduction is only
+sound if every query in a class translates the same way, and that is checkable rather
+than arguable: emitting all of them and masking the identifiers leaves each of the $322$
+classes with exactly one form, so a representative stands for its class. Establishing
+that found a wart worth fixing --- the emitter decided parenthesisation by scanning its
+own output for operators, so a hyphen inside a tag value such as \texttt{result:hit-wait}
+was read as one and wrapped the expression in parentheses that meant nothing.
+
+Table~\ref{tab:differential} reports the outcome. Of the $322$ shapes, $320$ could be
+compared, and all $320$ agreed with Datadog on every one of $21{,}766$ bucket
+comparisons --- to float64 precision rather than bit-identity, since two engines summing
+the same values in a different order differ in the last bit, and the bound is the one the
+model-versus-server check of Section~\ref{sec:ingestion} already uses. Weighted by the
+corpus queries those shapes stand for, that is $8{,}267$ of the $8{,}270$ translated
+single-query occurrences. So $\kappa$ now measures translations that have been checked
+against the vendor rather than merely emitted, which is a claim this paper could not
+previously make.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/differential}
+\caption{The corpus-scale differential test. Each shape is instantiated with synthetic
+series satisfying its own filters, written to both systems, and evaluated bucket by
+bucket. Occurrences weight each shape by the corpus queries it stands for.}
+\label{tab:differential}
+\end{table}
+
+What the run is worth is what it found, and reporting only the agreement rate would hide
+it. Four translation defects survived the unit tests and the single-trace replay and were
+caught here. A rollup other than $\mathsf{sum}$ over a metric \emph{known} to be a counter
+emitted an \texttt{*\_over\_time} of the cumulative series, which is not a function of the
+deltas Datadog reduces --- wrong output rather than output with an unmet precondition,
+since the type was not in doubt. Underneath it, \texttt{.as\_count().rollup(avg, 60)} was
+losing the type evidence altogether, because the kind was read off the \emph{final} time
+aggregator and the later \texttt{.rollup} overwrote it. Third, \texttt{.as\_rate()} was
+emitted inside the space aggregation; that is invisible for $\mathsf{sum}$,
+$\mathsf{avg}$, $\mathsf{min}$ and $\mathsf{max}$, which commute with scaling, and the
+one $\mathsf{count}$ shape in the corpus disagreed by exactly $1-1/\Delta$
+(Remark~\ref{rem:gauge}). Fourth, a binary operation between a grouped and an ungrouped
+vector was emitted with PromQL's default matching, which pairs nothing and returns the
+empty vector where Datadog broadcasts --- silently, since an empty result is not an
+error; the two corpus occurrences now carry an explicit matching clause. None of the four
+is a gap in either language. All four are translator defects of the kind that a coverage
+number cannot see, because a wrong translation and a right one are both translations.
+
+Before any of the four was visible, three other systematic disagreements had to be
+chased down, and every one of them was the harness rather than the systems. That ratio is
+the honest summary of the exercise, and the more useful lesson about differential rigs
+than the agreement rate is. Metric names
+shared across runs let Datadog see two runs' points where Prometheus saw one, which
+looked like a uniform $30\%$ error. A global $60$~s bucket grid compared a
+\texttt{.rollup(sum, 300)} bucket against a PromQL window covering a fifth of its span,
+which looked like $21$ broken shapes. Tag keys containing dots were submitted in PromQL's
+normalised spelling while the Datadog query still asked for the dotted one, so Datadog
+grouped by a tag that was not there. In each case the parameter was read from somewhere
+other than the query that stated it.
+
+The run does not cover everything, and Table~\ref{tab:differential} says so rather than
+quietly dropping what it misses. One shape states a $1800$~s rollup, which the run's
+half-hour window cannot hold two of. One asks for a tag to equal \texttt{5} and match
+\texttt{4*} at once, which no series satisfies, so both systems correctly return nothing
+and there is nothing to compare. The data is synthetic: the shapes are the corpus's, the
+series are not, so the test exercises operator structure and not the distributional
+oddities of real traffic --- which is what Section~\ref{sec:replay}'s replay of a real
+trace is for, and the two are complementary rather than redundant.
 
 \subsection{Threats to validity}
 \label{sec:threats}

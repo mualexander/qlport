@@ -73,8 +73,9 @@ direction people travel is \emph{engineering} (\S\ref{sec:gaps}).
 The design artefact is elsewhere, and \S\ref{sec:discussion} argues it is the more
 interesting finding. A Datadog query does not state its own rollup interval --- that comes
 from the dashboard's time range --- and does not state whether its metric is a counter or
-a gauge. So $96.9\%$ of the translations we emit depend on an interval the query omits and
-$76.2\%$ on a type it omits; only $149$ occurrences in the corpus depend on neither. The
+a gauge. So $96.9\%$ of the translations we emit depend on an interval the query omits, and
+\emph{every one} depends on a type it omits; no occurrence in the corpus depends on
+neither. The
 translations are exact, but exact relative to context supplied from outside the query. A
 PromQL expression names its own window and carries its reset semantics in the function it
 calls. That is a property of the languages, and it is invisible in any coverage number.

@@ -84,12 +84,30 @@ def test_time_aggregation_is_inside_space_aggregation(ddq, want):
     assert translate(ddq) == want
 
 
-def test_as_rate_divides_per_series_not_after_space_aggregation():
-    """The division is part of the time aggregation, so it sits inside the \
-    aggregator. Only `count:` can tell the difference, and putting it outside would
-    scale a count of series by the interval."""
+def test_as_rate_divides_after_space_aggregation():
+    """`.as_rate()` divides the query's result, not each series.
+
+    This test asserted the opposite until E6 measured it. Submitting three COUNT series
+    of 10 every 10 s and querying `count:m{*} by {g}.rollup(avg, 30)` returns 1 per
+    group; adding `.as_rate()` returns 1/30. A count of series does not depend on their
+    values, so the only way the modifier can change it is from outside --- and the
+    corpus-scale differential test of §7 reported this shape disagreeing by exactly
+    1 - 1/60 before the measurement explained why.
+    """
     assert translate("count:x{*}.as_rate().rollup(sum, 60)") == \
-        "count((x - x offset 60s) / 60)"
+        "(count(x - x offset 60s)) / 60"
+
+
+@pytest.mark.parametrize("ddq,want", [
+    # Dividing by a positive constant commutes with these, so the emitted form keeps
+    # the division inside, where it reads better. The value is the same either way.
+    ("sum:x{*}.as_rate().rollup(sum, 60)", "sum((x - x offset 60s) / 60)"),
+    ("avg:x{*}.as_rate().rollup(sum, 60)", "avg((x - x offset 60s) / 60)"),
+    ("min:x{*}.as_rate().rollup(sum, 60)", "min((x - x offset 60s) / 60)"),
+    ("max:x{*}.as_rate().rollup(sum, 60)", "max((x - x offset 60s) / 60)"),
+])
+def test_as_rate_stays_inside_the_aggregators_that_commute_with_it(ddq, want):
+    assert translate(ddq) == want
 
 
 @pytest.mark.parametrize("term,want", [
@@ -410,12 +428,17 @@ def test_every_non_sum_rollup_carries_the_caveat(ddq):
     assert Gap.METRIC_TYPE_UNKNOWN in got.caveats
 
 
-def test_a_sum_rollup_does_not_carry_it_because_the_type_is_established():
-    # `.as_count()` is itself the evidence that the metric is a COUNT, so for this
-    # branch the type is known and the caveat would be noise.
+def test_a_sum_rollup_carries_it_too_because_the_type_is_only_assumed():
+    # This asserted the caveat's *absence* until E6 measured the premise it rested on.
+    # The reasoning was that `.as_count()` only applies to COUNT metrics, so a query
+    # using it establishes the type. Datadog does not enforce that: submitting a GAUGE
+    # and querying `sum:g{*}.as_count()` returns the plain rollup, the modifier
+    # silently ignored, exactly as `sum:g{*}` does. So the modifier records what the
+    # dashboard's author took the metric to be, and the translation rests on an
+    # assumption the query cannot settle -- which is what this caveat says.
     got = emit_detail(lower(parse("datadog", "sum:x{*}.as_count()", "v2")),
                       default_rollup=60.0)
-    assert Gap.METRIC_TYPE_UNKNOWN not in got.caveats
+    assert Gap.METRIC_TYPE_UNKNOWN in got.caveats
     assert Gap.COUNTER_RESET in got.caveats
 
 
@@ -490,3 +513,44 @@ def test_a_later_rollup_does_not_erase_the_type_evidence():
 def test_a_gauge_rollup_is_untouched_by_the_counter_rule():
     assert translate("avg:x{*}.rollup(avg, 60)") == "avg(avg_over_time(x[60s]))"
     assert translate("max:x{*}.rollup(max, 60)") == "max(max_over_time(x[60s]))"
+
+
+# --------------------------------------------------- vector matching across a binop
+
+
+def test_operands_with_the_same_grouping_need_no_matching_clause():
+    # PromQL's default matching is already right when both sides carry the same labels,
+    # which is every binary operation in the corpus but two.
+    assert translate("sum:a.b{*} by {h} / sum:c.d{*} by {h}") == \
+        "sum by (h) (avg_over_time(a_b[60s])) / sum by (h) (avg_over_time(c_d[60s]))"
+
+
+def test_an_ungrouped_divisor_is_broadcast_across_the_groups():
+    """Datadog broadcasts; PromQL matches on labels and would return nothing.
+
+    `sum by (k) (x) / sum(y)` pairs each group against a series with no labels. PromQL
+    finds no matching pair and returns the empty vector --- no error, no result. The
+    corpus-scale differential test of §7 found this as two shapes where Datadog
+    returned data and Prometheus returned none.
+    """
+    got = translate("sum:a.b{*} by {k}.as_count() / sum:c.d{*}.as_count()")
+    assert "on() group_left()" in got
+    assert got == ("(sum by (k) (a_b - a_b offset 60s)) / on() group_left() "
+                   "(sum(c_d - c_d offset 60s))")
+
+
+def test_an_ungrouped_dividend_broadcasts_the_other_way():
+    # The modifier names the side with many series, so this is group_right.
+    got = translate("a.b{*} / c.d{*} by {host}")
+    assert "on() group_right()" in got
+    assert got == ("avg(avg_over_time(a_b[60s])) / on() group_right() "
+                   "avg by (host) (avg_over_time(c_d[60s]))")
+
+
+def test_two_different_groupings_are_refused_rather_than_guessed():
+    # Matching would have to pick a label set, and the query does not say which. No
+    # corpus query does this, so the refusal never fires on the measured corpus.
+    got = emit_detail(lower(parse("datadog", "a.b{*} by {h} / c.d{*} by {k}", "v2")),
+                      default_rollup=60.0)
+    assert isinstance(got, Bottom)
+    assert got.gap is Gap.UNSUPPORTED_FUNCTION

@@ -172,11 +172,14 @@ Definition~\ref{def:kappa} counts queries the translator is \emph{willing} to tr
 The stronger measure counts queries whose translation is observed to agree: run $q$
 against the source system and $T(q)$ against the target on the same data, and count a
 query only when the two results agree to within $\varepsilon$. That is the differential
-measure, it requires both systems live, and \S\ref{sec:not-measured} explains why this
-paper specifies it and does not run it. The two coincide exactly when every emitted
-expression is correct, so reporting the first while proving exactness on a stated class
---- the shape of \S\ref{sec:kernel-soundness} --- is the honest substitute, and the gap
-between them is where the remaining risk lives. Every $\kappa$ quoted below is
+measure, and it requires both systems live. \S\ref{sec:differential} runs it over every
+distinct query shape the corpus contains, against a real Datadog account and a local
+Prometheus; the two measures agree on every shape it could compare. The two coincide
+exactly when every emitted expression is correct, and the four translator defects that
+run found are what the gap between them consisted of before it was closed --- which is
+also why the exactness proofs of \S\ref{sec:kernel-soundness} are kept rather than
+replaced by the measurement: a run on synthetic series over one account is evidence, and
+a proof on a stated class is a reason. Every $\kappa$ quoted below is
 Definition~\ref{def:kappa}.
 \end{remark}
 

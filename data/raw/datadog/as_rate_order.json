@@ -1,0 +1,338 @@
+{
+ "count_delta": 10.0,
+ "gauge_level": 50.0,
+ "queries": {
+  "cnt.as_count.rollup_avg": {
+   "n_points": {
+    "*": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.cnt{*}.as_count().rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 1,
+   "values": {
+    "*": [
+     10.0
+    ]
+   }
+  },
+  "cnt.as_rate": {
+   "n_points": {
+    "*": 180
+   },
+   "query": "sum:qlport.ar.r1794863577.cnt{*}.as_rate()",
+   "reported_interval": 10,
+   "series": 1,
+   "values": {
+    "*": [
+     1.0
+    ]
+   }
+  },
+  "cnt.as_rate.rollup_avg": {
+   "n_points": {
+    "*": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.cnt{*}.as_rate().rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 1,
+   "values": {
+    "*": [
+     0.333333
+    ]
+   }
+  },
+  "cnt.as_rate.rollup_sum": {
+   "n_points": {
+    "*": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.cnt{*}.as_rate().rollup(sum, 30)",
+   "reported_interval": 30,
+   "series": 1,
+   "values": {
+    "*": [
+     0.333333,
+     0.666667,
+     1.0
+    ]
+   }
+  },
+  "cnt.rollup_avg": {
+   "n_points": {
+    "*": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.cnt{*}.rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 1,
+   "values": {
+    "*": [
+     10.0
+    ]
+   }
+  },
+  "cnt.rollup_sum": {
+   "n_points": {
+    "*": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.cnt{*}.rollup(sum, 30)",
+   "reported_interval": 30,
+   "series": 1,
+   "values": {
+    "*": [
+     10.0,
+     20.0,
+     30.0
+    ]
+   }
+  },
+  "gau.as_count": {
+   "n_points": {
+    "*": 180
+   },
+   "query": "sum:qlport.ar.r1794863577.gau{*}.as_count()",
+   "reported_interval": 10,
+   "series": 1,
+   "values": {
+    "*": [
+     50.0
+    ]
+   }
+  },
+  "gau.as_count.rollup_avg": {
+   "n_points": {
+    "*": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.gau{*}.as_count().rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 1,
+   "values": {
+    "*": [
+     50.0
+    ]
+   }
+  },
+  "gau.as_rate": {
+   "n_points": {
+    "*": 180
+   },
+   "query": "sum:qlport.ar.r1794863577.gau{*}.as_rate()",
+   "reported_interval": 10,
+   "series": 1,
+   "values": {
+    "*": [
+     50.0
+    ]
+   }
+  },
+  "gau.as_rate.rollup_avg": {
+   "n_points": {
+    "*": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.gau{*}.as_rate().rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 1,
+   "values": {
+    "*": [
+     50.0
+    ]
+   }
+  },
+  "gau.as_rate.rollup_sum": {
+   "n_points": {
+    "*": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.gau{*}.as_rate().rollup(sum, 30)",
+   "reported_interval": 30,
+   "series": 1,
+   "values": {
+    "*": [
+     50.0,
+     100.0,
+     150.0
+    ]
+   }
+  },
+  "gau.plain": {
+   "n_points": {
+    "*": 180
+   },
+   "query": "sum:qlport.ar.r1794863577.gau{*}",
+   "reported_interval": 10,
+   "series": 1,
+   "values": {
+    "*": [
+     50.0
+    ]
+   }
+  },
+  "gau.rollup_avg": {
+   "n_points": {
+    "*": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.gau{*}.rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 1,
+   "values": {
+    "*": [
+     50.0
+    ]
+   }
+  },
+  "grp.count": {
+   "n_points": {
+    "g:g0": 61,
+    "g:g1": 61,
+    "g:g2": 61
+   },
+   "query": "count:qlport.ar.r1794863577.grp{*} by {g}.rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 3,
+   "values": {
+    "g:g0": [
+     1.0
+    ],
+    "g:g1": [
+     1.0
+    ],
+    "g:g2": [
+     1.0
+    ]
+   }
+  },
+  "grp.count.as_count": {
+   "n_points": {
+    "g:g0": 61,
+    "g:g1": 61,
+    "g:g2": 61
+   },
+   "query": "count:qlport.ar.r1794863577.grp{*} by {g}.as_count().rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 3,
+   "values": {
+    "g:g0": [
+     1.0
+    ],
+    "g:g1": [
+     1.0
+    ],
+    "g:g2": [
+     1.0
+    ]
+   }
+  },
+  "grp.count.as_rate": {
+   "n_points": {
+    "g:g0": 61,
+    "g:g1": 61,
+    "g:g2": 61
+   },
+   "query": "count:qlport.ar.r1794863577.grp{*} by {g}.as_rate().rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 3,
+   "values": {
+    "g:g0": [
+     0.033333
+    ],
+    "g:g1": [
+     0.033333
+    ],
+    "g:g2": [
+     0.033333
+    ]
+   }
+  },
+  "grp.sum": {
+   "n_points": {
+    "g:g0": 61,
+    "g:g1": 61,
+    "g:g2": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.grp{*} by {g}.rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 3,
+   "values": {
+    "g:g0": [
+     10.0
+    ],
+    "g:g1": [
+     10.0
+    ],
+    "g:g2": [
+     10.0
+    ]
+   }
+  },
+  "grp.sum.as_count": {
+   "n_points": {
+    "g:g0": 61,
+    "g:g1": 61,
+    "g:g2": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.grp{*} by {g}.as_count().rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 3,
+   "values": {
+    "g:g0": [
+     10.0
+    ],
+    "g:g1": [
+     10.0
+    ],
+    "g:g2": [
+     10.0
+    ]
+   }
+  },
+  "grp.sum.as_rate": {
+   "n_points": {
+    "g:g0": 61,
+    "g:g1": 61,
+    "g:g2": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.grp{*} by {g}.as_rate().rollup(avg, 30)",
+   "reported_interval": 30,
+   "series": 3,
+   "values": {
+    "g:g0": [
+     0.333333
+    ],
+    "g:g1": [
+     0.333333
+    ],
+    "g:g2": [
+     0.333333
+    ]
+   }
+  },
+  "grp.sum.as_rate.rollup_sum": {
+   "n_points": {
+    "g:g0": 61,
+    "g:g1": 61,
+    "g:g2": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.grp{*} by {g}.as_rate().rollup(sum, 30)",
+   "reported_interval": 30,
+   "series": 3,
+   "values": {
+    "g:g0": [
+     0.333333,
+     0.666667,
+     1.0
+    ],
+    "g:g1": [
+     0.333333,
+     0.666667,
+     1.0
+    ],
+    "g:g2": [
+     0.333333,
+     0.666667,
+     1.0
+    ]
+   }
+  }
+ },
+ "rollup": 30.0,
+ "run": "r1794863577",
+ "step": 10.0,
+ "t0": 1794863577.0
+}

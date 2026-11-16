@@ -133,6 +133,42 @@ def _is_counter(e: ir.Expr) -> bool:
     return _kind_of(e) == "counter"
 
 
+_SCALAR = object()
+
+
+def _match_keys(e: ir.Expr):
+    """The label set PromQL gives this subexpression, for vector matching.
+
+    An empty frozenset means one unlabelled series --- what a space aggregation with no
+    `by` returns. `_SCALAR` is a number, which matches anything. `None` means two
+    operands of a nested operation already disagreed, so nothing can be said.
+
+    Datadog and PromQL part company here. Datadog broadcasts: dividing a per-group
+    series by an ungrouped one divides every group by that one value. PromQL matches on
+    labels, and two vectors with different label sets have no matching pairs at all, so
+    the same expression returns the empty vector rather than a ratio --- silently, since
+    an empty result is not an error. The corpus-scale differential test of §7 is what
+    surfaced it: two shapes where Datadog returned data and PromQL returned nothing.
+    """
+    if isinstance(e, ir.Number):
+        return _SCALAR
+    if isinstance(e, ir.Agg):
+        return frozenset(e.keys) if e.mode == "by" else None
+    if isinstance(e, ir.BinOp):
+        lhs, rhs = _match_keys(e.lhs), _match_keys(e.rhs)
+        if lhs is _SCALAR:
+            return rhs
+        if rhs is _SCALAR:
+            return lhs
+        return lhs if lhs == rhs else None
+    inner = getattr(e, "expr", None)
+    if inner is None:
+        inner = getattr(e, "arg", None)
+    if inner is not None and not isinstance(inner, (str, float, int, tuple)):
+        return _match_keys(inner)
+    return frozenset()
+
+
 class _Emitter:
     def __init__(self, *, anchored: bool, default_rollup: float | None):
         self.anchored = anchored
@@ -168,17 +204,32 @@ class _Emitter:
         self.note(Gap.ROLLUP_DEFAULT)
         return float(self.default_rollup)
 
-    def _rollup(self, e: ir.Rollup) -> str:
+    def _rollup(self, e: ir.Rollup, *, scale: bool = True) -> str:
         """Datadog's time aggregation: one series in, one series out.
 
         It reduces each series on its own and any space aggregation wraps the result,
-        which is what PromQL's range functions already do -- so there is no rollup to
-        push anywhere and no commutation question to answer.
+        which is what PromQL's range functions already do -- so the reduction itself
+        needs no pushing anywhere. `.as_rate()`'s division is a separate matter: it
+        scales the query's result rather than each series, and that does raise a
+        commutation question, answered in the `Agg` branch of `expr`.
+
+        `scale=False` emits the reduction without `.as_rate()`'s division, for the one
+        caller that has to place that division outside an enclosing aggregation; see
+        the `Agg` branch of `expr`.
         """
         width = self._interval(e)
         self.note(Gap.ROLLUP_ALIGNMENT)
         if e.op == "sum":
-            if not _is_counter(e.expr):
+            if _is_counter(e.expr):
+                # The kind is an inference, never a fact: E6 submitted a GAUGE and
+                # found `.as_count()` and `.as_rate()` accepted and silently ignored
+                # on it, so a query carrying either says what its author believed the
+                # metric to be and no reading of the query settles it. The rule below
+                # is right for a COUNT and wrong for a GAUGE, which is exactly what
+                # this caveat means: the translation depends on a type the dashboard
+                # never states.
+                self.note(Gap.METRIC_TYPE_UNKNOWN)
+            else:
                 # Not the information barrier of paper §3: the data is there, we just
                 # cannot tell from a dashboard whether this metric was submitted as
                 # COUNT, and the rule to use depends on that.
@@ -201,6 +252,8 @@ class _Emitter:
                 # is not in the query.
                 _refuse(Gap.UNSUPPORTED_FUNCTION,
                         f".rollup({e.op}) over a counter needs the individual deltas")
+            # Counter-ness is inferred, not stated; see the `sum` branch above.
+            self.note(Gap.METRIC_TYPE_UNKNOWN)
             total = self._bucket_total(e.expr, width)
             n = f"count_over_time({self.expr(e.expr)}[{duration(width)}])"
             body = f"{_atom(total)} / {n}"
@@ -214,7 +267,29 @@ class _Emitter:
             if _kind_of(e.expr) != "gauge":
                 self.note(Gap.METRIC_TYPE_UNKNOWN)
             body = f"{_RANGE_FNS[e.op]}({self.expr(e.expr)}[{duration(width)}])"
-        return f"{_atom(body)} / {_number(width)}" if e.per_second else body
+        return f"{_atom(body)} / {_number(width)}" if (e.per_second and scale) else body
+
+    def _binop(self, e: ir.BinOp) -> str:
+        """A binary operation, with the vector matching PromQL needs and Datadog does not.
+
+        Where both sides carry the same label set the operation is written plainly and
+        PromQL's default matching is already right. Where one side is a single
+        unlabelled series --- a space aggregation with no `by` --- Datadog broadcasts it
+        across the other side's groups, and `on() group_left()` (or `group_right()`)
+        is the PromQL that does the same. Where both sides are grouped on *different*
+        non-empty sets there is no faithful reading: the operation would have to pick a
+        set to match on, and the query does not say which. No corpus query does this.
+        """
+        lhs, rhs = self.expr(e.lhs), self.expr(e.rhs)
+        lk, rk = _match_keys(e.lhs), _match_keys(e.rhs)
+        op = e.op
+        if lk is not _SCALAR and rk is not _SCALAR and lk != rk:
+            if lk is None or rk is None or (lk and rk):
+                _refuse(Gap.UNSUPPORTED_FUNCTION,
+                        f"operands of {e.op} are grouped on different label sets")
+            # The empty side is the single series; the other is the "many" side.
+            op = f"{e.op} on() {'group_left()' if rk == frozenset() else 'group_right()'}"
+        return f"{_atom(lhs)} {op} {_atom(rhs)}"
 
     # -- dispatch ------------------------------------------------------------
     def expr(self, e: ir.Expr) -> str:
@@ -223,7 +298,21 @@ class _Emitter:
         if isinstance(e, ir.Select):
             return _selector(e)
         if isinstance(e, ir.Agg):
-            return _agg(e.op, e.keys, e.mode, self.expr(e.expr))
+            inner = e.expr
+            if e.op == "count" and isinstance(inner, ir.Rollup) and inner.per_second:
+                # `.as_rate()` divides the query's *result*, not each series. E6
+                # measures `count:m{*} by {g}.as_rate()` as 1/R where the same query
+                # without the modifier is 1, so the division sits outside the space
+                # aggregation. Dividing by a positive constant commutes with sum, avg,
+                # min and max, so emitting it inside is harmless for those and is kept
+                # there for readability; `count` is blind to its operand's values and
+                # does not commute with it. Emitting it inside was wrong rather than
+                # merely unqualified, and the corpus-scale differential test of §7 is
+                # what caught it.
+                width = self._interval(inner)
+                body = _agg(e.op, e.keys, e.mode, self._rollup(inner, scale=False))
+                return f"{_atom(body)} / {_number(width)}"
+            return _agg(e.op, e.keys, e.mode, self.expr(inner))
         if isinstance(e, ir.Rollup):
             return self._rollup(e)
         if isinstance(e, ir.Scale):
@@ -233,7 +322,7 @@ class _Emitter:
                 return f"-{_atom(self.expr(e.expr))}"
             return f"{_atom(self.expr(e.expr))} * {_number(e.factor)}"
         if isinstance(e, ir.BinOp):
-            return f"{_atom(self.expr(e.lhs))} {e.op} {_atom(self.expr(e.rhs))}"
+            return self._binop(e)
         if isinstance(e, ir.Window):
             _refuse(Gap.UNSUPPORTED_FUNCTION, "bare window")
         if isinstance(e, ir.RangeFn):

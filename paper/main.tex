@@ -25,7 +25,7 @@ queries extracted from published dashboards, $95.6\%$ of Datadog query occurrenc
 translate exactly; the shortfall is $2.0\%$ inexpressible against $2.4\%$ unimplemented,
 so in the direction teams travel the cost is engineering. The language-design artefact
 lies elsewhere: $96.9\%$ of our translations depend on a rollup interval the query omits
-and $76.3\%$ on a metric type it omits, because a Datadog query is not self-contained.
+and every one on a metric type it omits, because a Datadog query is not self-contained.
 Going back is different in kind --- a Datadog tag filter is a glob, glob-expressibility
 of a regular expression is decidable, and three impossibility results account for every
 refusal we measure in that direction. Leaving costs work; returning costs expressiveness.
