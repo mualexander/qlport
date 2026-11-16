@@ -384,7 +384,8 @@ def _insert_stars(w: str, gaps) -> str:
 
 
 def single_glob_by_search(r: str, *, max_candidates: int = 4096) -> str | None:
-    r"""Decide single-glob expressibility by searching star insertions (§6, Prop. 5).
+    r"""Decide single-glob expressibility by searching star insertions
+    (§6, the decidability proposition).
 
     If $L(r)=L(g)$ for $g=s_0*s_1*\cdots*s_n$ then, with `*` matching the empty string,
     the shortest word of $L(g)$ is $s_0s_1\cdots s_n$ and it is the *only* word of that

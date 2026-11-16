@@ -46,7 +46,7 @@ def test_gauges_pass_through_phi():
     assert phi_series(g) is g
 
 
-# ---- Corollary 2: rate() is not phi-invariant when a series starts in the window ------
+# ---- §3.1: rate() is not phi-invariant when a series starts in the window -------------
 def test_rate_reads_absolute_first_value():
     ts = np.arange(315, HOUR, 15.0)
     a = 1 + 10 * (ts - ts[0])

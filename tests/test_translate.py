@@ -275,7 +275,8 @@ def test_as_rate_is_as_count_over_the_interval():
 
 
 def test_lowering_never_exposes_a_bare_counter_selector():
-    """§3.1 Corollary 1 holds by construction, so construction is what gets checked.
+    """§3.1's "raw selectors are inadmissible" holds by construction, so construction is
+    what gets checked.
 
     A bare counter selector is not phi-invariant, so it can translate no Datadog query.
     The translator does not need to refuse one: lowering puts every `Select` inside a

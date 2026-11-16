@@ -1,4 +1,8 @@
-"""Data model (proposal Definition 1): a series is a label set plus strictly increasing samples."""
+"""Data model: a series is a label set plus strictly increasing samples.
+
+Paper §3, "Series, database, result". Label sets are distinct within a database, which
+is what makes a label set the identity of a series and lets a result be keyed by one.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field

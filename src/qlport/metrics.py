@@ -1,4 +1,21 @@
-"""Result distance d (proposal eq. 1, revised) and coverage κ (eq. 2)."""
+"""Result distance d and the two coverage measures (paper §3).
+
+`d` is paper §3's "Result distance": relative difference per label set, the maximum over
+a common domain, and infinity when the label sets differ at all. §3's lemma "d is a
+metric" is what the admissibility proposition of §3.1 needs, since that argument is a
+triangle inequality; `tests/test_metrics.py` checks the lemma's case analysis.
+
+`kappa` below is the *differential* coverage of §3's remark "Two coverages" -- the share
+of queries whose translation was observed to agree with the source system -- so it takes
+per-query outcomes and not translator verdicts. It is the stronger measure, it needs both
+systems live, and it is not what the paper reports: §7's κ is §3's "Coverage", the share
+the translator is willing to translate at all, computed in notebook 03 as translated over
+total. The two coincide exactly when every emitted expression is correct.
+
+Sections are cited by name here, not by number: the numbering shifts whenever a
+definition is added, and a stale cross-reference in a docstring is invisible to the
+build.
+"""
 from __future__ import annotations
 
 import math

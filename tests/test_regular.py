@@ -3,7 +3,8 @@
 Two things here are worth more than the rest. First, every glob set `regex_to_globs`
 returns is checked to denote the same language as the regex it came from, so "exact"
 means decided rather than proposed. Second, the syntax-directed proposer is checked
-against the complete procedure of Proposition 5, because a proposer's refusal looks like
+against the complete procedure of §6's decidability proposition, because a proposer's
+refusal looks like
 a fact about the languages and is only a fact about the proposer until something
 independent agrees.
 """

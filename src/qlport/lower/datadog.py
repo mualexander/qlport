@@ -73,7 +73,7 @@ def is_glob(value: str) -> bool:
 
     `*` only. Datadog documents prefix, suffix and substring wildcards and names no
     other construct, so there is no single-character wildcard and a `?` in a tag value
-    is an ordinary character (paper §6, Definition 4). Treating `?` as a wildcard, as an
+    is an ordinary character (paper §6, the glob definition). Treating `?` as a wildcard, as an
     earlier version did, would translate the literal value `web-?` into the matcher
     `web\-.`, which selects `web-x` and not `web-?` --- wrong in both directions at
     once. No query in the corpus carries a `?` in a scope, so nothing measured moves.

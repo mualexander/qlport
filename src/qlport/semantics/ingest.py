@@ -5,7 +5,8 @@ cumsum: per-interval deltas (DogStatsD)  ->  cumulative counter (statsd_exporter
 
 Datadog documents that the first cumulative point is omitted. Its behaviour on a counter
 reset is undocumented, but its agent is open source, so the policy is read off
-`pkg/metrics/monotonic_count.go` rather than guessed (paper Remark 1):
+`pkg/metrics/monotonic_count.go` rather than guessed (paper §3.1, the remark
+"Which ρ, and how we know"):
 
   zero   a decrease contributes the new value, on the assumption that the counter
          restarted from 0 -- what the OpenMetrics check does from its second scrape

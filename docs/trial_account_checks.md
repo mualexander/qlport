@@ -6,8 +6,8 @@ what has been read from what is still unmeasured, and points here for the experi
 
 - §3.1 Proposition 3 holds for ρ = zero, and the restart rows of
   `rollup_translation_live.tex` compare against φ_zero. **Settled from the agent source**
-  (Step 0): ρ = zero on the OpenMetrics path. §3.1 Remark 1 states it, Definition 1 now
-  reads ρ ∈ {zero, clamp}, and `semantics/ingest.py` implements all three. What is left is
+  (Step 0): ρ = zero on the OpenMetrics path. §3.1's remark "Which ρ, and how we know" states it, and
+  the ingestion mapping now reads ρ ∈ {zero, clamp}, and `semantics/ingest.py` implements all three. What is left is
   confirming the backend stores what the agent sends.
 - Σ_Δ presumes buckets are right-closed and epoch-aligned, reported as
   `ROLLUP_ALIGNMENT` on every rollup the translator emits (100% of translations).
@@ -156,7 +156,7 @@ exceptions, both of which the flag logic makes explicit rather than hiding:
 
 ### What this changes
 
-1. Definition 1's index set is wrong, not incomplete in a harmless way: ρ = drop is not
+1. The ingestion mapping's index set is wrong, not incomplete in a harmless way: ρ = drop is not
    what either agent path does to a reset. The real alternatives are
    ρ ∈ {zero, clamp}, with `drop` describing the first interval and the post-failure
    interval. §3.1 should say so and keep Proposition 3 on ρ = zero.
