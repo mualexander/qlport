@@ -442,10 +442,51 @@ def test_a_hyphen_in_a_label_value_is_not_an_operator():
     """
     plain = translate("sum:x{result:miss}.as_rate().rollup(avg, 15)")
     hyphen = translate("sum:x{result:hit-wait}.as_rate().rollup(avg, 15)")
-    assert plain == 'sum(avg_over_time(x{result="miss"}[15s]) / 15)'
-    assert hyphen == 'sum(avg_over_time(x{result="hit-wait"}[15s]) / 15)'
+    # The property, not a literal: two queries of identical structure must emit
+    # identical structure, so the only difference is the tag value itself.
+    assert plain.replace('"miss"', "@") == hyphen.replace('"hit-wait"', "@")
+    assert "(avg_over_time" not in plain or plain.count("(") == hyphen.count("(")
 
 
 def test_a_real_operator_still_parenthesises():
     got = translate("sum:x{*} / sum:y{*}")
     assert "(" in got and ")" in got
+
+
+# --- a known counter reduced by something other than sum -------------------------
+# Found by the corpus-scale differential test (paper §7): the emitter was sending
+# `avg_over_time` of the cumulative series where Datadog averages the stored deltas.
+# Those are not the same function, and the metric's type was known, so this was wrong
+# output rather than output with an unmet precondition.
+
+def test_the_average_of_a_counters_deltas_is_their_total_over_their_number():
+    got = translate("sum:x{*}.as_count().rollup(avg, 60)")
+    assert got == "sum((x - x offset 60s) / count_over_time(x[60s]))"
+
+
+def test_as_rate_keeps_the_division_on_top_of_that():
+    got = translate("sum:x{*}.as_rate().rollup(avg, 15)")
+    assert got == "sum(((x - x offset 15s) / count_over_time(x[15s])) / 15)"
+
+
+@pytest.mark.parametrize("op", ["min", "max"])
+def test_min_and_max_over_a_counters_deltas_are_refused(op):
+    """They need the individual deltas, which PromQL reaches only via a subquery over
+    the sample grid -- and the grid spacing is not in the query."""
+    got = emit(lower(parse("datadog", f"sum:x{{*}}.as_count().rollup({op}, 60)", "v2")))
+    assert isinstance(got, Bottom)
+    assert "individual deltas" in got.detail
+
+
+def test_a_later_rollup_does_not_erase_the_type_evidence():
+    """`.as_count()` applies only to COUNT metrics, so it establishes the type whatever
+    aggregator a later `.rollup()` names. The kind was previously inferred from the
+    final aggregator, so `.as_count().rollup(avg, 60)` came out as type-unknown."""
+    e = lower(parse("datadog", "sum:x{*}.as_count().rollup(avg, 60)", "v2"))
+    inner = e.expr.expr          # Agg -> Rollup -> Select
+    assert inner.kind == "counter"
+
+
+def test_a_gauge_rollup_is_untouched_by_the_counter_rule():
+    assert translate("avg:x{*}.rollup(avg, 60)") == "avg(avg_over_time(x[60s]))"
+    assert translate("max:x{*}.rollup(max, 60)") == "max(max_over_time(x[60s]))"

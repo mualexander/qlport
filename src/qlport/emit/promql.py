@@ -185,13 +185,32 @@ class _Emitter:
                 _refuse(Gap.METRIC_TYPE_UNKNOWN,
                         "summing over time needs a counter, and the type is unknown")
             body = self._bucket_total(e.expr, width)
+        elif _kind_of(e.expr) == "counter" and e.op in ("avg", "min", "max"):
+            # The metric is *known* to be a counter, so Datadog is reducing its stored
+            # deltas and `avg_over_time` of the cumulative series is not a function of
+            # them at all. Emitting it here was wrong rather than merely unqualified,
+            # and the corpus-scale differential test of §7 is what caught it.
+            #
+            # The mean of a bucket's deltas is their total over their number, and both
+            # are expressible: the total is the same cumulative difference the `sum`
+            # branch uses, and the number of deltas in a window is the number of
+            # samples in it, away from the start of the series.
+            if e.op != "avg":
+                # min and max would need the individual deltas, which PromQL can only
+                # reach through a subquery over the sample grid -- and the grid spacing
+                # is not in the query.
+                _refuse(Gap.UNSUPPORTED_FUNCTION,
+                        f".rollup({e.op}) over a counter needs the individual deltas")
+            total = self._bucket_total(e.expr, width)
+            n = f"count_over_time({self.expr(e.expr)}[{duration(width)}])"
+            body = f"{_atom(total)} / {n}"
         else:
             # `avg`, `min`, `max` and `count` reduce the points Datadog *stores*. For a
             # GAUGE those are the samples Prometheus holds, and the correspondence is
             # exact. For a COUNT they are per-interval deltas, and no `*_over_time` of
-            # the cumulative series computes a function of them -- averaging deltas is
-            # not averaging running totals. The dashboard never states which, so the
-            # emission is right for a gauge and says so rather than implying both.
+            # the cumulative series computes a function of them. Where the type is
+            # unknown the emission is right for a gauge and says so; where it is known
+            # to be a counter the branch above applies instead.
             if _kind_of(e.expr) != "gauge":
                 self.note(Gap.METRIC_TYPE_UNKNOWN)
             body = f"{_RANGE_FNS[e.op]}({self.expr(e.expr)}[{duration(width)}])"

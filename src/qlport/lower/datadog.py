@@ -219,6 +219,11 @@ class _Methods:
     time_agg: str | None = None
     interval: float | None = None
     as_rate: bool = False
+    # `.as_count()` and `.as_rate()` apply only to COUNT metrics, so either one is
+    # evidence of the type. That evidence has to be kept separately from `time_agg`,
+    # which a later `.rollup(agg, n)` overwrites: `.as_count().rollup(avg, 60)` ends
+    # with time_agg "avg" and is still a counter.
+    typed_counter: bool = False
 
 
 def _arg_text(node) -> str:
@@ -241,9 +246,9 @@ def _methods(nodes: list[Tree]) -> _Methods:
         name = str(node.children[0])
         args = [a for a in node.children[1:] if a is not None]
         if name == "as_count":
-            m.time_agg = "sum"
+            m.time_agg, m.typed_counter = "sum", True
         elif name == "as_rate":
-            m.time_agg, m.as_rate = "sum", True
+            m.time_agg, m.as_rate, m.typed_counter = "sum", True, True
         elif name == "rollup":
             if not args:
                 _refuse(Gap.UNSUPPORTED_FUNCTION, ".rollup() with no aggregator")
@@ -280,7 +285,7 @@ def _query(node: Tree) -> ir.Expr:
     # Only a COUNT metric can be rolled up by summing, and `.as_count()` /
     # `.as_rate()` only apply to COUNT, so either is evidence of the type the
     # dashboard JSON never states.
-    kind = "counter" if m.as_rate or m.time_agg == "sum" else "unknown"
+    kind = "counter" if m.typed_counter or m.time_agg == "sum" else "unknown"
     e: ir.Expr = ir.Select(metric_name(str(metric)), _scope(scope.children[0]), kind=kind)
     keys = tuple(label_name(str(k)) for k in grouping.children[1:]) if grouping else ()
 

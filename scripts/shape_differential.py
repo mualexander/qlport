@@ -320,12 +320,23 @@ def prom_range(base_url: str, expr: str, start: float, end: float, step: float) 
 
 
 def dd_series(raw: dict, group_keys: list[str]) -> dict:
+    """Each returned series keyed by its grouping tag values.
+
+    `tag_set` carries the grouping tags; `scope` carries the query's filter terms as
+    well, so a key that is both filtered and grouped appears twice there -- once with
+    the glob the query asked for (`kube_stateful_set:*`) and once with the concrete
+    value. Reading the glob as the group value makes every such series fail to match its
+    PromQL counterpart, which is 32 shapes of this corpus.
+    """
     out = {}
     for s in raw.get("series") or []:
         tags = {}
-        for term in str(s.get("scope", "")).split(","):
-            k, sep, v = term.strip().partition(":")
-            if sep and k in group_keys:
+        terms = s.get("tag_set") or []
+        if not terms:
+            terms = [x.strip() for x in str(s.get("scope", "")).split(",")]
+        for term in terms:
+            k, sep, v = str(term).partition(":")
+            if sep and k in group_keys and "*" not in v:
                 tags[k] = v
         key = tuple(sorted(tags.items()))
         out[key] = {round(float(t) / 1000.0, 3): (None if v is None else float(v))
