@@ -382,3 +382,54 @@ print("wrote paper/figures/coverage_by_gap.pdf")
 #   commutation argument that the real semantics never raises; the documented order is
 #   worth stating in §5 precisely because getting it backwards costs four points of κ
 #   while leaving every emitted translation looking plausible.
+
+
+# %% [markdown]
+# ## How big is the corpus-scale differential test?
+#
+# §7 quotes these. The test that would turn κ from "willing to translate" into
+# "translates correctly" needs each *shape* exercised once, not each occurrence: two
+# queries differing only in which metric they name are one experiment. `ir.shape`
+# abstracts metric names, tag keys and tag values away and keeps the operator structure,
+# including whether the rollup interval was stated — which is what `ROLLUP_DEFAULT` is
+# about and so cannot be abstracted.
+
+# %%
+from collections import Counter               # noqa: E402
+from qlport.ir import shape, shape_slots       # noqa: E402
+
+shapes, slots = Counter(), {}
+for row in tr[tr.outcome == "translated"].itertuples():
+    try:
+        lowered = lower_all(parse("datadog", row.norm, "v2"))
+    except Exception:
+        continue
+    for e in lowered:
+        if isinstance(e, Bottom):
+            continue
+        s = shape(e)
+        shapes[s] += int(row.n)
+        slots[s] = max(slots.get(s, (0, 0)), shape_slots(e))
+
+total_shaped = sum(shapes.values())
+print(f"{len(shapes):,} distinct shapes covering {total_shaped:,} occurrences")
+
+cum, coverage = 0, []
+for i, (s, n) in enumerate(shapes.most_common(), 1):
+    cum += n
+    coverage.append((i, cum / total_shaped))
+milestones = {}
+for target in (0.5, 0.8, 0.9, 0.95, 0.99):
+    milestones[target] = next(i for i, frac in coverage if frac >= target - 1e-9)
+    print(f"  {target:5.0%} of occurrences needs {milestones[target]:,} shapes")
+
+LABEL_VALUES = 3     # per grouping key, to make an aggregation non-trivial
+for k in (50, 104, len(shapes)):
+    series = sum(slots[s][0] for s, _ in shapes.most_common(k)) * LABEL_VALUES
+    print(f"  top {k:3} shapes -> ~{series:,} synthetic series")
+
+# §7 and §9 quote these, so a re-run has to reproduce them.
+assert len(shapes) == 331, len(shapes)
+assert milestones[0.5] == 6 and milestones[0.8] == 22, milestones
+assert milestones[0.9] == 49 and milestones[0.95] == 104, milestones
+print("shape-reduction assertions hold")

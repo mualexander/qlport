@@ -88,3 +88,86 @@ class Number:
 
 
 Expr = Union[Select, Window, RangeFn, Agg, BinOp, Rollup, Scale, Number]
+
+
+# ---------------------------------------------------------------------------
+# shape: the IR with its names abstracted away
+# ---------------------------------------------------------------------------
+
+def shape(e: Expr) -> tuple:
+    """A hashable canonical form of `e` with metric names, tag keys and tag values
+    replaced by positional placeholders.
+
+    Two queries that differ only in which metric they name, or which tag value they
+    filter on, have the same shape. That is the right granularity for a differential
+    test: what such a test exercises is the operator structure --- which rollup, which
+    aggregation, which matcher shapes --- and testing `cpu{env:prod}` after
+    `mem{env:staging}` re-runs an experiment already done.
+
+    Regex matcher values collapse to a single placeholder rather than being numbered,
+    because the regular expression's own content is tested in §6 and not here.
+
+    Placeholders are allocated in traversal order and are per-call, so the form is
+    canonical for one expression and comparable across expressions.
+    """
+    names: dict[str, str] = {}
+    keys: dict[str, str] = {}
+    values: dict[str, str] = {}
+
+    def label(d: dict[str, str], k: str, prefix: str) -> str:
+        return d.setdefault(k, f"{prefix}{len(d)}")
+
+    def go(x: Expr) -> tuple:
+        if isinstance(x, Select):
+            matchers = tuple(sorted(
+                (label(keys, m.label, "k"), m.op,
+                 "*" if m.op in ("=~", "!~") else label(values, m.value, "v"))
+                for m in x.matchers))
+            return ("Select", label(names, x.metric, "m"), matchers, x.kind)
+        if isinstance(x, Window):
+            return ("Window", x.width, go(x.expr))
+        if isinstance(x, RangeFn):
+            return ("RangeFn", x.fn, go(x.arg))
+        if isinstance(x, Rollup):
+            # Whether the interval was *stated* is structural; its value is not.
+            return ("Rollup", x.op, x.interval is not None, x.per_second, go(x.expr))
+        if isinstance(x, Agg):
+            return ("Agg", x.op, tuple(label(keys, k, "k") for k in x.keys),
+                    x.mode, go(x.expr))
+        if isinstance(x, BinOp):
+            return ("BinOp", x.op, go(x.lhs), go(x.rhs),
+                    tuple(label(keys, k, "k") for k in x.matching))
+        if isinstance(x, Scale):
+            return ("Scale", x.factor, go(x.expr))
+        if isinstance(x, Number):
+            return ("Number",)
+        raise TypeError(f"unknown IR node {type(x).__name__}")
+
+    return go(e)
+
+
+def shape_slots(e: Expr) -> tuple[int, int]:
+    """How many distinct metric names and tag keys a shape needs to be instantiated.
+
+    The series budget of a differential test is this, times however many label values
+    each grouping key needs to make an aggregation non-trivial.
+    """
+    names: set[str] = set()
+    keys: set[str] = set()
+
+    def go(x: Expr) -> None:
+        if isinstance(x, Select):
+            names.add(x.metric)
+            keys.update(m.label for m in x.matchers)
+        if isinstance(x, Agg):
+            keys.update(x.keys)
+        if isinstance(x, BinOp):
+            keys.update(x.matching)
+            go(x.lhs); go(x.rhs)
+            return
+        inner = getattr(x, "expr", None) or getattr(x, "arg", None)
+        if inner is not None and not isinstance(inner, (str, float, int, tuple)):
+            go(inner)
+
+    go(e)
+    return len(names), len(keys)

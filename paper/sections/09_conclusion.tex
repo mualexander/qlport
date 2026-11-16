@@ -54,16 +54,21 @@ bucket by bucket (\S\ref{sec:replay}): both exact forms are exact, \texttt{rate}
 and the reset policy is the one part the replay cannot reach, because a request counter
 does not restart in half an hour.
 
-What is left is the same construction at corpus scale --- each of the $8{,}376$
-translated pairs run against both systems on identical input --- which needs every metric
-the corpus names to exist in both. Until that is done, $\kappa$ measures what the
-translator is willing to translate rather than what it translates correctly, and that
-distinction is the honest limit of this paper's headline number.
+What is left is the same construction at corpus scale. Until it is done, $\kappa$
+measures what the translator is willing to translate rather than what it translates
+correctly, and that distinction is the honest limit of this paper's headline number. It
+is a bounded job rather than an open-ended one: \S\ref{sec:not-measured} reports that the
+corpus collapses to $331$ distinct query shapes once metric names and tag values are
+abstracted away, of which $49$ carry $90\%$ of the occurrences, so the experiment is a
+few hundred synthetic series rather than a reconstruction of somebody's production
+estate.
 
 \paragraph{What we would do next.}
 The differential test at corpus scale is the one experiment that would change the
-standing of everything else; \S\ref{sec:replay} shows the construction works and leaves
-the scale. After it, the reverse translator: \S\ref{sec:regular} suggests the interesting results are there, and a
+standing of everything else. \S\ref{sec:replay} shows the construction works and
+\S\ref{sec:not-measured} shows the scale is $331$ shapes, so what stands between the two
+is the argument that substituting metric names commutes with translating --- which is a
+proof to write, not a corpus to acquire. After it, the reverse translator: \S\ref{sec:regular} suggests the interesting results are there, and a
 $\kappa$ for that direction would turn this paper's asymmetry claim from an argument into
 a measurement. Further out, the method is language-agnostic wherever a language denotes a
 function of a database at an instant, which brings LogQL within reach and leaves SPL

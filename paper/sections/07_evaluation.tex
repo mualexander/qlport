@@ -440,10 +440,25 @@ Section~\ref{sec:replay} replays a real request trace into both systems and comp
 counter rules bucket by bucket against Datadog itself, which is what makes the exactness
 claims of Section~\ref{sec:ingestion} claims about Datadog rather than about our reading
 of it. What is still specified and not run is the same construction applied to the
-\emph{corpus}: each of the $8{,}376$ translated pairs evaluated against both systems on
-identical input. That is a different and much larger experiment --- it needs every metric
-the corpus names to exist in both systems --- and until it is run, $\kappa$ measures what
-the translator is willing to translate rather than what it translates correctly.
+\emph{corpus}: each translated pair evaluated against both systems on identical input.
+Until it is run, $\kappa$ measures what the translator is willing to translate rather
+than what it translates correctly.
+
+It is smaller than it looks, which is worth recording because the obvious estimate is
+badly wrong. The experiment does not need every metric the corpus names to exist in both
+systems. What a differential test exercises is the \emph{operator structure} --- which
+rollup, which aggregation, which matcher shapes --- and two queries that differ only in
+the metric they name are one experiment, not two. Abstracting metric names, tag keys and
+tag values out of the lowered IR collapses the $8{,}579$ translated occurrences to
+\textbf{$331$ distinct shapes}, and they are as unevenly distributed as everything else
+in this corpus: $6$ shapes cover half the occurrences, $22$ cover $80\%$, $49$ cover
+$90\%$ and $104$ cover $95\%$. A median query has one metric slot and one tag key, so at
+three label values apiece the top $50$ shapes need roughly $150$ synthetic series, the
+top $104$ about $320$, and all $331$ about $1{,}200$ --- a scale a single account
+sustains. The obstacle is not size
+but soundness: the substitution has to commute with translation, which holds for a
+syntax-directed translator provided the substituted names are injective under the
+mangling of \S\ref{sec:lowering}.
 
 \subsection{Threats to validity}
 \label{sec:threats}
