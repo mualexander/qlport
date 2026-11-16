@@ -11,6 +11,8 @@ what has been read from what is still unmeasured, and points here for the experi
   confirming the backend stores what the agent sends.
 - Σ_Δ presumes buckets are right-closed and epoch-aligned, reported as
   `ROLLUP_ALIGNMENT` on every rollup the translator emits (100% of translations).
+  **Settled by E2: left-closed, named by the start.** Epoch alignment was already
+  documented; the closure was not, and the assumption was wrong.
 - The rollup interval is assumed when the query does not state one, reported as
   `ROLLUP_DEFAULT` (96.9% of translations).
 - §6's regex → glob classification assumes a glob's `*` matches the empty string, which
@@ -215,7 +217,33 @@ before the reset, since the first sample after the agent starts is omitted.
 Repeat once with a reset to exactly 0 rather than 100, to check that `zero` and `clamp`
 are not conflated by a special case at 0.
 
-## E2 — are buckets right- or left-closed? (Rig B)
+## E2 — are buckets right- or left-closed? (Rig B) — **done: left-closed**
+
+**Answer: buckets are left-closed `[b, b+Δ)` and reported under their start.** Two runs at
+two rollup intervals agree; each of the other three conventions is ruled out by at least
+one reading. Cached in `data/raw/datadog/e2.json`, regression-tested in
+`tests/test_harness_datadog.py`, and now stated as paper §3.1's closure remark.
+
+This was the opposite of the assumption, and three things followed:
+
+- `semantics/datadog_eval.py` now sums `[b, b+Δ)` and exposes `eval_instant`, because a
+  PromQL window is right-closed `(u-Δ, u]` and so matches a left-closed bucket only when
+  evaluated **strictly inside** it. At `u = b+Δ` the window takes the boundary sample
+  Datadog assigns to the next bucket and misses the one Datadog assigns to this one —
+  wrong on almost every bucket when the scrape interval divides the rollup interval.
+- `scripts/verify_anchored.py` queries the shifted grid and records the convention and
+  epsilon; it was re-run against Prometheus 3.15.0, and `rollup_translation_live.tex`
+  came back **byte-identical**. A model and a candidate paired under the same convention
+  agree with each other, so the error was in what the numbers were a claim about, not in
+  the numbers.
+- Three flaws in the apparatus surfaced and are fixed: serial polling that starved the
+  second probe, metric names shared across runs that let one run read another's points,
+  and an inference that assumed the mid-bucket probe's position instead of taking it.
+
+The original plan below is kept because its prediction table is what the run was scored
+against.
+
+### The original design
 
 **Two probes, not one.** Writing this up exposed that a single point cannot answer it,
 because *two* conventions are unknown at once: whether a bucket is right-closed `(t−Δ, t]`
@@ -320,8 +348,8 @@ Query `sum:qlport.e5.star{probe:web-}` to check.
 | ρ = zero (**expected** — the source says so) | §3.1 Prop 3 stands as written; `COUNTER_RESET` stays a real caveat on the cumulative difference only. Confirms the source reading end to end |
 | ρ = clamp | The backend disagrees with the OpenMetrics scraper's own flag, i.e. the flag is not reaching the aggregator. δ = 0 across the reset means the cumulative difference overstates by exactly the post-reset value; `COUNTER_RESET` widens from a caveat to a bound |
 | ρ = drop, or a raw difference | Contradicts the source at a pinned commit. Re-read before believing it, then record the agent version as the discriminating variable |
-| right-closed | Σ_Δ in §3.1 stands; `ROLLUP_ALIGNMENT` stays a statement about the evaluation grid only |
-| left-closed | Σ_Δ's half-open interval flips, and every rollup translation gains a half-bucket offset |
+| ~~right-closed~~ | not what happens |
+| **left-closed (observed)** | Σ_Δ's half-open interval flips, and the evaluation instant moves off the bucket boundary to just inside it — a *full* interval from where the paper had it, not the half-bucket guessed here. No measured figure changed |
 | bare API query behaves as `.as_count()` | `METRIC_TYPE_UNKNOWN` narrows to genuinely ambiguous gauges |
 | interval table confirmed | `ROLLUP_DEFAULT` cites a documented table; `DEFAULT_ROLLUP = 60.0` in notebook 03 becomes range-dependent and κ is recomputed per range |
 | `*` matches the empty string | §6 stands as written: `.+` has no glob, 238 refused occurrences |

@@ -377,18 +377,27 @@ what the agent sends, and the restart rows of Table~\ref{tab:rollup-live} accord
 still show \texttt{increase(x[$\Delta$] anchored)} tracking $\phi_{\mathsf{zero}}$ exactly
 rather than Datadog agreeing with it.
 
-\emph{Bucket closure, still open.} $\Sigma_\Delta$ presumes right-closed buckets
-$(t-\Delta,t]$. If they are left-closed, every rollup translation acquires a half-bucket
-offset. Epoch alignment itself \emph{is} documented~\citep{datadog}; which edge the
-returned timestamp labels is not, and this one is not readable from any source, because it
-is a property of the backend rather than of the agent.
+\emph{Bucket closure, settled by measurement.} $\Sigma_\Delta$ presumes a bucket
+convention, and the one it presumed was wrong. Submitting a point on an exact bucket
+boundary and another strictly inside one, then reading back which bucket each is reported
+under, shows the buckets are left-closed and named by their \emph{start}
+(Remark~\ref{rem:closure}); two runs at two rollup intervals agree and each rival
+convention is ruled out by at least one reading. Epoch alignment itself \emph{is}
+documented~\citep{datadog}; which edge the timestamp names was not.
+
+No figure in this paper moved. A model and a candidate evaluated under the same
+convention agree with each other, so what was wrong was a claim about Datadog rather than
+any arithmetic --- Table~\ref{tab:rollup-live}, recomputed against a freshly re-verified
+Prometheus on the corrected grid, is identical to the version computed under the wrong
+one. What did change is where a translated query must be evaluated, and that is not a
+detail: since a PromQL window is right-closed, no instant reads a left-closed bucket
+exactly when a scrape lands on a boundary, and the translation must be evaluated strictly
+inside the bucket. Evaluating on its right edge --- the obvious repair once the closure is
+known --- is wrong on almost every bucket of an aligned scrape.
 
 The remaining experiments are specified in advance in
 \texttt{docs\slash trial\_account\_checks.md}, with their predictions tabulated before the
-fact so that they can falsify them. Closure needs two submitted points rather than the one
-first planned: a point on an exact multiple of $60$ cannot separate a right-closed bucket
-labelled by its end from a left-closed bucket labelled by its start, since both report it
-at the same timestamp, so a mid-bucket point is needed to fix the labelling first. For the
+fact so that they can falsify them. For the
 same reason as above the dual-write differential test over the whole corpus --- running
 each translated pair against both systems on identical input --- is specified and not run.
 The exactness claims of Section~\ref{sec:ingestion} are therefore verified against a real

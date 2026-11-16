@@ -178,37 +178,74 @@ out; exactness has to be established separately.
 
 \subsubsection{Two exact forms}
 
-Datadog's \texttt{.as\_count()} with rollup interval $\Delta$ reports
-$\Sigma_\Delta(t)=\sum\{\,\delta : (t_i,\delta)\in\phi_\rho(s),\ t_i\in(t-\Delta,t]\,\}$,
-and \texttt{.as\_rate()} reports $\Sigma_\Delta(t)/\Delta$. Both reduce to the same
+Datadog's \texttt{.as\_count()} with rollup interval $\Delta$ reports, for the bucket it
+labels $b$,
+\[
+\Sigma_\Delta(b)=\sum\{\,\delta : (t_i,\delta)\in\phi_\rho(s),\ t_i\in[b,\,b+\Delta)\,\},
+\]
+and \texttt{.as\_rate()} reports $\Sigma_\Delta(b)/\Delta$. Both reduce to the same
 cumulative difference, which is the single most useful fact in this direction: the
 corpus of Section~\ref{sec:evaluation} uses \texttt{.as\_count()} about $6.6$ times as
 often as \texttt{.as\_rate()}.
 
+\begin{remark}[Which interval a bucket covers, measured]\label{rem:closure}
+That the bucket is \emph{left}-closed and named by its \emph{start} is measured rather
+than assumed, and it is not what we first assumed. Submitting one point at an exact
+multiple of $\Delta$ and one strictly inside a bucket, and reading back which bucket each
+is reported under, separates the four conventions: a point on a boundary is reported
+under the bucket \emph{starting} there. Two runs at two rollup intervals agree, and each
+of the other three conventions is ruled out by at least one reading
+(\texttt{scripts\slash trial\_checks.py e2}; the responses are cached and
+regression-tested).
+
+The convention PromQL uses for its own range selectors is the opposite one, $(u-w,u]$,
+which is why it was the natural guess. Getting it wrong cost nothing numerically --- a
+model and a candidate evaluated under the same convention agree with each other, so every
+figure in Table~\ref{tab:rollup-live} is what it was --- but it was a claim about Datadog
+that happened not to be true, and it changes where a translated query must be evaluated.
+\end{remark}
+
+\noindent
+It changes it in a way that is easy to get wrong twice. Since a PromQL range selector
+covers $(u-\Delta,u]$ and the bucket covers $[b,b+\Delta)$, no instant makes the two
+cover the same samples when a sample lands on a boundary: at $u=b+\Delta$ the window
+takes the sample at $b+\Delta$, which Datadog has put in the next bucket, and misses the
+one at $b$, which Datadog has put in this one. With a scrape interval that divides the
+rollup interval --- the ordinary case --- that is every bucket. The evaluation instant
+must therefore lie strictly \emph{inside} the bucket.
+
 \begin{proposition}[Cumulative difference]\label{prop:offset}
-Let $\mathcal{C}_{\Delta}$ be the databases in which no counter series resets within
-$(t-\Delta,t]$, and assume Prometheus's lookback covers the sample spacing. Then on
-$\mathcal{C}_{\Delta}$ the expression \texttt{x - x offset $\Delta$} is
-$\phi_\rho$-invariant and equals $\Sigma_\Delta(t)$ exactly.
+Let $\sigma$ be the least gap between consecutive samples, let $\mathcal{C}_{\Delta}$ be
+the databases in which no counter series resets within $[b,b+\Delta)$, and assume
+Prometheus's lookback covers $\sigma$. Then on $\mathcal{C}_{\Delta}$ the expression
+\texttt{x - x offset $\Delta$}, evaluated at $u=b+\Delta-\varepsilon$ for any
+$0<\varepsilon\le\sigma$, is $\phi_\rho$-invariant and equals $\Sigma_\Delta(b)$ exactly.
 \end{proposition}
 \begin{proof}
-An instant selector at $u$ returns $v_{\ell(u)}$ for $\ell(u)=\max\{i:t_i\le u\}$. With no
-reset in the window, $\delta_\rho(v_{i-1},v_i)=v_i-v_{i-1}$ for every $t_i\in(t-\Delta,t]$,
-so the sum telescopes: $\Sigma_\Delta(t)=v_{\ell(t)}-v_{\ell(t-\Delta)}$, which is the
-value of the expression. It is $\phi_\rho$-invariant on $\mathcal{C}_\Delta$ because it
-has been shown equal to a function of $\phi_\rho(s)$ alone.
+An instant selector at $u$ returns $v_{\ell(u)}$ for $\ell(u)=\max\{i:t_i\le u\}$. Let
+$t_m$ be the last sample in $[b,b+\Delta)$ and $t_{k}$ the last sample before $b$. The
+next sample after $t_m$ is at or after $b+\Delta$ and at least $\sigma$ beyond $t_m$, so
+$t_m\le b+\Delta-\sigma\le u$ and hence $\ell(u)=m$; likewise $t_k\le b-\sigma$, so
+$t_k\le u-\Delta<b$ and $\ell(u-\Delta)=k$. With no reset in the bucket,
+$\delta_\rho(v_{i-1},v_i)=v_i-v_{i-1}$ for every $t_i\in[b,b+\Delta)$, so the sum
+telescopes: $\Sigma_\Delta(b)=v_m-v_k$, which is the value of the expression. It is
+$\phi_\rho$-invariant on $\mathcal{C}_\Delta$ because it has been shown equal to a
+function of $\phi_\rho(s)$ alone.
 \end{proof}
 
 \begin{proposition}[Anchored increase]\label{prop:anchored}
-Let $\rho=\mathsf{zero}$. Then \texttt{increase(x[$\Delta$] anchored)} equals
-$\Sigma_{\mathsf{zero},\Delta}(t)$ on all of $\mathcal{D}$, and is $\phi_{\mathsf{zero}}$-invariant.
+Let $\rho=\mathsf{zero}$ and $\varepsilon$ be as above. Then
+\texttt{increase(x[$\Delta$] anchored)} evaluated at $b+\Delta-\varepsilon$ equals
+$\Sigma_{\mathsf{zero},\Delta}(b)$ on all of $\mathcal{D}$, and is
+$\phi_{\mathsf{zero}}$-invariant.
 \end{proposition}
 \begin{proof}
 The \texttt{anchored} modifier~\citep{prom0052} pins the left window boundary to the last
-sample at or before $t-\Delta$, performs no extrapolation, and on a decrease
-$v_i<v_{i-1}$ contributes
-$v_i$ rather than $v_i-v_{i-1}$. Term by term this is exactly $\delta_{\mathsf{zero}}$, so
-the sum over $t_i\in(t-\Delta,t]$ is $\Sigma_{\mathsf{zero},\Delta}(t)$, a function of
+sample at or before $u-\Delta$, performs no extrapolation, and on a decrease
+$v_i<v_{i-1}$ contributes $v_i$ rather than $v_i-v_{i-1}$. Term by term this is exactly
+$\delta_{\mathsf{zero}}$, and by the index argument of
+Proposition~\ref{prop:offset} the terms it sums are those with
+$t_i\in[b,b+\Delta)$, so the total is $\Sigma_{\mathsf{zero},\Delta}(b)$, a function of
 $\phi_{\mathsf{zero}}(s)$ alone.
 \end{proof}
 
@@ -279,21 +316,23 @@ data.}
 \end{figure}
 
 \paragraph{What remains assumed.}
-One thing above is still stated relative to a fact about Datadog that nothing settles, and
-it is not the one this section started with. $\rho$ has been read off the agent's source
-(Remark~\ref{rem:rho}), which is what Proposition~\ref{prop:anchored} and the restart rows
-of Table~\ref{tab:rollup-live} need. What reading the agent cannot establish is that the
-backend stores what the agent sends, so those rows still show the anchored form tracking
-$\phi_{\mathsf{zero}}$ rather than Datadog agreeing with it;
-Section~\ref{sec:not-measured} gives the experiment that would close that last step and
-the predictions it is committed to in advance.
+This section began with two facts about Datadog that its documentation does not settle.
+Neither is still an assumption, and neither turned out the way it was guessed.
 
-Bucket closure is the open assumption. $\Sigma_\Delta$ above presumes Datadog's buckets
-are right-closed. That they are epoch-aligned \emph{is} documented~\citep{datadog}, which
-is why every comparison here is made on the epoch-aligned grid; which edge of a bucket the
-reported timestamp labels is not, and the two unknowns are not independent --- a
-right-closed bucket labelled by its end and a left-closed bucket labelled by its start
-report a sample on the grid at the same timestamp, so an experiment must probe mid-bucket
-as well to separate them. A PromQL range window follows the evaluation step instead, so
-off that grid the two systems are summing different sample sets; the translator records
-this as \texttt{ROLLUP\_ALIGNMENT} on every rollup it emits.
+Bucket closure is no longer among them. Remark~\ref{rem:closure} settles it by
+measurement: buckets are left-closed and named by their start, which is the opposite of
+what an earlier draft of this section assumed and the opposite of PromQL's own
+convention. Epoch alignment \emph{is} documented~\citep{datadog}, so the remaining
+content of \texttt{ROLLUP\_ALIGNMENT} is sharper than ``align the grids'': a PromQL
+window follows the evaluation step, and the step that reads a Datadog bucket is one
+\emph{inside} its right edge rather than on it. Evaluating on the boundary --- the
+obvious choice once the closure is known --- disagrees on every bucket where a scrape
+lands on the boundary too, which is the ordinary case. The translator records
+\texttt{ROLLUP\_ALIGNMENT} on every rollup it emits for that reason.
+
+What is left is the one thing above that nothing here settles: whether Datadog's backend
+stores what its agent sends. $\rho$ is read off the agent (Remark~\ref{rem:rho}), not
+observed end to end, so the restart rows of Table~\ref{tab:rollup-live} still show the
+anchored form tracking $\phi_{\mathsf{zero}}$ rather than Datadog agreeing with it.
+Section~\ref{sec:not-measured} gives the experiment that would close that step and the
+predictions it is committed to in advance.

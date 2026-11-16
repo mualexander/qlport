@@ -67,12 +67,22 @@ CANDIDATES = {
 
 
 def compare(series, interval, reset="zero"):
+    """Each candidate against Datadog's bucket, bucket by bucket.
+
+    Datadog's bucket reported at `b` covers `[b, b + interval)` — measured, not assumed
+    (`scripts/trial_checks.py e2`). A PromQL range selector covers `(u - interval, u]`,
+    so the candidate is evaluated *inside* the bucket rather than on its right edge: at
+    `b + interval` the window would take a sample sitting exactly on the boundary that
+    Datadog assigns to the next bucket, which with a 15 s scrape and a 60 s rollup is
+    every bucket.
+    """
     p = phi_series(series, reset)
     rows = []
-    for t in dd.bucket_ends(600, series.ts[-1], interval):
-        truth = dd.as_rate(p.ts, p.vs, t, interval)
+    for b in dd.bucket_starts(600, series.ts[-1] - interval, interval):
+        truth = dd.as_rate(p.ts, p.vs, b, interval)
+        u = dd.eval_instant(b, interval)
         for name, f in CANDIDATES.items():
-            rows.append(dict(t=t, candidate=name, err=reldiff(f(series, t, interval), truth)))
+            rows.append(dict(t=b, candidate=name, err=reldiff(f(series, u, interval), truth)))
     return pd.DataFrame(rows)
 
 
@@ -119,8 +129,9 @@ for wname in ("poisson", "bursty"):
     p = phi_series(s)
     med, p95 = [], []
     for D in widths:
-        e = np.array([reldiff(pq.rate(s.ts, s.vs, t, D), dd.as_rate(p.ts, p.vs, t, D))
-                      for t in dd.bucket_ends(600, s.ts[-1], D)])
+        e = np.array([reldiff(pq.rate(s.ts, s.vs, dd.eval_instant(b, D), D),
+                              dd.as_rate(p.ts, p.vs, b, D))
+                      for b in dd.bucket_starts(600, s.ts[-1] - D, D)])
         e = e[~np.isnan(e)]
         med.append(np.median(e)); p95.append(np.percentile(e, 95))
     ax.plot(widths, med, marker="o", label=f"{wname} (median)")
@@ -175,12 +186,18 @@ for path in LIVE:
     p = phi_series(s)
     for name, model in MODELS.items():
         key = name.replace("Δ", "D")
+        eps = rec["grid"]["eps"]
         for t_abs, server in series_from_response(rec["candidates"][key]["response"]).items():
-            t = t_abs - t0
+            # The server was evaluated one epsilon inside a bucket's right edge, so the
+            # Datadog bucket it answers for starts an interval earlier. Snap to the
+            # millisecond Prometheus actually used; the float it reports back carries
+            # dirt that `rate`'s extrapolation magnifies into a spurious 1e-9.
+            t = round((t_abs - t0) * 1000) / 1000
+            b = round(t - D + eps, 3)
             rows.append(dict(workload=rec["workload"], interval=int(D), candidate=name,
                              version=rec["prometheus_version"],
                              model_err=reldiff(server, model(s, t, D)),
-                             truth_err=reldiff(server, dd.as_rate(p.ts, p.vs, t, D))))
+                             truth_err=reldiff(server, dd.as_rate(p.ts, p.vs, b, D))))
 live = pd.DataFrame(rows)
 live.groupby("candidate")[["model_err", "truth_err"]].max()
 

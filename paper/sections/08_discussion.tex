@@ -157,14 +157,19 @@ read from a real Prometheus~3.15.0 rather than a model, including the \texttt{an
 modifier, which is verified and not assumed (Table~\ref{tab:model-verification}); what is
 synthetic is the data, not the evaluator.
 
-Two Datadog facts remain unsettled and both bear on claims made here. Bucket closure is
-assumed right-closed, and if it is not, every rollup translation acquires a half-bucket
-offset --- which would not change $\kappa$ but would change what ``exact'' means in
-\S\ref{sec:kernel-soundness}. And whether a glob's \texttt{*} matches the empty string
-decides which of \texttt{.+} and \texttt{.*} has no glob
-(Remark~\ref{rem:star-empty}), worth $124$ occurrences of \S\ref{sec:regular}'s
-headline figure in either direction. Both are specified with predictions recorded in
-advance; neither is run.
+One Datadog fact that was unsettled when this section was first drafted has since been
+measured, and it went against the assumption: buckets are left-closed and named by their
+start (Remark~\ref{rem:closure}), not right-closed. That is worth recording as a threat
+that materialised. It changed no figure --- the model and the candidates had been paired
+consistently, so the arithmetic was never wrong --- but it changed what the arithmetic was
+a claim about, and it moved the evaluation instant of every translated query off the
+bucket boundary. A reader should take from that less confidence in the remaining
+assumption, not more.
+
+That remaining one is whether a glob's \texttt{*} matches the empty string, which decides
+which of \texttt{.+} and \texttt{.*} has no glob (Remark~\ref{rem:star-empty}), worth
+$124$ occurrences of \S\ref{sec:regular}'s headline figure in either direction. It is
+specified with its prediction recorded in advance and is not run.
 
 Finally, the comparison of $2.0\%$ against $2.4\%$ in \S\ref{sec:gaps} is a comparison
 between a property of the languages and a property of one translator's state on one

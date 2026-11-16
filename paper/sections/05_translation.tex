@@ -55,7 +55,7 @@ $s|_{(a,b]}$ for its samples in that interval:
   &= \{\, s\in D \;:\; \mathrm{name}(s)=m,\ \lambda(s)\models\overline{\mu} \,\}\\
 \sem{\mathrm{Window}(e,w)}(D,t) &= \{\, (\lambda(s),\ s|_{(t-w,\,t]}) \;:\; s\in\sem{e}(D,t) \,\}\\
 \sem{\mathrm{Rollup}(\mathit{op},\Delta,e,b)}(D,t)
-  &= \{\, (\lambda(s),\ \mathit{op}(s|_{(t-\Delta,\,t]})\,/\,\Delta^{[b]}) \;:\; s\in\sem{e}(D,t) \,\}
+  &= \{\, (\lambda(s),\ \mathit{op}(s|_{[t,\,t+\Delta)})\,/\,\Delta^{[b]}) \;:\; s\in\sem{e}(D,t) \,\}
 \end{align*}
 where $\Delta^{[b]}$ divides only when $b$ (Datadog's \texttt{.as\_rate()}) holds. For
 space aggregation let $\pi_{\overline{k}}$ keep the labels in $\overline{k}$ under
@@ -226,8 +226,9 @@ The caveats are not a disclaimer. They are the hypotheses of
 Theorem~\ref{thm:kernel} below, collected by the only component in a position to know
 which ones a given query incurred, and \S\ref{sec:caveats} reports how often each is
 incurred. Four arise:
-\texttt{ROLLUP\_ALIGNMENT} on every rollup, since Datadog's buckets are epoch-aligned and
-a PromQL window follows the evaluation step;
+\texttt{ROLLUP\_ALIGNMENT} on every rollup, since Datadog's buckets are epoch-aligned,
+left-closed and named by their start (Remark~\ref{rem:closure}) while a PromQL window is
+right-closed and follows the evaluation step;
 \texttt{ROLLUP\_DEFAULT} when the interval was assumed;
 \texttt{COUNTER\_RESET} on the cumulative difference, or \texttt{ANCHORED\_VERSION} on the
 form that avoids it; and \texttt{METRIC\_TYPE\_UNKNOWN}, which deserves its own paragraph.
@@ -285,9 +286,11 @@ none of the three corpus sources contains such a pair.
 \begin{theorem}[Kernel soundness]\label{thm:kernel}
 Let $q\in\mathcal{K}$ with $E(T(q))=(p,C)$, and let $t$ be an evaluation time. If
 \begin{enumerate}
-\item $t$ is a multiple of $\Delta$ \hfill (\texttt{ROLLUP\_ALIGNMENT})
+\item $t$ is a multiple of $\Delta$, and the emitted expression is evaluated at
+      $t+\Delta-\varepsilon$ rather than at $t$ or $t+\Delta$
+      \hfill (\texttt{ROLLUP\_ALIGNMENT})
 \item $\Delta$ is the interval the query states \hfill (\texttt{ROLLUP\_DEFAULT})
-\item for $\mathit{op}_t=\mathsf{sum}$: no series resets in $(t-\Delta,t]$, or the
+\item for $\mathit{op}_t=\mathsf{sum}$: no series resets in $[t,t+\Delta)$, or the
       anchored form was emitted \hfill (\texttt{COUNTER\_RESET}, \texttt{ANCHORED\_VERSION})
 \item for $\mathit{op}_t\neq\mathsf{sum}$: the metric is a gauge
       \hfill (\texttt{METRIC\_TYPE\_UNKNOWN})
@@ -301,14 +304,15 @@ no others.
 By Lemma~\ref{lem:scope} both systems reduce over the same set of series, so it suffices
 to match the two reductions on one series $s$ and then the space aggregation.
 
-For the time reduction, (1) makes $(t-\Delta,t]$ the same interval in both systems; (2)
-makes it the same width. If $\mathit{op}_t=\mathsf{sum}$ and $\kappa$ is a counter,
+For the time reduction, (1) makes $[t,t+\Delta)$ and the PromQL window at
+$t+\Delta-\varepsilon$ cover the same samples, by the index argument of
+Proposition~\ref{prop:offset}; (2) makes it the same width. If $\mathit{op}_t=\mathsf{sum}$ and $\kappa$ is a counter,
 Datadog reports $\Sigma_\Delta(t)$ and the emitted form equals it by
 Proposition~\ref{prop:offset} under (3)'s first branch or by
 Proposition~\ref{prop:anchored} under its second. If $\mathit{op}_t\neq\mathsf{sum}$ then
 (4) gives $\phi_{\mathsf{zero}}(s)=s$, since $\phi$ is the identity on gauges, so
 Datadog's stored points in the bucket are exactly the samples
-$s|_{(t-\Delta,t]}$ that \texttt{$\mathit{op}_t$\_over\_time} reduces, and the two
+$s|_{[t,t+\Delta)}$ that \texttt{$\mathit{op}_t$\_over\_time} reduces at that instant, and the two
 reductions are the same commutative operation on the same multiset. The
 $\mathit{per\_second}$ divisor is $\Delta$ on both sides.
 

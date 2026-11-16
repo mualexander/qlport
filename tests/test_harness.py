@@ -125,9 +125,16 @@ def test_promql_models_agree_with_a_real_prometheus(path):
         got = series_from_response(rec["candidates"][label]["response"])
         assert got, f"{label} returned nothing"
         for t_abs, server in got.items():
-            ours = model(s, t_abs - t0, width)
-            assert not np.isnan(ours), f"{label} at {t_abs - t0}: server has a value, model does not"
-            assert reldiff(server, ours) < 1e-12, f"{label} at {t_abs - t0}: {server} vs {ours}"
+            # Prometheus evaluates on whole milliseconds and reports seconds as a float,
+            # so the timestamp comes back with float dirt (599.9990000724792 for
+            # 599999 ms). Handing that straight to the model evaluates it a fraction of
+            # a microsecond away from where the server did, which `rate`'s extrapolation
+            # turns into a 1e-9 relative difference -- a measurement artefact, not a
+            # disagreement. Snap to the millisecond the server actually used.
+            t = round((t_abs - t0) * 1000) / 1000
+            ours = model(s, t, width)
+            assert not np.isnan(ours), f"{label} at {t}: server has a value, model does not"
+            assert reldiff(server, ours) < 1e-12, f"{label} at {t}: {server} vs {ours}"
 
 
 @pytest.mark.parametrize("path", RUNS, ids=lambda p: p.stem)
@@ -139,13 +146,19 @@ def test_the_anchored_form_reproduces_datadog_on_every_bucket(path):
     """
     rec = read_raw(path)
     t0, width = rec["t0"], rec["interval"]
+    eps = rec["grid"]["eps"]
     s = counter(rec["series"]["ts"], rec["series"]["vs"])
     p = phi_series(s)
     anchored = series_from_response(
         rec["candidates"]["increase(x[D] anchored) / D"]["response"])
     for t_abs, server in anchored.items():
-        truth = dd.as_rate(p.ts, p.vs, t_abs - t0, width)
-        assert reldiff(server, truth) < 1e-12, f"bucket {t_abs - t0}: {server} vs {truth}"
+        # The server was evaluated strictly inside the bucket, so the bucket it answers
+        # for starts one interval earlier: Datadog's bucket is [b, b+width) and PromQL's
+        # window is (u-width, u], and only an instant inside the bucket reads the same
+        # samples when a scrape lands on the boundary (paper §3.1).
+        b = round(t_abs - t0 - width + eps, 3)
+        truth = dd.as_rate(p.ts, p.vs, b, width)
+        assert reldiff(server, truth) < 1e-12, f"bucket {b}: {server} vs {truth}"
 
 
 def test_the_runs_record_which_server_answered():
@@ -154,7 +167,13 @@ def test_the_runs_record_which_server_answered():
         rec = read_raw(path)
         assert rec["prometheus_version"].startswith("3.")
         assert rec["image_digest"].count("@sha256:") == 1
-        assert rec["grid"]["start"] % rec["interval"] == 0, "grid is not epoch-aligned"
+        # The *buckets* are epoch-aligned; the evaluation grid sits one epsilon inside
+        # each bucket's right edge, which is what makes it read the same samples as
+        # Datadog's left-closed bucket (paper §3.1).
+        grid = rec["grid"]
+        assert (grid["start"] + grid["eps"]) % rec["interval"] == 0, \
+            "bucket grid is not epoch-aligned"
+        assert 0 < grid["eps"] < 1, grid["eps"]
 
 
 def test_the_cache_is_valid_json_and_names_every_candidate():

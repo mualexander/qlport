@@ -60,25 +60,28 @@ def test_rate_reads_absolute_first_value():
 def test_offset_diff_is_exact_without_resets(interval):
     s = counter()
     p = phi_series(s)
-    for t in dd.bucket_ends(600, s.ts[-1], interval):
-        assert pq.offset_diff_rate(s.ts, s.vs, t, interval) == pytest.approx(
-            dd.as_rate(p.ts, p.vs, t, interval), abs=1e-12)
+    for b in dd.bucket_starts(600, s.ts[-1] - interval, interval):
+        u = dd.eval_instant(b, interval)
+        assert pq.offset_diff_rate(s.ts, s.vs, u, interval) == pytest.approx(
+            dd.as_rate(p.ts, p.vs, b, interval), abs=1e-12)
 
 
 @pytest.mark.parametrize("interval", [60, 300])
 def test_anchored_model_is_exact_with_resets(interval):
     s = counter(restarts=tuple(np.arange(1800, 6 * HOUR, HOUR)))
     p = phi_series(s, "zero")
-    for t in dd.bucket_ends(600, s.ts[-1], interval):
-        assert pq.increase_anchored(s.ts, s.vs, t, interval) / interval == pytest.approx(
-            dd.as_rate(p.ts, p.vs, t, interval), abs=1e-12)
+    for b in dd.bucket_starts(600, s.ts[-1] - interval, interval):
+        u = dd.eval_instant(b, interval)
+        assert pq.increase_anchored(s.ts, s.vs, u, interval) / interval == pytest.approx(
+            dd.as_rate(p.ts, p.vs, b, interval), abs=1e-12)
 
 
 def test_rate_is_exact_only_for_steady_aligned_counters():
     s = scrape(steady(10), 15, 6 * HOUR, start_value=5000)
     p = phi_series(s)
-    for t in dd.bucket_ends(600, s.ts[-1], 300):
-        assert pq.rate(s.ts, s.vs, t, 300) == pytest.approx(dd.as_rate(p.ts, p.vs, t, 300))
+    for b in dd.bucket_starts(600, s.ts[-1] - 300, 300):
+        u = dd.eval_instant(b, 300)
+        assert pq.rate(s.ts, s.vs, u, 300) == pytest.approx(dd.as_rate(p.ts, p.vs, b, 300))
 
 
 # ---- metrics --------------------------------------------------------------------------

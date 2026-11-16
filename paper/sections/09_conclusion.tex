@@ -38,11 +38,14 @@ Prometheus~3.15.0, and the anchoring of label-matcher regular expressions. One t
 read from source rather than measured: Datadog's reset policy, taken from its open-source
 agent at a pinned commit.
 
-What remains assumed is smaller than when this work started but has not vanished. Datadog's
-rollup buckets are taken to be right-closed, which its documentation does not state; and a
+Two things are measured against the vendor itself: Datadog's reset policy, confirmed from
+its agent's source, and its bucket convention --- buckets are left-closed and named by
+their start, which is the opposite of what this work assumed until it asked.
+
+What remains assumed is smaller than when this work started but has not vanished. A
 glob's \texttt{*} is taken to match the empty string, which decides which of \texttt{.+}
-and \texttt{.*} has no glob at all. Both are specified as experiments with their
-predictions recorded in advance, and neither is run. Above all, the whole paper compares
+and \texttt{.*} has no glob at all; the experiment is specified with its prediction
+recorded in advance and is not run. Above all, the whole paper compares
 one translator against a model of Datadog rather than against Datadog: the differential
 test over the corpus --- each translated pair run against both systems on identical input
 --- is designed and not executed, and until it is, $\kappa$ measures what the translator

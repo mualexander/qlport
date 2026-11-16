@@ -8,8 +8,9 @@ the same questions to a real server on the same samples.
 How it runs. Each workload from notebook 02 is rendered as OpenMetrics, backfilled
 into a TSDB with `promtool tsdb create-blocks-from openmetrics`, and served by a
 Prometheus started on that TSDB with no scrape targets. Every candidate is then read
-back with one range query per candidate, evaluated on the epoch-aligned grid that
-Datadog's rollup buckets end on. Raw responses land in data/raw/anchored/ and the
+back with one range query per candidate, evaluated one instant per epoch-aligned
+Datadog bucket -- strictly inside the bucket, for the reason `bucket_grid` gives. Raw
+responses land in data/raw/anchored/ and the
 notebook reads only those.
 
 Needs Docker. The image tag is pinned below, and the digest it resolved to is recorded
@@ -37,6 +38,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+from qlport.semantics.datadog_eval import EVAL_EPSILON
 from qlport.harness.prometheus import (  # noqa: E402
     openmetrics, quantise, query_range, series_from_response, write_raw,
 )
@@ -130,17 +132,28 @@ def wait_ready(base_url: str, timeout: float = 60.0) -> None:
 
 
 def bucket_grid(t0: float, first: float, last: float, interval: float) -> tuple[float, float]:
-    """First and last absolute epoch-aligned bucket end inside the series."""
+    """First and last evaluation instant, one per epoch-aligned Datadog bucket.
+
+    Datadog's bucket reported at `b` covers `[b, b + interval)`
+    (`scripts/trial_checks.py e2`, measured). A PromQL range selector covers
+    `(u - interval, u]`, so the instant that reads the same samples is strictly inside
+    the bucket, not on its right edge: at `b + interval` the server would count a sample
+    sitting exactly on the boundary that Datadog assigns to the next bucket, which on an
+    aligned scrape is every bucket. `EVAL_EPSILON` is 1 ms, and Prometheus timestamps are
+    whole milliseconds, so the shifted grid stays representable.
+    """
     start = np.ceil((t0 + first) / interval) * interval
     end = np.floor((t0 + last) / interval) * interval
-    return float(start), float(end)
+    return float(start - EVAL_EPSILON), float(end - EVAL_EPSILON)
 
 
 def collect(name: str, interval: float, base_url: str, t0: float, s, meta: dict) -> Path:
     start, end = bucket_grid(t0, WARMUP, float(s.ts[-1]), interval)
     payload = {
         "workload": name, "interval": interval, "t0": t0, "metric": METRIC,
-        "grid": {"start": start, "end": end, "step": interval},
+        "grid": {"start": start, "end": end, "step": interval,
+                 "eps": EVAL_EPSILON,
+                 "convention": "bucket [b, b+interval); evaluated at b+interval-eps"},
         "warmup": WARMUP,
         "series": {"ts": [float(t) for t in s.ts], "vs": [float(v) for v in s.vs]},
         "candidates": {}, **meta,

@@ -256,9 +256,10 @@ def test_as_count_matches_datadog_on_a_real_series():
     p = phi_series(s)
     assert translate("sum:x{*}.as_count().rollup(sum, 60)") == "sum(x - x offset 60s)"
     diffs = []
-    for t in dd.bucket_ends(600, s.ts[-1], 60.0):
-        promql = pq.instant(s.ts, s.vs, t) - pq.instant(s.ts, s.vs, t - 60.0)
-        datadog = dd.as_count(p.ts, p.vs, t, 60.0)
+    for b in dd.bucket_starts(600, s.ts[-1] - 60.0, 60.0):
+        u = dd.eval_instant(b, 60.0)
+        promql = pq.instant(s.ts, s.vs, u) - pq.instant(s.ts, s.vs, u - 60.0)
+        datadog = dd.as_count(p.ts, p.vs, b, 60.0)
         diffs.append(abs(promql - datadog))
     assert diffs and np.nanmax(diffs) < 1e-9
 
@@ -269,8 +270,9 @@ def test_as_rate_is_as_count_over_the_interval():
     p = phi_series(s)
     out = translate("sum:x{*}.as_rate().rollup(sum, 60)")
     assert "/ 60)" in out      # per series, inside the space aggregation
-    errs = [abs(pq.offset_diff_rate(s.ts, s.vs, t, 60.0) - dd.as_rate(p.ts, p.vs, t, 60.0))
-            for t in dd.bucket_ends(600, s.ts[-1], 60.0)]
+    errs = [abs(pq.offset_diff_rate(s.ts, s.vs, dd.eval_instant(b, 60.0), 60.0)
+                - dd.as_rate(p.ts, p.vs, b, 60.0))
+            for b in dd.bucket_starts(600, s.ts[-1] - 60.0, 60.0)]
     assert errs and np.nanmax(errs) < 1e-9
 
 
