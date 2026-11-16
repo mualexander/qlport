@@ -1,0 +1,169 @@
+{
+ "acks": [
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  }
+ ],
+ "interpretation": {
+  "conclusive": true,
+  "consistent_with": [
+   {
+    "closure": "left",
+    "label": "start"
+   }
+  ],
+  "delta": 60.0,
+  "midbucket_reported_at": 1794814500.0,
+  "midbucket_submitted_at": 1794814530.0,
+  "ongrid_reported_at": 1794814500.0,
+  "t_star": 1794814500.0
+ },
+ "provenance": {
+  "api": {
+   "query": "/api/v1/query",
+   "submit": "/api/v2/series"
+  },
+  "collected_at": "2026-11-16T07:40:46+00:00",
+  "delta": 60.0,
+  "experiment": "e2",
+  "metric_type": 1,
+  "probes": {
+   "midbucket": 1794814530.0,
+   "ongrid": 1794814500.0
+  },
+  "run": "r1794814500",
+  "site": "datadoghq.com",
+  "t_star": 1794814500.0
+ },
+ "reported_at": {
+  "midbucket": [
+   1794814500.0
+  ],
+  "ongrid": [
+   1794814500.0
+  ]
+ },
+ "responses": {
+  "midbucket": {
+   "from": 1794813600.0,
+   "query": "sum:qlport.e2.midbucket{run:r1794814500}.rollup(sum, 60)",
+   "raw": {
+    "from_date": 1794813600000,
+    "group_by": [],
+    "message": "",
+    "query": "sum:qlport.e2.midbucket{run:r1794814500}.rollup(sum, 60)",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e2.midbucket",
+      "end": 1794814559000,
+      "expression": "sum:qlport.e2.midbucket{run:r1794814500}.rollup(sum, 60)",
+      "interval": 60,
+      "length": 1,
+      "metric": "qlport.e2.midbucket",
+      "pointlist": [
+       [
+        1794814500000.0,
+        1000.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "run:r1794814500",
+      "start": 1794814500000,
+      "tag_set": [],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1794815400000,
+    "values": []
+   },
+   "to": 1794815400.0
+  },
+  "ongrid": {
+   "from": 1794813600.0,
+   "query": "sum:qlport.e2.ongrid{run:r1794814500}.rollup(sum, 60)",
+   "raw": {
+    "from_date": 1794813600000,
+    "group_by": [],
+    "message": "",
+    "query": "sum:qlport.e2.ongrid{run:r1794814500}.rollup(sum, 60)",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e2.ongrid",
+      "end": 1794814559000,
+      "expression": "sum:qlport.e2.ongrid{run:r1794814500}.rollup(sum, 60)",
+      "interval": 60,
+      "length": 1,
+      "metric": "qlport.e2.ongrid",
+      "pointlist": [
+       [
+        1794814500000.0,
+        1000.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "run:r1794814500",
+      "start": 1794814500000,
+      "tag_set": [],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1794815400000,
+    "values": []
+   },
+   "to": 1794815400.0
+  }
+ },
+ "submitted": [
+  {
+   "series": [
+    {
+     "metric": "qlport.e2.ongrid",
+     "points": [
+      {
+       "timestamp": 1794814500,
+       "value": 1000.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1794814500"
+     ],
+     "type": 1
+    }
+   ]
+  },
+  {
+   "series": [
+    {
+     "metric": "qlport.e2.midbucket",
+     "points": [
+      {
+       "timestamp": 1794814530,
+       "value": 1000.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1794814500"
+     ],
+     "type": 1
+    }
+   ]
+  }
+ ]
+}

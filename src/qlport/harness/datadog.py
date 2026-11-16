@@ -43,6 +43,7 @@ __all__ = [
     "COUNT", "GAUGE", "RATE", "UNSPECIFIED",
     "Credentials", "credentials", "count_payload", "submit", "query",
     "pointlist", "reported_interval", "bucket_of", "interpret_closure",
+    "consistent_conventions", "interpret_default_aggregator",
     "interpret_default_aggregator",
     "read_raw", "write_raw",
 ]
@@ -245,27 +246,50 @@ def bucket_of(t: float, delta: float, *, closure: str, label: str) -> float:
     return float(b if label == "start" else b + delta)
 
 
-def interpret_closure(t_star: float, delta: float,
-                      ongrid_ts: float, mid_ts: float) -> dict:
-    """Read E2's two probes back as a (closure, label) pair.
+def consistent_conventions(observations) -> list[dict]:
+    """Which (closure, label) conventions explain every observation.
 
-    `t_star` is a multiple of `delta`; `ongrid_ts` is the bucket timestamp reported for a
-    point submitted at exactly `t_star`, and `mid_ts` the one reported for a point at
-    `t_star + delta/2`. Returns the hypotheses consistent with both, which is one of the
-    four unless the server did something the model does not cover -- in which case the
-    answer is the empty list and the experiment is inconclusive rather than wrong.
+    Each observation is `(submitted_at, delta, reported_bucket)`: a point submitted at
+    one instant, read back under a rollup of that width, and reported under that bucket
+    timestamp. Returns every hypothesis consistent with all of them, which is the honest
+    output -- one surviving hypothesis is an answer, several means the probes did not
+    separate them, and none means the server does something this model does not cover.
     """
-    probes = ((t_star, ongrid_ts), (t_star + delta / 2.0, mid_ts))
-    consistent = [
+    return [
         {"closure": c, "label": l}
         for c in ("right", "left")
         for l in ("start", "end")
-        if all(bucket_of(t, delta, closure=c, label=l) == float(seen) for t, seen in probes)
+        if all(bucket_of(float(s), float(d), closure=c, label=l) == float(b)
+               for s, d, b in observations)
     ]
+
+
+def interpret_closure(t_star: float, delta: float, ongrid_ts: float, mid_ts: float,
+                      *, mid_submitted_at: float | None = None) -> dict:
+    """Read E2's two probes back as a (closure, label) pair.
+
+    `t_star` is a multiple of `delta` and `ongrid_ts` the bucket reported for a point
+    submitted at exactly `t_star`. `mid_ts` is the bucket reported for the second probe,
+    which must sit strictly inside a bucket; it defaults to `t_star + delta/2` and
+    `mid_submitted_at` states it when the probe was placed elsewhere.
+
+    That argument exists because the mid-bucket probe is only informative while it lies
+    inside the same bucket the model assumes. Reading a probe placed 1.5 buckets away as
+    though it were half a bucket away yields a confident and wrong answer, which is a
+    mistake made once already.
+    """
+    mid_at = t_star + delta / 2.0 if mid_submitted_at is None else float(mid_submitted_at)
+    if not 0 < (mid_at - t_star) % delta < delta:
+        raise ValueError(
+            f"the second probe must fall strictly inside a bucket; {mid_at - t_star:+g}s "
+            f"from t* is on a {delta:g}s boundary")
+    observations = [(t_star, delta, ongrid_ts), (mid_at, delta, mid_ts)]
+    consistent = consistent_conventions(observations)
     return {
         "t_star": float(t_star),
         "delta": float(delta),
         "ongrid_reported_at": float(ongrid_ts),
+        "midbucket_submitted_at": mid_at,
         "midbucket_reported_at": float(mid_ts),
         "consistent_with": consistent,
         "conclusive": len(consistent) == 1,

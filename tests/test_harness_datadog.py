@@ -11,6 +11,9 @@ than fail:
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
 from qlport.harness.datadog import (
@@ -217,3 +220,54 @@ def test_a_sample_on_a_bucket_edge_is_inconclusive():
 def test_more_than_one_non_zero_bucket_is_inconclusive():
     got = interpret_default_aggregator(60, E3_POINTS, E3_VALUES, {"a": 4.0, "b": 4.0})
     assert not got["conclusive"] and "one non-zero bucket" in got["why"]
+
+
+# --------------------- the recorded E2 measurement (paper §3.1, bucket closure)
+
+
+E2 = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog" / "e2.json"
+
+
+@pytest.fixture(scope="module")
+def e2() -> dict:
+    if not E2.exists():  # pragma: no cover - run scripts/trial_checks.py e2
+        pytest.skip("e2.json not recorded; run scripts/trial_checks.py e2")
+    return json.loads(E2.read_text())
+
+
+def test_the_measured_convention_is_left_closed_labelled_by_start(e2):
+    """The answer §3.1 is written against, read off a real Datadog account.
+
+    A point submitted at exactly a bucket boundary is reported under the bucket
+    *starting* there, not the one ending there. That rules out the right-closed
+    reading the paper originally assumed.
+    """
+    got = e2["interpretation"]
+    assert got["conclusive"], got
+    assert got["consistent_with"] == [{"closure": "left", "label": "start"}], got
+
+
+def test_the_two_probes_actually_discriminated(e2):
+    # Both probes must have returned exactly one bucket, or the run proves nothing.
+    for name in ("ongrid", "midbucket"):
+        assert len(e2["reported_at"][name]) == 1, (name, e2["reported_at"])
+
+
+def test_the_run_was_isolated_from_earlier_runs(e2):
+    # Re-running without a per-run tag let a later run read an earlier run's points
+    # back and report a bucket from the wrong experiment.
+    prov = e2["provenance"]
+    assert prov.get("run"), prov
+    for r in e2["responses"].values():
+        assert f"run:{prov['run']}" in r["query"], r["query"]
+
+
+def test_the_interpretation_follows_from_the_recorded_buckets(e2):
+    # Recompute from the cache rather than trusting the stored verdict.
+    from qlport.harness.datadog import interpret_closure
+    prov = e2["provenance"]
+    again = interpret_closure(prov["t_star"], prov["delta"],
+                              e2["reported_at"]["ongrid"][0],
+                              e2["reported_at"]["midbucket"][0],
+                              mid_submitted_at=prov["probes"]["midbucket"])
+    assert again["consistent_with"] == e2["interpretation"]["consistent_with"]

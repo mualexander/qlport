@@ -44,7 +44,7 @@ OUT = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog"
 TAGS = ["rig:b"]
 DELTA = 60.0           # the rollup interval E2 probes
 SETTLE = 300           # submit this far into the past, so the point is queryable
-POLL_TIMEOUT = 240.0   # ingestion is not instant; give it four minutes
+POLL_TIMEOUT = 600.0   # a brand-new custom metric can take minutes to appear
 POLL_EVERY = 10.0
 
 
@@ -77,6 +77,33 @@ def _submit_all(creds: Credentials, payloads: list[dict], *, dry: bool) -> list[
     for p in payloads:
         acks.append(submit(creds, p))
     return acks
+
+
+def _await_all(creds: Credentials, queries: dict[str, str], start: float,
+               end: float) -> dict[str, dict]:
+    """Poll every query until each has a non-null point, or the budget runs out.
+
+    One pass per query per round, rather than one query polled to exhaustion and then
+    the next: a newly created custom metric can take minutes to become queryable, and
+    serial polling spends the whole budget on whichever probe happens to be first.
+    """
+    deadline = _now() + POLL_TIMEOUT
+    out: dict[str, dict] = {}
+    while True:
+        for name, q in queries.items():
+            if name in out:
+                continue
+            raw = query(creds, q, start, end)
+            if any(v for v in pointlist(raw).values()):
+                out[name] = raw
+            else:
+                out.setdefault("_last_" + name, raw)
+        if len(set(queries) & set(out)) == len(queries) or _now() >= deadline:
+            # Fall back to the last empty response so the cache records what was said.
+            for name in queries:
+                out.setdefault(name, out.get("_last_" + name, {}))
+            return {k: v for k, v in out.items() if not k.startswith("_last_")}
+        time.sleep(POLL_EVERY)
 
 
 def _await_points(creds: Credentials, q: str, start: float, end: float, *,
@@ -113,32 +140,47 @@ def e2(creds: Credentials, *, dry: bool) -> dict:
     so it fixes the labelling, and the on-grid point then fixes the closure.
     """
     t_star = _grid(_now() - SETTLE)
+    # Every run gets its own tag. Without one, a re-run submits to the same metric names
+    # and the wide query window picks up the *previous* run's points -- which is exactly
+    # what happened the first time this was repeated, and it produced two probes both
+    # reporting a bucket from the earlier run. The run tag makes each run self-contained
+    # at the cost of one extra series per run rather than one extra custom metric.
+    run = f"r{int(t_star)}"
+    tags = TAGS + [f"run:{run}"]
     probes = {
         "ongrid": ("qlport.e2.ongrid", t_star),
         "midbucket": ("qlport.e2.midbucket", t_star + DELTA / 2.0),
     }
-    payloads = [count_payload(m, [(t, 1000.0)], tags=TAGS) for m, t in probes.values()]
+    payloads = [count_payload(m, [(t, 1000.0)], tags=tags) for m, t in probes.values()]
     acks = _submit_all(creds, payloads, dry=dry)
     if dry:
         for name, (metric, t) in probes.items():
-            print(f"# then query  sum:{metric}{{*}}.rollup(sum, 60)"
-                  f"  from {t_star - 180:.0f} to {t_star + 180:.0f}  ({name} at {t:.0f})")
+            print(f"# then query  sum:{metric}{{run:{run}}}.rollup(sum, 60)"
+                  f"  from {t_star - 900:.0f} to {t_star + 900:.0f}  ({name} at {t:.0f})")
         return {}
 
-    start, end = t_star - 180, t_star + 180
-    out: dict = {"provenance": _provenance(creds, experiment="e2", t_star=t_star,
+    # A wide window on purpose: the bucket a probe lands in is the measurement, and a
+    # narrow window risks clipping it if the convention is the opposite of the assumed
+    # one. Both probes are polled together -- polling one to exhaustion before starting
+    # the other starved the second and made the first run of this inconclusive.
+    start, end = t_star - 900, t_star + 900
+    queries = {name: f"sum:{metric}{{run:{run}}}.rollup(sum, {DELTA:.0f})"
+               for name, (metric, _) in probes.items()}
+    raws = _await_all(creds, queries, start, end)
+
+    out: dict = {"provenance": _provenance(creds, experiment="e2", t_star=t_star, run=run,
                                            delta=DELTA, probes={k: v[1] for k, v in probes.items()}),
                  "submitted": payloads, "acks": acks, "responses": {}, "reported_at": {}}
-    for name, (metric, _) in probes.items():
-        q = f"sum:{metric}{{*}}.rollup(sum, {DELTA:.0f})"
-        raw = _await_points(creds, q, start, end)
-        out["responses"][name] = {"query": q, "from": start, "to": end, "raw": raw}
-        hits = [t for t, v in _defined(raw).items() if v != 0.0]
-        out["reported_at"][name] = hits
+    for name, raw in raws.items():
+        out["responses"][name] = {"query": queries[name], "from": start, "to": end,
+                                  "raw": raw}
+        out["reported_at"][name] = [t for t, v in _defined(raw).items() if v != 0.0]
 
     ongrid, mid = out["reported_at"]["ongrid"], out["reported_at"]["midbucket"]
     if len(ongrid) == 1 and len(mid) == 1:
-        out["interpretation"] = interpret_closure(t_star, DELTA, ongrid[0], mid[0])
+        out["interpretation"] = interpret_closure(
+            t_star, DELTA, ongrid[0], mid[0],
+            mid_submitted_at=probes["midbucket"][1])
     else:
         out["interpretation"] = {
             "conclusive": False,
