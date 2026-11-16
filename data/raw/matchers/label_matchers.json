@@ -1,0 +1,883 @@
+{
+ "collected_unix": 1794790092,
+ "corpus_regexes": {
+  ".*_bytes": {
+   "accepted": true,
+   "error": ""
+  },
+  ".*_dropped|.*_errors|.*_nohandler|collisions": {
+   "accepted": true,
+   "error": ""
+  },
+  ".*_packets": {
+   "accepted": true,
+   "error": ""
+  },
+  ".*_viewed|.*_listed|ssh_.*": {
+   "accepted": true,
+   "error": ""
+  },
+  ".*cluster\\\\-agent": {
+   "accepted": true,
+   "error": ""
+  },
+  ".*ctr.*": {
+   "accepted": true,
+   "error": ""
+  },
+  ".*gw.*": {
+   "accepted": true,
+   "error": ""
+  },
+  ".*lf.*|.*ls.*|.*ma.*": {
+   "accepted": true,
+   "error": ""
+  },
+  ".*ptl.*|.*con.*": {
+   "accepted": true,
+   "error": ""
+  },
+  ".*senderr": {
+   "accepted": true,
+   "error": ""
+  },
+  ".+": {
+   "accepted": true,
+   "error": ""
+  },
+  "1xx|2xx|3xx": {
+   "accepted": true,
+   "error": ""
+  },
+  "2.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "2.*|3.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "3.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "4.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "4.*|5.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "4.*|5.*|0": {
+   "accepted": true,
+   "error": ""
+  },
+  "4xx|5xx": {
+   "accepted": true,
+   "error": ""
+  },
+  "4|5": {
+   "accepted": true,
+   "error": ""
+  },
+  "5.*": {
+   "accepted": true,
+   "error": ""
+  },
+  ":.*kube\\\\-controller\\\\-manager": {
+   "accepted": true,
+   "error": ""
+  },
+  "aggregate|get_graphql|get_object|head_object": {
+   "accepted": true,
+   "error": ""
+  },
+  "aws|azure|gcp": {
+   "accepted": true,
+   "error": ""
+  },
+  "batch|batch_references|add_object|update_object|merge_object|delete_object|add_reference|update_reference|delete_reference": {
+   "accepted": true,
+   "error": ""
+  },
+  "clusterchecks\\\\-agent|cluster\\\\-checks\\\\-runner": {
+   "accepted": true,
+   "error": ""
+  },
+  "completed|progressing": {
+   "accepted": true,
+   "error": ""
+  },
+  "container.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "director|controller": {
+   "accepted": true,
+   "error": ""
+  },
+  "edge|partial_edge": {
+   "accepted": true,
+   "error": ""
+  },
+  "error|invalidspec|paused|timeout|abort": {
+   "accepted": true,
+   "error": ""
+  },
+  "error|invalidspec|timeout|abort": {
+   "accepted": true,
+   "error": ""
+  },
+  "false.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "false|unknown": {
+   "accepted": true,
+   "error": ""
+  },
+  "fetchconsumer|fetchfollower|produce": {
+   "accepted": true,
+   "error": ""
+  },
+  "generic\\\\-router|generic\\\\-device": {
+   "accepted": true,
+   "error": ""
+  },
+  "get|list": {
+   "accepted": true,
+   "error": ""
+  },
+  "gitrepository|helmrepository|ocirepository": {
+   "accepted": true,
+   "error": ""
+  },
+  "glacier_ir|standard_ia": {
+   "accepted": true,
+   "error": ""
+  },
+  "gpt\\\\-4\\\\-.*\\\\-preview": {
+   "accepted": true,
+   "error": ""
+  },
+  "helmchart|helmrelease|kustomization": {
+   "accepted": true,
+   "error": ""
+  },
+  "helmchart|kustomization|helmrelease": {
+   "accepted": true,
+   "error": ""
+  },
+  "helmrepository|gitrepository|ocirepository": {
+   "accepted": true,
+   "error": ""
+  },
+  "inconclusive|error": {
+   "accepted": true,
+   "error": ""
+  },
+  "inconclusive|error|failed": {
+   "accepted": true,
+   "error": ""
+  },
+  "ip_access|.*_evaluated|.*_succeeded|url_access|remedy_action_triggered|.*_accepted|tunnel_closed|session_removed|session_created|session_reconnected|tunnel_connected|tunnel_established|add\\\\-name|acl_rules_update": {
+   "accepted": true,
+   "error": ""
+  },
+  "kyverno|cleanup\\\\-controller|background\\\\-controller|reports\\\\-controller": {
+   "accepted": true,
+   "error": ""
+  },
+  "normalization": {
+   "accepted": true,
+   "error": ""
+  },
+  "oke\\\\-c.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "pending|running|successful": {
+   "accepted": true,
+   "error": ""
+  },
+  "pool.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "post|patch|put|delete": {
+   "accepted": true,
+   "error": ""
+  },
+  "replication|airbyte_platform|unknown|persistence": {
+   "accepted": true,
+   "error": ""
+  },
+  "running.*|pending:.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "source|destination": {
+   "accepted": true,
+   "error": ""
+  },
+  "storage.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "text\\\\-ada\\\\-001|ada": {
+   "accepted": true,
+   "error": ""
+  },
+  "text\\\\-babbage\\\\-001|babbage": {
+   "accepted": true,
+   "error": ""
+  },
+  "text\\\\-curie\\\\-001|curie": {
+   "accepted": true,
+   "error": ""
+  },
+  "text\\\\-davinci\\\\-.*|davinci": {
+   "accepted": true,
+   "error": ""
+  },
+  "virt\\\\-api.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "visibilitytask.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "vsmart|vbond|vmanage": {
+   "accepted": true,
+   "error": ""
+  },
+  "wait.*": {
+   "accepted": true,
+   "error": ""
+  },
+  "wait_.*": {
+   "accepted": true,
+   "error": ""
+  }
+ },
+ "image": "prom/prometheus:v3.15.0",
+ "image_digest": "prom/prometheus@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e",
+ "matchers": {
+  "k!~\"aws|gcp\"": {
+   "expr": "qlport_matchers_total{k!~\"aws|gcp\"}",
+   "note": "its negation, including the series with no k",
+   "response": {
+    "data": {
+     "result": [
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "awsx"
+       },
+       "values": [
+        [
+         1794786492,
+         "300"
+        ],
+        [
+         1794786507,
+         "301"
+        ],
+        [
+         1794786522,
+         "302"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "azure"
+       },
+       "values": [
+        [
+         1794786492,
+         "100"
+        ],
+        [
+         1794786507,
+         "101"
+        ],
+        [
+         1794786522,
+         "102"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "xgcp"
+       },
+       "values": [
+        [
+         1794786492,
+         "400"
+        ],
+        [
+         1794786507,
+         "401"
+        ],
+        [
+         1794786522,
+         "402"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "other": "none"
+       },
+       "values": [
+        [
+         1794786492,
+         "500"
+        ],
+        [
+         1794786507,
+         "501"
+        ],
+        [
+         1794786522,
+         "502"
+        ]
+       ]
+      }
+     ],
+     "resultType": "matrix"
+    },
+    "status": "success"
+   },
+   "selected": [
+    {
+     "k": "awsx"
+    },
+    {
+     "k": "azure"
+    },
+    {
+     "k": "xgcp"
+    },
+    {
+     "other": "none"
+    }
+   ]
+  },
+  "k=~\".*\"": {
+   "expr": "qlport_matchers_total{k=~\".*\"}",
+   "note": "tag present or absent",
+   "response": {
+    "data": {
+     "result": [
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "aws"
+       },
+       "values": [
+        [
+         1794786492,
+         "0"
+        ],
+        [
+         1794786507,
+         "1"
+        ],
+        [
+         1794786522,
+         "2"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "awsx"
+       },
+       "values": [
+        [
+         1794786492,
+         "300"
+        ],
+        [
+         1794786507,
+         "301"
+        ],
+        [
+         1794786522,
+         "302"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "azure"
+       },
+       "values": [
+        [
+         1794786492,
+         "100"
+        ],
+        [
+         1794786507,
+         "101"
+        ],
+        [
+         1794786522,
+         "102"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "gcp"
+       },
+       "values": [
+        [
+         1794786492,
+         "200"
+        ],
+        [
+         1794786507,
+         "201"
+        ],
+        [
+         1794786522,
+         "202"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "xgcp"
+       },
+       "values": [
+        [
+         1794786492,
+         "400"
+        ],
+        [
+         1794786507,
+         "401"
+        ],
+        [
+         1794786522,
+         "402"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "other": "none"
+       },
+       "values": [
+        [
+         1794786492,
+         "500"
+        ],
+        [
+         1794786507,
+         "501"
+        ],
+        [
+         1794786522,
+         "502"
+        ]
+       ]
+      }
+     ],
+     "resultType": "matrix"
+    },
+    "status": "success"
+   },
+   "selected": [
+    {
+     "k": "aws"
+    },
+    {
+     "k": "awsx"
+    },
+    {
+     "k": "azure"
+    },
+    {
+     "k": "gcp"
+    },
+    {
+     "k": "xgcp"
+    },
+    {
+     "other": "none"
+    }
+   ]
+  },
+  "k=~\".*ws.*|.*cp.*\"": {
+   "expr": "qlport_matchers_total{k=~\".*ws.*|.*cp.*\"}",
+   "note": "glob disjunction after glob_to_regex",
+   "response": {
+    "data": {
+     "result": [
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "aws"
+       },
+       "values": [
+        [
+         1794786492,
+         "0"
+        ],
+        [
+         1794786507,
+         "1"
+        ],
+        [
+         1794786522,
+         "2"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "awsx"
+       },
+       "values": [
+        [
+         1794786492,
+         "300"
+        ],
+        [
+         1794786507,
+         "301"
+        ],
+        [
+         1794786522,
+         "302"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "gcp"
+       },
+       "values": [
+        [
+         1794786492,
+         "200"
+        ],
+        [
+         1794786507,
+         "201"
+        ],
+        [
+         1794786522,
+         "202"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "xgcp"
+       },
+       "values": [
+        [
+         1794786492,
+         "400"
+        ],
+        [
+         1794786507,
+         "401"
+        ],
+        [
+         1794786522,
+         "402"
+        ]
+       ]
+      }
+     ],
+     "resultType": "matrix"
+    },
+    "status": "success"
+   },
+   "selected": [
+    {
+     "k": "aws"
+    },
+    {
+     "k": "awsx"
+    },
+    {
+     "k": "gcp"
+    },
+    {
+     "k": "xgcp"
+    }
+   ]
+  },
+  "k=~\".+\"": {
+   "expr": "qlport_matchers_total{k=~\".+\"}",
+   "note": "tag present",
+   "response": {
+    "data": {
+     "result": [
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "aws"
+       },
+       "values": [
+        [
+         1794786492,
+         "0"
+        ],
+        [
+         1794786507,
+         "1"
+        ],
+        [
+         1794786522,
+         "2"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "awsx"
+       },
+       "values": [
+        [
+         1794786492,
+         "300"
+        ],
+        [
+         1794786507,
+         "301"
+        ],
+        [
+         1794786522,
+         "302"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "azure"
+       },
+       "values": [
+        [
+         1794786492,
+         "100"
+        ],
+        [
+         1794786507,
+         "101"
+        ],
+        [
+         1794786522,
+         "102"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "gcp"
+       },
+       "values": [
+        [
+         1794786492,
+         "200"
+        ],
+        [
+         1794786507,
+         "201"
+        ],
+        [
+         1794786522,
+         "202"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "xgcp"
+       },
+       "values": [
+        [
+         1794786492,
+         "400"
+        ],
+        [
+         1794786507,
+         "401"
+        ],
+        [
+         1794786522,
+         "402"
+        ]
+       ]
+      }
+     ],
+     "resultType": "matrix"
+    },
+    "status": "success"
+   },
+   "selected": [
+    {
+     "k": "aws"
+    },
+    {
+     "k": "awsx"
+    },
+    {
+     "k": "azure"
+    },
+    {
+     "k": "gcp"
+    },
+    {
+     "k": "xgcp"
+    }
+   ]
+  },
+  "k=~\"aws\"": {
+   "expr": "qlport_matchers_total{k=~\"aws\"}",
+   "note": "one value, not its extensions",
+   "response": {
+    "data": {
+     "result": [
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "aws"
+       },
+       "values": [
+        [
+         1794786492,
+         "0"
+        ],
+        [
+         1794786507,
+         "1"
+        ],
+        [
+         1794786522,
+         "2"
+        ]
+       ]
+      }
+     ],
+     "resultType": "matrix"
+    },
+    "status": "success"
+   },
+   "selected": [
+    {
+     "k": "aws"
+    }
+   ]
+  },
+  "k=~\"aws|gcp\"": {
+   "expr": "qlport_matchers_total{k=~\"aws|gcp\"}",
+   "note": "single-label disjunction: exactly the two values",
+   "response": {
+    "data": {
+     "result": [
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "aws"
+       },
+       "values": [
+        [
+         1794786492,
+         "0"
+        ],
+        [
+         1794786507,
+         "1"
+        ],
+        [
+         1794786522,
+         "2"
+        ]
+       ]
+      },
+      {
+       "metric": {
+        "__name__": "qlport_matchers_total",
+        "k": "gcp"
+       },
+       "values": [
+        [
+         1794786492,
+         "200"
+        ],
+        [
+         1794786507,
+         "201"
+        ],
+        [
+         1794786522,
+         "202"
+        ]
+       ]
+      }
+     ],
+     "resultType": "matrix"
+    },
+    "status": "success"
+   },
+   "selected": [
+    {
+     "k": "aws"
+    },
+    {
+     "k": "gcp"
+    }
+   ]
+  }
+ },
+ "metric": "qlport_matchers",
+ "prometheus_revision": "5241a27fe3c6983549fccc32f6e65917408c63cd",
+ "prometheus_version": "3.15.0",
+ "series": [
+  {
+   "k": "aws"
+  },
+  {
+   "k": "azure"
+  },
+  {
+   "k": "gcp"
+  },
+  {
+   "k": "awsx"
+  },
+  {
+   "k": "xgcp"
+  },
+  {
+   "other": "none"
+  }
+ ],
+ "t0": 1794786492.0
+}

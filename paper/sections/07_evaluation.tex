@@ -1,5 +1,409 @@
 \section{Evaluation (RQ3)}
 \label{sec:evaluation}
-\todo{Pipeline (state it: e.g.\ OpenTelemetry exporting to both systems); dual-write
-harness; corpus; empirical checks of Datadog's reset policy and bucket boundaries;
-$\kappa$ overall and by gap; untested queries reported separately (notebook 05).}
+
+RQ3 asks how much of a real dashboard estate the translator of
+Section~\ref{sec:translation} actually ports. The measure is coverage $\kappa$: the share
+of Datadog query \emph{occurrences} for which the translator emits a PromQL expression
+rather than $\bot$. Occurrences rather than distinct strings, because a widget repeated
+across forty dashboards is forty panels a migration has to rebuild by hand if it fails.
+
+Everything in this section is computed from one frozen corpus, over the whole of it, with
+nothing sampled and nothing hand-classified. Queries the grammar of
+Section~\ref{sec:grammars} cannot parse stay in the denominator, so $\kappa$ is not
+reported against the part of the corpus that happened to cooperate.
+
+\subsection{The corpus}
+\label{sec:corpus}
+
+Three sources, each pinned to a commit or a retrieval date, chosen to put a vendor's own
+queries and a community's queries on the same footing
+(Table~\ref{tab:corpus-sources}).
+
+\begin{table}[htbp]\centering\scriptsize
+\input{tables/corpus_sources}
+\caption{Corpus sources. Queries are extracted from dashboard and alerting definitions,
+not written for this paper. The Datadog figure counts metric queries; the same documents
+also contribute $11{,}628$ formula expressions, held aside below.}
+\label{tab:corpus-sources}
+\end{table}
+
+\texttt{kube-prometheus} supplies PromQL written by the Prometheus community's own
+maintainers~\citep{kubemixin}; the Grafana community dashboards supply PromQL written by
+everyone else~\citep{grafanadash}; and Datadog's \texttt{integrations-core} supplies
+Datadog queries written by Datadog, which matters because no reference grammar for that
+language is published (Section~\ref{sec:datadog-inference}) and vendor-authored queries
+are the closest thing to a specification by example.
+
+Extraction yields $28{,}501$ query strings. Eleven turn out to be LogQL --- Loki panels
+in dashboards registered under a Prometheus datasource --- and are dropped rather than
+counted as PromQL the grammar fails on, leaving $28{,}490$ in three populations:
+$8{,}766$ Datadog metric queries, $8{,}096$ PromQL expressions ($7{,}863$ panels, $137$
+alerting rules, $96$ recording rules), and $11{,}628$ Datadog formula expressions.
+
+\paragraph{Instantiation.}
+Dashboard queries are not queries. A panel ships \texttt{\$pod},
+\texttt{\$\_\_rate\_interval} or \texttt{\$host} where a value belongs, and
+Table~\ref{tab:parse-coverage} already showed what that costs: $11.8\%$ of Datadog and
+$71.2\%$ of PromQL queries parse as shipped, against $99.9\%$ and $99.1\%$ once
+instantiated. \texttt{corpus.normalise} performs the substitution a dashboard performs
+--- a PromQL range variable becomes a duration, a Datadog scope variable becomes
+\texttt{*}, everything else is left alone --- and every measurement below is made on the
+instantiated form. The consequence for RQ2 is not cosmetic: the object a dashboard
+migration translates is a query \emph{schema}, and a translator that takes query strings
+is solving a different problem from the one its users have.
+
+\paragraph{What is held aside.}
+A Datadog widget is a list of named queries plus a formula over them, and this paper is
+about the metrics query language rather than the formula layer. Scoping it out is cheap
+and the corpus says so: of $11{,}628$ formulas ($481$ distinct strings), $82.6\%$ are a
+bare reference to a single named query, $11.5\%$ apply one function, $7.5\%$ contain
+arithmetic and $4.8\%$ a numeric constant. The semantics sit in the queries, not above
+them.
+
+\paragraph{What the corpus is not.}
+It is a census of \emph{published} dashboards, not of production estates. Vendor
+integration dashboards are written to demonstrate an integration, and community
+dashboards are written to be shared, so both are plausibly tidier and more
+template-driven than a dashboard grown inside one company. The direction of that bias is
+not obvious --- a tidier corpus is easier to parse but no easier to translate --- and
+Section~\ref{sec:threats} returns to it.
+
+\subsection{What the two languages are used for}
+
+A grammar says what is sayable. The corpus says what is said, and the distributions are
+lopsided enough to change what a translator should be built out of.
+Figure~\ref{fig:feature-frequency} gives the structural features and
+Table~\ref{tab:operator-frequency} the operators.
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=\linewidth]{figures/feature_frequency}
+\caption{The twenty most frequent structural features per language, as a share of
+queries. Feature codes are those of \texttt{corpus.FEATURE\_DOC}; a query contributes to
+every feature it uses.}
+\label{fig:feature-frequency}
+\end{figure}
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/operator_frequency}
+\caption{The six most frequent space aggregators and ten most frequent functions per
+language, by occurrence. Datadog's \texttt{p}$NN$ percentile aggregators are five
+distinct operators totalling $34$ occurrences, of which only \texttt{p95} reaches this
+table.}
+\label{tab:operator-frequency}
+\end{table}
+
+\noindent
+Four things in these distributions are load-bearing for the rest of the paper.
+
+\emph{Datadog's head is very short.} \texttt{sum:} and \texttt{avg:} are $95\%$ of all
+$8{,}955$ space-aggregator occurrences, and \texttt{by \{...\}} appears in $56\%$ of
+queries. A translator that handles two aggregators and grouping already speaks most of
+what the corpus says.
+
+\emph{The counter rule that matters is the undivided one.} \texttt{.as\_count()} outnumbers
+\texttt{.as\_rate()} by $6.6$ to one ($1{,}766$ against $266$). Both reduce to the same
+cumulative difference by Proposition~\ref{prop:offset}, which is why that proposition,
+rather than anything about \texttt{rate}, is the one that carries a migration.
+
+\emph{PromQL's head is a rate.} \texttt{rate} and \texttt{irate} together are $69\%$ of
+all $5{,}227$ function occurrences. Meanwhile subqueries appear in $1.1\%$ of PromQL
+queries, \texttt{offset} in $0.3\%$, and the \texttt{@} modifier in none at all --- a
+construct the language has and $8{,}096$ shipped expressions never reach for. The gap
+between what a query language contains and what its users employ is itself part of the
+switching-cost story: the hard parts of a language can be rare.
+
+\emph{Nothing is used alone.} A real Datadog query combines a space aggregator, a scope
+of several terms, a grouping and at least one method. That is why marginal frequency is
+the wrong order to build a translator in, and why the next subsection reports a different
+order.
+
+\subsection{Coverage is a staircase, not a curve}
+\label{sec:staircase}
+
+A query is translatable only when \emph{every} feature it uses is supported, so for a
+translator supporting exactly the feature set $S$, the share of queries all of whose
+features lie in $S$ is an upper bound on $\kappa$. Choosing $S$ greedily --- at each step
+the feature that completes the most queries outright --- gives an attainable set at each
+size, hence a lower bound on the best ceiling a fragment of that size could reach.
+Table~\ref{tab:implementation-order} is that order for Datadog and
+Figure~\ref{fig:cumulative-coverage} both curves.
+
+\begin{table}[htbp]\centering\scriptsize
+\input{tables/implementation_order}
+\caption{Greedy implementation order for Datadog. ``Pending uses'' is how many queries
+still need the feature when it is chosen; ``queries completed'' how many it finishes on
+its own. The cumulative column bounds $\kappa$ for a translator limited to those
+features.}
+\label{tab:implementation-order}
+\end{table}
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.62\linewidth]{figures/cumulative_coverage}
+\caption{Queries fully covered against features implemented, in greedy order. The line
+at $0.9$ marks the level reached after sixteen of Datadog's twenty-eight features and
+seventeen of PromQL's twenty-four.}
+\label{fig:cumulative-coverage}
+\end{figure}
+
+The shape is the finding. The first six Datadog features complete $45$ queries between
+them --- $0.5\%$ of the corpus, on top of the $1.1\%$ that use no feature at all --- and
+then template-variable scopes and \texttt{sum:} take two steps to $49\%$. Half the corpus
+needs nine features; $90\%$ needs sixteen of the twenty-eight. PromQL behaves the same way
+and slightly worse: its first six features complete $221$ of $8{,}096$ queries
+($2.7\%$), half the corpus needs fourteen features and $90\%$ needs seventeen of
+twenty-four.
+
+For anyone building one of these translators this is the practical result of the paper. A
+partial translator is worth almost nothing: there is no prefix of the feature list that
+buys proportional coverage, because coverage is conjunctive over features while
+popularity is marginal. The ``$80\%$ of queries with $20\%$ of the work'' intuition is
+simply false here, and that asymmetry is a switching cost in its own right --- an
+incremental migration cannot show incremental progress.
+
+\subsection{Coverage \texorpdfstring{$\kappa$}{kappa}}
+
+Table~\ref{tab:translation-coverage} reports the outcome of lowering and emitting every
+instantiated Datadog query in the corpus: $8{,}766$ occurrences, $7{,}688$ distinct after
+instantiation. (Table~\ref{tab:parse-coverage} counts $7{,}796$ distinct, because it
+counts distinct \emph{shipped} strings, before two templates collapse onto one query.)
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/translation_coverage}
+\caption{Translation outcomes over the Datadog corpus. Every $\bot$ carries a gap code
+and appears in Table~\ref{tab:gap-catalogue}; the unparsed row is kept in the denominator
+so that $\kappa$ is a statement about the corpus rather than about the parsable part of
+it.}
+\label{tab:translation-coverage}
+\end{table}
+
+\noindent
+$\kappa = 95.6\%$ of occurrences, and $95.5\%$ of distinct queries. The two agreeing to
+within a tenth of a point is worth a sentence, because there was no reason they should:
+it says the queries the translator refuses are neither more nor less repeated across
+dashboards than the ones it handles. There is no cheap win hiding in the popular queries, and conversely no
+consolation that the failures are all one-offs.
+
+Two sanity conditions hold on the translated set. Every emitted expression parses under
+the PromQL grammar of Section~\ref{sec:grammars} --- all $7{,}499$ of them, since $89$
+of the $7{,}345$ translated queries are comma-separated lists that emit one expression
+per series. That is checked as an assertion rather than reported as a rate, since the
+only acceptable number of syntactically invalid outputs is zero. And $\kappa$ sits between the ceilings that the
+greedy order of \S\ref{sec:staircase} places on a twenty-three- and a
+twenty-four-feature fragment ($95.5\%$ and $95.9\%$), so the translator is at the
+frontier its feature set allows rather than leaving easy queries unattempted.
+
+\subsection{The gap catalogue}
+\label{sec:gaps}
+
+Table~\ref{tab:gap-catalogue} is the other half of RQ2's answer: not ``what fraction
+fails'' but ``which constructs, and why''. Every row is reached by a query a real
+dashboard ships, and every $\bot$ carries one code from \texttt{diagnostics.py}.
+
+\begin{table}[htbp]\centering\scriptsize
+\input{tables/gap_catalogue}
+\caption{The gaps, by occurrence. ``Share'' is of all Datadog query occurrences in the
+corpus.}
+\label{tab:gap-catalogue}
+\end{table}
+
+\texttt{UNSUPPORTED\_FUNCTION} is the largest and the least interesting: it is a bundle of
+Datadog functions the translator does not implement, led by \texttt{top(...)} ($139$
+occurrences), \texttt{.weighted()} ($70$), the percentile aggregators ($34$, spread over
+five distinct percentiles) and \texttt{per\_second(...)} ($22$). Some are genuine
+semantic gaps --- \texttt{.weighted()} computes a time-weighted space average that PromQL
+has no operator for, and Datadog's percentile aggregators read a sketch the metric
+carries rather than a set of samples --- but \texttt{top(...)} is close to PromQL's
+\texttt{topk} and is unimplemented work rather than an obstruction. The row is a mixture,
+which is why the last paragraph of this subsection splits the whole table.
+
+\texttt{FILL\_INTERPOLATION} ($36$) and \texttt{LABEL\_NAME\_GLOB} ($31$) are the two
+clean cases, and both are genuine. \texttt{.fill(linear)} and \texttt{.fill(last)}
+interpolate across gaps \emph{inside} the query, which PromQL's staleness handling does
+not express. A wildcard in a tag \emph{key} rather than a value, as in
+\texttt{\{*-location\}}, asks for a match over label \emph{names}, which a PromQL
+selector cannot do at all, because label names are not queryable there.
+
+\texttt{SCOPE\_DISJUNCTION} is the interesting row, and it is interesting for having
+almost emptied. A Datadog scope is a boolean query over tags
+(Figure~\ref{fig:productions}) and a PromQL selector is a \emph{conjunction} of matchers,
+so disjunction is the one scope operator with no selector-level form --- unless every
+branch constrains the same tag key, in which case Proposition~\ref{prop:disjunction}
+makes it a single regex matcher. An earlier version of this translator refused all of
+it, at $124$ occurrences, and reported that as a gap in the language. It was not: $120$
+of those occurrences are single-key disjunctions, and implementing
+Proposition~\ref{prop:disjunction} translates them, taking $\kappa$ from $94.2\%$ to
+$95.6\%$.
+
+What survives is four occurrences, and they are the real thing: disjunction across
+different keys (\texttt{\{(status:400 OR s)\}}), a branch that constrains two keys at
+once (\texttt{\{(a:1 AND b:1) OR (a:2 AND b:2)\}}), and one De~Morgan case that becomes
+the same thing. Those remain sayable in PromQL as a union of selectors, but not as the
+syntax-directed translation of a scope.
+
+The episode is worth recording rather than quietly fixing, because the mistake is the
+one this paper is most at risk of making throughout. A translator's refusal looks like
+evidence about the languages, and it is only evidence about the translator until
+something separates the two. Here what separated them was re-parsing the refused queries
+and asking which case each was --- a question the gap code alone could not answer, since
+one code covered both.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/gap_by_feature}
+\caption{The twelve features with the lowest translated share, among those appearing in
+at least $50$ query occurrences. Rows read ``queries using this feature'', not ``this
+feature''.}
+\label{tab:gap-by-feature}
+\end{table}
+
+Table~\ref{tab:gap-by-feature} attributes the refusals to the Datadog features the
+refused queries use, and the caveat in its caption is load-bearing. A feature at $0.0\%$
+is not necessarily one the translator cannot handle; it can be one that in this corpus
+only ever appears beside something else that fails. \texttt{SCOPE\_BARE} demonstrated
+this and then stopped: \texttt{avg:x\{host\}} alone translates to
+\texttt{x\{host=\textasciitilde{}".+"\}}, yet before
+Proposition~\ref{prop:disjunction} the feature stood at $0.0\%$, because in these
+dashboards a bare tag key occurs only inside a boolean scope or next to a
+\texttt{*-location} key glob. Translating the scopes moved it to $55.4\%$ without anyone
+touching bare tag keys. Reading such a row as a statement about its own feature would
+have overstated the gaps, which is why the gap catalogue and not this table is the
+claim.
+
+\paragraph{How much of the $4.4\%$ is a language gap.}
+Separating the two kinds of refusal is the point of having codes at all, and on this
+corpus the split is lopsided. The refusals that rest on something PromQL cannot say are
+\texttt{.weighted()} ($70$ occurrences --- a time-weighted space average, which no PromQL
+operator computes), the percentile aggregators ($34$, which read a sketch the Datadog
+metric carries rather than a set of samples), \texttt{.fill} interpolation ($36$),
+tag-key globs ($31$) and the four surviving disjunctions: $175$ occurrences, $2.0\%$ of
+the corpus. The other $207$ --- $2.4\%$ --- are constructs this translator has not
+implemented, \texttt{top(...)} chief among them. So the ceiling for this direction is
+$97.9\%$ against the $95.6\%$ measured here, and the distance between the two is
+engineering rather than language design --- as the disjunction rule just demonstrated by
+closing $1.4$ points of it. That is the finding to carry into \S\ref{sec:discussion}:
+going this way, almost all of the apparent incompatibility is work, and what is left is
+small enough to enumerate query by query.
+
+\subsection{Exact relative to what}
+\label{sec:caveats}
+
+Every translation this paper calls exact is exact relative to stated preconditions, and
+Table~\ref{tab:translation-caveats} counts how often each is in play. These are not
+hedges added after the fact: each is a diagnostic the emitter attaches to the expression
+it returns, and the shares are over the translated set.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/translation_caveats}
+\caption{Preconditions carried by the translated expressions. A translation may carry
+more than one.}
+\label{tab:translation-caveats}
+\end{table}
+
+\texttt{ROLLUP\_ALIGNMENT} is universal because Datadog's buckets are epoch-aligned
+while a PromQL range window follows the evaluation step, so the two systems agree bucket
+for bucket on the aligned grid and not off it (Section~\ref{sec:ingestion}).
+\texttt{ROLLUP\_DEFAULT} covers the $96.9\%$ of translations whose source query never
+stated a rollup interval, because Datadog derives it from the dashboard's time range ---
+information the query text does not contain. This is the single largest qualification on
+$\kappa$ and it is a property of the source language, not of the translator: a Datadog
+query is not self-contained, so a translated query cannot be either. The remaining
+$116$ occurrences ($95$ distinct) carry \texttt{ROLLUP\_ALIGNMENT} alone, and are the only
+translations in the corpus that depend on nothing but the alignment of the grid.
+\texttt{COUNTER\_RESET} marks the $23.7\%$ that use the cumulative-difference form of
+Proposition~\ref{prop:offset}, exact unless a counter resets inside the window;
+Table~\ref{tab:rollup-live} measures what that costs when one does, and
+Proposition~\ref{prop:anchored} removes it at the price of requiring Prometheus~$3.7$ or
+newer.
+
+\begin{table}[htbp]\centering\scriptsize
+\input{tables/translation_examples}
+\caption{Worked translations, each the shortest corpus query exercising that feature.
+Long expressions are truncated.}
+\label{tab:translation-examples}
+\end{table}
+
+\noindent
+Table~\ref{tab:translation-examples} shows what the output looks like, taken from the
+corpus rather than invented. The \texttt{M\_AS\_COUNT} row is Proposition~\ref{prop:offset}
+in use; the \texttt{GROUP\_BY} row shows the default time aggregator and the assumed
+interval together, which is the common case.
+
+\subsection{What the unparsed queries are}
+
+Six distinct queries ($8$ occurrences) are outside the grammar of
+Section~\ref{sec:grammars}, and all six are the same construct: a conditional aggregator,
+\texttt{count(v: v>=0):data\_streams.latency\{...\}}, which appears in Datadog's own
+shipped dashboards and in none of its documentation. Writing a production for it would
+mean guessing its semantics, so it is reported instead. It is the whole of the Datadog
+residual in Table~\ref{tab:parse-coverage}.
+
+\subsection{What is not measured}
+\label{sec:not-measured}
+
+Two of the facts this paper's rollup translations rest on are facts about Datadog's
+implementation, and Datadog documents neither. They are stated as assumptions in
+Section~\ref{sec:ingestion} and carried as diagnostics in
+Table~\ref{tab:translation-caveats}; they are not settled here, and saying so is more
+useful than a confident guess.
+
+\emph{The reset policy $\rho$.} Definition~\ref{def:phi} admits $\rho=\mathsf{zero}$
+(a decrease contributes the new value) and $\rho=\mathsf{drop}$ (the interval is
+discarded). Proposition~\ref{prop:anchored} is proved for $\mathsf{zero}$, and the
+restart rows of Table~\ref{tab:rollup-live} compare the PromQL candidates against
+$\phi_{\mathsf{zero}}$ --- they establish that \texttt{increase(x[$\Delta$] anchored)}
+tracks that $\phi$ exactly, not that Datadog implements it. If $\rho=\mathsf{drop}$,
+\emph{neither} candidate is exact across a reset, and the result strengthens rather than
+weakens: no PromQL expression would reproduce the Datadog answer, because the discarded
+interval is information PromQL still holds and the Datadog query can no longer see.
+
+\emph{Bucket closure.} $\Sigma_\Delta$ presumes right-closed buckets $(t-\Delta,t]$. If
+they are left-closed, every rollup translation acquires a half-bucket offset. Epoch
+alignment itself \emph{is} documented~\citep{datadog}; which edge the returned timestamp
+labels is not.
+
+Settling both needs a Datadog account with ingestion, and the experiments are specified
+in advance in \texttt{docs/trial\_account\_checks.md}: a controlled counter scraped
+simultaneously by Prometheus and a Datadog agent, with a scripted reset, distinguishes
+all four candidate policies by reading \texttt{.rollup(sum, 60)} and
+\texttt{.rollup(count, 60)} on the bucket containing it; a single submitted point on an
+exact multiple of $60$ distinguishes the two closures. The predictions are tabulated
+there before the fact so the experiment can falsify them. For the same reason the
+dual-write differential test over the whole corpus --- running each translated pair
+against both systems on identical input --- is specified and not run. The exactness
+claims of Section~\ref{sec:ingestion} are therefore verified against a real
+Prometheus~3.15.0 (Table~\ref{tab:model-verification}) and against a model of Datadog,
+not against Datadog.
+
+\subsection{Threats to validity}
+\label{sec:threats}
+
+\paragraph{The corpus is published dashboards.}
+Vendor and community dashboards may be tidier and more heavily templated than
+in-house ones. The template-variable share ($87\%$ of Datadog, $82\%$ of PromQL queries)
+is the figure most likely to be inflated this way; $\kappa$ is less exposed, since the
+gaps it reports are structural constructs rather than stylistic ones. A corpus of
+private dashboards would be the better test and is not obtainable.
+
+\paragraph{$\kappa$ is measured on one direction and one language pair.}
+Datadog metrics $\to$ PromQL. Remark~\ref{rem:directional} argues the reverse direction
+is harder for reasons that do not depend on the corpus, but it is not measured, and
+nothing here extends to logs or traces.
+
+\paragraph{Occurrence weighting flatters nothing here, but it could.}
+Weighting by occurrence is the right measure for a migration and the wrong one for a
+language comparison. Both are reported in Table~\ref{tab:translation-coverage} and they
+agree to within a tenth of a point, so the choice happens not to matter; in a corpus
+where a single refused widget were duplicated across hundreds of dashboards it would
+matter a great deal.
+
+\paragraph{One ingestion path.}
+Section~\ref{sec:ingestion}'s $\phi$ models the agent's cumulative-to-delta conversion.
+OTLP ingestion sends monotonic values and applies a different conversion
+again~\citep{ddotlp}, so $\phi$ is a property of a configured pipeline rather than of
+``Datadog''. A migration on a different path inherits the framework but not the constants.
+
+\paragraph{The automatic rollup interval is assumed, not derived.}
+$\kappa$ is computed with a $60$\,s default where a query states no interval. Datadog
+publishes the interval as a time-range $\times$ widget-type lookup table rather than a
+formula, so the assumption is systematic rather than arbitrary, but a translator for a
+specific dashboard should read the interval off the dashboard's time range instead. The
+$96.9\%$ figure in Table~\ref{tab:translation-caveats} is the size of the exposure.

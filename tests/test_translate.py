@@ -112,7 +112,8 @@ def test_scope_terms_become_label_matchers(term, want):
 # --- every refusal names one gap ------------------------------------------------------
 @pytest.mark.parametrize("ddq,gap", [
     ("sum:x{a:1 OR b:2}.as_count()", Gap.SCOPE_DISJUNCTION),
-    ("sum:x{k IN (a,b)}.as_count()", Gap.SCOPE_DISJUNCTION),
+    # a single-label IN now translates; a branch constraining two keys does not
+    ("sum:x{(a:1 AND b:1) OR (a:2 AND b:2)}.as_count()", Gap.SCOPE_DISJUNCTION),
     ("sum:x{*-zone}.as_count()", Gap.LABEL_NAME_GLOB),
     ("sum:iis.users.anon{*,!*}.as_count()", Gap.UNSUPPORTED_FUNCTION),
     ("sum:x{*}.fill(zero).as_count()", Gap.FILL_INTERPOLATION),
@@ -270,3 +271,111 @@ def test_as_rate_is_as_count_over_the_interval():
     errs = [abs(pq.offset_diff_rate(s.ts, s.vs, t, 60.0) - dd.as_rate(p.ts, p.vs, t, 60.0))
             for t in dd.bucket_ends(600, s.ts[-1], 60.0)]
     assert errs and np.nanmax(errs) < 1e-9
+
+
+def test_lowering_never_exposes_a_bare_counter_selector():
+    """§3.1 Corollary 1 holds by construction, so construction is what gets checked.
+
+    A bare counter selector is not phi-invariant, so it can translate no Datadog query.
+    The translator does not need to refuse one: lowering puts every `Select` inside a
+    `Rollup`, so the emitter's `Select` branch is unreachable from a real query. That is
+    a property of `lower/datadog.py`, which means it can break silently -- hence this
+    test rather than a sentence in the paper. `Gap.PHI_ABSOLUTE` stays declared for the
+    reverse direction and is deliberately never raised here.
+    """
+    from qlport import corpus as c
+
+    def selects_are_wrapped(e, inside_rollup=False):
+        if isinstance(e, ir.Select):
+            return inside_rollup
+        if isinstance(e, ir.Rollup):
+            return selects_are_wrapped(e.expr, inside_rollup=True)
+        kids = [v for v in vars(e).values() if isinstance(v, ir.Expr)]
+        return all(selects_are_wrapped(k, inside_rollup) for k in kids)
+
+    qs = {c.normalise("datadog", q.text)
+          for q in c.read_queries("data/corpus/queries.jsonl") if q.lang == "datadog"}
+    checked = 0
+    for text in sorted(qs):
+        if not c.parse_outcome("datadog", text).ok:
+            continue
+        for e in lower_all(parse("datadog", text)):
+            if isinstance(e, Bottom):
+                continue
+            assert selects_are_wrapped(e), text
+            checked += 1
+    assert checked > 7_000, checked
+
+
+# --- single-label disjunction ---------------------------------------------------------
+# A PromQL selector is a conjunction of matchers, so a disjunction of scope terms has no
+# selector-level form in general -- but when every branch constrains one tag key it is a
+# single regex matcher. tests/test_harness.py checks the Prometheus side of that (the
+# whole regex is anchored, so the alternation cannot leak into a neighbouring value).
+@pytest.mark.parametrize("ddq,want", [
+    # OR over one key, in both spellings Datadog allows
+    ("avg:x{a:1 OR a:2}", 'a=~"1|2"'),
+    ("avg:x{a:1 or a:2 or a:3}", 'a=~"1|2|3"'),
+    ("avg:x{k IN (aws,azure,gcp)}", 'k=~"aws|azure|gcp"'),
+    # negation distributes over the union: NOT (k:a OR k:b) is k!~"a|b"
+    ("avg:x{NOT (a:1 OR a:2)}", 'a!~"1|2"'),
+    ("avg:x{k NOT IN (aws,gcp)}", 'k!~"aws|gcp"'),
+    ("avg:x{NOT (k NOT IN (aws,gcp))}", 'k=~"aws|gcp"'),
+    # globs convert branch by branch
+    ("avg:x{f:*ptl* OR f:*con*}", 'f=~".*ptl.*|.*con.*"'),
+    ("avg:x{code:4* OR code:5*}", 'code=~"4.*|5.*"'),
+    # a branch asking only that the tag be present subsumes every value
+    ("avg:x{a:1 OR a}", 'a=~".+"'),
+    ("avg:x{a:1 OR a:*}", 'a=~".+"'),
+    # repeated values collapse rather than repeating in the alternation
+    ("avg:x{a:1 OR a:1}", 'a=~"1"'),
+    # Datadog's `or` binds looser than `,`, so the right branch here is a conjunction
+    # whose match-all terms contribute nothing -- one constraint, so it still joins.
+    ("avg:x{a:x or a:y,*,*}", 'a=~"x|y"'),
+    ("avg:x{* AND * AND code:4* OR code:5*}", 'code=~"4.*|5.*"'),
+    # a literal value is escaped before it goes into an alternation
+    ("avg:x{k IN (a-1,b.2)}", r'k=~"a\\-1|b\\.2"'),
+])
+def test_single_label_disjunction_is_one_matcher(ddq, want):
+    out = translate(f"{ddq}.rollup(avg, 60)")
+    assert not isinstance(out, Bottom), out
+    assert want in out, out
+
+
+def test_a_match_all_branch_makes_the_disjunction_vacuous():
+    # {a:1 OR *} selects everything, so the scope contributes no matcher at all.
+    out = translate("avg:x{a:1 OR *}.rollup(avg, 60)")
+    assert out == "avg(avg_over_time(x[60s]))", out
+
+
+@pytest.mark.parametrize("ddq,detail", [
+    # different keys: no selector says this, and lifting it to a union of selectors is
+    # not the syntax-directed translation of a scope
+    ("avg:x{a:1 OR b:2}", "disjunction across tag keys"),
+    ("avg:x{(status:400 OR s) AND *}", "disjunction across tag keys"),
+    # a branch that constrains two things is not one value in a union
+    ("avg:x{(a:1 AND b:1) OR (a:2 AND b:2)}", "disjunction of compound terms"),
+    # a negated branch cannot join a positive alternation
+    ("avg:x{(!a:1) OR a:2}", "negated branch in a disjunction"),
+    # De Morgan turns this into a disjunction before we see one
+    ("avg:x{NOT (a:1 AND b:2)}", "negated conjunction is a disjunction"),
+    # IN over a compound term would be a tag inside a tag
+    ("avg:x{k IN (a:1)}", "IN (...) over a compound term"),
+])
+def test_disjunctions_that_are_still_refused(ddq, detail):
+    out = translate(f"{ddq}.rollup(avg, 60)")
+    assert isinstance(out, Bottom) and out.gap is Gap.SCOPE_DISJUNCTION, out
+    assert out.detail == detail, out
+
+
+def test_excluding_everything_is_still_refused():
+    # NOT (a:1 OR *) is the empty set, and PromQL has no "match nothing".
+    out = translate("avg:x{NOT (a:1 OR *)}.rollup(avg, 60)")
+    assert isinstance(out, Bottom) and out.gap is Gap.UNSUPPORTED_FUNCTION, out
+
+
+def test_a_key_glob_inside_a_disjunction_keeps_its_own_gap():
+    # Label *names* are not queryable in PromQL at all, which is a different gap from
+    # disjunction and must not be absorbed into it.
+    out = translate("avg:x{*-zone OR *-loc}.rollup(avg, 60)")
+    assert isinstance(out, Bottom) and out.gap is Gap.LABEL_NAME_GLOB, out

@@ -161,3 +161,94 @@ def test_the_cache_is_valid_json_and_names_every_candidate():
     for path in RUNS:
         rec = json.loads(path.read_text())
         assert set(rec["candidates"]) == set(MODELS)
+
+
+# --- what a label matcher matches, as a real server answers it ------------------------
+# `lower/datadog.py` translates a single-label Datadog disjunction into one regex
+# matcher. That is sound only because Prometheus anchors the whole regex, which is a
+# claim about Prometheus. `scripts/verify_matchers.py` asked a real 3.15.0 server; these
+# tests hold the answers so a future change to the lowering cannot drift away from them.
+MATCHERS = ROOT / "data" / "raw" / "matchers" / "label_matchers.json"
+
+
+def _matcher_cache() -> dict:
+    if not MATCHERS.exists():                       # pragma: no cover - needs Docker
+        pytest.skip(f"{MATCHERS.relative_to(ROOT)} missing; run scripts/verify_matchers.py")
+    return read_raw(MATCHERS)
+
+
+def _values(rec: dict, matcher: str) -> list[str]:
+    got = rec["matchers"][matcher]["selected"]
+    return sorted(d.get("k", "(no k)") for d in got)
+
+
+def test_alternation_in_a_matcher_is_fully_anchored():
+    """`k=~"aws|gcp"` must not select `awsx`, or `k=~"v1|v2"` is the wrong translation.
+
+    The series set includes `awsx` and `xgcp` precisely so that anchoring the whole
+    regex, `^(?:aws|gcp)$`, is distinguishable from anchoring each alternative.
+    """
+    assert _values(_matcher_cache(), 'k=~"aws|gcp"') == ["aws", "gcp"]
+
+
+def test_a_single_value_matcher_does_not_match_its_extensions():
+    assert _values(_matcher_cache(), 'k=~"aws"') == ["aws"]
+
+
+def test_a_negated_alternation_keeps_series_without_the_label():
+    """`k!~"a|b"` includes series carrying no `k` at all, which is what Datadog's
+    `NOT (k:a OR k:b)` means: the absent tag is not one of the excluded values."""
+    assert _values(_matcher_cache(), 'k!~"aws|gcp"') == ["(no k)", "awsx", "azure", "xgcp"]
+
+
+def test_present_is_dot_plus_and_not_dot_star():
+    """The distinction `_tag_matchers` relies on for a bare tag key."""
+    rec = _matcher_cache()
+    assert "(no k)" not in _values(rec, 'k=~".+"')
+    assert "(no k)" in _values(rec, 'k=~".*"')
+
+
+def test_glob_alternation_matches_every_branch():
+    assert _values(_matcher_cache(), 'k=~".*ws.*|.*cp.*"') == ["aws", "awsx", "gcp", "xgcp"]
+
+
+def test_every_regex_the_translator_emits_is_one_re2_accepts():
+    """Our PromQL grammar does not validate regex syntax, so nothing else checks this.
+
+    Two halves. The recorded run must show every regex accepted; and the set the
+    translator emits *today* must be inside the set that was verified, so that a change
+    emitting a new regex shape fails here rather than shipping a query Prometheus
+    rejects. Re-run `scripts/verify_matchers.py` when it does.
+    """
+    import re
+
+    from qlport import corpus as c
+    from qlport.diagnostics import Bottom
+    from qlport.emit.promql import emit_detail
+    from qlport.lower.datadog import lower_all
+    from qlport.parse import parse
+
+    verified = _matcher_cache()["corpus_regexes"]
+    rejected = {r: v["error"] for r, v in verified.items() if not v["accepted"]}
+    assert not rejected, rejected
+
+    emitted, seen = set(), set()
+    for q in c.read_queries(ROOT / "data" / "corpus" / "queries.jsonl"):
+        if q.lang != "datadog":
+            continue
+        text = c.normalise("datadog", q.text)
+        if text in seen or not c.parse_outcome("datadog", text).ok:
+            continue
+        seen.add(text)
+        for e in lower_all(parse("datadog", text)):
+            got = e if isinstance(e, Bottom) else emit_detail(e, default_rollup=60.0)
+            if not isinstance(got, Bottom):
+                emitted.update(re.findall(r'=~\s*"((?:[^"\\]|\\.)*)"', got.promql))
+    assert emitted, "no regex matchers emitted at all; the extraction broke"
+    assert emitted <= set(verified), sorted(emitted - set(verified))
+
+
+def test_the_matcher_run_records_which_server_answered():
+    rec = _matcher_cache()
+    assert rec["prometheus_version"].startswith("3.")
+    assert rec["image_digest"].startswith("prom/prometheus@sha256:")

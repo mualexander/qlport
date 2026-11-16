@@ -1,14 +1,15 @@
 # Settling Datadog's undocumented behaviour (open item 5)
 
 Three claims in the paper are stated relative to facts about Datadog that its
-documentation was assumed not to settle:
+documentation was assumed not to settle. Paper §7.9 ("What is not measured") reports them
+as open and points here for the experiments:
 
 - §3.1 Proposition 3 holds for ρ = zero, and the restart rows of
   `rollup_translation_live.tex` compare against φ_zero.
 - Σ_Δ presumes buckets are right-closed and epoch-aligned, reported as
   `ROLLUP_ALIGNMENT` on every rollup the translator emits (100% of translations).
 - The rollup interval is assumed when the query does not state one, reported as
-  `ROLLUP_DEFAULT` (96.8% of translations).
+  `ROLLUP_DEFAULT` (96.9% of translations).
 
 Reading the documentation properly turns out to answer more of this than expected, and
 to contradict one thing the code currently does. **Read the "already answered" section

@@ -2,6 +2,13 @@
 
 The codes double as the rows of the gap catalogue (paper §5) and the failure
 breakdown for κ (paper §7), so add a code rather than reusing a vague one.
+
+Nine of these are reachable from the Datadog → PromQL emitter; the rest name gaps the
+paper argues about but no implemented path raises. PHI_ABSOLUTE, PHI_SERIES_START,
+OFFSET, SUBQUERY, MANY_TO_ONE and RATE_EXTRAPOLATION belong to the reverse direction,
+and REGEX_NOT_GLOB to §6's regex → glob conversion, which is not written. They are kept
+because the paper names them, not because anything returns them: `grep -rn 'Gap[.]'` is
+the check on which is which.
 """
 from dataclasses import dataclass
 from enum import Enum
@@ -22,7 +29,9 @@ class Gap(str, Enum):
     SCOPE_DISJUNCTION = "disjunctive scope is not one label-matcher conjunction"
     LABEL_NAME_GLOB = "wildcard over tag keys, not tag values"
     FILL_INTERPOLATION = "fill() interpolation has no target equivalent"
-    ROLLUP_DEFAULT = "Datadog's automatic rollup interval is undocumented"
+    # Documented as a time-range x widget-type lookup table, not a formula -- but the
+    # query text never records the time range, so the interval has to be assumed.
+    ROLLUP_DEFAULT = "Datadog's automatic rollup interval is not carried by the query"
     COUNTER_RESET = "cumulative difference misreads a counter reset"
     ANCHORED_VERSION = "anchored range selectors need Prometheus 3.7 or newer"
     UNSUPPORTED_FUNCTION = "function not modelled yet"

@@ -98,6 +98,79 @@ def _tag_matchers(term: str, *, negated: bool) -> tuple[ir.Matcher, ...]:
     return (ir.Matcher(lab, "!=" if negated else "=", value),)
 
 
+# A PromQL selector is a conjunction of matchers, so a disjunction of scope terms has
+# no selector-level form in general. It has one in the case the corpus almost always
+# uses: when every branch constrains the *same* tag key, the union of values is a single
+# regex matcher, `k=~"v1|v2"`. That rests on Prometheus anchoring the whole regex rather
+# than each side of the alternation -- under `^v1|v2$` the matcher would also select a
+# value with v1 as a prefix. It does; `scripts/verify_matchers.py` reads the answer off
+# a real server and `tests/test_harness.py` checks the recorded responses.
+#
+# Branches across different keys are still refused. They remain expressible in PromQL,
+# as a set union with the rollup distributed over the branches, but not as the
+# syntax-directed translation of a scope, which is what this module is.
+_PRESENT = ".+"   # the tag is present, whatever its value
+
+
+def _value_regex(value: str) -> str:
+    return glob_to_regex(value) if is_glob(value) else re.escape(value)
+
+
+def _or_branches(node) -> list:
+    """Flatten a left-nested `scope_or` chain into its branches."""
+    if isinstance(node, Tree) and str(node.data) == "scope_or":
+        return _or_branches(node.children[0]) + _or_branches(node.children[1])
+    return [node]
+
+
+def _branch_value(node) -> tuple[str, str] | None:
+    """One disjunct as (label, value regex), or None when it is match-all.
+
+    A branch is not always a bare term. Datadog's `or` binds looser than `,`, so
+    `a:x or a:y,*,*` parses as `a:x OR (a:y AND * AND *)` and the right branch is a
+    conjunction -- one whose match-all terms contribute nothing, leaving a single
+    constraint. So the branch is lowered first and accepted if what comes back is one
+    positive matcher. A branch yielding two matchers really does constrain two things
+    and cannot join a union of values; a negated one cannot either.
+    """
+    matchers = _scope(node)
+    if not matchers:
+        return None
+    if len(matchers) > 1:
+        _refuse(Gap.SCOPE_DISJUNCTION, "disjunction of compound terms")
+    m = matchers[0]
+    if m.op == "=":
+        return m.label, re.escape(m.value)
+    if m.op == "=~":
+        return m.label, m.value
+    _refuse(Gap.SCOPE_DISJUNCTION, "negated branch in a disjunction")
+    raise AssertionError("unreachable")
+
+
+def _one_label_disjunction(pairs: list[tuple[str, str] | None], *, negated: bool,
+                           detail: str) -> tuple[ir.Matcher, ...]:
+    """`[(k, "a"), (k, "b")]` -> `k=~"a|b"`, or bottom if the keys differ.
+
+    A `None` branch is match-all, and a union containing everything is everything, so
+    the whole disjunction contributes no matcher at all.
+    """
+    if any(p is None for p in pairs):
+        if negated:
+            # `NOT (a:1 OR *)` excludes every series; PromQL cannot say "match nothing".
+            _refuse(Gap.UNSUPPORTED_FUNCTION, "negated match-all")
+        return ()
+    keys = {k for k, _ in pairs}
+    if len(keys) > 1:
+        _refuse(Gap.SCOPE_DISJUNCTION, detail)
+    key = pairs[0][0]
+    regexes = [r for _, r in pairs]
+    op = "!~" if negated else "=~"
+    if _PRESENT in regexes:
+        # One branch asks only that the tag be present, which subsumes every value.
+        return (ir.Matcher(key, op, _PRESENT),)
+    return (ir.Matcher(key, op, "|".join(dict.fromkeys(regexes))),)
+
+
 def _scope(node, *, negated: bool = False) -> tuple[ir.Matcher, ...]:
     if isinstance(node, Token):                      # a bare TAG inside IN (...)
         return _tag_matchers(str(node), negated=negated)
@@ -111,9 +184,20 @@ def _scope(node, *, negated: bool = False) -> tuple[ir.Matcher, ...]:
     if data == "scope_not":
         return _scope(node.children[1], negated=not negated)
     if data == "scope_or":
-        _refuse(Gap.SCOPE_DISJUNCTION, "OR between scope terms")
+        detail = "disjunction across tag keys"
+        pairs = [_branch_value(b) for b in _or_branches(node)]
+        return _one_label_disjunction(pairs, negated=negated, detail=detail)
     if data == "membership":
-        _refuse(Gap.SCOPE_DISJUNCTION, "IN (...) is a disjunction over tag values")
+        # membership: TAG [NOT] IN "(" tag ("," tag)* ")" -- one key, several values.
+        key = label_name(str(node.children[0]))
+        inverted = node.children[1] is not None          # `k NOT IN (...)`
+        values = [str(v.children[0]) for v in node.children[3:]]
+        if any(":" in v for v in values):
+            # `k IN (a:1)` would be a tag inside a tag; Datadog's IN takes bare values.
+            _refuse(Gap.SCOPE_DISJUNCTION, "IN (...) over a compound term")
+        pairs = [None if v == "*" else (key, _value_regex(v)) for v in values]
+        return _one_label_disjunction(pairs, negated=negated != inverted,
+                                      detail="IN (...) across tag keys")
     _refuse(Gap.UNSUPPORTED_FUNCTION, f"scope node {data}")
     raise AssertionError("unreachable")
 

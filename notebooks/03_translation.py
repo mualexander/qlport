@@ -28,17 +28,19 @@
 # that appears in forty dashboards counts forty times: that is what a migration faces.
 #
 # **Two assumptions are stated here rather than hidden.** Datadog derives the rollup
-# interval from the dashboard's time range, which the query text never records, so
-# queries without an explicit `.rollup(agg, interval)` are translated against
-# `DEFAULT_ROLLUP` and carry the `ROLLUP_DEFAULT` caveat. And Datadog's buckets are
-# epoch-aligned while a PromQL window follows the evaluation step, so every rollup
-# carries `ROLLUP_ALIGNMENT`: the forms of notebook 02 are exact on the aligned grid.
+# interval from a documented time-range x widget-type table, and the query text records
+# neither, so queries without an explicit `.rollup(agg, interval)` are translated
+# against `DEFAULT_ROLLUP` and carry the `ROLLUP_DEFAULT` caveat. And Datadog's buckets
+# are epoch-aligned (documented) while a PromQL window follows the evaluation step, so
+# every rollup carries `ROLLUP_ALIGNMENT`: the forms of notebook 02 are exact on the
+# aligned grid and not off it.
 #
 # Outputs: `paper/tables/translation_coverage.tex`, `paper/tables/gap_catalogue.tex`,
 # `paper/tables/translation_examples.tex`, `paper/tables/gap_by_feature.tex`,
 # `paper/figures/coverage_by_gap.pdf`, `data/processed/translations.csv`.
 
 # %%
+import re
 from pathlib import Path
 
 import matplotlib
@@ -59,8 +61,10 @@ TABLES, FIGURES = ROOT / "paper" / "tables", ROOT / "paper" / "figures"
 for p in (TABLES, FIGURES, PROCESSED):
     p.mkdir(parents=True, exist_ok=True)
 
-DEFAULT_ROLLUP = 60.0   # seconds; Datadog's automatic interval is undocumented
+DEFAULT_ROLLUP = 60.0   # seconds; Datadog picks it from the dashboard's time range
 EXAMPLE_CHARS = 46
+# The worked-examples table carries two code columns, so each gets less room.
+PAIR_CHARS = 38
 
 # %% [markdown]
 # ## LaTeX helpers
@@ -197,6 +201,61 @@ tabular("lrrll", ["Gap", "Occurrences", "Distinct", "Share", "Shortest example"]
 print(gaps[["gap", "occurrences", "distinct"]].to_string(index=False))
 
 # %% [markdown]
+# ### Is a refusal a language gap or unfinished work?
+# Having gap codes is only worth something if they separate those two, so the split is
+# measured rather than asserted in the paper.
+#
+# `EXPRESSIVENESS` lists the refusals that rest on something PromQL cannot say at all.
+# Everything else is a construct this translator has not implemented. The two totals are
+# the ceiling on κ and the slack below it, and §7 quotes both.
+#
+# Disjunctive scopes used to be the largest entry here and are now mostly translated: a
+# disjunction whose branches all constrain one tag key is a single regex matcher,
+# `k=~"v1|v2"`, which is sound because Prometheus anchors the whole regex
+# (`scripts/verify_matchers.py` asked a real server). What is left refused is disjunction
+# across *different* keys, which no selector expresses.
+
+# %%
+# Refusals that rest on something PromQL cannot express, by (gap, detail).
+EXPRESSIVENESS = {
+    ("UNSUPPORTED_FUNCTION", ".weighted()"),          # time-weighted space average
+    ("FILL_INTERPOLATION", None),                     # interpolation inside the query
+    ("LABEL_NAME_GLOB", None),                        # label names are not queryable
+    ("SCOPE_DISJUNCTION", None),                      # only cross-key cases survive now
+}
+
+
+def _is_gap(r) -> bool:
+    if (r.gap, None) in EXPRESSIVENESS or (r.gap, r.detail) in EXPRESSIVENESS:
+        return True
+    # A percentile aggregator reads a sketch the metric carries, not a set of samples.
+    return r.gap == "UNSUPPORTED_FUNCTION" and bool(re.fullmatch(r"p\d{1,3}:", str(r.detail)))
+
+
+bot = tr[tr.outcome == "bottom"].assign(gap_kind=lambda d: [
+    "language gap" if _is_gap(r) else "not implemented" for r in d.itertuples()])
+kinds = bot.groupby("gap_kind")["n"].agg(occurrences="sum", distinct="size")
+kinds["share"] = kinds.occurrences / total_n
+print(kinds.to_string())
+ceiling = (translated.n.sum() + kinds.occurrences["not implemented"]) / total_n
+print(f"\nceiling for this direction: {ceiling:.1%}")
+
+print("\nwhat is left of SCOPE_DISJUNCTION:")
+print(bot[bot.gap == "SCOPE_DISJUNCTION"].groupby("detail")["n"]
+      .agg(occurrences="sum", distinct="size").to_string())
+
+# How far the single-label rule got: the features that carry a disjunctive scope.
+for f in ("SCOPE_BOOL", "SCOPE_IN", "SCOPE_PAREN"):
+    sub = tr[[f in c.features("datadog", t_) for t_ in tr.norm]]
+    share = sub[sub.outcome == "translated"].n.sum() / sub.n.sum()
+    print(f"{f:12s} {int(sub.n.sum()):5d} occurrences, {share:.1%} translated")
+
+# §7 quotes these, so re-running the notebook has to reproduce them.
+assert int(kinds.occurrences["language gap"]) == 175, kinds
+assert int(kinds.occurrences["not implemented"]) == 207, kinds
+
+
+# %% [markdown]
 # ### Caveats on the translations we do claim
 # An exact translation is exact *relative to* its preconditions. Every rollup depends
 # on bucket alignment, and a rollup whose interval the query never stated also depends
@@ -243,7 +302,7 @@ print(worst[["total", "share"]].to_string())
 
 # %%
 wanted = ["M_AS_COUNT", "M_AS_RATE", "M_ROLLUP_INTERVAL", "GROUP_BY", "SCOPE_NEG",
-          "SCOPE_GLOB", "ARITH"]
+          "SCOPE_GLOB", "SCOPE_IN", "ARITH"]
 shown, rows = set(), []
 for f in wanted:
     sub = feat[(feat.f == f) & (feat.outcome == "translated")]
@@ -252,7 +311,7 @@ for f in wanted:
         continue
     r = sub.loc[sub.norm.str.len().idxmin()]
     shown.add(r.norm)
-    rows.append([code(f), code(r.norm, EXAMPLE_CHARS), code(r.promql, EXAMPLE_CHARS)])
+    rows.append([code(f), code(r.norm, PAIR_CHARS), code(r.promql, PAIR_CHARS)])
 tabular("lll", ["Feature", "Datadog", "PromQL"], rows,
         TABLES / "translation_examples.tex")
 for r in rows:
@@ -288,10 +347,12 @@ print("wrote paper/figures/coverage_by_gap.pdf")
 # * `.as_count()` and `.as_rate()` reduce to the *same* cumulative difference,
 #   `x - x offset Δ`, divided by Δ only in the rate case. The count form is the one the
 #   corpus overwhelmingly uses, and notebook 02 shows both are exact without a reset.
-# * Every rollup translation rests on two unverified facts about Datadog — the
-#   automatic interval and whether buckets are right-closed and epoch-aligned. They are
-#   reported as caveats, not folded into the exact count, and they are the two
-#   trial-account checks still open.
+# * Every rollup translation rests on two facts about Datadog that no experiment here
+#   settles: the reset policy ρ and whether buckets are right-closed. (Epoch alignment
+#   and the interval table *are* documented; what the query text omits is the dashboard
+#   time range that selects the interval.) They are reported as caveats, not folded into
+#   the exact count — `docs/trial_account_checks.md` specifies the checks that close
+#   them, and paper §7.9 reports them as open.
 # * The largest single refusal is structural, not semantic: Datadog's scope is a
 #   boolean query over tags, and a PromQL selector is a conjunction of matchers. `OR`
 #   and `IN (...)` need either a regex over one label or a set union of selectors, and

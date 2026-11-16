@@ -1,5 +1,15 @@
 \section{Discussion}
 \label{sec:discussion}
-\todo{Is the lock-in syntactic or semantic? Direction asymmetry (information barrier
-bites PromQL$\to$Datadog, not Datadog$\to$PromQL). LogQL and SPL. Threats to validity:
-synthetic workloads, modelled \texttt{anchored} semantics, trial-account limits.}
+\todo{Is the lock-in syntactic or semantic? \S\ref{sec:gaps} now answers this for the
+main direction and the answer is mostly ``neither'': $2.4\%$ of the corpus is
+unimplemented work against $2.0\%$ that PromQL cannot express, so going this way the
+switching cost is engineering, and the language-design argument has to rest on the
+reverse direction and on the staircase rather than on the gap catalogue's size.
+Direction asymmetry: now proved as Remark~\ref{rem:directional}, so discuss what it means
+rather than restating it. The
+staircase of \S\ref{sec:staircase} as a switching cost in its own right. LogQL and SPL.
+Threats specific to the discussion (\S\ref{sec:threats} has the empirical ones):
+synthetic workloads for the rollup measurements, and the two Datadog facts of
+\S\ref{sec:not-measured} that no experiment here settles. Do \emph{not} list
+\texttt{anchored} as modelled --- it is verified against Prometheus~3.15.0 in
+Table~\ref{tab:model-verification}.}

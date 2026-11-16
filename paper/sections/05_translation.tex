@@ -1,7 +1,8 @@
 \section{Translation (RQ2)}
 \label{sec:translation}
-\todo{The IR and its denotations; syntax-directed lowering and emission; the gap
-catalogue table (notebook 03).}
+\todo{The IR and its denotations; syntax-directed lowering and emission. The gap
+catalogue itself is in \S\ref{sec:gaps}, with the features behind it; what belongs here
+is why each gap is a property of the languages rather than of the implementation.}
 
 \subsection{Counter rollups}
 The rules for \texttt{.as\_count()}, \texttt{.as\_rate()} and \texttt{.rollup(sum,
@@ -13,6 +14,54 @@ measurements. What the emitter adds is the choice between them and the precondit
 reports: \texttt{COUNTER\_RESET} on the cumulative difference,
 \texttt{ANCHORED\_VERSION} on the anchored form, and \texttt{ROLLUP\_ALIGNMENT} on
 both.
+
+\subsection{Disjunctive scopes}
+\label{sec:disjunction}
+
+A Datadog scope is a boolean query over tags; a PromQL selector is a \emph{conjunction}
+of matchers. Conjunction, negation and glob matching therefore cross over term by term,
+and disjunction has no selector-level form --- in general. It has one in the case that
+matters:
+
+\begin{proposition}[Single-key disjunction]\label{prop:disjunction}
+Let $k$ be a tag key, let $g_1,\dots,g_n$ be Datadog globs or literals, and let $r_i$ be
+the regular expression $\mathrm{glob}(g_i)$ of \S\ref{sec:regular}. Then the scope
+$\{k{:}g_1 \vee \cdots \vee k{:}g_n\}$ --- equivalently the membership form
+$\{k \in (g_1,\dots,g_n)\}$ --- denotes the same series set as a single PromQL matcher on
+$k$ whose regular expression is the alternation $r_1|\cdots|r_n$; the negated scope is
+the same alternation under \texttt{!\textasciitilde{}} instead of
+\texttt{=\textasciitilde{}}.
+\end{proposition}
+
+Given the semantics of alternation the only thing to check is where the anchors go, and
+that is a question about Prometheus rather than about this translator:
+\begin{center}\footnotesize
+\texttt{\textasciicircum(?:aws|gcp)\$} \quad denotes $\textstyle\bigcup_i L(r_i)$
+\qquad versus \qquad
+\texttt{\textasciicircum aws|gcp\$} \quad which also admits \texttt{awsx}
+\end{center}
+Prometheus compiles the first. Since asserting that would be asserting what we want, it
+is read off a real server: the matcher \texttt{k=\textasciitilde{}"aws|gcp"}, over series
+carrying \texttt{aws}, \texttt{azure}, \texttt{gcp}, \texttt{awsx} and \texttt{xgcp},
+selects exactly the first and third --- and its negation selects the other three
+\emph{and} a series carrying no \texttt{k} at all, which is what the negated Datadog
+scope means (\texttt{scripts/verify\_matchers.py}, Prometheus~3.15.0, with the responses
+recorded and regression-tested).
+
+Two details decide how much of the corpus this reaches. Datadog's \texttt{or} binds
+more loosely than its comma, so \texttt{\{a:x or a:y,*,*\}} parses as
+$a{:}x \vee (a{:}y \wedge * \wedge *)$ and the right branch is a \emph{conjunction} ---
+one whose match-all terms contribute nothing, leaving a single constraint. Lowering each
+branch before asking whether it is one constraint, rather than requiring a bare term,
+is what admits those. And a branch that merely asks for the tag to be present subsumes
+every value, so the union collapses to
+\texttt{k=\textasciitilde{}".+"} rather than growing an alternative.
+
+What remains refused is disjunction across \emph{different} keys, which
+\S\ref{sec:gaps} measures at four query occurrences in the corpus. Those stay sayable in
+PromQL --- as a set union of selectors with the rollup distributed over the branches,
+$2^k$ selectors for $k$ disjunctions --- but not as the syntax-directed translation of a
+scope, which is what this translator is.
 
 \subsection{Where the rollup sits}
 One structural fact about Datadog decides the shape of every translated query, and it is

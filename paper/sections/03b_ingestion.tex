@@ -4,7 +4,7 @@
 % Numbers come from notebook 02 and data/raw/anchored/ (scripts/verify_anchored.py).
 % ---------------------------------------------------------------------------
 
-\subsection{Ingestion and $\phi$-relative soundness}
+\subsection{Ingestion and \texorpdfstring{$\phi$}{phi}-relative soundness}
 \label{sec:ingestion}
 
 \paragraph{Scope: forward portability.}
@@ -30,8 +30,10 @@ v & v<u,\ \rho=\mathsf{zero}\quad\text{(reset to zero, as PromQL assumes)}\\
 \]
 Gauges map by the identity. $\phi_\rho$ extends to databases series by series:
 $\phi_\rho(D)=\{\phi_\rho(s): s\in D\}$. The first sample is omitted, matching Datadog's
-documented cumulative-to-delta conversion~\citep{datadog}; which $\rho$ Datadog
-implements is undocumented and is determined empirically (Section~\ref{sec:evaluation}).
+documented cumulative-to-delta conversion~\citep{datadog}. Which $\rho$ Datadog
+implements is undocumented, and settling it needs an experiment this paper specifies but
+does not run (Section~\ref{sec:not-measured}); every claim below therefore names the
+$\rho$ it holds for.
 \end{definition}
 
 \paragraph{The dual-write model.}
@@ -103,10 +105,11 @@ the \emph{choice of target expression}: a PromQL expression that reads absolute 
 values cannot translate any Datadog query, because no Datadog query can see them.
 Sufficient information, however, is not the same as sufficient expressiveness --- to
 reproduce $\sem{q}_{\mathrm{DD}}(\phi_\rho(D),t)$ from $D$, PromQL must be able to
-\emph{say} the composite $\sem{q}_{\mathrm{DD}}\circ\phi_\rho$. Every refusal the
+\emph{say} the composite $\sem{q}_{\mathrm{DD}}\circ\phi_\rho$. No refusal the
 translator of Section~\ref{sec:translation} issues in this direction is accordingly an
-expressiveness gap rather than an informational one, which is what its gap catalogue
-bears out.
+informational one. Section~\ref{sec:gaps} separates those that are genuine expressiveness
+gaps from those that are merely unimplemented, and the first kind accounts for $2.0\%$ of
+the corpus against the second kind's $2.4\%$.
 \end{remark}
 
 \begin{corollary}[Raw selectors are inadmissible]\label{cor:raw}
@@ -115,8 +118,11 @@ $\mathcal{C}_{\mathrm{flat}}$, shifting every sample of a series by a constant $
 $\phi_\rho$ unchanged while changing the value of a raw selector. Hence a bare counter
 selector (\texttt{http\_requests\_total} with no range function), and any function of
 absolute counter values, is not $\phi_\rho$-invariant, and no such expression is a sound
-translation of any Datadog query. The translator never emits one; an input forcing one
-returns $\bot$ with diagnostic \texttt{PHI\_ABSOLUTE}.
+translation of any Datadog query. The translator cannot emit one, and by construction
+rather than by a runtime check: lowering wraps every selector in a rollup before the
+emitter sees it, so no input reaches a bare counter selector. The code
+\texttt{PHI\_ABSOLUTE} is reserved for the reverse direction, where the same corollary
+does bite.
 \end{corollary}
 
 \begin{corollary}[\texttt{rate} is inadmissible in general]\label{cor:rate}
@@ -181,7 +187,7 @@ invariance class holds --- no reset inside the window --- and the anchored form,
 reset handling \emph{is} $\delta_{\mathsf{zero}}$, is exact everywhere. Both are
 confirmed in Table~\ref{tab:rollup-live}: over four synthetic workloads at two rollup
 intervals, the cumulative difference agrees with Datadog on every bucket of the
-reset-free workloads and falls to $91$--$98\%$ once counters restart, with relative
+reset-free workloads and falls to $92$--$98\%$ once counters restart, with relative
 error as large as $1.68$, while the anchored form is exact on every bucket of every
 workload. \texttt{rate} is exact only on perfectly regular traffic.
 
@@ -197,8 +203,8 @@ share of epoch-aligned buckets with $d=0$. Workloads are six hours of $15$\,s sc
 \paragraph{Verifying the instruments.}
 Propositions~\ref{prop:offset} and~\ref{prop:anchored} are claims about PromQL, so
 checking them against our own evaluator would be circular. Each workload is therefore
-backfilled into a Prometheus TSDB, and every candidate is read back from the server on the
-same epoch-aligned grid. Table~\ref{tab:model-verification} compares the two: across
+backfilled into a real Prometheus TSDB, and every candidate is read back from that server
+on the same epoch-aligned grid. Table~\ref{tab:model-verification} compares the two: across
 $1{,}688$ buckets the reference evaluators and the server agree to floating-point
 precision, and there is no bucket where one produced a value and the other declined ---
 an empty result is as much a semantic claim as a number. The modelled and measured
@@ -242,12 +248,16 @@ data.}
 
 \paragraph{What remains assumed.}
 Two things above are stated relative to facts about Datadog that its documentation does
-not settle, and both are measured in Section~\ref{sec:evaluation} rather than argued
-here. First, $\rho$: Proposition~\ref{prop:anchored} holds for
+not settle, and neither is measured in this paper. Section~\ref{sec:not-measured} gives
+the experiments that would settle them, the predictions they are committed to in
+advance, and what each outcome would change here. First, $\rho$:
+Proposition~\ref{prop:anchored} holds for
 $\rho=\mathsf{zero}$, and the restart rows of Table~\ref{tab:rollup-live} compare the
 PromQL candidates against $\phi_{\mathsf{zero}}$ --- they show the anchored form tracks
-that $\phi$, not that Datadog agrees with it. Second, bucket alignment: $\Sigma_\Delta$
-above presumes Datadog's buckets are right-closed and epoch-aligned, which is why every
-comparison here is made on the epoch-aligned grid. A PromQL range window follows the
+that $\phi$, not that Datadog agrees with it. Second, bucket closure:
+$\Sigma_\Delta$ above presumes Datadog's buckets are right-closed. That its buckets are
+epoch-aligned \emph{is} documented~\citep{datadog}, which is why every comparison here is
+made on the epoch-aligned grid; which edge of a bucket the reported timestamp labels is
+not. A PromQL range window follows the
 evaluation step instead, so off that grid the two systems are summing different sample
 sets; the translator records this as \texttt{ROLLUP\_ALIGNMENT} on every rollup it emits.
