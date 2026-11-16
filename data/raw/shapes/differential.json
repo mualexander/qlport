@@ -1,0 +1,156 @@
+{
+ "occurrences_compared": 4924,
+ "occurrences_exact": 4924,
+ "provenance": {
+  "collected_at": "2026-11-16T20:55:18+00:00",
+  "range_seconds": 14400.0,
+  "rollup": 60.0,
+  "run": "r1794860463",
+  "series": 18,
+  "shapes": 8,
+  "site": "datadoghq.com"
+ },
+ "rows": [
+  {
+   "bit_identical": 0.75,
+   "buckets": 28,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "system.load.1{*}",
+   "exact": 1.0,
+   "index": 0,
+   "max_d": 1.4909956340403268e-16,
+   "median_d": 0.0,
+   "occurrences": 1201,
+   "promql": "avg(avg_over_time(qlport_sd_r1794860463_s0_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.6785714285714286,
+   "buckets": 28,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:ceph.num_pgs{*}",
+   "exact": 1.0,
+   "index": 1,
+   "max_d": 1.6530717587024242e-16,
+   "median_d": 0.0,
+   "occurrences": 975,
+   "promql": "sum(avg_over_time(qlport_sd_r1794860463_s1_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.6785714285714286,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:oracle.logons{*,*} by {host}",
+   "exact": 1.0,
+   "index": 2,
+   "max_d": 1.648946162616466e-16,
+   "median_d": 0.0,
+   "occurrences": 944,
+   "promql": "avg by (host) (avg_over_time(qlport_sd_r1794860463_s2_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 28,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:esxi.vm.count{*}.as_count()",
+   "exact": 1.0,
+   "index": 3,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 476,
+   "promql": "sum(qlport_sd_r1794860463_s3_0 - qlport_sd_r1794860463_s3_0 offset 60s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.8928571428571429,
+   "buckets": 28,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:dcgm.power_usage{*} by {host}",
+   "exact": 1.0,
+   "index": 4,
+   "max_d": 1.5118156292502565e-16,
+   "median_d": 0.0,
+   "occurrences": 456,
+   "promql": "sum by (host) (avg_over_time(qlport_sd_r1794860463_s4_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.6071428571428571,
+   "buckets": 56,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:nvidia.jetson.temp{*} by {zone,host}",
+   "exact": 1.0,
+   "index": 5,
+   "max_d": 1.5982798895996758e-16,
+   "median_d": 0.0,
+   "occurrences": 364,
+   "promql": "avg by (zone, host) (avg_over_time(qlport_sd_r1794860463_s5_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 84,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:kong.http.status.count{*} by {code}.as_count()",
+   "exact": 1.0,
+   "index": 6,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 309,
+   "promql": "sum by (code) (qlport_sd_r1794860463_s6_0 - qlport_sd_r1794860463_s6_0 offset 60s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.7976190476190477,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:system.io.r_s{*,*,*} by {host,datacenter,device}",
+   "exact": 1.0,
+   "index": 7,
+   "max_d": 1.6518345706036762e-16,
+   "median_d": 0.0,
+   "occurrences": 199,
+   "promql": "avg by (host, datacenter, device) (avg_over_time(qlport_sd_r1794860463_s7_0[60s]))",
+   "status": "compared"
+  }
+ ],
+ "shapes_compared": 8,
+ "shapes_exact": 8,
+ "status_counts": {
+  "compared": 8
+ }
+}
