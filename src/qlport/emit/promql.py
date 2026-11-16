@@ -35,8 +35,10 @@ emitter does instead is state the preconditions its exactness rests on, as cavea
 * `COUNTER_RESET` -- the cumulative difference is exact on every bucket without a
   reset (notebook 02) and undercounts across one. `anchored=True` removes that caveat
   for `ANCHORED_VERSION`: the modifier is reset-exact, verified against a real
-  Prometheus by `scripts/verify_anchored.py`, but it only exists from 3.7.0 on. It is
-  off by default so the output runs anywhere; turn it on when the target is 3.7+.
+  Prometheus by `scripts/verify_anchored.py`, but it needs 3.7.0 or newer *started with*
+  --enable-feature=promql-extended-range-selectors, which is still required at 3.15.0.
+  It is off by default so the output runs anywhere; turn it on only when you control how
+  the target server is launched.
 """
 from __future__ import annotations
 
@@ -134,9 +136,11 @@ class _Emitter:
         """Datadog's sum of deltas over (t-Δ, t] as a cumulative difference."""
         if self.anchored:
             # Proposal 0052. Introduced in Prometheus 3.7.0 behind
-            # --enable-feature=promql-extended-range-selectors, and always-on since the
-            # modifiers went stable in September 2026, so the flag is now a no-op.
-            # Reset-exact, and checked against a real server in notebook 02.
+            # --enable-feature=promql-extended-range-selectors, and still gated by it on
+            # 3.15.0: a server without the flag answers "anchored modifier is
+            # experimental and not enabled". So ANCHORED_VERSION is a precondition on how
+            # the target server was *started*, not merely on its version -- which is why
+            # this form stays off by default. Reset-exact, checked against a real server.
             self.note(Gap.ANCHORED_VERSION)
             return f"increase({self.expr(inner)}[{duration(width)}] anchored)"
         self.note(Gap.COUNTER_RESET)

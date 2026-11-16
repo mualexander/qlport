@@ -435,14 +435,15 @@ exactly when a scrape lands on a boundary, and the translation must be evaluated
 inside the bucket. Evaluating on its right edge --- the obvious repair once the closure is
 known --- is wrong on almost every bucket of an aligned scrape.
 
-The remaining experiments are specified in advance in
-\texttt{docs\slash trial\_account\_checks.md}, with their predictions tabulated before the
-fact so that they can falsify them. For the
-same reason as above the dual-write differential test over the whole corpus --- running
-each translated pair against both systems on identical input --- is specified and not run.
-The exactness claims of Section~\ref{sec:ingestion} are therefore verified against a real
-Prometheus~3.15.0 (Table~\ref{tab:model-verification}) and against a model of Datadog
-whose reset policy is now read from Datadog's code, but not against Datadog.
+The dual-write differential test is run, but not over the corpus.
+Section~\ref{sec:replay} replays a real request trace into both systems and compares the
+counter rules bucket by bucket against Datadog itself, which is what makes the exactness
+claims of Section~\ref{sec:ingestion} claims about Datadog rather than about our reading
+of it. What is still specified and not run is the same construction applied to the
+\emph{corpus}: each of the $8{,}376$ translated pairs evaluated against both systems on
+identical input. That is a different and much larger experiment --- it needs every metric
+the corpus names to exist in both systems --- and until it is run, $\kappa$ measures what
+the translator is willing to translate rather than what it translates correctly.
 
 \subsection{Threats to validity}
 \label{sec:threats}

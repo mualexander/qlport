@@ -34,7 +34,8 @@ class Gap(str, Enum):
     # query text never records the time range, so the interval has to be assumed.
     ROLLUP_DEFAULT = "Datadog's automatic rollup interval is not carried by the query"
     COUNTER_RESET = "cumulative difference misreads a counter reset"
-    ANCHORED_VERSION = "anchored range selectors need Prometheus 3.7 or newer"
+    ANCHORED_VERSION = ("anchored range selectors need Prometheus 3.7+ started with "
+                        "--enable-feature=promql-extended-range-selectors")
     UNSUPPORTED_FUNCTION = "function not modelled yet"
     # measurement status, not a translation failure
     UNTESTED_LOOKBACK = "lookback longer than the test run; translated but not testable"

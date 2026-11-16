@@ -166,6 +166,14 @@ read from a real Prometheus~3.15.0 rather than a model, including the \texttt{an
 modifier, which is verified and not assumed (Table~\ref{tab:model-verification}); what is
 synthetic is the data, not the evaluator.
 
+That threat is now partly retired rather than merely acknowledged.
+\S\ref{sec:replay} repeats the comparison on a real request trace and against Datadog
+itself, and both exact forms survive it. The part that does not transfer is the reset
+case: real request counters do not restart inside a half-hour window, so the synthetic
+restart workloads remain the only evidence for the behaviour that
+\texttt{COUNTER\_RESET} is about. The shape threat is answered; the rare-event threat is
+not, and a generator is still the only way to produce a reset on demand.
+
 One Datadog fact that was unsettled when this section was first drafted has since been
 measured, and it went against the assumption: buckets are left-closed and named by their
 start (Remark~\ref{rem:closure}), not right-closed. That is worth recording as a threat

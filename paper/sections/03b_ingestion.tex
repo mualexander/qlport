@@ -287,13 +287,26 @@ of the two returned a value.}
 \label{tab:model-verification}
 \end{table}
 
-\begin{remark}[\texttt{anchored} is no longer experimental]
+\begin{remark}[\texttt{anchored} is still experimental]\label{rem:anchored-flag}
 The \texttt{anchored} modifier of~\citet{prom0052} arrived in Prometheus~3.7.0 behind
-\texttt{-{}-enable-feature=promql-extended-range-selectors}, and that flag became a no-op
-when the extended range selectors were made always-on in September~2026. The only
-precondition Proposition~\ref{prop:anchored} carries in practice is therefore a server at
-$3.7$ or newer, which the translator reports as the diagnostic
-\texttt{ANCHORED\_VERSION} rather than as an experimental caveat.
+\texttt{-{}-enable-feature=promql-extended-range-selectors}, and an earlier draft of this
+section asserted that the flag had since become a no-op. It has not. A $3.15.0$ server
+started without it rejects the expression outright:
+\begin{center}\footnotesize
+\texttt{anchored modifier is experimental and not enabled}
+\end{center}
+The precondition \texttt{ANCHORED\_VERSION} records is therefore stronger than a version
+number. It is a server deliberately started with an experimental feature enabled, which
+is a different and larger ask of whoever operates the target: a version can be waited
+for, a flag has to be chosen. That is the real cost of
+Proposition~\ref{prop:anchored}'s exactness, and it is the reason the emitter leaves the
+reset-aware form off by default and emits the cumulative difference, which uses nothing
+outside standard PromQL.
+
+The error above is how we found out. Every measurement in this paper had been taken with
+the flag set, because the script that takes them passes it and a comment there described
+it as harmless; the claim was never exercised until a later experiment started a server
+without it. A precondition that every instrument satisfies by habit is one nobody tests.
 \end{remark}
 
 \begin{remark}[Soundness over all databases is too strong for \texttt{rate}]
@@ -314,6 +327,60 @@ $15$\,s scrape interval. \texttt{rate} is the only candidate whose error depends
 data.}
 \label{fig:rate-error}
 \end{figure}
+
+\subsubsection{The dual-write replay}
+\label{sec:replay}
+
+Everything to this point compares a PromQL candidate against our reading of Datadog's
+rollup. That is a model, and a model is what \S\ref{sec:not-measured} warns the reader
+about. This subsection closes the gap for the counter rules by running the dual-write
+construction of this section literally: one stream of observations, written to both
+systems, read back from both.
+
+The stream is real. Counting the requests in a web-server access log into a scrape grid
+gives a counter with the shape that \S\ref{sec:threats} says the synthetic workloads only
+imitate: in the half hour used here the per-minute rate swings seventeenfold without
+being asked to. We take the busiest half hour of the Kennedy Space Center HTTP logs of
+July~1995~\citep{nasahttp}, count requests at a $15$\,s scrape interval into one counter
+per HTTP status class, and write the cumulative series to Prometheus and its image under
+$\phi_{\mathsf{zero}}$ --- the per-interval deltas --- to Datadog, at the same timestamps.
+The trace's publishers ask that it not be analysed beyond general traffic patterns, and
+the parser enforces that rather than promising it: it keeps a timestamp and a status
+class and discards the host and the request line, so what is replayed is a count of
+requests per interval and nothing else. Timestamps are shifted to the present, because
+Datadog's intake refuses points much older than an hour; the shape is real and the
+absolute times are not.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/replay_dualwrite}
+\caption{The dual-write replay: each candidate against \emph{Datadog}, bucket by bucket,
+on a real request trace. ``Inside'' and ``on the edge'' are the two evaluation instants
+of Remark~\ref{rem:closure}. $84$ comparisons per row.}
+\label{tab:replay}
+\end{table}
+
+Table~\ref{tab:replay} is the result, and two things in it are worth separating.
+
+The first is that both exact forms are exact --- against Datadog, not against a model of
+it, on traffic nobody generated for the purpose. \texttt{rate} is not, at $19$--$20\%$ of
+buckets, which is what \S\ref{sec:ingestion} has said throughout and what the steady
+synthetic workload conceals by being steady.
+
+The second is about the convention of Remark~\ref{rem:closure}, and it explains how that
+convention came to be assumed wrongly for so long. On the unaligned grid --- a scrape
+whose samples do not fall on rollup boundaries, which is what a jittered scrape produces
+and therefore the ordinary case --- evaluating on the bucket's edge agrees with
+evaluating inside it, on every bucket. Off a boundary the two half-open intervals contain
+the same samples, so the closure is simply not observable. Snap the scrape grid onto the
+rollup grid and the same comparison falls from $100\%$ to $27.4\%$. The error was
+invisible in exactly the configuration real deployments have, and decisive in the one the
+synthetic workloads of Table~\ref{tab:rollup-live} happen to use.
+
+What this does not do is also worth stating. A request counter does not reset in half an
+hour, so \texttt{COUNTER\_RESET} is not exercised here and the restart rows of
+Table~\ref{tab:rollup-live} remain the evidence for that case. It is one window of one
+trace at one rollup interval. And it tests the counter rules, not translation coverage:
+$\kappa$ is what it was.
 
 \paragraph{What remains assumed.}
 This section began with two facts about Datadog that its documentation does not settle.

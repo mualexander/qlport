@@ -1,0 +1,4620 @@
+{
+ "acks": [
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  }
+ ],
+ "provenance": {
+  "aligned": true,
+  "collected_at": "2026-11-16T18:25:27+00:00",
+  "events_in_window": {
+   "2xx": 6638,
+   "3xx": 1196,
+   "4xx": 18
+  },
+  "events_parsed": 1891714,
+  "image": "prom/prometheus:v3.15.0",
+  "prometheus_version": "3.15.0",
+  "replayed_from": 1794851520.0,
+  "rollup_seconds": 60.0,
+  "run": "r1794851520",
+  "scrape_seconds": 15.0,
+  "site": "datadoghq.com",
+  "source": "NASA-HTTP Jul 1995 (Internet Traffic Archive)",
+  "trace_file": "NASA_access_log_Jul95.gz",
+  "trace_window_end": 805644148.0,
+  "trace_window_start": 805642348.0,
+  "window_seconds": 1800.0
+ },
+ "rows": [
+  {
+   "bucket": 1794851580.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 221.0,
+   "instant": "inside",
+   "promql": 221.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 221.0,
+   "instant": "inside",
+   "promql": 221.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.058238636363636215,
+   "datadog": 221.0,
+   "instant": "inside",
+   "promql": 234.66666666666663
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.09053497942386832,
+   "datadog": 221.0,
+   "instant": "on the edge",
+   "promql": 243.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.09053497942386832,
+   "datadog": 221.0,
+   "instant": "on the edge",
+   "promql": 243.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.08425414364640876,
+   "datadog": 221.0,
+   "instant": "on the edge",
+   "promql": 241.33333333333331
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 274.0,
+   "instant": "inside",
+   "promql": 274.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 274.0,
+   "instant": "inside",
+   "promql": 274.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.007246376811594203,
+   "datadog": 274.0,
+   "instant": "inside",
+   "promql": 276.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.05474452554744526,
+   "datadog": 274.0,
+   "instant": "on the edge",
+   "promql": 259.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.05474452554744526,
+   "datadog": 274.0,
+   "instant": "on the edge",
+   "promql": 259.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.03649635036496371,
+   "datadog": 274.0,
+   "instant": "on the edge",
+   "promql": 263.99999999999994
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 231.0,
+   "instant": "inside",
+   "promql": 231.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 231.0,
+   "instant": "inside",
+   "promql": 231.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.03212290502793292,
+   "datadog": 231.0,
+   "instant": "inside",
+   "promql": 238.66666666666666
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.06854838709677419,
+   "datadog": 231.0,
+   "instant": "on the edge",
+   "promql": 248.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.06854838709677419,
+   "datadog": 231.0,
+   "instant": "on the edge",
+   "promql": 248.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.07352941176470582,
+   "datadog": 231.0,
+   "instant": "on the edge",
+   "promql": 249.33333333333331
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 244.0,
+   "instant": "inside",
+   "promql": 244.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 244.0,
+   "instant": "inside",
+   "promql": 244.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.043715846994535595,
+   "datadog": 244.0,
+   "instant": "inside",
+   "promql": 233.33333333333331
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.07377049180327869,
+   "datadog": 244.0,
+   "instant": "on the edge",
+   "promql": 226.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.07377049180327869,
+   "datadog": 244.0,
+   "instant": "on the edge",
+   "promql": 226.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.0655737704918034,
+   "datadog": 244.0,
+   "instant": "on the edge",
+   "promql": 227.99999999999997
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 223.0,
+   "instant": "inside",
+   "promql": 223.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 223.0,
+   "instant": "inside",
+   "promql": 223.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.027616279069767363,
+   "datadog": 223.0,
+   "instant": "inside",
+   "promql": 229.33333333333331
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.03879310344827586,
+   "datadog": 223.0,
+   "instant": "on the edge",
+   "promql": 232.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.03879310344827586,
+   "datadog": 223.0,
+   "instant": "on the edge",
+   "promql": 232.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.027616279069767363,
+   "datadog": 223.0,
+   "instant": "on the edge",
+   "promql": 229.33333333333331
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 259.0,
+   "instant": "inside",
+   "promql": 259.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 259.0,
+   "instant": "inside",
+   "promql": 259.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.02386934673366827,
+   "datadog": 259.0,
+   "instant": "inside",
+   "promql": 265.3333333333333
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.003861003861003861,
+   "datadog": 259.0,
+   "instant": "on the edge",
+   "promql": 258.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.003861003861003861,
+   "datadog": 259.0,
+   "instant": "on the edge",
+   "promql": 258.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.01395939086294402,
+   "datadog": 259.0,
+   "instant": "on the edge",
+   "promql": 262.66666666666663
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 254.0,
+   "instant": "inside",
+   "promql": 254.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 254.0,
+   "instant": "inside",
+   "promql": 254.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.023076923076923078,
+   "datadog": 254.0,
+   "instant": "inside",
+   "promql": 260.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.011673151750972763,
+   "datadog": 254.0,
+   "instant": "on the edge",
+   "promql": 257.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.011673151750972763,
+   "datadog": 254.0,
+   "instant": "on the edge",
+   "promql": 257.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.05223880597014905,
+   "datadog": 254.0,
+   "instant": "on the edge",
+   "promql": 267.99999999999994
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 240.0,
+   "instant": "inside",
+   "promql": 240.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 240.0,
+   "instant": "inside",
+   "promql": 240.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.01111111111111119,
+   "datadog": 240.0,
+   "instant": "inside",
+   "promql": 237.33333333333331
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0875,
+   "datadog": 240.0,
+   "instant": "on the edge",
+   "promql": 219.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0875,
+   "datadog": 240.0,
+   "instant": "on the edge",
+   "promql": 219.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.06666666666666679,
+   "datadog": 240.0,
+   "instant": "on the edge",
+   "promql": 223.99999999999997
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 211.0,
+   "instant": "inside",
+   "promql": 211.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 211.0,
+   "instant": "inside",
+   "promql": 211.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.06911764705882337,
+   "datadog": 211.0,
+   "instant": "inside",
+   "promql": 226.66666666666663
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.128099173553719,
+   "datadog": 211.0,
+   "instant": "on the edge",
+   "promql": 242.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.128099173553719,
+   "datadog": 211.0,
+   "instant": "on the edge",
+   "promql": 242.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.12569060773480656,
+   "datadog": 211.0,
+   "instant": "on the edge",
+   "promql": 241.33333333333331
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 140.0,
+   "instant": "inside",
+   "promql": 140.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 140.0,
+   "instant": "inside",
+   "promql": 140.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.35238095238095246,
+   "datadog": 140.0,
+   "instant": "inside",
+   "promql": 90.66666666666666
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.22857142857142856,
+   "datadog": 140.0,
+   "instant": "on the edge",
+   "promql": 108.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.22857142857142856,
+   "datadog": 140.0,
+   "instant": "on the edge",
+   "promql": 108.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.43809523809523815,
+   "datadog": 140.0,
+   "instant": "on the edge",
+   "promql": 78.66666666666666
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 70.0,
+   "instant": "inside",
+   "promql": 70.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 70.0,
+   "instant": "inside",
+   "promql": 70.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.42857142857142855,
+   "datadog": 70.0,
+   "instant": "inside",
+   "promql": 40.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.5571428571428572,
+   "datadog": 70.0,
+   "instant": "on the edge",
+   "promql": 31.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.5571428571428572,
+   "datadog": 70.0,
+   "instant": "on the edge",
+   "promql": 31.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.9238095238095239,
+   "datadog": 70.0,
+   "instant": "on the edge",
+   "promql": 5.333333333333333
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 133.0,
+   "instant": "inside",
+   "promql": 133.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 133.0,
+   "instant": "inside",
+   "promql": 133.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.24431818181818182,
+   "datadog": 133.0,
+   "instant": "inside",
+   "promql": 176.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.2692307692307692,
+   "datadog": 133.0,
+   "instant": "on the edge",
+   "promql": 182.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.2692307692307692,
+   "datadog": 133.0,
+   "instant": "on the edge",
+   "promql": 182.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.32142857142857134,
+   "datadog": 133.0,
+   "instant": "on the edge",
+   "promql": 195.99999999999997
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 127.0,
+   "instant": "inside",
+   "promql": 127.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 127.0,
+   "instant": "inside",
+   "promql": 127.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.19160104986876658,
+   "datadog": 127.0,
+   "instant": "inside",
+   "promql": 102.66666666666664
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.3779527559055118,
+   "datadog": 127.0,
+   "instant": "on the edge",
+   "promql": 79.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.3779527559055118,
+   "datadog": 127.0,
+   "instant": "on the edge",
+   "promql": 79.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.6325459317585302,
+   "datadog": 127.0,
+   "instant": "on the edge",
+   "promql": 46.66666666666666
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 127.0,
+   "instant": "inside",
+   "promql": 127.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 127.0,
+   "instant": "inside",
+   "promql": 127.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.23799999999999982,
+   "datadog": 127.0,
+   "instant": "inside",
+   "promql": 166.66666666666663
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.3712871287128713,
+   "datadog": 127.0,
+   "instant": "on the edge",
+   "promql": 202.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.3712871287128713,
+   "datadog": 127.0,
+   "instant": "on the edge",
+   "promql": 202.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.49603174603174593,
+   "datadog": 127.0,
+   "instant": "on the edge",
+   "promql": 251.99999999999994
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 266.0,
+   "instant": "inside",
+   "promql": 266.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 266.0,
+   "instant": "inside",
+   "promql": 266.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.05263157894736863,
+   "datadog": 266.0,
+   "instant": "inside",
+   "promql": 251.99999999999994
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.13909774436090225,
+   "datadog": 266.0,
+   "instant": "on the edge",
+   "promql": 229.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.13909774436090225,
+   "datadog": 266.0,
+   "instant": "on the edge",
+   "promql": 229.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.1478696741854638,
+   "datadog": 266.0,
+   "instant": "on the edge",
+   "promql": 226.66666666666663
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 224.0,
+   "instant": "inside",
+   "promql": 224.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 224.0,
+   "instant": "inside",
+   "promql": 224.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.08695652173913036,
+   "datadog": 224.0,
+   "instant": "inside",
+   "promql": 245.33333333333331
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.19424460431654678,
+   "datadog": 224.0,
+   "instant": "on the edge",
+   "promql": 278.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.19424460431654678,
+   "datadog": 224.0,
+   "instant": "on the edge",
+   "promql": 278.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.2566371681415927,
+   "datadog": 224.0,
+   "instant": "on the edge",
+   "promql": 301.33333333333326
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 326.0,
+   "instant": "inside",
+   "promql": 326.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 326.0,
+   "instant": "inside",
+   "promql": 326.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.051124744376278175,
+   "datadog": 326.0,
+   "instant": "inside",
+   "promql": 309.3333333333333
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.07668711656441718,
+   "datadog": 326.0,
+   "instant": "on the edge",
+   "promql": 301.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.07668711656441718,
+   "datadog": 326.0,
+   "instant": "on the edge",
+   "promql": 301.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.07157464212678948,
+   "datadog": 326.0,
+   "instant": "on the edge",
+   "promql": 302.66666666666663
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 289.0,
+   "instant": "inside",
+   "promql": 289.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 289.0,
+   "instant": "inside",
+   "promql": 289.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.014772727272727208,
+   "datadog": 289.0,
+   "instant": "inside",
+   "promql": 293.3333333333333
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0726643598615917,
+   "datadog": 289.0,
+   "instant": "on the edge",
+   "promql": 268.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0726643598615917,
+   "datadog": 289.0,
+   "instant": "on the edge",
+   "promql": 268.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.021914648212226197,
+   "datadog": 289.0,
+   "instant": "on the edge",
+   "promql": 282.66666666666663
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 263.0,
+   "instant": "inside",
+   "promql": 263.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 263.0,
+   "instant": "inside",
+   "promql": 263.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.0825581395348836,
+   "datadog": 263.0,
+   "instant": "inside",
+   "promql": 286.66666666666663
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.040145985401459854,
+   "datadog": 263.0,
+   "instant": "on the edge",
+   "promql": 274.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.040145985401459854,
+   "datadog": 263.0,
+   "instant": "on the edge",
+   "promql": 274.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.03308823529411765,
+   "datadog": 263.0,
+   "instant": "on the edge",
+   "promql": 272.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 236.0,
+   "instant": "inside",
+   "promql": 236.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 236.0,
+   "instant": "inside",
+   "promql": 236.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 1.2043097216272884e-16,
+   "datadog": 236.0,
+   "instant": "inside",
+   "promql": 235.99999999999997
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.00847457627118644,
+   "datadog": 236.0,
+   "instant": "on the edge",
+   "promql": 234.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.00847457627118644,
+   "datadog": 236.0,
+   "instant": "on the edge",
+   "promql": 234.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.07344632768361598,
+   "datadog": 236.0,
+   "instant": "on the edge",
+   "promql": 218.66666666666663
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 243.0,
+   "instant": "inside",
+   "promql": 243.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 243.0,
+   "instant": "inside",
+   "promql": 243.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.020161290322580534,
+   "datadog": 243.0,
+   "instant": "inside",
+   "promql": 247.99999999999997
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.06177606177606178,
+   "datadog": 243.0,
+   "instant": "on the edge",
+   "promql": 259.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.06177606177606178,
+   "datadog": 243.0,
+   "instant": "on the edge",
+   "promql": 259.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.04581151832460719,
+   "datadog": 243.0,
+   "instant": "on the edge",
+   "promql": 254.66666666666663
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 271.0,
+   "instant": "inside",
+   "promql": 271.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 271.0,
+   "instant": "inside",
+   "promql": 271.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.025830258302583235,
+   "datadog": 271.0,
+   "instant": "inside",
+   "promql": 263.99999999999994
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.07380073800738007,
+   "datadog": 271.0,
+   "instant": "on the edge",
+   "promql": 251.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.07380073800738007,
+   "datadog": 271.0,
+   "instant": "on the edge",
+   "promql": 251.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.02091020910209109,
+   "datadog": 271.0,
+   "instant": "on the edge",
+   "promql": 265.3333333333333
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 232.0,
+   "instant": "inside",
+   "promql": 232.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 232.0,
+   "instant": "inside",
+   "promql": 232.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.02793296089385471,
+   "datadog": 232.0,
+   "instant": "inside",
+   "promql": 238.66666666666666
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.02586206896551724,
+   "datadog": 232.0,
+   "instant": "on the edge",
+   "promql": 226.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.02586206896551724,
+   "datadog": 232.0,
+   "instant": "on the edge",
+   "promql": 226.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.040229885057471305,
+   "datadog": 232.0,
+   "instant": "on the edge",
+   "promql": 222.66666666666666
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 243.0,
+   "instant": "inside",
+   "promql": 243.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 243.0,
+   "instant": "inside",
+   "promql": 243.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.07015306122448974,
+   "datadog": 243.0,
+   "instant": "inside",
+   "promql": 261.3333333333333
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.06177606177606178,
+   "datadog": 243.0,
+   "instant": "on the edge",
+   "promql": 259.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.06177606177606178,
+   "datadog": 243.0,
+   "instant": "on the edge",
+   "promql": 259.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.04078947368421035,
+   "datadog": 243.0,
+   "instant": "on the edge",
+   "promql": 253.3333333333333
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 249.0,
+   "instant": "inside",
+   "promql": 249.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 249.0,
+   "instant": "inside",
+   "promql": 249.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.004016064257028227,
+   "datadog": 249.0,
+   "instant": "inside",
+   "promql": 247.99999999999997
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.004016064257028112,
+   "datadog": 249.0,
+   "instant": "on the edge",
+   "promql": 248.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.004016064257028112,
+   "datadog": 249.0,
+   "instant": "on the edge",
+   "promql": 248.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.0013368983957218492,
+   "datadog": 249.0,
+   "instant": "on the edge",
+   "promql": 249.33333333333331
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 215.0,
+   "instant": "inside",
+   "promql": 215.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 215.0,
+   "instant": "inside",
+   "promql": 215.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.05116279069767455,
+   "datadog": 215.0,
+   "instant": "inside",
+   "promql": 203.99999999999997
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.004651162790697674,
+   "datadog": 215.0,
+   "instant": "on the edge",
+   "promql": 214.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.004651162790697674,
+   "datadog": 215.0,
+   "instant": "on the edge",
+   "promql": 214.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.0635658914728683,
+   "datadog": 215.0,
+   "instant": "on the edge",
+   "promql": 201.33333333333331
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 254.0,
+   "instant": "inside",
+   "promql": 254.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 254.0,
+   "instant": "inside",
+   "promql": 254.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.012953367875647596,
+   "datadog": 254.0,
+   "instant": "inside",
+   "promql": 257.3333333333333
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.08661417322834646,
+   "datadog": 254.0,
+   "instant": "on the edge",
+   "promql": 232.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.08661417322834646,
+   "datadog": 254.0,
+   "instant": "on the edge",
+   "promql": 232.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.13385826771653556,
+   "datadog": 254.0,
+   "instant": "on the edge",
+   "promql": 219.99999999999997
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 177.0,
+   "instant": "inside",
+   "promql": 177.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0,
+   "datadog": 177.0,
+   "instant": "inside",
+   "promql": 177.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.03804347826086957,
+   "datadog": 177.0,
+   "instant": "inside",
+   "promql": 184.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "x - x offset D",
+   "class": "2xx",
+   "d": 0.0056179775280898875,
+   "datadog": 177.0,
+   "instant": "on the edge",
+   "promql": 178.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "2xx",
+   "d": 0.0056179775280898875,
+   "datadog": 177.0,
+   "instant": "on the edge",
+   "promql": 178.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "2xx",
+   "d": 0.03804347826086957,
+   "datadog": 177.0,
+   "instant": "on the edge",
+   "promql": 184.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 50.0,
+   "instant": "inside",
+   "promql": 50.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 50.0,
+   "instant": "inside",
+   "promql": 50.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.10714285714285703,
+   "datadog": 50.0,
+   "instant": "inside",
+   "promql": 55.99999999999999
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.16666666666666666,
+   "datadog": 50.0,
+   "instant": "on the edge",
+   "promql": 60.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.16666666666666666,
+   "datadog": 50.0,
+   "instant": "on the edge",
+   "promql": 60.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.10714285714285703,
+   "datadog": 50.0,
+   "instant": "on the edge",
+   "promql": 55.99999999999999
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 68.0,
+   "instant": "inside",
+   "promql": 68.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 68.0,
+   "instant": "inside",
+   "promql": 68.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.01960784313725504,
+   "datadog": 68.0,
+   "instant": "inside",
+   "promql": 66.66666666666666
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.029411764705882353,
+   "datadog": 68.0,
+   "instant": "on the edge",
+   "promql": 66.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.029411764705882353,
+   "datadog": 68.0,
+   "instant": "on the edge",
+   "promql": 66.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.01960784313725504,
+   "datadog": 68.0,
+   "instant": "on the edge",
+   "promql": 66.66666666666666
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 54.0,
+   "instant": "inside",
+   "promql": 54.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 54.0,
+   "instant": "inside",
+   "promql": 54.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.06172839506172857,
+   "datadog": 54.0,
+   "instant": "inside",
+   "promql": 50.66666666666666
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.01818181818181818,
+   "datadog": 54.0,
+   "instant": "on the edge",
+   "promql": 55.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.01818181818181818,
+   "datadog": 54.0,
+   "instant": "on the edge",
+   "promql": 55.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.07954545454545439,
+   "datadog": 54.0,
+   "instant": "on the edge",
+   "promql": 58.66666666666666
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 61.0,
+   "instant": "inside",
+   "promql": 61.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 61.0,
+   "instant": "inside",
+   "promql": 61.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.03825136612021873,
+   "datadog": 61.0,
+   "instant": "inside",
+   "promql": 58.66666666666666
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.19672131147540983,
+   "datadog": 61.0,
+   "instant": "on the edge",
+   "promql": 49.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.19672131147540983,
+   "datadog": 61.0,
+   "instant": "on the edge",
+   "promql": 49.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.25683060109289624,
+   "datadog": 61.0,
+   "instant": "on the edge",
+   "promql": 45.33333333333333
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 32.0,
+   "instant": "inside",
+   "promql": 32.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 32.0,
+   "instant": "inside",
+   "promql": 32.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.1111111111111111,
+   "datadog": 32.0,
+   "instant": "inside",
+   "promql": 36.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.08571428571428572,
+   "datadog": 32.0,
+   "instant": "on the edge",
+   "promql": 35.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.08571428571428572,
+   "datadog": 32.0,
+   "instant": "on the edge",
+   "promql": 35.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.14285714285714274,
+   "datadog": 32.0,
+   "instant": "on the edge",
+   "promql": 37.33333333333333
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 44.0,
+   "instant": "inside",
+   "promql": 44.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 44.0,
+   "instant": "inside",
+   "promql": 44.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.0833333333333332,
+   "datadog": 44.0,
+   "instant": "inside",
+   "promql": 47.99999999999999
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.10204081632653061,
+   "datadog": 44.0,
+   "instant": "on the edge",
+   "promql": 49.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.10204081632653061,
+   "datadog": 44.0,
+   "instant": "on the edge",
+   "promql": 49.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.06060606060606071,
+   "datadog": 44.0,
+   "instant": "on the edge",
+   "promql": 41.33333333333333
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 38.0,
+   "instant": "inside",
+   "promql": 38.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 38.0,
+   "instant": "inside",
+   "promql": 38.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.12280701754385977,
+   "datadog": 38.0,
+   "instant": "inside",
+   "promql": 33.33333333333333
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.13157894736842105,
+   "datadog": 38.0,
+   "instant": "on the edge",
+   "promql": 33.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.13157894736842105,
+   "datadog": 38.0,
+   "instant": "on the edge",
+   "promql": 33.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.2631578947368422,
+   "datadog": 38.0,
+   "instant": "on the edge",
+   "promql": 27.999999999999996
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 41.0,
+   "instant": "inside",
+   "promql": 41.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 41.0,
+   "instant": "inside",
+   "promql": 41.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.06818181818181818,
+   "datadog": 41.0,
+   "instant": "inside",
+   "promql": 44.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0975609756097561,
+   "datadog": 41.0,
+   "instant": "on the edge",
+   "promql": 37.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0975609756097561,
+   "datadog": 41.0,
+   "instant": "on the edge",
+   "promql": 37.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.039062499999999944,
+   "datadog": 41.0,
+   "instant": "on the edge",
+   "promql": 42.666666666666664
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 34.0,
+   "instant": "inside",
+   "promql": 34.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 34.0,
+   "instant": "inside",
+   "promql": 34.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.15,
+   "datadog": 34.0,
+   "instant": "inside",
+   "promql": 40.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.10526315789473684,
+   "datadog": 34.0,
+   "instant": "on the edge",
+   "promql": 38.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.10526315789473684,
+   "datadog": 34.0,
+   "instant": "on the edge",
+   "promql": 38.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.15,
+   "datadog": 34.0,
+   "instant": "on the edge",
+   "promql": 40.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 19.0,
+   "instant": "inside",
+   "promql": 19.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 19.0,
+   "instant": "inside",
+   "promql": 19.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.22807017543859662,
+   "datadog": 19.0,
+   "instant": "inside",
+   "promql": 14.666666666666664
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.15789473684210525,
+   "datadog": 19.0,
+   "instant": "on the edge",
+   "promql": 16.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.15789473684210525,
+   "datadog": 19.0,
+   "instant": "on the edge",
+   "promql": 16.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.6491228070175439,
+   "datadog": 19.0,
+   "instant": "on the edge",
+   "promql": 6.666666666666666
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 11.0,
+   "instant": "inside",
+   "promql": 11.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 11.0,
+   "instant": "inside",
+   "promql": 11.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.2727272727272729,
+   "datadog": 11.0,
+   "instant": "inside",
+   "promql": 7.999999999999998
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.45454545454545453,
+   "datadog": 11.0,
+   "instant": "on the edge",
+   "promql": 6.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.45454545454545453,
+   "datadog": 11.0,
+   "instant": "on the edge",
+   "promql": 6.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 1.0,
+   "datadog": 11.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 28.0,
+   "instant": "inside",
+   "promql": 28.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 28.0,
+   "instant": "inside",
+   "promql": 28.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.24999999999999992,
+   "datadog": 28.0,
+   "instant": "inside",
+   "promql": 37.33333333333333
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.36363636363636365,
+   "datadog": 28.0,
+   "instant": "on the edge",
+   "promql": 44.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.36363636363636365,
+   "datadog": 28.0,
+   "instant": "on the edge",
+   "promql": 44.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.4878048780487804,
+   "datadog": 28.0,
+   "instant": "on the edge",
+   "promql": 54.66666666666666
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 30.0,
+   "instant": "inside",
+   "promql": 30.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 30.0,
+   "instant": "inside",
+   "promql": 30.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.3777777777777779,
+   "datadog": 30.0,
+   "instant": "inside",
+   "promql": 18.666666666666664
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.5333333333333333,
+   "datadog": 30.0,
+   "instant": "on the edge",
+   "promql": 14.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.5333333333333333,
+   "datadog": 30.0,
+   "instant": "on the edge",
+   "promql": 14.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.8222222222222223,
+   "datadog": 30.0,
+   "instant": "on the edge",
+   "promql": 5.333333333333333
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 33.0,
+   "instant": "inside",
+   "promql": 33.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 33.0,
+   "instant": "inside",
+   "promql": 33.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.25,
+   "datadog": 33.0,
+   "instant": "inside",
+   "promql": 44.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.4,
+   "datadog": 33.0,
+   "instant": "on the edge",
+   "promql": 55.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.4,
+   "datadog": 33.0,
+   "instant": "on the edge",
+   "promql": 55.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.5049999999999999,
+   "datadog": 33.0,
+   "instant": "on the edge",
+   "promql": 66.66666666666666
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 51.0,
+   "instant": "inside",
+   "promql": 51.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 51.0,
+   "instant": "inside",
+   "promql": 51.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.24183006535947718,
+   "datadog": 51.0,
+   "instant": "inside",
+   "promql": 38.666666666666664
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.27450980392156865,
+   "datadog": 51.0,
+   "instant": "on the edge",
+   "promql": 37.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.27450980392156865,
+   "datadog": 51.0,
+   "instant": "on the edge",
+   "promql": 37.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.13725490196078433,
+   "datadog": 51.0,
+   "instant": "on the edge",
+   "promql": 44.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 42.0,
+   "instant": "inside",
+   "promql": 42.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 42.0,
+   "instant": "inside",
+   "promql": 42.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.07352941176470579,
+   "datadog": 42.0,
+   "instant": "inside",
+   "promql": 45.33333333333333
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.2222222222222222,
+   "datadog": 42.0,
+   "instant": "on the edge",
+   "promql": 54.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.2222222222222222,
+   "datadog": 42.0,
+   "instant": "on the edge",
+   "promql": 54.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.2674418604651162,
+   "datadog": 42.0,
+   "instant": "on the edge",
+   "promql": 57.33333333333333
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 75.0,
+   "instant": "inside",
+   "promql": 75.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 75.0,
+   "instant": "inside",
+   "promql": 75.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.022222222222222286,
+   "datadog": 75.0,
+   "instant": "inside",
+   "promql": 73.33333333333333
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.14666666666666667,
+   "datadog": 75.0,
+   "instant": "on the edge",
+   "promql": 64.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.14666666666666667,
+   "datadog": 75.0,
+   "instant": "on the edge",
+   "promql": 64.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.18222222222222229,
+   "datadog": 75.0,
+   "instant": "on the edge",
+   "promql": 61.33333333333333
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 40.0,
+   "instant": "inside",
+   "promql": 40.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 40.0,
+   "instant": "inside",
+   "promql": 40.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.03225806451612892,
+   "datadog": 40.0,
+   "instant": "inside",
+   "promql": 41.33333333333333
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.05,
+   "datadog": 40.0,
+   "instant": "on the edge",
+   "promql": 38.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.05,
+   "datadog": 40.0,
+   "instant": "on the edge",
+   "promql": 38.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.1666666666666668,
+   "datadog": 40.0,
+   "instant": "on the edge",
+   "promql": 33.33333333333333
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 48.0,
+   "instant": "inside",
+   "promql": 48.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 48.0,
+   "instant": "inside",
+   "promql": 48.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.12195121951219497,
+   "datadog": 48.0,
+   "instant": "inside",
+   "promql": 54.66666666666666
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.04,
+   "datadog": 48.0,
+   "instant": "on the edge",
+   "promql": 50.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.04,
+   "datadog": 48.0,
+   "instant": "on the edge",
+   "promql": 50.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.16666666666666666,
+   "datadog": 48.0,
+   "instant": "on the edge",
+   "promql": 40.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 36.0,
+   "instant": "inside",
+   "promql": 36.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 36.0,
+   "instant": "inside",
+   "promql": 36.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 36.0,
+   "instant": "inside",
+   "promql": 36.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.07692307692307693,
+   "datadog": 36.0,
+   "instant": "on the edge",
+   "promql": 39.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.07692307692307693,
+   "datadog": 36.0,
+   "instant": "on the edge",
+   "promql": 39.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.12903225806451604,
+   "datadog": 36.0,
+   "instant": "on the edge",
+   "promql": 41.33333333333333
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 41.0,
+   "instant": "inside",
+   "promql": 41.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 41.0,
+   "instant": "inside",
+   "promql": 41.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.05691056910569112,
+   "datadog": 41.0,
+   "instant": "inside",
+   "promql": 38.666666666666664
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 41.0,
+   "instant": "on the edge",
+   "promql": 41.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 41.0,
+   "instant": "on the edge",
+   "promql": 41.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.18699186991869932,
+   "datadog": 41.0,
+   "instant": "on the edge",
+   "promql": 33.33333333333333
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 31.0,
+   "instant": "inside",
+   "promql": 31.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 31.0,
+   "instant": "inside",
+   "promql": 31.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.18279569892473133,
+   "datadog": 31.0,
+   "instant": "inside",
+   "promql": 25.33333333333333
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0967741935483871,
+   "datadog": 31.0,
+   "instant": "on the edge",
+   "promql": 28.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0967741935483871,
+   "datadog": 31.0,
+   "instant": "on the edge",
+   "promql": 28.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.05376344086021521,
+   "datadog": 31.0,
+   "instant": "on the edge",
+   "promql": 29.33333333333333
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 39.0,
+   "instant": "inside",
+   "promql": 39.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 39.0,
+   "instant": "inside",
+   "promql": 39.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.025,
+   "datadog": 39.0,
+   "instant": "inside",
+   "promql": 40.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.07142857142857142,
+   "datadog": 39.0,
+   "instant": "on the edge",
+   "promql": 42.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.07142857142857142,
+   "datadog": 39.0,
+   "instant": "on the edge",
+   "promql": 42.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.2302631578947367,
+   "datadog": 39.0,
+   "instant": "on the edge",
+   "promql": 50.66666666666666
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 37.0,
+   "instant": "inside",
+   "promql": 37.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 37.0,
+   "instant": "inside",
+   "promql": 37.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.09909909909909922,
+   "datadog": 37.0,
+   "instant": "inside",
+   "promql": 33.33333333333333
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.08108108108108109,
+   "datadog": 37.0,
+   "instant": "on the edge",
+   "promql": 34.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.08108108108108109,
+   "datadog": 37.0,
+   "instant": "on the edge",
+   "promql": 34.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.27927927927927937,
+   "datadog": 37.0,
+   "instant": "on the edge",
+   "promql": 26.666666666666664
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 37.0,
+   "instant": "inside",
+   "promql": 37.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 37.0,
+   "instant": "inside",
+   "promql": 37.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.008928571428571303,
+   "datadog": 37.0,
+   "instant": "inside",
+   "promql": 37.33333333333333
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.08108108108108109,
+   "datadog": 37.0,
+   "instant": "on the edge",
+   "promql": 34.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.08108108108108109,
+   "datadog": 37.0,
+   "instant": "on the edge",
+   "promql": 34.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.17117117117117123,
+   "datadog": 37.0,
+   "instant": "on the edge",
+   "promql": 30.666666666666664
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 39.0,
+   "instant": "inside",
+   "promql": 39.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 39.0,
+   "instant": "inside",
+   "promql": 39.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.11363636363636363,
+   "datadog": 39.0,
+   "instant": "inside",
+   "promql": 44.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.04878048780487805,
+   "datadog": 39.0,
+   "instant": "on the edge",
+   "promql": 41.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.04878048780487805,
+   "datadog": 39.0,
+   "instant": "on the edge",
+   "promql": 41.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.08593749999999994,
+   "datadog": 39.0,
+   "instant": "on the edge",
+   "promql": 42.666666666666664
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 36.0,
+   "instant": "inside",
+   "promql": 36.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 36.0,
+   "instant": "inside",
+   "promql": 36.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.035714285714285594,
+   "datadog": 36.0,
+   "instant": "inside",
+   "promql": 37.33333333333333
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.08333333333333333,
+   "datadog": 36.0,
+   "instant": "on the edge",
+   "promql": 33.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.08333333333333333,
+   "datadog": 36.0,
+   "instant": "on the edge",
+   "promql": 33.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.1851851851851853,
+   "datadog": 36.0,
+   "instant": "on the edge",
+   "promql": 29.33333333333333
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 28.0,
+   "instant": "inside",
+   "promql": 28.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.0,
+   "datadog": 28.0,
+   "instant": "inside",
+   "promql": 28.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.08695652173913036,
+   "datadog": 28.0,
+   "instant": "inside",
+   "promql": 30.666666666666664
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "x - x offset D",
+   "class": "3xx",
+   "d": 0.15151515151515152,
+   "datadog": 28.0,
+   "instant": "on the edge",
+   "promql": 33.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "3xx",
+   "d": 0.15151515151515152,
+   "datadog": 28.0,
+   "instant": "on the edge",
+   "promql": 33.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "3xx",
+   "d": 0.3,
+   "datadog": 28.0,
+   "instant": "on the edge",
+   "promql": 40.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.2499874997916632,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.3333111111111111
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.5,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.5,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794851580.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.5,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794851640.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851700.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851760.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794851820.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 3.0,
+   "instant": "inside",
+   "promql": 3.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 3.0,
+   "instant": "inside",
+   "promql": 3.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999983,
+   "datadog": 3.0,
+   "instant": "inside",
+   "promql": 3.999999999999999
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 3.0,
+   "instant": "on the edge",
+   "promql": 3.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 3.0,
+   "instant": "on the edge",
+   "promql": 3.0
+  },
+  {
+   "bucket": 1794851880.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.11111111111111116,
+   "datadog": 3.0,
+   "instant": "on the edge",
+   "promql": 2.6666666666666665
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794851940.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.5,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.5,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794852000.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852060.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 1.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852120.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852180.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852240.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852300.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852360.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852420.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852480.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852540.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 2.0,
+   "instant": "inside",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 2.0,
+   "instant": "inside",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 2.0,
+   "instant": "inside",
+   "promql": 2.6666666666666665
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 2.0,
+   "instant": "on the edge",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 2.0,
+   "instant": "on the edge",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794852600.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.33333333333333337,
+   "datadog": 2.0,
+   "instant": "on the edge",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852660.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852720.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852780.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852840.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794852900.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 2.0,
+   "instant": "inside",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 2.0,
+   "instant": "inside",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 2.0,
+   "instant": "inside",
+   "promql": 2.6666666666666665
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 2.0,
+   "instant": "on the edge",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 2.0,
+   "instant": "on the edge",
+   "promql": 2.0
+  },
+  {
+   "bucket": 1794852960.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 2.0,
+   "instant": "on the edge",
+   "promql": 2.6666666666666665
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853020.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 1.0,
+   "instant": "inside",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.0
+  },
+  {
+   "bucket": 1794853080.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.24999999999999994,
+   "datadog": 1.0,
+   "instant": "on the edge",
+   "promql": 1.3333333333333333
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853140.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "inside",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "x - x offset D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "increase(x[D] anchored)",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  },
+  {
+   "bucket": 1794853200.0,
+   "candidate": "rate(x[D]) * D",
+   "class": "4xx",
+   "d": 0.0,
+   "datadog": 0.0,
+   "instant": "on the edge",
+   "promql": 0.0
+  }
+ ],
+ "summary": {
+  "inside | increase(x[D] anchored)": {
+   "buckets": 84,
+   "exact": 1.0,
+   "max_d": 0.0,
+   "median_d": 0.0
+  },
+  "inside | rate(x[D]) * D": {
+   "buckets": 84,
+   "exact": 0.19047619047619047,
+   "max_d": 1.0,
+   "median_d": 0.057574602734663666
+  },
+  "inside | x - x offset D": {
+   "buckets": 84,
+   "exact": 1.0,
+   "max_d": 0.0,
+   "median_d": 0.0
+  },
+  "on the edge | increase(x[D] anchored)": {
+   "buckets": 84,
+   "exact": 0.27380952380952384,
+   "max_d": 1.0,
+   "median_d": 0.07204646564508156
+  },
+  "on the edge | rate(x[D]) * D": {
+   "buckets": 84,
+   "exact": 0.16666666666666666,
+   "max_d": 1.0,
+   "median_d": 0.1273614328996613
+  },
+  "on the edge | x - x offset D": {
+   "buckets": 84,
+   "exact": 0.27380952380952384,
+   "max_d": 1.0,
+   "median_d": 0.07204646564508156
+  }
+ }
+}

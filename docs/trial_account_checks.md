@@ -384,6 +384,35 @@ an odd thing to have in a real tag set, so if the `web-` series does not appear 
 worth confirming that Datadog stored it at all before concluding anything about `*`.
 Query `sum:qlport.e5.star{probe:web-}` to check.
 
+## The dual-write replay — **done**
+
+Not one of the numbered checks, but the experiment they were all working towards.
+`scripts/replay_dualwrite.py` replays the busiest half hour of the NASA-HTTP July 1995
+trace into both systems — cumulative to Prometheus, φ-deltas to Datadog — and compares
+every candidate bucket by bucket against **Datadog**, not against `datadog_eval`.
+
+| scrape grid | `x - x offset Δ` | `increase(x[Δ] anchored)` | `rate(x[Δ])·Δ` |
+|---|---|---|---|
+| unaligned, evaluated inside | 100% | 100% | 20.2% |
+| unaligned, on the bucket edge | 100% | 100% | 20.2% |
+| aligned, evaluated inside | 100% | 100% | 19.0% |
+| **aligned, on the bucket edge** | **27.4%** | **27.4%** | 16.7% |
+
+Two results. Both exact forms are exact against the vendor on real traffic. And the
+closure convention of E2 is **invisible on an unaligned scrape** — off a boundary the two
+half-open intervals hold the same samples — while on an aligned one it decides 72.6% of
+buckets. That is why the wrong convention survived every earlier measurement: real
+scrapes are jittered, and the synthetic workloads are the aligned case.
+
+Not covered: counter resets. A request counter does not restart in half an hour, so
+`COUNTER_RESET` still rests on the synthetic restart workloads.
+
+Obtaining the trace (20 MB, not committed):
+
+```
+curl -o NASA_access_log_Jul95.gz ftp://ita.ee.lbl.gov/traces/NASA_access_log_Jul95.gz
+```
+
 ## What each outcome changes
 
 | Result | Changes |

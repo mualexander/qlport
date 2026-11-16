@@ -111,8 +111,9 @@ def start(workdir: Path) -> str:
     out = run("docker", "run", "-d", "--user", f"{_uid()}:{_gid()}",
               "-v", f"{workdir}:/w", "-p", f"{PORT}:9090", IMAGE,
               "--config.file=/w/prometheus.yml", "--storage.tsdb.path=/w/data",
-              # Harmless on 3.15, where the modifiers are always on; kept so the same
-              # script works on a 3.7-3.14 server, where they are flag-gated.
+              # Required, not harmless. A 3.15.0 server without this answers
+              # "anchored modifier is experimental and not enabled": the modifier is
+              # still gated, so every claim about it carries that precondition.
               "--enable-feature=promql-extended-range-selectors",
               f"--storage.tsdb.retention.time={30}d")
     return out.stdout.strip()

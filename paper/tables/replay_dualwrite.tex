@@ -1,0 +1,14 @@
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Scrape grid & PromQL candidate & Evaluated inside & On the edge & Max $d$ \\
+\midrule
+unaligned & \texttt{x - x offset $\Delta$} & 100.0\% & 100.0\% & 0 \\
+ & \texttt{increase(x[$\Delta$] anchored)} & 100.0\% & 100.0\% & 0 \\
+ & \texttt{rate(x[$\Delta$])} $\times\,\Delta$ & 20.2\% & 20.2\% & 1 \\
+\addlinespace
+aligned & \texttt{x - x offset $\Delta$} & 100.0\% & 27.4\% & 0 \\
+ & \texttt{increase(x[$\Delta$] anchored)} & 100.0\% & 27.4\% & 0 \\
+ & \texttt{rate(x[$\Delta$])} $\times\,\Delta$ & 19.0\% & 16.7\% & 1 \\
+\addlinespace
+\bottomrule
+\end{tabular}

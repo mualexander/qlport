@@ -48,17 +48,22 @@ not, and \S\ref{sec:ingestion} now carries the corrected one. A sixth, whether
 \texttt{top(...)} is expressible at all, was settled against a real Prometheus rather
 than against Datadog, and decides which column $139$ corpus occurrences belong in.
 
-What remains assumed is one thing, and it is the one no single query settles: that
-Datadog's backend stores what its agent sends. Only the dual-write test closes it. Above all, the whole paper compares
-one translator against a model of Datadog rather than against Datadog: the differential
-test over the corpus --- each translated pair run against both systems on identical input
---- is designed and not executed, and until it is, $\kappa$ measures what the translator
-is willing to translate rather than what it translates correctly.
+One thing that was assumed throughout is now measured. The counter rules are checked
+against Datadog itself, by replaying a real request trace into both systems and comparing
+bucket by bucket (\S\ref{sec:replay}): both exact forms are exact, \texttt{rate} is not,
+and the reset policy is the one part the replay cannot reach, because a request counter
+does not restart in half an hour.
+
+What is left is the same construction at corpus scale --- each of the $8{,}376$
+translated pairs run against both systems on identical input --- which needs every metric
+the corpus names to exist in both. Until that is done, $\kappa$ measures what the
+translator is willing to translate rather than what it translates correctly, and that
+distinction is the honest limit of this paper's headline number.
 
 \paragraph{What we would do next.}
-The differential test is the one experiment that would change the standing of everything
-else, and it is also the cheapest to specify and the most expensive to run. After it, the
-reverse translator: \S\ref{sec:regular} suggests the interesting results are there, and a
+The differential test at corpus scale is the one experiment that would change the
+standing of everything else; \S\ref{sec:replay} shows the construction works and leaves
+the scale. After it, the reverse translator: \S\ref{sec:regular} suggests the interesting results are there, and a
 $\kappa$ for that direction would turn this paper's asymmetry claim from an argument into
 a measurement. Further out, the method is language-agnostic wherever a language denotes a
 function of a database at an instant, which brings LogQL within reach and leaves SPL

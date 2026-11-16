@@ -27,6 +27,7 @@
 # `paper/tables/model_verification.tex`, `paper/tables/rollup_translation_live.tex`.
 
 # %%
+import json
 from pathlib import Path
 
 import matplotlib
@@ -251,15 +252,87 @@ print(live_summary.to_string(index=False))
 #   every workload the server and `promql_eval` agree to float64 precision, with no bucket
 #   where one produced a value and the other did not. The reset-aware form is therefore
 #   safe to cite, and `emit/promql.py` can offer it as more than a guess.
-# * `anchored` is no longer experimental. It arrived in Prometheus 3.7.0 behind
-#   `--enable-feature=promql-extended-range-selectors`, and that flag became a no-op when
-#   the modifiers went always-on in September 2026, so the only precondition left is a
-#   server at 3.7 or newer. §3 should drop the "experimental" framing and say that.
+# * `anchored` is **still** experimental. It arrived in Prometheus 3.7.0 behind
+#   `--enable-feature=promql-extended-range-selectors` and is still gated by it at
+#   3.15.0: a server without the flag answers "anchored modifier is experimental and not
+#   enabled". Every run here passes the flag, which is why the claim went unchecked for
+#   so long — `ANCHORED_VERSION` is a precondition on how the target server was started,
+#   not just on its version.
 # * `rate()` is ε-sound only, and its error depends on traffic shape and Δ/scrape. The
 #   live table confirms it is never exact outside the perfectly steady workload.
 # * ρ is settled by reading the agent, not by this notebook: `zero` on the OpenMetrics
 #   path, `clamp` with the flag clear, and `drop` is not a reset policy at all. Note what
 #   the restart rows still do *not* say — they compare the two PromQL forms against `φ`
 #   under that `ρ`, so they show the anchored form tracks that φ, not that Datadog's
-#   backend agrees. Confirming the backend end to end is the one trial-account test left
-#   for ρ.
+#   backend agrees.
+# * The dual-write replay above now closes that for the counter rules on real traffic:
+#   both exact forms are exact against Datadog itself, bucket by bucket. What it does not
+#   reach is the reset case — a request counter does not restart in half an hour — so the
+#   restart rows remain the evidence there.
+
+
+# %% [markdown]
+# ## The dual-write replay: against Datadog, not against a model of it
+#
+# Everything above compares a PromQL candidate against `datadog_eval`, which is our
+# reading of Datadog's rollup. `scripts/replay_dualwrite.py` closes that gap. It takes
+# the busiest half hour of a real 1995 web-server log, counts requests into a 15 s scrape
+# grid to get a counter, and writes the *same* observations to both systems — the
+# cumulative series to Prometheus, its image under φ to Datadog — then reads every
+# candidate back from each and compares bucket by bucket.
+#
+# It runs twice. A real scrape is jittered, so its samples almost never land on a rollup
+# boundary, and off the boundary `[b, b+Δ)` and `(b, b+Δ]` read the same samples: the
+# closure convention is invisible. The aligned run snaps the scrape grid onto the rollup
+# grid on purpose, which is the only case where the convention can be seen at all.
+
+# %%
+REPLAY = ROOT / "data" / "raw" / "replay"
+replay_runs = {name: json.loads((REPLAY / f"dualwrite_{name}.json").read_text())
+               for name in ("unaligned", "aligned")
+               if (REPLAY / f"dualwrite_{name}.json").exists()}
+
+if replay_runs:
+    rows = []
+    for name, run in replay_runs.items():
+        for key, s in sorted(run["summary"].items()):
+            instant, candidate = [x.strip() for x in key.split("|")]
+            rows.append(dict(grid=name, instant=instant, candidate=candidate,
+                             buckets=s["buckets"], exact=s["exact"],
+                             median_d=s["median_d"], max_d=s["max_d"]))
+    replay = pd.DataFrame(rows)
+    print(replay.to_string(index=False))
+
+    order = ["x - x offset D", "increase(x[D] anchored)", "rate(x[D]) * D"]
+    pretty = {"x - x offset D": r"\texttt{x - x offset $\Delta$}",
+              "increase(x[D] anchored)": r"\texttt{increase(x[$\Delta$] anchored)}",
+              "rate(x[D]) * D": r"\texttt{rate(x[$\Delta$])} $\times\,\Delta$"}
+    lines = [r"\begin{tabular}{@{}llrrr@{}}", r"\toprule",
+             r"Scrape grid & PromQL candidate & Evaluated inside & On the edge & Max $d$ \\",
+             r"\midrule"]
+    for grid in ("unaligned", "aligned"):
+        sub = replay[replay.grid == grid]
+        if sub.empty:
+            continue
+        for cand in order:
+            ins = sub[(sub.candidate == cand) & (sub.instant == "inside")]
+            edge = sub[(sub.candidate == cand) & (sub.instant == "on the edge")]
+            if ins.empty:
+                continue
+            label = grid if cand == order[0] else ""
+            lines.append(
+                f"{label} & {pretty[cand]} & {ins.exact.iloc[0]:.1%} & "
+                f"{edge.exact.iloc[0]:.1%} & {ins.max_d.iloc[0]:.3g} \\\\".replace("%", r"\%"))
+        lines.append(r"\addlinespace")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    (TABLES / "replay_dualwrite.tex").write_text("\n".join(lines) + "\n")
+    print(f"\nwrote {(TABLES / 'replay_dualwrite.tex').relative_to(ROOT)}")
+
+    # §3.1 quotes these, so a re-run has to reproduce them.
+    agg = replay.set_index(["grid", "instant", "candidate"])
+    for grid in replay.grid.unique():
+        for cand in ("x - x offset D", "increase(x[D] anchored)"):
+            assert agg.loc[(grid, "inside", cand), "exact"] == 1.0, (grid, cand)
+    assert agg.loc[("unaligned", "on the edge", "x - x offset D"), "exact"] == 1.0
+    assert agg.loc[("aligned", "on the edge", "x - x offset D"), "exact"] < 0.5
+    print("replay assertions hold")
