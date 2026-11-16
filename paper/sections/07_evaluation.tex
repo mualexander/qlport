@@ -305,14 +305,33 @@ for bucket on the aligned grid and not off it (Section~\ref{sec:ingestion}).
 stated a rollup interval, because Datadog derives it from the dashboard's time range ---
 information the query text does not contain. This is the single largest qualification on
 $\kappa$ and it is a property of the source language, not of the translator: a Datadog
-query is not self-contained, so a translated query cannot be either. The remaining
-$116$ occurrences ($95$ distinct) carry \texttt{ROLLUP\_ALIGNMENT} alone, and are the only
-translations in the corpus that depend on nothing but the alignment of the grid.
+query is not self-contained, so a translated query cannot be either.
 \texttt{COUNTER\_RESET} marks the $23.7\%$ that use the cumulative-difference form of
 Proposition~\ref{prop:offset}, exact unless a counter resets inside the window;
 Table~\ref{tab:rollup-live} measures what that costs when one does, and
 Proposition~\ref{prop:anchored} removes it at the price of requiring Prometheus~$3.7$ or
 newer.
+
+\texttt{METRIC\_TYPE\_UNKNOWN} is new to this table and is the reason to report caveats at
+all rather than to list them once in prose. An \texttt{avg}, \texttt{min}, \texttt{max} or
+\texttt{count} rollup reduces the points Datadog stores, which are samples for a gauge and
+per-interval deltas for a counter; the emitted \texttt{*\_over\_time} is exact for the
+first and unrelated to the second, and a dashboard does not record which it is
+(Remark~\ref{rem:gauge}). At $76.3\%$ of translated occurrences it is the second largest
+qualification here, and it was missing from this table until the soundness theorem of
+Section~\ref{sec:kernel-soundness} was written down and its hypotheses compared against
+what the emitter actually recorded. $\kappa$ did not move when it was added --- the
+expressions are the same ones --- which is exactly why it is worth having: an unrecorded
+precondition costs nothing in any number the paper reports, right up to the point where
+somebody relies on the translation.
+
+Adding it also falsifies something an earlier draft of this section claimed. That draft
+said $116$ occurrences carried \texttt{ROLLUP\_ALIGNMENT} alone and were the only
+translations resting on nothing but the grid. With the fourth code in place the true
+figure is \emph{none}: every one of those $116$ is an \texttt{avg} rollup and now carries
+\texttt{METRIC\_TYPE\_UNKNOWN} too. No translation in this corpus is exact on the strength
+of the evaluation grid alone, which is a stronger claim than the one it replaces and was
+only invisible because a precondition was.
 
 \begin{table}[htbp]\centering\scriptsize
 \input{tables/translation_examples}

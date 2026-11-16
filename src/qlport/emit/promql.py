@@ -27,6 +27,11 @@ emitter does instead is state the preconditions its exactness rests on, as cavea
   two systems are summing different sample sets.
 * `ROLLUP_DEFAULT` -- when the interval was assumed rather than read from
   `.rollup(agg, interval)`, the result is only as good as the assumption.
+* `METRIC_TYPE_UNKNOWN` -- an `avg`/`min`/`max`/`count` rollup reduces Datadog's stored
+  points, which are samples for a GAUGE and per-interval deltas for a COUNT. The
+  emitted `*_over_time` is exact for the first reading and wrong for the second, and
+  the dashboard never says which. It is reported, not refused, because a rule *can* be
+  chosen here; for a `sum` rollup none can, so that case refuses with the same code.
 * `COUNTER_RESET` -- the cumulative difference is exact on every bucket without a
   reset (notebook 02) and undercounts across one. `anchored=True` removes that caveat
   for `ANCHORED_VERSION`: the modifier is reset-exact, verified against a real
@@ -101,12 +106,17 @@ def _atom(text: str) -> str:
     return text if text.startswith("(") else f"({text})"
 
 
-def _is_counter(e: ir.Expr) -> bool:
+def _kind_of(e: ir.Expr) -> str:
+    """The metric type the IR carries for the series this node reduces."""
     if isinstance(e, ir.Select):
-        return e.kind == "counter"
+        return e.kind
     if isinstance(e, ir.Agg):
-        return _is_counter(e.expr)
-    return False
+        return _kind_of(e.expr)
+    return "unknown"
+
+
+def _is_counter(e: ir.Expr) -> bool:
+    return _kind_of(e) == "counter"
 
 
 class _Emitter:
@@ -160,6 +170,14 @@ class _Emitter:
                         "summing over time needs a counter, and the type is unknown")
             body = self._bucket_total(e.expr, width)
         else:
+            # `avg`, `min`, `max` and `count` reduce the points Datadog *stores*. For a
+            # GAUGE those are the samples Prometheus holds, and the correspondence is
+            # exact. For a COUNT they are per-interval deltas, and no `*_over_time` of
+            # the cumulative series computes a function of them -- averaging deltas is
+            # not averaging running totals. The dashboard never states which, so the
+            # emission is right for a gauge and says so rather than implying both.
+            if _kind_of(e.expr) != "gauge":
+                self.note(Gap.METRIC_TYPE_UNKNOWN)
             body = f"{_RANGE_FNS[e.op]}({self.expr(e.expr)}[{duration(width)}])"
         return f"{_atom(body)} / {_number(width)}" if e.per_second else body
 

@@ -1,0 +1,15 @@
+\begin{tabular}{@{}llr@{}}
+\toprule
+PromQL regex & Datadog scope value & Occurrences \\
+\midrule
+\texttt{\textasciicircum{}k8s\_.*} & \texttt{k8s\_*} & 60 \\
+\texttt{.*external-dns.*} & \texttt{*external-dns*} & 36 \\
+\texttt{.*pod.*} & \texttt{*pod*} & 24 \\
+\texttt{LIST|GET} & \texttt{GET, LIST} & 41 \\
+\texttt{ext.*|xfs} & \texttt{ext*, xfs} & 34 \\
+\texttt{proxy|attach|log|exec|portforward} & \texttt{attach, exec, log, portforward, p\dots{}} & 32 \\
+\texttt{.+} & $\bot$ No non-empty wildcard & 133 \\
+\texttt{(/dev/)?(mmcblk.p.+|nvme.+|rbd.+|\dots{}} & $\bot$ No non-empty wildcard & 49 \\
+\texttt{5..} & $\bot$ No single-character wildcard & 40 \\
+\bottomrule
+\end{tabular}

@@ -1,8 +1,152 @@
 \section{Translation (RQ2)}
 \label{sec:translation}
-\todo{The IR and its denotations; syntax-directed lowering and emission. The gap
-catalogue itself is in \S\ref{sec:gaps}, with the features behind it; what belongs here
-is why each gap is a property of the languages rather than of the implementation.}
+RQ2 asks for the largest fragment that translates soundly, which presupposes something
+to be sound against. This section supplies it: an intermediate representation with a
+denotation, a lowering from the source language into it, an emission from it into the
+target, and a statement of what the composite guarantees. The gap catalogue is in
+\S\ref{sec:gaps} and the coverage in \S\ref{sec:evaluation}; what belongs here is the
+machinery and the one theorem it is for.
+
+The translator is the classical three-stage shape --- parse, lower, emit --- for the
+classical reason: it is the only arrangement in which $n$ front ends and $m$ back ends
+cost $n+m$ pieces of work instead of $nm$~\citep{aho2006}. That matters here beyond
+economy. A direct Datadog-to-PromQL rewriter would have no object to be sound
+\emph{about}, so every claim would have to compare two vendor implementations; with an
+IR in between, soundness factors into two claims against one definition.
+
+\subsection{A typed series algebra}
+\label{sec:ir}
+
+\begin{definition}[IR]\label{def:ir}
+The IR is two-sorted. Sort $\mathsf{S}$ is a \emph{set of series}, sort $\mathsf{M}$ a
+\emph{set of windowed sample sequences}, and sort $\mathsf{V}$ a \emph{vector}: a finite
+set of label-set/value pairs with distinct label sets. The terms are
+\begin{center}\footnotesize
+\begin{tabular}{@{}llp{0.40\linewidth}@{}}
+\toprule
+Sort & Term & \\
+\midrule
+$\mathsf{S}$ & $\mathrm{Select}(m,\overline{\mu},\kappa)$
+  & metric name, label matchers, kind $\kappa$ \\
+$\mathsf{M}$ & $\mathrm{Window}(e^{\mathsf{S}},w)$ & the samples in $(t-w,t]$ \\
+$\mathsf{V}$ & $\mathrm{RangeFn}(f,e^{\mathsf{M}})$ & a function of a window \\
+$\mathsf{V}$ & $\mathrm{Rollup}(\mathit{op},\Delta,e^{\mathsf{S}},b)$
+  & Datadog's time aggregation; $b$ divides by $\Delta$ \\
+$\mathsf{V}$ & $\mathrm{Agg}(\mathit{op},\overline{k},\mathit{mode},e^{\mathsf{V}})$
+  & space aggregation, keeping or dropping $\overline{k}$ \\
+$\mathsf{V}$ & $\mathrm{BinOp}(\mathit{op},e^{\mathsf{V}},e^{\mathsf{V}},\overline{k})$
+  & arithmetic, matched on $\overline{k}$ \\
+$\mathsf{V}$ & $\mathrm{Scale}(c,e^{\mathsf{V}})$, $\;\mathrm{Number}(c)$ & \\
+\bottomrule
+\end{tabular}
+\end{center}
+Here $\kappa\in\{\text{counter},\text{gauge},\text{unknown}\}$,
+$\mathit{op}\in\{\mathsf{sum},\mathsf{avg},\mathsf{min},\mathsf{max},\mathsf{count}\}$,
+and a matcher $\mu$ is one of $k=v$, $k\neq v$, $k=\!\sim\! r$, $k\neq\!\sim\! r$.
+A term is \emph{well sorted} if each argument has the sort its position requires; only
+$\mathsf{V}$ terms are complete queries.
+\end{definition}
+
+\begin{definition}[Denotation]\label{def:ir-sem}
+Fix a database $D$ and a time $t$. Writing $\lambda(s)$ for a series' label set and
+$s|_{(a,b]}$ for its samples in that interval:
+\begin{align*}
+\sem{\mathrm{Select}(m,\overline{\mu},\kappa)}(D,t)
+  &= \{\, s\in D \;:\; \mathrm{name}(s)=m,\ \lambda(s)\models\overline{\mu} \,\}\\
+\sem{\mathrm{Window}(e,w)}(D,t) &= \{\, (\lambda(s),\ s|_{(t-w,\,t]}) \;:\; s\in\sem{e}(D,t) \,\}\\
+\sem{\mathrm{Rollup}(\mathit{op},\Delta,e,b)}(D,t)
+  &= \{\, (\lambda(s),\ \mathit{op}(s|_{(t-\Delta,\,t]})\,/\,\Delta^{[b]}) \;:\; s\in\sem{e}(D,t) \,\}
+\end{align*}
+where $\Delta^{[b]}$ divides only when $b$ (Datadog's \texttt{.as\_rate()}) holds. For
+space aggregation let $\pi_{\overline{k}}$ keep the labels in $\overline{k}$ under
+$\mathit{mode}=\mathsf{by}$ and drop them under $\mathsf{without}$, and let $G_\lambda$
+collect the values of $\sem{e}(D,t)$ whose label set agrees with $\lambda$ on
+$\overline{k}$; then
+\[
+\sem{\mathrm{Agg}(\mathit{op},\overline{k},\mathit{mode},e)}(D,t)
+  = \{\,(\pi_{\overline{k}}(\lambda),\ \mathit{op}(G_\lambda))\,\}.
+\]
+$\mathrm{Number}$, $\mathrm{Scale}$ and
+$\mathrm{BinOp}$ are pointwise on matching label sets. A matcher is satisfied as
+PromQL satisfies it, with $=\!\sim$ anchored over the whole value
+(\S\ref{sec:disjunction}).
+\end{definition}
+
+\noindent
+Two features of Definition~\ref{def:ir} are load-bearing rather than tidy. First,
+$\mathrm{Rollup}$ is the composite of $\mathrm{Window}$ and a reduction, which is why it
+goes from $\mathsf{S}$ to $\mathsf{V}$ in one step: Datadog has no term for a window on
+its own, so an IR that separated them would offer the front end a choice the source
+language does not have. $\mathrm{Window}$ and $\mathrm{RangeFn}$ remain because PromQL
+does separate them, and the Datadog-to-PromQL emitter accordingly refuses both --- they
+are reserved for the reverse direction in the same way as the unreachable codes of
+\S\ref{sec:gaps}.
+
+Second, the sorts make \S\ref{sec:ingestion}'s Corollary~\ref{cor:raw} structural.
+A complete query has sort $\mathsf{V}$, and the only terms of sort $\mathsf{S}$ are
+$\mathrm{Select}$s, which can appear solely as the argument of a $\mathrm{Window}$ or a
+$\mathrm{Rollup}$. So a well-sorted IR term \emph{cannot} present a bare selector to the
+emitter: the corollary said no sound translation reads absolute counter values, and the
+type discipline is what enforces it, with no check to forget to run.
+
+\subsection{Where the rollup sits}
+One structural fact about Datadog decides the shape of every translated query, and it is
+easy to get backwards. A Datadog query is evaluated ``first by time, then by
+space''~\citep{datadog}: the rollup reduces each series on its own, and the space
+aggregator (\texttt{sum:}, \texttt{avg:}, \texttt{max:}, \texttt{min:},
+\texttt{count:}, with its optional \texttt{by \{...\}}) then combines those reduced
+values. PromQL's range functions have the same shape, so the translation is direct:
+\begin{center}\footnotesize
+\texttt{max:x\{*\}.rollup(avg, 60)}\quad$\longmapsto$\quad\texttt{max(avg\_over\_time(x[60s]))}
+\end{center}
+
+Nesting the two layers the other way round --- space aggregation first, rollup outside
+--- describes a different query, and raises a question the real semantics never asks:
+whether the two aggregators commute. They do for $(\mathsf{sum},\mathsf{sum})$,
+$(\mathsf{max},\mathsf{max})$ and $(\mathsf{min},\mathsf{min})$, and not for
+$\mathsf{max}$ or $\mathsf{count}$ over an averaging rollup, where PromQL would need a
+subquery to put the rollup outside. An earlier version of this translator was built that
+way and refused $348$ query occurrences --- four points of $\kappa$ --- on the strength
+of that commutation argument. Every translation it \emph{did} emit was still correct,
+because where the aggregators commute the two orders coincide, which is exactly what
+makes the error hard to notice: the failure shows up only in the refusals.
+
+\subsection{Lowering}
+\label{sec:lowering}
+
+Lowering is a syntax-directed translation in the sense of \citet{lewis1968}: one bottom-up
+pass over the Datadog parse tree, each node's IR computed from its children's. Two
+attributes break that pattern, and both break it because the information is not in the
+query.
+
+The first is the metric's \textbf{kind}. Whether a Datadog metric was submitted as COUNT
+or GAUGE decides which rule its rollup may use, and a dashboard's JSON never records it.
+What the query does carry is evidence: \texttt{.as\_count()} and \texttt{.as\_rate()}
+apply only to COUNT, so their presence in the method chain establishes the type. But the
+method chain is a \emph{sibling} of the scope, and the kind belongs to the
+$\mathrm{Select}$ beneath it, so the attribute is synthesised at the query node and
+inherited downward --- an attribute grammar in Knuth's sense~\citep{knuth1968} rather
+than a bottom-up transduction. Absent that evidence the kind stays $\text{unknown}$ and
+the back end is left to say what it rests on.
+
+The second is the rollup \textbf{interval}. Datadog derives it from the dashboard's time
+range when \texttt{.rollup} does not give one, and the query text does not contain the
+time range. The IR therefore stores $\Delta=\bot$ and the back end resolves it, so
+$\mathrm{Rollup}$ is the one node whose denotation is undefined until a parameter outside
+the IR is supplied. This is not elegant and the alternative is worse: inventing a default
+during lowering would bury an assumption in the IR, where nothing downstream could see
+that it had been made.
+
+\begin{remark}[One gap per query]\label{rem:one-gap}
+Lowering abandons a query at its first untranslatable construct, and the
+$\bot$ it returns carries that one \texttt{Gap}. So the catalogue of
+\S\ref{sec:gaps} counts \emph{first} refusals: a query with two problems appears under
+whichever is reached first, and the per-code counts are lower bounds on how many queries
+each construct affects. What they are not lower bounds on is the total --- every refused
+query is counted exactly once --- so $\kappa$ is unaffected, and the ordering of
+\S\ref{sec:staircase} is computed from features rather than from gap codes for this
+reason.
+\end{remark}
 
 \subsection{Counter rollups}
 The rules for \texttt{.as\_count()}, \texttt{.as\_rate()} and \texttt{.rollup(sum,
@@ -63,24 +207,127 @@ PromQL --- as a set union of selectors with the rollup distributed over the bran
 $2^k$ selectors for $k$ disjunctions --- but not as the syntax-directed translation of a
 scope, which is what this translator is.
 
-\subsection{Where the rollup sits}
-One structural fact about Datadog decides the shape of every translated query, and it is
-easy to get backwards. A Datadog query is evaluated ``first by time, then by
-space''~\citep{datadog}: the rollup reduces each series on its own, and the space
-aggregator (\texttt{sum:}, \texttt{avg:}, \texttt{max:}, \texttt{min:},
-\texttt{count:}, with its optional \texttt{by \{...\}}) then combines those reduced
-values. PromQL's range functions have the same shape, so the translation is direct:
-\begin{center}\footnotesize
-\texttt{max:x\{*\}.rollup(avg, 60)}\quad$\longmapsto$\quad\texttt{max(avg\_over\_time(x[60s]))}
-\end{center}
+\subsection{Emission, and conditional exactness}
+\label{sec:emission}
 
-Nesting the two layers the other way round --- space aggregation first, rollup outside
---- describes a different query, and raises a question the real semantics never asks:
-whether the two aggregators commute. They do for $(\mathsf{sum},\mathsf{sum})$,
-$(\mathsf{max},\mathsf{max})$ and $(\mathsf{min},\mathsf{min})$, and not for
-$\mathsf{max}$ or $\mathsf{count}$ over an averaging rollup, where PromQL would need a
-subquery to put the rollup outside. An earlier version of this translator was built that
-way and refused $348$ query occurrences --- four points of $\kappa$ --- on the strength
-of that commutation argument. Every translation it \emph{did} emit was still correct,
-because where the aggregators commute the two orders coincide, which is exactly what
-makes the error hard to notice: the failure shows up only in the refusals.
+Emission is structural recursion on the IR with no choices left to make, save one: the
+reset-aware \texttt{anchored} form of \S\ref{sec:ingestion} or the plain cumulative
+difference. The output is not a string but a pair.
+
+\begin{definition}[Emission]\label{def:emission}
+$E(e)$ is either $\bot$ with one gap, or a pair $(p,\,C)$ of a PromQL expression and a
+set $C$ of \emph{caveats}: conditions under which $p$ is exact, which the emitter
+observed itself needing and which the IR does not record as satisfied.
+\end{definition}
+
+\noindent
+The caveats are not a disclaimer. They are the hypotheses of
+Theorem~\ref{thm:kernel} below, collected by the only component in a position to know
+which ones a given query incurred, and \S\ref{sec:caveats} reports how often each is
+incurred. Four arise:
+\texttt{ROLLUP\_ALIGNMENT} on every rollup, since Datadog's buckets are epoch-aligned and
+a PromQL window follows the evaluation step;
+\texttt{ROLLUP\_DEFAULT} when the interval was assumed;
+\texttt{COUNTER\_RESET} on the cumulative difference, or \texttt{ANCHORED\_VERSION} on the
+form that avoids it; and \texttt{METRIC\_TYPE\_UNKNOWN}, which deserves its own paragraph.
+
+\begin{remark}[The assumption that underwrites three quarters of the output]%
+\label{rem:gauge}
+Writing Theorem~\ref{thm:kernel} down is what exposed this. An
+$\mathit{op}\in\{\mathsf{avg},\mathsf{min},\mathsf{max},\mathsf{count}\}$ rollup reduces
+the points Datadog \emph{stores}. For a GAUGE those are the samples Prometheus also
+holds, and \texttt{avg\_over\_time(x[$\Delta$s])} is exact. For a COUNT they are
+per-interval deltas, and averaging deltas is not averaging running totals --- no
+\texttt{*\_over\_time} of the cumulative series computes it, and the emitted expression is
+not approximately right but unrelated. The dashboard never says which, so the emission is
+correct for a gauge and the emitter now records
+\texttt{METRIC\_TYPE\_UNKNOWN} when it cannot tell. It reports rather than refuses
+because a rule \emph{can} be chosen here; for a $\mathsf{sum}$ rollup none can, and the
+same code is a refusal there instead.
+
+The condition was silent until now, and it is not rare: it holds of
+$6{,}389$ translated occurrences, $76.3\%$ of them
+(Table~\ref{tab:translation-caveats}), because Datadog's default time aggregator is
+$\mathsf{avg}$ and most queries state no method at all. Recording it does not move
+$\kappa$ --- the translations are unchanged --- which is the point: it changes what they
+are claimed to be. Its refusing counterpart, by
+contrast, never fires --- the only way to ask for a $\mathsf{sum}$ rollup is a method that
+also establishes the type. So the same unstated fact was a diagnostic that could not
+occur and a precondition that almost always did.
+\end{remark}
+
+\subsection{What the composite guarantees}
+\label{sec:kernel-soundness}
+
+The fragment that carries the corpus is the one \S\ref{sec:staircase} orders first:
+a space aggregation of a rollup of a selector. Call it the \emph{kernel},
+\[
+\mathcal{K}\;::=\;\mathrm{Agg}(\mathit{op}_s,\overline{k},\mathsf{by},\
+\mathrm{Rollup}(\mathit{op}_t,\Delta,\mathrm{Select}(m,\overline{\mu},\kappa))).
+\]
+
+\begin{lemma}[Scopes and selectors agree]\label{lem:scope}
+For every Datadog scope $\sigma$ that lowering does not refuse, the matchers
+$\overline{\mu}$ it produces select the same series as $\sigma$, provided the
+name-mangling of \S\ref{sec:lowering} is injective on $D$'s label sets.
+\end{lemma}
+\begin{proof}
+Term by term. A literal tag is an equality matcher; a negated tag its negation; a glob is
+Proposition~\ref{prop:glob-regex}; a bare key or \texttt{key:*} is presence, which is
+\texttt{=\textasciitilde{}".+"} and not \texttt{".*"}, the latter also matching series
+carrying no such label; a single-key disjunction is
+Proposition~\ref{prop:disjunction}. Conjunction is the comma in both languages.
+Injectivity is needed because mangling sends \texttt{a.b} and \texttt{a\_b} to one name;
+none of the three corpus sources contains such a pair.
+\end{proof}
+
+\begin{theorem}[Kernel soundness]\label{thm:kernel}
+Let $q\in\mathcal{K}$ with $E(T(q))=(p,C)$, and let $t$ be an evaluation time. If
+\begin{enumerate}
+\item $t$ is a multiple of $\Delta$ \hfill (\texttt{ROLLUP\_ALIGNMENT})
+\item $\Delta$ is the interval the query states \hfill (\texttt{ROLLUP\_DEFAULT})
+\item for $\mathit{op}_t=\mathsf{sum}$: no series resets in $(t-\Delta,t]$, or the
+      anchored form was emitted \hfill (\texttt{COUNTER\_RESET}, \texttt{ANCHORED\_VERSION})
+\item for $\mathit{op}_t\neq\mathsf{sum}$: the metric is a gauge
+      \hfill (\texttt{METRIC\_TYPE\_UNKNOWN})
+\end{enumerate}
+and Lemma~\ref{lem:scope}'s injectivity holds, then
+$\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,t)$ ---
+exactly, not within $\varepsilon$. Each hypothesis is an element of $C$, and $C$ contains
+no others.
+\end{theorem}
+\begin{proof}
+By Lemma~\ref{lem:scope} both systems reduce over the same set of series, so it suffices
+to match the two reductions on one series $s$ and then the space aggregation.
+
+For the time reduction, (1) makes $(t-\Delta,t]$ the same interval in both systems; (2)
+makes it the same width. If $\mathit{op}_t=\mathsf{sum}$ and $\kappa$ is a counter,
+Datadog reports $\Sigma_\Delta(t)$ and the emitted form equals it by
+Proposition~\ref{prop:offset} under (3)'s first branch or by
+Proposition~\ref{prop:anchored} under its second. If $\mathit{op}_t\neq\mathsf{sum}$ then
+(4) gives $\phi_{\mathsf{zero}}(s)=s$, since $\phi$ is the identity on gauges, so
+Datadog's stored points in the bucket are exactly the samples
+$s|_{(t-\Delta,t]}$ that \texttt{$\mathit{op}_t$\_over\_time} reduces, and the two
+reductions are the same commutative operation on the same multiset. The
+$\mathit{per\_second}$ divisor is $\Delta$ on both sides.
+
+For the space reduction, Definition~\ref{def:ir-sem}'s $\mathrm{Agg}$ is what PromQL's
+$\mathit{op}_s$ \texttt{by} $(\overline{k})$ computes and what Datadog's
+$\mathit{op}_s{:}$ with \texttt{by \{$\overline{k}$\}} computes, on inputs just shown
+equal. That $C$ contains nothing further is by inspection of the emitter: the four codes
+above are the only ones it records.
+\end{proof}
+
+\noindent
+The theorem is narrow in one respect worth naming. It is a statement about the
+\emph{kernel}, which is where $87\%$ of the corpus lives but not all of it; outside
+$\mathcal{K}$ --- arithmetic between queries, in practice --- exactness follows
+pointwise from the same argument, but the vector matching that $\mathrm{BinOp}$ performs
+is not identical in the two languages, and this paper does not prove it. The honest
+summary is that the fragment the corpus overwhelmingly uses is exact under four stated
+conditions, three of which are properties of the evaluation grid and the data rather than
+of either language, and the fourth of which is a fact a dashboard does not record.
+
+That is also the answer to the question RQ2 was posed to avoid: the preconditions do not
+make the translation approximate. Condition (3) is the only one that can fail silently on
+real data, and \S\ref{sec:caveats} measures how often it does.

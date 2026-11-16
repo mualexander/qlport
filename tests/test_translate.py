@@ -98,7 +98,8 @@ def test_as_rate_divides_per_series_not_after_space_aggregation():
     ("{!env:dev}", '{env!="dev"}'),
     ("{status:5*}", '{status=~"5.*"}'),
     ("{!status:5*}", '{status!~"5.*"}'),
-    ("{host:web-?}", '{host=~"web\\\\-."}'),
+    # `?` is not a Datadog wildcard (paper §6), so this is a literal tag value.
+    ("{host:web-?}", '{host="web-?"}'),
     # a bare key, and key:*, both mean the tag is present. `.+` not `.*`: in PromQL a
     # `.*` matcher also matches series that carry no such label at all.
     ("{host}", '{host=~".+"}'),
@@ -379,3 +380,49 @@ def test_a_key_glob_inside_a_disjunction_keeps_its_own_gap():
     # disjunction and must not be absorbed into it.
     out = translate("avg:x{*-zone OR *-loc}.rollup(avg, 60)")
     assert isinstance(out, Bottom) and out.gap is Gap.LABEL_NAME_GLOB, out
+
+
+# --- the metric type a dashboard never states ----------------------------------------
+def test_a_non_sum_rollup_reports_the_gauge_assumption_it_rests_on():
+    """`avg_over_time` is exact for a gauge and wrong for a COUNT.
+
+    Datadog's avg/min/max/count rollups reduce the points it stores: samples for a
+    GAUGE, per-interval deltas for a COUNT. Averaging deltas is not averaging running
+    totals, so the emission is conditional, and the condition is a metric type the
+    dashboard JSON never carries.
+    """
+    got = emit_detail(lower(parse("datadog", "avg:x{*}.rollup(avg, 60)", "v2")))
+    assert got.promql == "avg(avg_over_time(x[60s]))"
+    assert Gap.METRIC_TYPE_UNKNOWN in got.caveats
+
+
+@pytest.mark.parametrize("ddq", [
+    "avg:x{*}.rollup(avg, 60)",
+    "max:x{*}.rollup(max, 60)",
+    "min:x{*}.rollup(min, 60)",
+    "sum:x{*}.rollup(count, 60)",
+])
+def test_every_non_sum_rollup_carries_the_caveat(ddq):
+    got = emit_detail(lower(parse("datadog", ddq, "v2")))
+    assert Gap.METRIC_TYPE_UNKNOWN in got.caveats
+
+
+def test_a_sum_rollup_does_not_carry_it_because_the_type_is_established():
+    # `.as_count()` is itself the evidence that the metric is a COUNT, so for this
+    # branch the type is known and the caveat would be noise.
+    got = emit_detail(lower(parse("datadog", "sum:x{*}.as_count()", "v2")),
+                      default_rollup=60.0)
+    assert Gap.METRIC_TYPE_UNKNOWN not in got.caveats
+    assert Gap.COUNTER_RESET in got.caveats
+
+
+def test_the_same_code_refuses_when_no_rule_can_be_chosen_at_all():
+    # A `sum` rollup over a metric of unknown type cannot be emitted either way, so
+    # there the same fact is a refusal rather than a caveat. Unreachable from the
+    # Datadog front end -- the only way to ask for a sum rollup is a method that also
+    # establishes the type -- so it is built directly.
+    from qlport import ir
+    e = ir.Agg("sum", (), "by",
+               ir.Rollup("sum", 60.0, ir.Select("x", (), kind="unknown")))
+    got = emit_detail(e)
+    assert isinstance(got, Bottom) and got.gap is Gap.METRIC_TYPE_UNKNOWN

@@ -13,6 +13,8 @@ what has been read from what is still unmeasured, and points here for the experi
   `ROLLUP_ALIGNMENT` on every rollup the translator emits (100% of translations).
 - The rollup interval is assumed when the query does not state one, reported as
   `ROLLUP_DEFAULT` (96.9% of translations).
+- §6's regex → glob classification assumes a glob's `*` matches the empty string, which
+  decides whether `.+` or `.*` is the one with no glob (E5 below).
 
 Reading the documentation properly turns out to answer more of this than expected, and
 to contradict one thing the code currently does. **Read the "already answered" section
@@ -278,6 +280,39 @@ are separate claims and the API is not promised to agree with the widget table (
 for "the past hour"). Also submit `.rollup(sum, 1)` over a 1 d range to see whether a
 finer-than-enforced interval is rejected with an error or silently widened.
 
+## E5 — does a glob's `*` match the empty string? (Rig B)
+
+Paper §6 needs this and the documentation does not give it. "Prefix, suffix, and
+substring wildcard tag value filtering are supported", with `pod_name: web-*` as the
+prefix example, says nothing about whether `web-*` also matches the value `web-`
+itself.
+
+It decides which of the two most common PromQL regexes has no glob. A glob has exactly
+one wildcard, which either requires a character or does not, so `.*` and `.+` cannot both
+be expressible: under one reading `.+` has no glob, under the other `.*` has none. The
+corpus uses `.+` 133 times and `.*` 9 times, so the reading is worth 124 occurrences of
+§6's coverage either way.
+
+Submit two series of one COUNT metric, tagged `rig:b` and distinguished by a second tag:
+one with `probe:web-` and one with `probe:web-1`. Then read
+`sum:qlport.e5.star{probe:web-*} by {probe}`.
+
+| Returned series | Reading |
+|---|---|
+| both `web-` and `web-1` | `*` matches the empty string — the reading `regular.py` takes |
+| `web-1` only | `*` requires at least one character |
+
+The second outcome flips `STAR_MATCHES_EMPTY` in `src/qlport/regular.py`, after which
+notebook 04 re-runs offline and §6's table changes in a known direction: `.+` and its
+relatives become expressible and `.*` stops being. The refusal count does not simply
+fall — `.*` and `*pod*`-style patterns move the other way — which is why the notebook
+recomputes it rather than the paper adjusting it by hand.
+
+A caveat worth recording with the result: a tag value that is empty after the prefix is
+an odd thing to have in a real tag set, so if the `web-` series does not appear it is
+worth confirming that Datadog stored it at all before concluding anything about `*`.
+Query `sum:qlport.e5.star{probe:web-}` to check.
+
 ## What each outcome changes
 
 | Result | Changes |
@@ -289,6 +324,8 @@ finer-than-enforced interval is rejected with an error or silently widened.
 | left-closed | Σ_Δ's half-open interval flips, and every rollup translation gains a half-bucket offset |
 | bare API query behaves as `.as_count()` | `METRIC_TYPE_UNKNOWN` narrows to genuinely ambiguous gauges |
 | interval table confirmed | `ROLLUP_DEFAULT` cites a documented table; `DEFAULT_ROLLUP = 60.0` in notebook 03 becomes range-dependent and κ is recomputed per range |
+| `*` matches the empty string | §6 stands as written: `.+` has no glob, 238 refused occurrences |
+| `*` requires a character | `STAR_MATCHES_EMPTY = False` in `regular.py`; §6's table is recomputed by notebook 04, with `.*`-shaped patterns moving into the refusals and `.+`-shaped ones out |
 
 ## Threats to validity
 

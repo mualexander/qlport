@@ -1,15 +1,22 @@
 \section{Discussion}
 \label{sec:discussion}
-\todo{Is the lock-in syntactic or semantic? \S\ref{sec:gaps} now answers this for the
-main direction and the answer is mostly ``neither'': $2.4\%$ of the corpus is
-unimplemented work against $2.0\%$ that PromQL cannot express, so going this way the
-switching cost is engineering, and the language-design argument has to rest on the
-reverse direction and on the staircase rather than on the gap catalogue's size.
-Direction asymmetry: now proved as Remark~\ref{rem:directional}, so discuss what it means
-rather than restating it. The
-staircase of \S\ref{sec:staircase} as a switching cost in its own right. LogQL and SPL.
+\todo{Is the lock-in syntactic or semantic? \S\ref{sec:gaps} answers this for the main
+direction and the answer is mostly ``neither'': $2.4\%$ of the corpus is unimplemented
+work against $2.0\%$ that PromQL cannot express, so going this way the switching cost is
+engineering. The language-design argument therefore rests on the reverse direction and on
+the staircase, and \S\ref{sec:regular} is now the concrete evidence for the first:
+there the refusals are \emph{all} of the expressiveness kind, each one a corollary of the
+glob dichotomy rather than unfinished work, and they cover $38.3\%$ of the concrete
+patterns. Contrast that proportion with the gap catalogue's and say what the asymmetry
+means --- going to Prometheus costs engineering, coming back costs expressiveness.
+Direction asymmetry: proved as Remark~\ref{rem:directional}, so discuss what it means
+rather than restating it. The staircase of \S\ref{sec:staircase} as a switching cost in
+its own right. The $88.0\%$ of matchers that are template variables
+(\S\ref{sec:glob-corpus}) belong here too: a portability claim about dashboards is partly
+a claim about a templating layer neither query language contains. LogQL and SPL.
 Threats specific to the discussion (\S\ref{sec:threats} has the empirical ones):
-synthetic workloads for the rollup measurements, and the two Datadog facts of
-\S\ref{sec:not-measured} that no experiment here settles. Do \emph{not} list
+synthetic workloads for the rollup measurements, and the Datadog facts of
+\S\ref{sec:not-measured} that no experiment here settles --- bucket closure, and the
+reading of \texttt{*} that Remark~\ref{rem:star-empty} turns on. Do \emph{not} list
 \texttt{anchored} as modelled --- it is verified against Prometheus~3.15.0 in
 Table~\ref{tab:model-verification}.}

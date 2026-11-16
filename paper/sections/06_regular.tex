@@ -1,4 +1,242 @@
+% ---------------------------------------------------------------------------
+% The regular sub-problem: Datadog glob <-> PromQL regex matcher.
+% Numbers come from notebook 04 and data/processed/regex_glob.csv.
+% ---------------------------------------------------------------------------
+
 \section{The Regular Sub-problem}
 \label{sec:regular}
-\todo{Glob $\to$ regex exact by construction; regex $\to$ glob checked by DFA equivalence
-(Rich Thm 9.5); frequencies of exact / per-database / $\bot$ (notebook 04).}
+
+Both languages filter on tag values, and both do it with a pattern language, but not the
+same one. Datadog's is a glob; PromQL's is a regular expression. One is a proper subclass
+of the other, so the two directions of this sub-problem are not the same question asked
+twice: the main direction needs a translation that always exists, and the reverse
+direction needs a decision procedure for whether one does. This section gives both, and
+the decision procedure is where the course's machinery does the work.
+
+\subsection{Globs, and what they can say}
+\label{sec:globs}
+
+\begin{definition}[Tag glob]\label{def:glob}
+Fix an alphabet $\Sigma$ of tag-value characters. A \emph{glob} is a string over
+$\Sigma\cup\{*\}$, written $g=s_0*s_1*\cdots*s_n$ with $n\ge 0$ stars and literal
+segments $s_i\in\Sigma^{*}$. It denotes
+\[
+L(g)=\{\,s_0w_1s_1w_2\cdots w_ns_n \;:\; w_i\in\Sigma^{*}\,\}.
+\]
+Datadog documents prefix, suffix and substring wildcards and no other
+construct~\citep{ddfilter}: there is no single-character wildcard, no alternation inside
+a value, no character class, and no escape that would make a literal
+\texttt{*}. Write $m(g)=\sum_i|s_i|$ for the total literal length.
+\end{definition}
+
+The main direction needs only the easy half, and gets it by construction.
+
+\begin{proposition}[Globs are regular, uniformly]\label{prop:glob-regex}
+Let $\mathrm{glob}(g)$ be the regular expression obtained from $g$ by replacing every
+\texttt{*} with \texttt{.*} and escaping every other character. Then
+$L(\mathrm{glob}(g))=L(g)$, where the regular expression is read under PromQL's whole-value
+anchoring.
+\end{proposition}
+\begin{proof}
+Induction on $n$. For $n=0$ both sides are $\{s_0\}$. For the step, \texttt{.*} denotes
+$\Sigma^{*}$ and concatenation of regular expressions denotes concatenation of languages,
+which is exactly how Definition~\ref{def:glob} quantifies $w_i$. Anchoring matters: it is
+what makes the outermost concatenation span the whole value, and it is the fact
+Proposition~\ref{prop:disjunction} rests on, read off a real server there rather than
+assumed.
+\end{proof}
+
+\noindent
+Every glob therefore has an exact PromQL matcher, which is why no gap code in
+Section~\ref{sec:gaps} mentions globs on tag \emph{values}. The remaining direction is
+the interesting one, and one structural fact decides most of it.
+
+\begin{lemma}[Dichotomy]\label{lem:dichotomy}
+For every glob $g$: if $n=0$ then $L(g)=\{s_0\}$ is a single word; and if $n\ge 1$ then
+$L(g)$ contains a word of every length $\ell\ge m(g)$, and every word of $L(g)$ contains
+each $s_i$ as a factor, in order.
+\end{lemma}
+\begin{proof}
+The first case is immediate. For the second, taking $w_1\in\Sigma^{\ell-m(g)}$ and
+$w_i=\varepsilon$ for $i>1$ gives a word of length $\ell$; the factor claim is
+Definition~\ref{def:glob} read left to right.
+\end{proof}
+
+\noindent
+So a glob language is either a singleton or unbounded in length. That is a strong
+restriction, and it settles each construct the corpus refuses --- not by measurement but
+by proof.
+
+\begin{corollary}[Three things no glob says]\label{cor:no-glob}
+Assume $|\Sigma|\ge 2$. Then
+\begin{enumerate}
+\item no glob denotes a finite language with two or more words --- in particular none
+denotes $\Sigma$, so there is no single-character wildcard, and none denotes an
+alternation of distinct literals;
+\item no glob denotes $\Sigma^{+}$, the non-empty values;
+\item for $\emptyset\neq A\subsetneq\Sigma$, no glob denotes $A^{+}$ --- a star cannot be
+restricted to part of the alphabet.
+\end{enumerate}
+\end{corollary}
+\begin{proof}
+(1) A finite language with two words is neither a singleton nor unbounded, so
+Lemma~\ref{lem:dichotomy} excludes it. (2) $\varepsilon\notin\Sigma^{+}$ forces
+$m(g)\ge 1$, since $m(g)=0$ makes $g$ a string of stars and $\varepsilon\in L(g)$; and
+$\Sigma^{+}$ contains words of length $1$, so $m(g)\le 1$. Hence $m(g)=1$: $g$ has a
+single literal character $c$ and at least one star. By Lemma~\ref{lem:dichotomy} every
+word of $L(g)$ contains $c$, while $\Sigma^{+}$ contains the one-character words of
+$\Sigma\setminus\{c\}$, which is non-empty. (3) The same argument gives $m(g)=1$ with one
+literal $c\in A$, and then $L(g)$ contains $c\sigma$ for every $\sigma\in\Sigma$,
+including $\sigma\notin A$.
+\end{proof}
+
+\subsection{Deciding whether a regex has a glob}
+\label{sec:decide}
+
+Corollary~\ref{cor:no-glob} rules particular shapes out. The general question --- given a
+regular expression, is there \emph{any} glob denoting the same language? --- is settled by
+a single observation about shortest words.
+
+\begin{proposition}[Glob-expressibility is decidable]\label{prop:decidable}
+Let $r$ be a regular expression with $L(r)\neq\emptyset$, and read \texttt{*} as matching
+the empty string. It is decidable whether some glob $g$ has $L(g)=L(r)$, and a witness is
+produced when one exists.
+\end{proposition}
+\begin{proof}
+Suppose $L(r)=L(g)$ for $g=s_0*\cdots*s_n$. Taking every $w_i=\varepsilon$ gives the word
+$s_0s_1\cdots s_n\in L(g)$ of length $m(g)$, and every other word of $L(g)$ has some
+$w_i\neq\varepsilon$ and so is strictly longer. Hence $s_0s_1\cdots s_n$ is the shortest
+word of $L(g)$ \emph{and the only word of that length}.
+
+So the procedure is: construct a DFA for $r$ (Rich Thm 5.2) and find its shortest accepted
+word $w$ by breadth-first search from the start state, together with the number of
+accepting paths of that length. If $L(r)$ has no unique shortest word, no glob exists. If
+it does, then $w=s_0s_1\cdots s_n$, so $g$ is $w$ with stars inserted at some subset of
+its $|w|+1$ gaps: at most $2^{|w|+1}$ candidates. Each is settled by deciding
+$L(r)=L(\mathrm{glob}(g))$, which is decidable by Rich Thm 9.5. The search is finite and
+exhaustive, so it answers either way.
+\end{proof}
+
+\noindent
+Two remarks on making this run. Breadth-first search is not an optimisation but the
+method: enumerating candidate words in order instead, as a general-purpose regular-language
+library does, does not terminate in practice on a corpus regex whose shortest word is
+sixty characters over a twenty-character alphabet. And the $2^{|w|+1}$ candidates can be
+pruned without losing completeness, because inserting stars only grows the language: any
+star belonging to a solution must, on its own, keep the candidate inside $L(r)$, so gaps
+failing that single subset test cannot appear in any solution at all. On the corpus this
+leaves a handful of candidates rather than $2^{61}$.
+
+\subsection{Unions, and the same fact in both directions}
+\label{sec:glob-unions}
+
+A single glob is the wrong target. A Datadog scope can disjoin over one tag key, as
+$k \in (g_1,\dots,g_B)$ or as $k{:}g_1 \vee \cdots \vee k{:}g_B$, and
+Proposition~\ref{prop:disjunction} showed that such a scope is exactly one PromQL
+alternation matcher. Read in this direction the same proposition says that the reverse
+translation of a regular expression should be sought as a \emph{finite union} of globs,
+and $\mathtt{LIST|GET}\mapsto k \in (\texttt{LIST},\texttt{GET})$ is then immediate. The
+two directions are not two results; they are one fact used twice.
+
+The union must be bounded, and the bound is part of the claim rather than an
+implementation detail. Every finite language is a union of singleton globs, one per word,
+so boundedness is what stops the question from being trivial --- and it is not only a
+matter of taste. By Corollary~\ref{cor:no-glob} no glob denotes $\Sigma^{+}$, yet
+$\bigcup_{c\in\Sigma}L(c*)=\Sigma^{+}$, so the non-empty values \emph{are} a finite union
+of globs: one for every character of the alphabet. A scope is a piece of text somebody
+maintains, so a union of a million branches is not a translation. We fix $B=64$ and
+report anything needing more as a refusal, naming the bound.
+
+Whether glob-union-expressibility is decidable without a bound we leave open. The shortest-word
+argument does not transfer: each glob of a minimal union contributes its own shortest
+word, and nothing bounds those by the shortest word of the union, so the candidate space
+is no longer finite. Within the bound the procedure used here is sound but not known to be
+complete --- it proposes a union from the regular expression's syntax and then decides
+equivalence, so what it returns is exact, while a refusal is in general a statement about
+the proposer. Proposition~\ref{prop:decidable} removes that caveat for the single-glob
+case, and Section~\ref{sec:glob-corpus} uses it to check the refusals rather than trust
+them.
+
+\subsection{What the corpus contains}
+\label{sec:glob-corpus}
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/regex_glob}
+\caption{Every \texttt{=\textasciitilde{}} and \texttt{!\textasciitilde{}} matcher in the
+PromQL half of the corpus. Shares are of the concrete regular expressions; the
+template-valued row is counted but not classified, because the pattern is not in the query
+text.}
+\label{tab:regex-glob}
+\end{table}
+
+The first result is not about regular languages. Of $8{,}472$ regex matchers,
+$7{,}459$ --- $88.0\%$ --- have a Grafana template variable as their pattern, as in
+\texttt{\{pod=\textasciitilde{}"\$pod"\}}. The value is chosen when somebody looks at the
+dashboard, so there is no pattern to convert; the normalisation of
+Section~\ref{sec:corpus} deliberately leaves these alone, because the matcher already
+parses with the variable in place. For these the reverse direction is not hard but
+\emph{statically undefined}, and that is a property of how dashboards are written rather
+than of either language.
+
+Among the $1{,}013$ occurrences whose pattern is concrete, Table~\ref{tab:regex-glob}
+gives the three-way split. A glob exists for $625$ of them ($61.7\%$), but for more than
+half of those only as a union: one glob covers $281$ occurrences ($27.7\%$) and a bounded
+union covers $344$ ($34.0\%$). Treating a single glob as the target --- the obvious
+reading of ``does this regex have a glob'' --- would therefore have understated the
+reverse direction by $34$ points of occurrence coverage, and the construction that
+recovers them is the one Section~\ref{sec:translation} already proved for the other
+direction.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/regex_glob_reasons}
+\caption{The constructs behind the $388$ refused occurrences. Each is a consequence of
+Corollary~\ref{cor:no-glob} rather than a limit of the procedure.}
+\label{tab:regex-glob-reasons}
+\end{table}
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/regex_glob_examples}
+\caption{The three most frequent regular expressions of each outcome.}
+\label{tab:regex-glob-examples}
+\end{table}
+
+Table~\ref{tab:regex-glob-reasons} is the part this section can be held to. Three
+constructs account for every refusal, and each is an instance of
+Corollary~\ref{cor:no-glob}: a single-character wildcard such as \texttt{5..} would need a
+glob for $\Sigma$, which part~(1) forbids; \texttt{.+} would need one for $\Sigma^{+}$,
+forbidden by part~(2); and \texttt{5[0-9]+} would need a star confined to the digits,
+forbidden by part~(3). So these $388$ occurrences are not refusals of this translator. For
+the single-glob question we can also say it the other way round, by measurement rather
+than by proof: re-deciding every concrete regular expression with the complete procedure
+of Proposition~\ref{prop:decidable} reaches $168$ of the $183$ within its time budget and
+disagrees with the syntax-directed proposer on \emph{none} of them --- it recovers the
+same glob for all $60$ of the single-glob cases, and finds no glob for all $45$ refusals
+and all $63$ unions it reached. The remaining $15$ are the ones whose shortest word is
+long enough to make the search expensive, and they are recorded as not reached rather
+than as agreeing. The run is cached, and
+\texttt{tests\slash test\_regular.py} fails if a disagreement ever appears.
+
+\begin{remark}[The largest refusal is an undocumented detail]\label{rem:star-empty}
+$238$ of the $388$ refused occurrences are \texttt{.+} or a pattern containing it,
+including the corpus's most common concrete regular expression (\texttt{.+}, $133$
+occurrences) and its most elaborate one
+(\texttt{(/dev/)?(mmcblk.p.+|nvme.+|\dots{})}, $49$). They are refused by
+Corollary~\ref{cor:no-glob}(2) --- but that part of the corollary assumed \texttt{*}
+matches the empty string, and Datadog does not document whether it does. The two readings
+cannot both be wrong and cannot both be right: a glob has exactly one wildcard, which
+either requires a character or does not, so under one reading \texttt{.+} has no glob and
+under the other \texttt{.*} has none. The corpus uses \texttt{.+} $133$ times and
+\texttt{.*} $9$ times, so the reading is worth $124$ occurrences either way. Which it is
+costs one query to find out, and the check is specified with the others in
+\texttt{docs\slash trial\_account\_checks.md}; \texttt{regular.py} records the reading it
+takes in a single constant so that the measurement can be redone under the other one.
+\end{remark}
+
+\noindent
+The practical conclusion for the reverse direction is narrower than
+Table~\ref{tab:regex-glob} suggests on its own. A Datadog scope cannot say what
+\texttt{5..} says, and cannot say what \texttt{.+} says under the reading taken here; both
+are ordinary things to write in PromQL, and both are refused for a reason that is a
+theorem about globs rather than an unfinished case. That is the kind of gap this paper set
+out to distinguish from the other kind, and in this corner of the problem the proportion is
+unusually clear: every refusal here is of the first kind.

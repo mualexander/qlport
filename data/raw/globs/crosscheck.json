@@ -1,0 +1,859 @@
+{
+ "disagreements": [],
+ "per_regex": {
+  "(1|2).*": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "(Error|Failed)": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "(Lost)": {
+   "outcome": "single",
+   "search": "Lost",
+   "structural": "Lost"
+  },
+  "(MemoryPressure|DiskPressure|PIDPressure)": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "(Pending|Lost)": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "(cpu|requests.cpu)": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "(memory|requests.memory)": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "(openshift-.*|kube-.*|default|logging)": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "(unhealthy|dns_error)": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "(veth|azv|lxc).*": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "(veth|azv|lxc|lo).*": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "(warn|error)": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  ".*": {
+   "outcome": "single",
+   "search": "*",
+   "structural": "*"
+  },
+  ".*(serviceaccount|proc|sys).*": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  ".*.scope": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  ".*Virtual.*": {
+   "outcome": "single",
+   "search": "*Virtual*",
+   "structural": "*Virtual*"
+  },
+  ".*config.*": {
+   "outcome": "single",
+   "search": "*config*",
+   "structural": "*config*"
+  },
+  ".*external-dns.*": {
+   "outcome": "single",
+   "search": "*external-dns*",
+   "structural": "*external-dns*"
+  },
+  ".*fluentbit.*": {
+   "outcome": "single",
+   "search": "*fluentbit*",
+   "structural": "*fluentbit*"
+  },
+  ".*fluentd.*": {
+   "outcome": "single",
+   "search": "*fluentd*",
+   "structural": "*fluentd*"
+  },
+  ".*irq": {
+   "outcome": "single",
+   "search": "*irq",
+   "structural": "*irq"
+  },
+  ".*node.*": {
+   "outcome": "single",
+   "search": "*node*",
+   "structural": "*node*"
+  },
+  ".*otelcol_processor_.+accepted_log_records.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  ".*otelcol_processor_.+accepted_metric_points.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  ".*otelcol_processor_.+accepted_spans.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  ".*otelcol_processor_.+dropped_log_records.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  ".*otelcol_processor_.+dropped_metric_points.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  ".*otelcol_processor_.+dropped_spans.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  ".*otelcol_processor_.+refused_log_records.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  ".*otelcol_processor_.+refused_metric_points.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  ".*otelcol_processor_.+refused_spans.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  ".*pod.*": {
+   "outcome": "single",
+   "search": "*pod*",
+   "structural": "*pod*"
+  },
+  ".*prom.*": {
+   "outcome": "single",
+   "search": "*prom*",
+   "structural": "*prom*"
+  },
+  ".+": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "/api/datasources/proxy/:id.*|/api/ds/query|/api/tsdb/query": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "01-Inlet Ambient": {
+   "outcome": "single",
+   "search": "01-Inlet Ambient",
+   "structural": "01-Inlet Ambient"
+  },
+  "02-CPU 1|03-CPU 2": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "1(\\\\.0)?": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "12-HD Max|13-Chipset 1|14-Chipset1 Zone": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "15-P/S 1 Inlet|17-P/S 2 Inlet|16-P/S 1 Zone|18-P/S 2 Zone": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "2": {
+   "outcome": "single",
+   "search": "2",
+   "structural": "2"
+  },
+  "2.*": {
+   "outcome": "single",
+   "search": "2*",
+   "structural": "2*"
+  },
+  "2..": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "2..|5..": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "20.": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "200": {
+   "outcome": "single",
+   "search": "200",
+   "structural": "200"
+  },
+  "3.*": {
+   "outcome": "single",
+   "search": "3*",
+   "structural": "3*"
+  },
+  "3..": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "30(\\\\.0)?": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "30.": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "33-PCI 1 Zone": {
+   "outcome": "single",
+   "search": "33-PCI 1 Zone",
+   "structural": "33-PCI 1 Zone"
+  },
+  "4.*": {
+   "outcome": "single",
+   "search": "4*",
+   "structural": "4*"
+  },
+  "4..": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "40.": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "404": {
+   "outcome": "single",
+   "search": "404",
+   "structural": "404"
+  },
+  "404|499": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "5(\\\\.0)?": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "5.*": {
+   "outcome": "single",
+   "search": "5*",
+   "structural": "5*"
+  },
+  "5..": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "50.": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "503": {
+   "outcome": "single",
+   "search": "503",
+   "structural": "503"
+  },
+  "5[0-9]+": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "5\\\\d\\\\d|4\\\\d\\\\d": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "<none>|Job": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "CONNECT|WATCH": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "CVE.*": {
+   "outcome": "single",
+   "search": "CVE*",
+   "structural": "CVE*"
+  },
+  "ContainerCreating": {
+   "outcome": "single",
+   "search": "ContainerCreating",
+   "structural": "ContainerCreating"
+  },
+  "ErrImagePull|ImagePullBackOff|CrashLoopBackOff": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "Error|Failed": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "Failed|Pending": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "GitRepository|HelmRepository|Bucket": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "Kustomization|HelmRelease": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "LIST|GET": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "LIST|GET|POST|PUT|PATCH|DELETE": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "PIDPressure": {
+   "outcome": "single",
+   "search": "PIDPressure",
+   "structural": "PIDPressure"
+  },
+  "POST|PUT|PATCH|DELETE": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "Pending|Running": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "Pending|Unknown": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "Pod|": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "Running|Succeeded": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "SERVFAIL|REFUSED": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "UP|DOWN": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "[4-5].*": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "^amazon.*": {
+   "outcome": "single",
+   "search": "amazon*",
+   "structural": "amazon*"
+  },
+  "^k8s_.*": {
+   "outcome": "single",
+   "search": "k8s_*",
+   "structural": "k8s_*"
+  },
+  "^node_load.*": {
+   "outcome": "single",
+   "search": "node_load*",
+   "structural": "node_load*"
+  },
+  "^vmbackupmanager.+": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "active": {
+   "outcome": "single",
+   "search": "active",
+   "structural": "active"
+  },
+  "active|reading|writing|waiting": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "app-.*": {
+   "outcome": "single",
+   "search": "app-*",
+   "structural": "app-*"
+  },
+  "app_.*": {
+   "outcome": "single",
+   "search": "app_*",
+   "structural": "app_*"
+  },
+  "canceled": {
+   "outcome": "single",
+   "search": "canceled",
+   "structural": "canceled"
+  },
+  "cassandra-\\\\d+": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "cloudnative-pg-operator.+|cnpg-controller-manager.+": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "cnpg_pg_stat_(bgwriter_checkpoint|checkpointer)_sync_time": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "cnpg_pg_stat_(bgwriter_checkpoint|checkpointer)_write_time": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "cnpg_pg_stat_(bgwriter|checkpointer)_checkpoints_req": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "cnpg_pg_stat_(bgwriter|checkpointer)_checkpoints_timed": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "commit|rollback|savepoint.*|prepare": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "created": {
+   "outcome": "single",
+   "search": "created",
+   "structural": "created"
+  },
+  "disableDaily|disableHourly|disableWeekly|disableMonthly": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "discovery|istio-proxy": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "dm-.+": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "error|warn": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "eth_con_spec.*": {
+   "outcome": "single",
+   "search": "eth_con_spec*",
+   "structural": "eth_con_spec*"
+  },
+  "ext.*|xfs": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "ext.?|xfs": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "failed": {
+   "outcome": "single",
+   "search": "failed",
+   "structural": "failed"
+  },
+  "failed|canceled": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "fail|error": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "guest.*|idle|iowait": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "http|https": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "idle|idle in transaction|idle in transaction (aborted)": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "idle|iowait": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "idle|iowait|steal": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "istio-ingressgateway-.*": {
+   "outcome": "single",
+   "search": "istio-ingressgateway-*",
+   "structural": "istio-ingressgateway-*"
+  },
+  "istio-pilot-.*": {
+   "outcome": "single",
+   "search": "istio-pilot-*",
+   "structural": "istio-pilot-*"
+  },
+  "istio-policy-.*": {
+   "outcome": "single",
+   "search": "istio-policy-*",
+   "structural": "istio-policy-*"
+  },
+  "istio-policy|istio-telemetry": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "istio-telemetry-.*": {
+   "outcome": "single",
+   "search": "istio-telemetry-*",
+   "structural": "istio-telemetry-*"
+  },
+  "istio-telemetry|istio-policy": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "istiod-.*": {
+   "outcome": "single",
+   "search": "istiod-*",
+   "structural": "istiod-*"
+  },
+  "java:lang:garbagecollector:.+:lastgcinfo:duration": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "java:lang:memory:.+:(committed|max|used)": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "keep(.*)": {
+   "outcome": "single",
+   "search": "keep*",
+   "structural": "keep*"
+  },
+  "kong_process_events": {
+   "outcome": "single",
+   "search": "kong_process_events",
+   "structural": "kong_process_events"
+  },
+  "kube-dns|coredns": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "limits.cpu": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "limits.memory": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "lo": {
+   "outcome": "single",
+   "search": "lo",
+   "structural": "lo"
+  },
+  "loki.*": {
+   "outcome": "single",
+   "search": "loki*",
+   "structural": "loki*"
+  },
+  "lo|veth.+": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "manual": {
+   "outcome": "single",
+   "search": "manual",
+   "structural": "manual"
+  },
+  "mixer|istio-proxy": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "mmcblk.p.+|nvme.+|rbd.+|sd.+|vd.+|xvd.+|dm-.+|dasd.+": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "node.kubernetes.io.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "org:apache:cassandra:metrics:droppedmessage:.*:oneminuterate": {
+   "outcome": "single",
+   "search": "org:apache:cassandra:metrics:droppedmessage:*:oneminuterate",
+   "structural": "org:apache:cassandra:metrics:droppedmessage:*:oneminuterate"
+  },
+  "org:apache:cassandra:metrics:threadpools:.*:completedtasks:value": {
+   "outcome": "single",
+   "search": "org:apache:cassandra:metrics:threadpools:*:completedtasks:value",
+   "structural": "org:apache:cassandra:metrics:threadpools:*:completedtasks:value"
+  },
+  "org:apache:cassandra:metrics:threadpools:.+:pendingtasks:value": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "otelcol_process_uptime.*": {
+   "outcome": "single",
+   "search": "otelcol_process_uptime*",
+   "structural": "otelcol_process_uptime*"
+  },
+  "pending": {
+   "outcome": "single",
+   "search": "pending",
+   "structural": "pending"
+  },
+  "preparing": {
+   "outcome": "single",
+   "search": "preparing",
+   "structural": "preparing"
+  },
+  "promtail.*": {
+   "outcome": "single",
+   "search": "promtail*",
+   "structural": "promtail*"
+  },
+  "proxy|attach|log|exec|portforward": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "pvc.*.ctrl.*|pvc.*.rep.*|pvc.*.target.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "rabbitmqcli.*": {
+   "outcome": "single",
+   "search": "rabbitmqcli*",
+   "structural": "rabbitmqcli*"
+  },
+  "requests.cpu|cpu": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "requests.memory|memory": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "resident|virtual": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "resource|": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "running": {
+   "outcome": "single",
+   "search": "running",
+   "structural": "running"
+  },
+  "scheduled": {
+   "outcome": "single",
+   "search": "scheduled",
+   "structural": "scheduled"
+  },
+  "scheduledbackup|scheduled-backup": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "shr.*": {
+   "outcome": "single",
+   "search": "shr*",
+   "structural": "shr*"
+  },
+  "skipped": {
+   "outcome": "single",
+   "search": "skipped",
+   "structural": "skipped"
+  },
+  "source|waypoint": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "spiffe.*": {
+   "outcome": "single",
+   "search": "spiffe*",
+   "structural": "spiffe*"
+  },
+  "success": {
+   "outcome": "single",
+   "search": "success",
+   "structural": "success"
+  },
+  "success|running|failed|canceled": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "template.*": {
+   "outcome": "single",
+   "search": "template*",
+   "structural": "template*"
+  },
+  "usw|udm|udmp": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "veth.+": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
+  "waiting_for_resource": {
+   "outcome": "single",
+   "search": "waiting_for_resource",
+   "structural": "waiting_for_resource"
+  },
+  "warning|critical": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "xfs|ext.*": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "ztunnel-.*": {
+   "outcome": "single",
+   "search": "ztunnel-*",
+   "structural": "ztunnel-*"
+  }
+ },
+ "provenance": {
+  "budget_seconds": 2400.0,
+  "collected_at": "2026-11-16T06:29:53+00:00",
+  "elapsed_seconds": 2621.4,
+  "max_union": 64,
+  "n_concrete_regexes": 183,
+  "star_matches_empty": true
+ },
+ "tally": {
+  "agree:none": 45,
+  "agree:single": 60,
+  "agree:union": 63,
+  "not-reached": 15
+ }
+}
