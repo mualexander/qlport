@@ -340,38 +340,41 @@ residual in Table~\ref{tab:parse-coverage}.
 \label{sec:not-measured}
 
 Two of the facts this paper's rollup translations rest on are facts about Datadog's
-implementation, and Datadog documents neither. They are stated as assumptions in
-Section~\ref{sec:ingestion} and carried as diagnostics in
-Table~\ref{tab:translation-caveats}; they are not settled here, and saying so is more
-useful than a confident guess.
+implementation rather than about either language, and Datadog's documentation settles
+neither. They are stated as assumptions in Section~\ref{sec:ingestion} and carried as
+diagnostics in Table~\ref{tab:translation-caveats}. One of them has since been settled
+from a source other than an experiment, and the difference between the two is worth
+keeping visible.
 
-\emph{The reset policy $\rho$.} Definition~\ref{def:phi} admits $\rho=\mathsf{zero}$
-(a decrease contributes the new value) and $\rho=\mathsf{drop}$ (the interval is
-discarded). Proposition~\ref{prop:anchored} is proved for $\mathsf{zero}$, and the
-restart rows of Table~\ref{tab:rollup-live} compare the PromQL candidates against
-$\phi_{\mathsf{zero}}$ --- they establish that \texttt{increase(x[$\Delta$] anchored)}
-tracks that $\phi$ exactly, not that Datadog implements it. If $\rho=\mathsf{drop}$,
-\emph{neither} candidate is exact across a reset, and the result strengthens rather than
-weakens: no PromQL expression would reproduce the Datadog answer, because the discarded
-interval is information PromQL still holds and the Datadog query can no longer see.
+\emph{The reset policy $\rho$, settled by reading.} Datadog's agent is open source, so
+what it does with a counter decrease is readable even though it is undocumented:
+Remark~\ref{rem:rho} establishes $\rho=\mathsf{zero}$ for the OpenMetrics ingestion path,
+which is what Proposition~\ref{prop:anchored} assumes. This was not the expected answer.
+The prediction recorded in advance was $\rho=\mathsf{drop}$, on which \emph{neither}
+candidate would have been exact across a reset; the policy that the agent does implement
+alongside $\mathsf{zero}$ turns out to be $\mathsf{clamp}$, and $\mathsf{drop}$ is not a
+reset policy at all. What reading the agent does not establish is that the backend stores
+what the agent sends, and the restart rows of Table~\ref{tab:rollup-live} accordingly
+still show \texttt{increase(x[$\Delta$] anchored)} tracking $\phi_{\mathsf{zero}}$ exactly
+rather than Datadog agreeing with it.
 
-\emph{Bucket closure.} $\Sigma_\Delta$ presumes right-closed buckets $(t-\Delta,t]$. If
-they are left-closed, every rollup translation acquires a half-bucket offset. Epoch
-alignment itself \emph{is} documented~\citep{datadog}; which edge the returned timestamp
-labels is not.
+\emph{Bucket closure, still open.} $\Sigma_\Delta$ presumes right-closed buckets
+$(t-\Delta,t]$. If they are left-closed, every rollup translation acquires a half-bucket
+offset. Epoch alignment itself \emph{is} documented~\citep{datadog}; which edge the
+returned timestamp labels is not, and this one is not readable from any source, because it
+is a property of the backend rather than of the agent.
 
-Settling both needs a Datadog account with ingestion, and the experiments are specified
-in advance in \texttt{docs/trial\_account\_checks.md}: a controlled counter scraped
-simultaneously by Prometheus and a Datadog agent, with a scripted reset, distinguishes
-all four candidate policies by reading \texttt{.rollup(sum, 60)} and
-\texttt{.rollup(count, 60)} on the bucket containing it; a single submitted point on an
-exact multiple of $60$ distinguishes the two closures. The predictions are tabulated
-there before the fact so the experiment can falsify them. For the same reason the
-dual-write differential test over the whole corpus --- running each translated pair
-against both systems on identical input --- is specified and not run. The exactness
-claims of Section~\ref{sec:ingestion} are therefore verified against a real
-Prometheus~3.15.0 (Table~\ref{tab:model-verification}) and against a model of Datadog,
-not against Datadog.
+The remaining experiments are specified in advance in
+\texttt{docs\slash trial\_account\_checks.md}, with their predictions tabulated before the
+fact so that they can falsify them. Closure needs two submitted points rather than the one
+first planned: a point on an exact multiple of $60$ cannot separate a right-closed bucket
+labelled by its end from a left-closed bucket labelled by its start, since both report it
+at the same timestamp, so a mid-bucket point is needed to fix the labelling first. For the
+same reason as above the dual-write differential test over the whole corpus --- running
+each translated pair against both systems on identical input --- is specified and not run.
+The exactness claims of Section~\ref{sec:ingestion} are therefore verified against a real
+Prometheus~3.15.0 (Table~\ref{tab:model-verification}) and against a model of Datadog
+whose reset policy is now read from Datadog's code, but not against Datadog.
 
 \subsection{Threats to validity}
 \label{sec:threats}

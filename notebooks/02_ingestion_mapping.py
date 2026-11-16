@@ -240,6 +240,9 @@ print(live_summary.to_string(index=False))
 #   server at 3.7 or newer. §3 should drop the "experimental" framing and say that.
 # * `rate()` is ε-sound only, and its error depends on traffic shape and Δ/scrape. The
 #   live table confirms it is never exact outside the perfectly steady workload.
-# * Open: which reset policy Datadog actually uses (trial-account test). Note what the
-#   restart rows do *not* say — they compare the two PromQL forms against `φ` under our
-#   assumed `ρ`, so they show the anchored form tracks that φ, not that Datadog agrees.
+# * ρ is settled by reading the agent, not by this notebook: `zero` on the OpenMetrics
+#   path, `clamp` with the flag clear, and `drop` is not a reset policy at all. Note what
+#   the restart rows still do *not* say — they compare the two PromQL forms against `φ`
+#   under that `ρ`, so they show the anchored form tracks that φ, not that Datadog's
+#   backend agrees. Confirming the backend end to end is the one trial-account test left
+#   for ρ.

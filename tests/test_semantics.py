@@ -93,3 +93,34 @@ def test_d_is_infinite_on_label_mismatch():
 
 def test_kappa_excludes_untested():
     assert kappa(["pass", "pass", "bottom", "untested"]) == pytest.approx(2 / 3)
+
+
+def test_phi_clamp_keeps_the_point_and_zeroes_the_decrease():
+    # The agent's non-OpenMetrics path: a decrease contributes nothing, but the interval
+    # is still emitted -- which is what makes `clamp` distinguishable from `drop`.
+    s = Series({}, np.array([0.0, 1.0, 2.0]), np.array([10.0, 5.0, 8.0]), kind="counter")
+    clamped = phi_series(s, "clamp")
+    assert list(clamped.vs) == [0.0, 3.0]
+    assert list(clamped.ts) == [1.0, 2.0]
+    # `drop` loses the interval entirely, so the two policies differ in length.
+    assert len(phi_series(s, "drop").vs) == 1
+
+
+def test_the_three_reset_policies_disagree_exactly_where_they_should():
+    s = Series({}, np.array([0.0, 1.0, 2.0]), np.array([1000.0, 100.0, 101.0]),
+               kind="counter")
+    assert list(phi_series(s, "zero").vs) == [100.0, 1.0]
+    assert list(phi_series(s, "clamp").vs) == [0.0, 1.0]
+    assert list(phi_series(s, "drop").vs) == [1.0]
+
+
+def test_the_policies_agree_when_no_counter_resets():
+    s = Series({}, np.array([0.0, 1.0, 2.0]), np.array([1.0, 3.0, 6.0]), kind="counter")
+    runs = [list(phi_series(s, r).vs) for r in ("zero", "clamp", "drop")]
+    assert runs[0] == runs[1] == runs[2] == [2.0, 3.0]
+
+
+def test_an_unknown_reset_policy_is_refused():
+    s = Series({}, np.array([0.0, 1.0]), np.array([5.0, 1.0]), kind="counter")
+    with pytest.raises(ValueError, match="unknown reset policy"):
+        phi_series(s, "mystery")

@@ -348,11 +348,13 @@ print("wrote paper/figures/coverage_by_gap.pdf")
 #   `x - x offset Δ`, divided by Δ only in the rate case. The count form is the one the
 #   corpus overwhelmingly uses, and notebook 02 shows both are exact without a reset.
 # * Every rollup translation rests on two facts about Datadog that no experiment here
-#   settles: the reset policy ρ and whether buckets are right-closed. (Epoch alignment
-#   and the interval table *are* documented; what the query text omits is the dashboard
-#   time range that selects the interval.) They are reported as caveats, not folded into
-#   the exact count — `docs/trial_account_checks.md` specifies the checks that close
-#   them, and paper §7.9 reports them as open.
+#   settles. One is now settled from another direction: the agent is open source, and its
+#   source gives ρ = zero on the OpenMetrics path (and clamp, not drop, as the other
+#   branch) — so the open one is whether buckets are right-closed. (Epoch alignment and
+#   the interval table *are* documented; what the query text omits is the dashboard time
+#   range that selects the interval.) Both are reported as caveats, not folded into the
+#   exact count — `docs/trial_account_checks.md` specifies the checks that remain, and
+#   paper §7.9 separates what was read from what is still unmeasured.
 # * The largest single refusal is structural, not semantic: Datadog's scope is a
 #   boolean query over tags, and a PromQL selector is a conjunction of matchers. `OR`
 #   and `IN (...)` need either a regex over one label or a set union of selectors, and

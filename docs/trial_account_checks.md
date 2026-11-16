@@ -1,11 +1,14 @@
 # Settling Datadog's undocumented behaviour (open item 5)
 
 Three claims in the paper are stated relative to facts about Datadog that its
-documentation was assumed not to settle. Paper §7.9 ("What is not measured") reports them
-as open and points here for the experiments:
+documentation was assumed not to settle. Paper §7.9 ("What is not measured") now separates
+what has been read from what is still unmeasured, and points here for the experiments:
 
 - §3.1 Proposition 3 holds for ρ = zero, and the restart rows of
-  `rollup_translation_live.tex` compare against φ_zero.
+  `rollup_translation_live.tex` compare against φ_zero. **Settled from the agent source**
+  (Step 0): ρ = zero on the OpenMetrics path. §3.1 Remark 1 states it, Definition 1 now
+  reads ρ ∈ {zero, clamp}, and `semantics/ingest.py` implements all three. What is left is
+  confirming the backend stores what the agent sends.
 - Σ_Δ presumes buckets are right-closed and epoch-aligned, reported as
   `ROLLUP_ALIGNMENT` on every rollup the translator emits (100% of translations).
 - The rollup interval is assumed when the query does not state one, reported as

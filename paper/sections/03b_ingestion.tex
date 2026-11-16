@@ -17,24 +17,56 @@ soundness must be stated relative to how each ingests data.
 \begin{definition}[Ingestion mapping]\label{def:phi}
 A Prometheus counter series $s=(\lambda,\langle (t_1,v_1),\dots,(t_n,v_n)\rangle)$ stores
 cumulative values. Datadog stores \texttt{COUNT} points that are per-interval deltas. For a
-reset policy $\rho\in\{\mathsf{zero},\mathsf{drop}\}$ define
+reset policy $\rho\in\{\mathsf{zero},\mathsf{clamp}\}$ define
 \[
-\phi_\rho(s) = \big(\lambda,\ \langle (t_i,\ \delta_\rho(v_{i-1},v_i)) : 2\le i\le n,\ \delta_\rho(v_{i-1},v_i)\neq\bot \rangle\big),
+\phi_\rho(s) = \big(\lambda,\ \langle (t_i,\ \delta_\rho(v_{i-1},v_i)) : 2\le i\le n \rangle\big),
 \]
 \[
 \delta_\rho(u,v)=\begin{cases}
 v-u & v\ge u\\
-v & v<u,\ \rho=\mathsf{zero}\quad\text{(reset to zero, as PromQL assumes)}\\
-\bot & v<u,\ \rho=\mathsf{drop}\quad\text{(interval discarded)}
+v & v<u,\ \rho=\mathsf{zero}\quad\text{(restarted from $0$, as PromQL assumes)}\\
+0 & v<u,\ \rho=\mathsf{clamp}\quad\text{(the decrease contributes nothing)}
 \end{cases}
 \]
 Gauges map by the identity. $\phi_\rho$ extends to databases series by series:
 $\phi_\rho(D)=\{\phi_\rho(s): s\in D\}$. The first sample is omitted, matching Datadog's
-documented cumulative-to-delta conversion~\citep{datadog}. Which $\rho$ Datadog
-implements is undocumented, and settling it needs an experiment this paper specifies but
-does not run (Section~\ref{sec:not-measured}); every claim below therefore names the
+documented cumulative-to-delta conversion~\citep{datadog}. Every claim below names the
 $\rho$ it holds for.
 \end{definition}
+
+\begin{remark}[Which $\rho$, and how we know]\label{rem:rho}
+Datadog's documentation does not say what becomes of a counter decrease, but its agent is
+open source, so the question is settled by reading rather than by
+experiment~\citep{ddagent}. The conversion carries a per-sample flag. With the flag set, a
+sample below its predecessor contributes its own value, on the agent's stated assumption
+that the counter restarted from zero --- this is $\delta_{\mathsf{zero}}$ term for term.
+With the flag clear, the decrease contributes nothing and the point is still emitted,
+which is $\delta_{\mathsf{clamp}}$. The OpenMetrics check sets the flag after every
+successful scrape, so the ingestion path this paper models is $\phi_{\mathsf{zero}}$ from
+its second scrape onward: the policy PromQL's own reset handling assumes.
+
+Both branches above are thus implemented, and a third that an earlier draft of this
+section offered --- discarding the interval outright --- is not, at least not as a reset
+policy. Discarding is instead what happens at the \emph{start} of a series, where there is
+no predecessor to difference against. A failed scrape is the interesting case: it clears
+the flag, so the next interval is converted under $\mathsf{clamp}$ rather than
+$\mathsf{zero}$, and is dropped altogether if the aggregator's stored predecessor has
+expired in the meantime. Either way a transient failure perturbs $\phi(D)$ in a way
+nothing applied to $D$ reproduces, and Proposition~\ref{prop:admissible} gives no warning,
+because the discrepancy is between the two stored databases rather than between two
+queries. No refusal can flag it and no translation can repair it.
+\end{remark}
+
+\begin{remark}[$\phi_\rho$ is a model per flush interval]\label{rem:flush}
+$\phi_\rho$ differences consecutive \emph{samples}, which models the agent only when at
+most one sample falls in each interval the agent flushes. Under the flag a decrease
+\emph{overwrites} the value accumulated for the current interval rather than adding to it,
+so two samples in one flush interval whose second is a reset yield the post-reset value
+alone, where $\phi_{\mathsf{zero}}$ would also keep the increase observed before it. The
+agent's default scrape and flush intervals are both $15$\,s, which satisfies the
+hypothesis; a check configured to scrape faster than it flushes would not, and the
+exactness claims below would then hold only up to resets falling inside a flush interval.
+\end{remark}
 
 \paragraph{The dual-write model.}
 In the migration this paper is about, one stream of counter observations reaches both
@@ -247,17 +279,21 @@ data.}
 \end{figure}
 
 \paragraph{What remains assumed.}
-Two things above are stated relative to facts about Datadog that its documentation does
-not settle, and neither is measured in this paper. Section~\ref{sec:not-measured} gives
-the experiments that would settle them, the predictions they are committed to in
-advance, and what each outcome would change here. First, $\rho$:
-Proposition~\ref{prop:anchored} holds for
-$\rho=\mathsf{zero}$, and the restart rows of Table~\ref{tab:rollup-live} compare the
-PromQL candidates against $\phi_{\mathsf{zero}}$ --- they show the anchored form tracks
-that $\phi$, not that Datadog agrees with it. Second, bucket closure:
-$\Sigma_\Delta$ above presumes Datadog's buckets are right-closed. That its buckets are
-epoch-aligned \emph{is} documented~\citep{datadog}, which is why every comparison here is
-made on the epoch-aligned grid; which edge of a bucket the reported timestamp labels is
-not. A PromQL range window follows the
-evaluation step instead, so off that grid the two systems are summing different sample
-sets; the translator records this as \texttt{ROLLUP\_ALIGNMENT} on every rollup it emits.
+One thing above is still stated relative to a fact about Datadog that nothing settles, and
+it is not the one this section started with. $\rho$ has been read off the agent's source
+(Remark~\ref{rem:rho}), which is what Proposition~\ref{prop:anchored} and the restart rows
+of Table~\ref{tab:rollup-live} need. What reading the agent cannot establish is that the
+backend stores what the agent sends, so those rows still show the anchored form tracking
+$\phi_{\mathsf{zero}}$ rather than Datadog agreeing with it;
+Section~\ref{sec:not-measured} gives the experiment that would close that last step and
+the predictions it is committed to in advance.
+
+Bucket closure is the open assumption. $\Sigma_\Delta$ above presumes Datadog's buckets
+are right-closed. That they are epoch-aligned \emph{is} documented~\citep{datadog}, which
+is why every comparison here is made on the epoch-aligned grid; which edge of a bucket the
+reported timestamp labels is not, and the two unknowns are not independent --- a
+right-closed bucket labelled by its end and a left-closed bucket labelled by its start
+report a sample on the grid at the same timestamp, so an experiment must probe mid-bucket
+as well to separate them. A PromQL range window follows the evaluation step instead, so
+off that grid the two systems are summing different sample sets; the translator records
+this as \texttt{ROLLUP\_ALIGNMENT} on every rollup it emits.
