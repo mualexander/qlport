@@ -1,18 +1,18 @@
 {
- "occurrences_compared": 4924,
- "occurrences_exact": 4924,
+ "occurrences_compared": 7303,
+ "occurrences_exact": 7303,
  "provenance": {
-  "collected_at": "2026-11-16T20:55:18+00:00",
+  "collected_at": "2026-11-16T21:07:16+00:00",
   "range_seconds": 14400.0,
   "rollup": 60.0,
-  "run": "r1794860463",
-  "series": 18,
-  "shapes": 8,
+  "run": "r1794861215",
+  "series": 100,
+  "shapes": 40,
   "site": "datadoghq.com"
  },
  "rows": [
   {
-   "bit_identical": 0.75,
+   "bit_identical": 0.7857142857142857,
    "buckets": 28,
    "caveats": [
     "METRIC_TYPE_UNKNOWN",
@@ -22,10 +22,10 @@
    "datadog": "system.load.1{*}",
    "exact": 1.0,
    "index": 0,
-   "max_d": 1.4909956340403268e-16,
+   "max_d": 1.632656843724934e-16,
    "median_d": 0.0,
    "occurrences": 1201,
-   "promql": "avg(avg_over_time(qlport_sd_r1794860463_s0_0[60s]))",
+   "promql": "avg(avg_over_time(qlport_sd_r1794861215_s0_0[60s]))",
    "status": "compared"
   },
   {
@@ -39,14 +39,14 @@
    "datadog": "sum:ceph.num_pgs{*}",
    "exact": 1.0,
    "index": 1,
-   "max_d": 1.6530717587024242e-16,
+   "max_d": 1.641136102161391e-16,
    "median_d": 0.0,
    "occurrences": 975,
-   "promql": "sum(avg_over_time(qlport_sd_r1794860463_s1_0[60s]))",
+   "promql": "sum(avg_over_time(qlport_sd_r1794861215_s1_0[60s]))",
    "status": "compared"
   },
   {
-   "bit_identical": 0.6785714285714286,
+   "bit_identical": 0.7261904761904762,
    "buckets": 84,
    "caveats": [
     "METRIC_TYPE_UNKNOWN",
@@ -56,10 +56,10 @@
    "datadog": "avg:oracle.logons{*,*} by {host}",
    "exact": 1.0,
    "index": 2,
-   "max_d": 1.648946162616466e-16,
+   "max_d": 1.5676267415172955e-16,
    "median_d": 0.0,
    "occurrences": 944,
-   "promql": "avg by (host) (avg_over_time(qlport_sd_r1794860463_s2_0[60s]))",
+   "promql": "avg by (host) (avg_over_time(qlport_sd_r1794861215_s2_0[60s]))",
    "status": "compared"
   },
   {
@@ -76,12 +76,12 @@
    "max_d": 0.0,
    "median_d": 0.0,
    "occurrences": 476,
-   "promql": "sum(qlport_sd_r1794860463_s3_0 - qlport_sd_r1794860463_s3_0 offset 60s)",
+   "promql": "sum(qlport_sd_r1794861215_s3_0 - qlport_sd_r1794861215_s3_0 offset 60s)",
    "status": "compared"
   },
   {
-   "bit_identical": 0.8928571428571429,
-   "buckets": 28,
+   "bit_identical": 0.7023809523809523,
+   "buckets": 84,
    "caveats": [
     "METRIC_TYPE_UNKNOWN",
     "ROLLUP_ALIGNMENT",
@@ -90,15 +90,15 @@
    "datadog": "sum:dcgm.power_usage{*} by {host}",
    "exact": 1.0,
    "index": 4,
-   "max_d": 1.5118156292502565e-16,
+   "max_d": 1.921097075988435e-16,
    "median_d": 0.0,
    "occurrences": 456,
-   "promql": "sum by (host) (avg_over_time(qlport_sd_r1794860463_s4_0[60s]))",
+   "promql": "sum by (host) (avg_over_time(qlport_sd_r1794861215_s4_0[60s]))",
    "status": "compared"
   },
   {
-   "bit_identical": 0.6071428571428571,
-   "buckets": 56,
+   "bit_identical": 0.7738095238095238,
+   "buckets": 84,
    "caveats": [
     "METRIC_TYPE_UNKNOWN",
     "ROLLUP_ALIGNMENT",
@@ -107,10 +107,10 @@
    "datadog": "avg:nvidia.jetson.temp{*} by {zone,host}",
    "exact": 1.0,
    "index": 5,
-   "max_d": 1.5982798895996758e-16,
+   "max_d": 1.744912398564919e-16,
    "median_d": 0.0,
    "occurrences": 364,
-   "promql": "avg by (zone, host) (avg_over_time(qlport_sd_r1794860463_s5_0[60s]))",
+   "promql": "avg by (zone, host) (avg_over_time(qlport_sd_r1794861215_s5_0[60s]))",
    "status": "compared"
   },
   {
@@ -127,11 +127,11 @@
    "max_d": 0.0,
    "median_d": 0.0,
    "occurrences": 309,
-   "promql": "sum by (code) (qlport_sd_r1794860463_s6_0 - qlport_sd_r1794860463_s6_0 offset 60s)",
+   "promql": "sum by (code) (qlport_sd_r1794861215_s6_0 - qlport_sd_r1794861215_s6_0 offset 60s)",
    "status": "compared"
   },
   {
-   "bit_identical": 0.7976190476190477,
+   "bit_identical": 0.7857142857142857,
    "buckets": 84,
    "caveats": [
     "METRIC_TYPE_UNKNOWN",
@@ -141,16 +141,557 @@
    "datadog": "avg:system.io.r_s{*,*,*} by {host,datacenter,device}",
    "exact": 1.0,
    "index": 7,
-   "max_d": 1.6518345706036762e-16,
+   "max_d": 1.5997624908796029e-16,
    "median_d": 0.0,
    "occurrences": 199,
-   "promql": "avg by (host, datacenter, device) (avg_over_time(qlport_sd_r1794860463_s7_0[60s]))",
+   "promql": "avg by (host, datacenter, device) (avg_over_time(qlport_sd_r1794861215_s7_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.7738095238095238,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:dcgm.fb_free{*} by {service,host}",
+   "exact": 1.0,
+   "index": 8,
+   "max_d": 1.86187022917037e-16,
+   "median_d": 0.0,
+   "occurrences": 181,
+   "promql": "sum by (service, host) (avg_over_time(qlport_sd_r1794861215_s8_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.6309523809523809,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:kafka.consumer_lag{*,*} by {host,consumer_group,env}",
+   "exact": 1.0,
+   "index": 9,
+   "max_d": 2.0597808695938699e-16,
+   "median_d": 0.0,
+   "occurrences": 177,
+   "promql": "sum by (host, consumer_group, env) (avg_over_time(qlport_sd_r1794861215_s9_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.7619047619047619,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:esxi.cpu.usage.avg{*,*,esxi_type:vm} by {host}",
+   "exact": 1.0,
+   "index": 10,
+   "max_d": 1.9395594048664513e-16,
+   "median_d": 0.0,
+   "occurrences": 154,
+   "promql": "avg by (host) (avg_over_time(qlport_sd_r1794861215_s10_0{esxi_type=\"vm\"}[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 84,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:sqlserver.files.reads{*} by {host,db}.as_count()",
+   "exact": 1.0,
+   "index": 11,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 145,
+   "promql": "sum by (host, db) (qlport_sd_r1794861215_s11_0 - qlport_sd_r1794861215_s11_0 offset 60s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 28,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:kong.http.status.count{*,code:503}.as_count()",
+   "exact": 1.0,
+   "index": 12,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 122,
+   "promql": "sum(qlport_sd_r1794861215_s12_0{code=\"503\"} - qlport_sd_r1794861215_s12_0{code=\"503\"} offset 60s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.6785714285714286,
+   "buckets": 28,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:spark.job.count{status:failed}",
+   "exact": 1.0,
+   "index": 13,
+   "max_d": 1.5380358381047632e-16,
+   "median_d": 0.0,
+   "occurrences": 121,
+   "promql": "avg(avg_over_time(qlport_sd_r1794861215_s13_0{status=\"failed\"}[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.7380952380952381,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:esxi.mem.usage.avg{*,*,esxi_type:vm} by {host}",
+   "exact": 1.0,
+   "index": 14,
+   "max_d": 1.7548641886022521e-16,
+   "median_d": 0.0,
+   "occurrences": 120,
+   "promql": "sum by (host) (avg_over_time(qlport_sd_r1794861215_s14_0{esxi_type=\"vm\"}[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.8214285714285714,
+   "buckets": 28,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:gunicorn.workers{*,state:idle}",
+   "exact": 1.0,
+   "index": 15,
+   "max_d": 2.0544801576523647e-16,
+   "median_d": 0.0,
+   "occurrences": 108,
+   "promql": "sum(avg_over_time(qlport_sd_r1794861215_s15_0{state=\"idle\"}[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 28,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:n8n.cache.hits.count{*}.as_rate()",
+   "exact": 1.0,
+   "index": 16,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 103,
+   "promql": "sum((qlport_sd_r1794861215_s16_0 - qlport_sd_r1794861215_s16_0 offset 60s) / 60)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 28,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:mapr.fs.reads{*,*}.as_count()",
+   "exact": 1.0,
+   "index": 17,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 98,
+   "promql": "avg(qlport_sd_r1794861215_s17_0 - qlport_sd_r1794861215_s17_0 offset 60s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.6071428571428571,
+   "buckets": 28,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "max:system.cpu.iowait{*}",
+   "exact": 1.0,
+   "index": 18,
+   "max_d": 1.5917469684829923e-16,
+   "median_d": 0.0,
+   "occurrences": 98,
+   "promql": "max(avg_over_time(qlport_sd_r1794861215_s18_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.6785714285714286,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:system.wlan.rssi{*,*,*,*} by {host,mac_address,bssid,ssid}",
+   "exact": 1.0,
+   "index": 19,
+   "max_d": 1.6078959188333932e-16,
+   "median_d": 0.0,
+   "occurrences": 86,
+   "promql": "avg by (host, mac_address, bssid, ssid) (avg_over_time(qlport_sd_r1794861215_s19_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 12,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT"
+   ],
+   "datadog": "sum:iboss.casb.users.traffic{*} by {user_name}.rollup(sum, 300)",
+   "exact": 1.0,
+   "index": 20,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 86,
+   "promql": "sum by (user_name) (qlport_sd_r1794861215_s20_0 - qlport_sd_r1794861215_s20_0 offset 300s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.7619047619047619,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:ibm_spectrum_lsf.job.mem{*,*} by {job_id,status,queue,project,user}",
+   "exact": 1.0,
+   "index": 21,
+   "max_d": 1.730580725067044e-16,
+   "median_d": 0.0,
+   "occurrences": 85,
+   "promql": "avg by (job_id, status, queue, project, user) (avg_over_time(qlport_sd_r1794861215_s21_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.7261904761904762,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:ibm_i.job.cpu_usage{*,*,*,*} by {job_id,job_name,host,job_active_status}",
+   "exact": 1.0,
+   "index": 22,
+   "max_d": 1.810872253384549e-16,
+   "median_d": 0.0,
+   "occurrences": 71,
+   "promql": "sum by (job_id, job_name, host, job_active_status) (avg_over_time(qlport_sd_r1794861215_s22_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 84,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:airflow.ti_failures{*} by {host}.as_count()",
+   "exact": 1.0,
+   "index": 23,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 60,
+   "promql": "avg by (host) (qlport_sd_r1794861215_s23_0 - qlport_sd_r1794861215_s23_0 offset 60s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.75,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:automox.device.ready{*,*,*} by {automox_device,os_family,os_name,os_version,agent_version}",
+   "exact": 1.0,
+   "index": 24,
+   "max_d": 1.872899935421474e-16,
+   "median_d": 0.0,
+   "occurrences": 55,
+   "promql": "sum by (automox_device, os_family, os_name, os_version, agent_version) (avg_over_time(qlport_sd_r1794861215_s24_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 84,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:kong.bandwidth.count{*} by {service}.as_rate()",
+   "exact": 1.0,
+   "index": 25,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 55,
+   "promql": "sum by (service) ((qlport_sd_r1794861215_s25_0 - qlport_sd_r1794861215_s25_0 offset 60s) / 60)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.7261904761904762,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:gpu.sm_active{*,gpu_host:true} by {host,gpu_device}",
+   "exact": 1.0,
+   "index": 26,
+   "max_d": 1.9451088147444381e-16,
+   "median_d": 0.0,
+   "occurrences": 51,
+   "promql": "avg by (host, gpu_device) (avg_over_time(qlport_sd_r1794861215_s26_0{gpu_host=\"true\"}[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.7619047619047619,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "max:tomcat.max_time{*,*} by {host}",
+   "exact": 1.0,
+   "index": 27,
+   "max_d": 1.7550721944961364e-16,
+   "median_d": 0.0,
+   "occurrences": 50,
+   "promql": "max by (host) (avg_over_time(qlport_sd_r1794861215_s27_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.7619047619047619,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:openldap.threads{*,*, status:active} by {host,url}",
+   "exact": 1.0,
+   "index": 28,
+   "max_d": 1.8010614756914448e-16,
+   "median_d": 0.0,
+   "occurrences": 45,
+   "promql": "sum by (host, url) (avg_over_time(qlport_sd_r1794861215_s28_0{status=\"active\"}[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 84,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:airflow.job.end{*} by {job_name,host}.as_count()",
+   "exact": 1.0,
+   "index": 29,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 36,
+   "promql": "avg by (job_name, host) (qlport_sd_r1794861215_s29_0 - qlport_sd_r1794861215_s29_0 offset 60s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 118,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT"
+   ],
+   "datadog": "sum:kuma.go.memstats.alloc_bytes{*,*,*}.rollup(avg, 15)",
+   "exact": 1.0,
+   "index": 30,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 36,
+   "promql": "sum(avg_over_time(qlport_sd_r1794861215_s30_0[15s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.8333333333333334,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "max:data_streams.kafka.lag_seconds{*,*} by {topic,env}",
+   "exact": 1.0,
+   "index": 31,
+   "max_d": 1.5297174308543e-16,
+   "median_d": 0.0,
+   "occurrences": 33,
+   "promql": "max by (topic, env) (avg_over_time(qlport_sd_r1794861215_s31_0[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 84,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:cilium.drop_count.total{direction:egress} by {reason}.as_count()",
+   "exact": 1.0,
+   "index": 32,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 30,
+   "promql": "sum by (reason) (qlport_sd_r1794861215_s32_0{direction=\"egress\"} - qlport_sd_r1794861215_s32_0{direction=\"egress\"} offset 60s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 84,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:celery.flower.events.count{*,*} by {worker,task,type}.as_count()",
+   "exact": 1.0,
+   "index": 33,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 30,
+   "promql": "sum by (worker, task, type) (qlport_sd_r1794861215_s33_0 - qlport_sd_r1794861215_s33_0 offset 60s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.7142857142857143,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "tokumx.replSet.replicationLag{*,role:secondary} by {replset,host,server}",
+   "exact": 1.0,
+   "index": 34,
+   "max_d": 1.6860118596102322e-16,
+   "median_d": 0.0,
+   "occurrences": 29,
+   "promql": "avg by (replset, host, server) (avg_over_time(qlport_sd_r1794861215_s34_0{role=\"secondary\"}[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 84,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:sqlserver.files.read_bytes{*} by {host,db}.as_rate()",
+   "exact": 1.0,
+   "index": 35,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 28,
+   "promql": "sum by (host, db) ((qlport_sd_r1794861215_s35_0 - qlport_sd_r1794861215_s35_0 offset 60s) / 60)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 84,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:cilium.drop_count.count{direction:egress,*} by {reason,host}.as_count()",
+   "exact": 1.0,
+   "index": 36,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 25,
+   "promql": "sum by (reason, host) (qlport_sd_r1794861215_s36_0{direction=\"egress\"} - qlport_sd_r1794861215_s36_0{direction=\"egress\"} offset 60s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.75,
+   "buckets": 84,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "avg:cassandra.latency.75th_percentile{type:clientrequest,clientrequest:read,*,*,*} by {datacenter,clientrequest}",
+   "exact": 1.0,
+   "index": 37,
+   "max_d": 1.6133241697184654e-16,
+   "median_d": 0.0,
+   "occurrences": 22,
+   "promql": "avg by (datacenter, clientrequest) (avg_over_time(qlport_sd_r1794861215_s37_0{type=\"clientrequest\",clientrequest=\"read\"}[60s]))",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 1.0,
+   "buckets": 84,
+   "caveats": [
+    "COUNTER_RESET",
+    "ROLLUP_ALIGNMENT",
+    "ROLLUP_DEFAULT"
+   ],
+   "datadog": "sum:litellm.input.tokens.count{*,*,*} by {end_user,hashed_api_key,api_key_alias,requested_model,team,team_alias,user,model,host}.as_count()",
+   "exact": 1.0,
+   "index": 38,
+   "max_d": 0.0,
+   "median_d": 0.0,
+   "occurrences": 20,
+   "promql": "sum by (end_user, hashed_api_key, api_key_alias, requested_model, team, team_alias, user, model, host) (qlport_sd_r1794861215_s38_0 - qlport_sd_r1794861215_s38_0 offset 60s)",
+   "status": "compared"
+  },
+  {
+   "bit_identical": 0.3333333333333333,
+   "buckets": 12,
+   "caveats": [
+    "METRIC_TYPE_UNKNOWN",
+    "ROLLUP_ALIGNMENT"
+   ],
+   "datadog": "avg:iboss.zero_trust.user.average_confidence_score{*} by {user_id}.rollup(avg, 300)",
+   "exact": 1.0,
+   "index": 39,
+   "max_d": 1.5512331651431065e-16,
+   "median_d": 1.4132724570773132e-16,
+   "occurrences": 19,
+   "promql": "avg by (user_id) (avg_over_time(qlport_sd_r1794861215_s39_0[300s]))",
    "status": "compared"
   }
  ],
- "shapes_compared": 8,
- "shapes_exact": 8,
+ "shapes_compared": 40,
+ "shapes_exact": 40,
  "status_counts": {
-  "compared": 8
+  "compared": 40
  }
 }

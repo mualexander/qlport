@@ -141,7 +141,13 @@ def representatives(run_tag: str) -> list[dict]:
         em = emit_detail(renamed_ir, default_rollup=ROLLUP)
         if isinstance(em, Bottom):
             continue
+        intervals = _intervals(renamed_ir)
+        if len(intervals) != 1:
+            # Two rollups of different widths in one query would need two bucket grids;
+            # recorded rather than compared on the wrong one.
+            continue
         out.append({
+            "interval": intervals[0],
             "index": i, "occurrences": rec["n"], "datadog_original": rec["text"],
             "datadog": dd_text, "promql": em.promql,
             "caveats": sorted(c.name for c in em.caveats),
@@ -166,6 +172,27 @@ def _rename_ir(e, mapping):
     if isinstance(e, ir.BinOp):
         return replace(e, lhs=_rename_ir(e.lhs, mapping), rhs=_rename_ir(e.rhs, mapping))
     return e
+
+
+def _intervals(e) -> list[float]:
+    """Every rollup width in the query, defaulting where the query states none.
+
+    The bucket grid and the PromQL evaluation instants must both use the interval the
+    *query* asked for. Comparing a `.rollup(sum, 300)` against a 60 s grid lines up
+    Datadog's buckets with PromQL windows covering a different span, which looks exactly
+    like a translation error and is not one.
+    """
+    out = []
+
+    def go(x):
+        if isinstance(x, ir.Rollup):
+            out.append(float(x.interval) if x.interval is not None else ROLLUP)
+        for f in ("expr", "lhs", "rhs", "arg"):
+            c = getattr(x, f, None)
+            if c is not None and not isinstance(c, (str, float, int, tuple)):
+                go(c)
+    go(e)
+    return sorted(set(out))
 
 
 def _kind_for(e, metric) -> str:
@@ -345,17 +372,20 @@ def main(argv=None) -> int:
                 break
             time.sleep(20)
 
-        first_bucket = dd.bucket_starts(t0 + ROLLUP, t0 + WINDOW - ROLLUP, ROLLUP)
-        p_start = dd.eval_instant(first_bucket[0], ROLLUP)
-        p_end = dd.eval_instant(first_bucket[-1], ROLLUP)
-        now = time.time()
 
         def compare_one(r):
             """One representative against both systems; returns a row."""
             try:
+                D = r["interval"]
+                buckets = dd.bucket_starts(t0 + D, t0 + WINDOW - D, D)
+                if len(buckets) < 2:
+                    return {"index": r["index"], "status": "window-too-short",
+                            "detail": f"interval {D:g}s over a {WINDOW:g}s window",
+                            "occurrences": r["occurrences"]}
                 raw = query(creds, r["datadog"], time.time() - RANGE, time.time())
                 ddv = dd_series(raw, r["group_keys"])
-                pmv = prom_range(base, r["promql"], p_start, p_end, ROLLUP)
+                pmv = prom_range(base, r["promql"], dd.eval_instant(buckets[0], D),
+                                 dd.eval_instant(buckets[-1], D), D)
             except Exception as exc:
                 return {"index": r["index"], "status": "error",
                         "detail": str(exc)[:200], "occurrences": r["occurrences"]}
@@ -373,7 +403,7 @@ def main(argv=None) -> int:
                 for b, dv in dpoints.items():
                     if dv is None:
                         continue
-                    u = round(dd.eval_instant(b, ROLLUP), 3)
+                    u = round(dd.eval_instant(b, r["interval"]), 3)
                     pv = ppoints.get(u)
                     if pv is None:
                         continue
