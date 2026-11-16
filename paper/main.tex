@@ -10,8 +10,25 @@
 \maketitle
 
 \begin{abstract}\noindent
-\todo{Write last. One sentence each: lock-in problem; thesis; method (grammars, IR,
-ingestion mapping, differential testing); headline results (RQ1--RQ3); what it means.}
+Teams stay on a proprietary observability vendor less because of their data than because
+of their dashboards: thousands of saved queries that a migration must rewrite by hand,
+with no way to tell whether a rewrite preserved what the original meant. We ask whether
+that switching cost follows from how the query languages are designed, and answer by
+building the translator and measuring it. We infer an LALR(1) grammar for each language
+--- including one for Datadog's metric language, which the vendor does not publish ---
+define an intermediate representation with a denotation, and state soundness relative to
+an \emph{ingestion mapping}, because the two systems do not store the same thing: a
+Prometheus counter is a running total and a Datadog counter is a sequence of
+per-interval deltas. Every refusal carries a typed gap code, and the resulting catalogue
+separates what the target cannot express from what we have not built. Over $28{,}490$
+queries extracted from published dashboards, $95.6\%$ of Datadog query occurrences
+translate exactly; the shortfall is $2.0\%$ inexpressible against $2.4\%$ unimplemented,
+so in the direction teams travel the cost is engineering. The language-design artefact
+lies elsewhere: $96.9\%$ of our translations depend on a rollup interval the query omits
+and $76.3\%$ on a metric type it omits, because a Datadog query is not self-contained.
+Going back is different in kind --- a Datadog tag filter is a glob, glob-expressibility
+of a regular expression is decidable, and three impossibility results account for every
+refusal we measure in that direction. Leaving costs work; returning costs expressiveness.
 \end{abstract}
 
 \input{sections/01_introduction}

@@ -1,3 +1,68 @@
+% ---------------------------------------------------------------------------
+% Answers the three questions, separates what is established from what is
+% assumed, and says what the next measurement would be.
+% ---------------------------------------------------------------------------
+
 \section{Conclusion}
 \label{sec:conclusion}
-\todo{}
+
+\paragraph{The three questions.}
+\textbf{RQ1.} Both languages admit deterministic one-token-lookahead parsers, with a
+caveat that is itself a finding. The inferred Datadog grammar is conflict-free. PromQL has
+exactly one shift/reduce conflict, on the parenthesis that begins either a grouping clause
+or a parenthesised expression, and it is forced by the language as specified rather than
+by how we wrote the rules --- so RQ1's answer for PromQL is ``LALR(1) modulo one
+documented resolution''.
+
+\textbf{RQ2.} The largest exactly-translating fragment we could build covers $95.6\%$ of
+Datadog query occurrences. Outside it, $2.0\%$ of the corpus is inexpressible in PromQL
+--- five constructs, each argued rather than merely reported --- and $2.4\%$ is work this
+translator has not done, giving a ceiling of $97.9\%$. In the reverse direction, on the
+sub-problem of tag filtering, the obstructions are theorems: a glob's language is a single
+word or unbounded in length, and three impossibility results follow that account for every
+refusal, $38.3\%$ of the concrete patterns in the corpus.
+
+\textbf{RQ3.} Coverage on published dashboards is the $95.6\%$ above, and the shape of the
+shortfall matters more than its size. Coverage against implementation effort is a
+staircase, not a curve, because a query translates only when every feature it uses is
+supported while the popularity that would guide an implementation order is marginal. Half
+the work does not port half the estate.
+
+\paragraph{What the paper establishes, and what it assumes.}
+Three things here are proved: the directional information barrier, which holds for every
+possible translator and not only ours; the exactness of the rollup translations on a
+stated class, with the preconditions enumerated as the hypotheses of a theorem; and the
+non-expressibility results of \S\ref{sec:regular}. Two things are verified against a real
+system rather than a model: the PromQL semantics the rollup rules depend on, read off
+Prometheus~3.15.0, and the anchoring of label-matcher regular expressions. One thing is
+read from source rather than measured: Datadog's reset policy, taken from its open-source
+agent at a pinned commit.
+
+What remains assumed is smaller than when this work started but has not vanished. Datadog's
+rollup buckets are taken to be right-closed, which its documentation does not state; and a
+glob's \texttt{*} is taken to match the empty string, which decides which of \texttt{.+}
+and \texttt{.*} has no glob at all. Both are specified as experiments with their
+predictions recorded in advance, and neither is run. Above all, the whole paper compares
+one translator against a model of Datadog rather than against Datadog: the differential
+test over the corpus --- each translated pair run against both systems on identical input
+--- is designed and not executed, and until it is, $\kappa$ measures what the translator
+is willing to translate rather than what it translates correctly.
+
+\paragraph{What we would do next.}
+The differential test is the one experiment that would change the standing of everything
+else, and it is also the cheapest to specify and the most expensive to run. After it, the
+reverse translator: \S\ref{sec:regular} suggests the interesting results are there, and a
+$\kappa$ for that direction would turn this paper's asymmetry claim from an argument into
+a measurement. Further out, the method is language-agnostic wherever a language denotes a
+function of a database at an instant, which brings LogQL within reach and leaves SPL
+outside it.
+
+\paragraph{The answer.}
+Is the switching cost a language-design artefact? Partly, and not where we expected. In
+the direction teams travel it is mostly engineering --- a finding this paper twice nearly
+got wrong in the more quotable direction, once through a structural error in the
+translator and once through a rule it had simply not implemented. The design artefact in that direction is subtler than an expressiveness gap:
+a Datadog query does not say what it means, so almost every translation we emit is exact
+only relative to context the query omits. The expressiveness gap is real, provable, and in
+the direction teams do not travel. That is the asymmetry: leaving costs work, and returning
+costs something work cannot buy.
