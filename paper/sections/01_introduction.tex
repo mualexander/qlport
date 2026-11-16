@@ -64,7 +64,7 @@ artefact in the direction teams travel, and it is not an expressiveness gap; the
 expressiveness gap is in the direction they do not. Both halves took measurement to
 establish and neither was the expected answer.
 
-Going from Datadog to PromQL, $95.6\%$ of query occurrences translate, and the shortfall
+Going from Datadog to PromQL, $95.5\%$ of query occurrences translate, and the shortfall
 is mostly unfinished work rather than impossibility: $2.0\%$ of the corpus is
 inexpressible in PromQL against $2.4\%$ this translator has not implemented, with a
 ceiling of $97.9\%$ once the latter is done. On that evidence the switching cost in the
@@ -74,7 +74,7 @@ The design artefact is elsewhere, and \S\ref{sec:discussion} argues it is the mo
 interesting finding. A Datadog query does not state its own rollup interval --- that comes
 from the dashboard's time range --- and does not state whether its metric is a counter or
 a gauge. So $96.9\%$ of the translations we emit depend on an interval the query omits and
-$76.3\%$ on a type it omits; only $142$ occurrences in the corpus depend on neither. The
+$76.2\%$ on a type it omits; only $149$ occurrences in the corpus depend on neither. The
 translations are exact, but exact relative to context supplied from outside the query. A
 PromQL expression names its own window and carries its reset semantics in the function it
 calls. That is a property of the languages, and it is invisible in any coverage number.

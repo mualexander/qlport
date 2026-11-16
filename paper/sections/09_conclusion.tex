@@ -14,7 +14,7 @@ or a parenthesised expression, and it is forced by the language as specified rat
 by how we wrote the rules --- so RQ1's answer for PromQL is ``LALR(1) modulo one
 documented resolution''.
 
-\textbf{RQ2.} The largest exactly-translating fragment we could build covers $95.6\%$ of
+\textbf{RQ2.} The largest exactly-translating fragment we could build covers $95.5\%$ of
 Datadog query occurrences. Outside it, $2.0\%$ of the corpus is inexpressible in PromQL
 --- five constructs, each argued rather than merely reported --- and $2.4\%$ is work this
 translator has not done, giving a ceiling of $97.9\%$. In the reverse direction, on the
@@ -22,7 +22,7 @@ sub-problem of tag filtering, the obstructions are theorems: a glob's language i
 word or unbounded in length, and three impossibility results follow that account for every
 refusal, $38.3\%$ of the concrete patterns in the corpus.
 
-\textbf{RQ3.} Coverage on published dashboards is the $95.6\%$ above, and the shape of the
+\textbf{RQ3.} Coverage on published dashboards is the $95.5\%$ above, and the shape of the
 shortfall matters more than its size. Coverage against implementation effort is a
 staircase, not a curve, because a query translates only when every feature it uses is
 supported while the popularity that would guide an implementation order is marginal. Half

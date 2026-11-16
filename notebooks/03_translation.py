@@ -252,7 +252,7 @@ for f in ("SCOPE_BOOL", "SCOPE_IN", "SCOPE_PAREN"):
 
 # §7 and §8 quote these, so re-running the notebook has to reproduce them.
 assert int(kinds.occurrences["language gap"]) == 175, kinds
-assert int(kinds.occurrences["not implemented"]) == 207, kinds
+assert int(kinds.occurrences["not implemented"]) == 208, kinds
 
 # §8 names the five constructs the language-gap share is made of, with counts, so the
 # breakdown is asserted and not just its total.

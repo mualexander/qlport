@@ -11,7 +11,7 @@
 This paper set out to ask whether vendor lock-in in observability is a language-design
 artefact. For the direction it measures, the honest answer is mostly no, and the
 measurement that says so is the one the whole apparatus was built to produce. Of
-$8{,}766$ Datadog query occurrences, $95.6\%$ translate; of the $4.4\%$ that do not,
+$8{,}766$ Datadog query occurrences, $95.5\%$ translate; of the $4.4\%$ that do not,
 \S\ref{sec:gaps} splits the shortfall into $2.0\%$ that PromQL genuinely cannot express
 and $2.4\%$ that is unimplemented work in this translator. The second number is larger
 than the first.
@@ -39,12 +39,12 @@ The gap catalogue is the wrong place to look for the design artefact. The caveat
 the right one.
 
 Table~\ref{tab:translation-caveats} reports that $96.9\%$ of translated occurrences carry
-\texttt{ROLLUP\_DEFAULT} and $76.3\%$ carry \texttt{METRIC\_TYPE\_UNKNOWN}. Both say the
+\texttt{ROLLUP\_DEFAULT} and $76.2\%$ carry \texttt{METRIC\_TYPE\_UNKNOWN}. Both say the
 same kind of thing. A Datadog query does not state its own rollup interval --- that comes
 from the dashboard's time range, which is not in the query text --- and it does not state
 whether its metric is a counter or a gauge, which is metadata held elsewhere in the
 product. So the translation is exact, but exact relative to two facts the query omits.
-Only $142$ occurrences in the whole corpus depend on neither.
+Only $149$ occurrences in the whole corpus depend on neither.
 
 A third instance arrived from an unrelated direction, which is what makes the pattern
 worth calling a property of the language rather than an artefact of two rules.

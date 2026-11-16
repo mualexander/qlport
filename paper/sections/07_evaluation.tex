@@ -177,7 +177,7 @@ it.}
 \end{table}
 
 \noindent
-$\kappa = 95.6\%$ of occurrences, and $95.5\%$ of distinct queries. The two agreeing to
+$\kappa = 95.5\%$ of occurrences, and $95.5\%$ of distinct queries. The two agreeing to
 within a tenth of a point is worth a sentence, because there was no reason they should:
 it says the queries the translator refuses are neither more nor less repeated across
 dashboards than the ones it handles. There is no cheap win hiding in the popular queries, and conversely no
@@ -259,7 +259,7 @@ makes it a single regex matcher. An earlier version of this translator refused a
 it, at $124$ occurrences, and reported that as a gap in the language. It was not: $120$
 of those occurrences are single-key disjunctions, and implementing
 Proposition~\ref{prop:disjunction} translates them, taking $\kappa$ from $94.2\%$ to
-$95.6\%$.
+$95.6\%$ at the time, and $95.5\%$ as it now stands.
 
 What survives is four occurrences, and they are the real thing: disjunction across
 different keys (\texttt{\{(status:400 OR s)\}}), a branch that constrains two keys at
@@ -302,9 +302,9 @@ corpus the split is lopsided. The refusals that rest on something PromQL cannot 
 operator computes), the percentile aggregators ($34$, which read a sketch the Datadog
 metric carries rather than a set of samples), \texttt{.fill} interpolation ($36$),
 tag-key globs ($31$) and the four surviving disjunctions: $175$ occurrences, $2.0\%$ of
-the corpus. The other $207$ --- $2.4\%$ --- are constructs this translator has not
+the corpus. The other $208$ --- $2.4\%$ --- are constructs this translator has not
 implemented, \texttt{top(...)} chief among them. So the ceiling for this direction is
-$97.9\%$ against the $95.6\%$ measured here, and the distance between the two is
+$97.9\%$ against the $95.5\%$ measured here, and the distance between the two is
 engineering rather than language design --- as the disjunction rule just demonstrated by
 closing $1.4$ points of it. That is the finding to carry into \S\ref{sec:discussion}:
 going this way, almost all of the apparent incompatibility is work, and what is left is
@@ -346,7 +346,7 @@ a finer interval than the range allows is refused outright rather than silently 
 which is the better of the two behaviours for a translator: the limit is on points
 returned per query, so the error is visible instead of the data being quietly coarser
 than asked for.
-\texttt{COUNTER\_RESET} marks the $23.7\%$ that use the cumulative-difference form of
+\texttt{COUNTER\_RESET} marks the $23.8\%$ that use the cumulative-difference form of
 Proposition~\ref{prop:offset}, exact unless a counter resets inside the window;
 Table~\ref{tab:rollup-live} measures what that costs when one does, and
 Proposition~\ref{prop:anchored} removes it at the price of requiring Prometheus~$3.7$ or
@@ -357,7 +357,7 @@ all rather than to list them once in prose. An \texttt{avg}, \texttt{min}, \text
 \texttt{count} rollup reduces the points Datadog stores, which are samples for a gauge and
 per-interval deltas for a counter; the emitted \texttt{*\_over\_time} is exact for the
 first and unrelated to the second, and a dashboard does not record which it is
-(Remark~\ref{rem:gauge}). At $76.3\%$ of translated occurrences it is the second largest
+(Remark~\ref{rem:gauge}). At $76.2\%$ of translated occurrences it is the second largest
 qualification here, and it was missing from this table until the soundness theorem of
 Section~\ref{sec:kernel-soundness} was written down and its hypotheses compared against
 what the emitter actually recorded. $\kappa$ did not move when it was added --- the
