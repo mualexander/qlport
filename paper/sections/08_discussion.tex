@@ -1,22 +1,173 @@
+% ---------------------------------------------------------------------------
+% What the measurements mean for the thesis. Numbers are quoted from §6 and §7;
+% nothing new is computed here.
+% ---------------------------------------------------------------------------
+
 \section{Discussion}
 \label{sec:discussion}
-\todo{Is the lock-in syntactic or semantic? \S\ref{sec:gaps} answers this for the main
-direction and the answer is mostly ``neither'': $2.4\%$ of the corpus is unimplemented
-work against $2.0\%$ that PromQL cannot express, so going this way the switching cost is
-engineering. The language-design argument therefore rests on the reverse direction and on
-the staircase, and \S\ref{sec:regular} is now the concrete evidence for the first:
-there the refusals are \emph{all} of the expressiveness kind, each one a corollary of the
-glob dichotomy rather than unfinished work, and they cover $38.3\%$ of the concrete
-patterns. Contrast that proportion with the gap catalogue's and say what the asymmetry
-means --- going to Prometheus costs engineering, coming back costs expressiveness.
-Direction asymmetry: proved as Remark~\ref{rem:directional}, so discuss what it means
-rather than restating it. The staircase of \S\ref{sec:staircase} as a switching cost in
-its own right. The $88.0\%$ of matchers that are template variables
-(\S\ref{sec:glob-corpus}) belong here too: a portability claim about dashboards is partly
-a claim about a templating layer neither query language contains. LogQL and SPL.
-Threats specific to the discussion (\S\ref{sec:threats} has the empirical ones):
-synthetic workloads for the rollup measurements, and the Datadog facts of
-\S\ref{sec:not-measured} that no experiment here settles --- bucket closure, and the
-reading of \texttt{*} that Remark~\ref{rem:star-empty} turns on. Do \emph{not} list
-\texttt{anchored} as modelled --- it is verified against Prometheus~3.15.0 in
-Table~\ref{tab:model-verification}.}
+
+\subsection{The question as posed has a negative answer}
+
+This paper set out to ask whether vendor lock-in in observability is a language-design
+artefact. For the direction it measures, the honest answer is mostly no, and the
+measurement that says so is the one the whole apparatus was built to produce. Of
+$8{,}766$ Datadog query occurrences, $95.6\%$ translate; of the $4.4\%$ that do not,
+\S\ref{sec:gaps} splits the shortfall into $2.0\%$ that PromQL genuinely cannot express
+and $2.4\%$ that is unimplemented work in this translator. The second number is larger
+than the first.
+
+That is not the result the thesis predicted, and it is worth stating in the strongest
+form the data supports: going from Datadog to PromQL, the switching cost is
+\emph{engineering}. A team with the gap catalogue in hand and a few weeks of work would
+reach the $97.9\%$ ceiling of \S\ref{sec:gaps}, and what remains at that point is five
+constructs covering $2.0\%$ of real usage: \texttt{.weighted()} ($70$ occurrences), the
+percentile aggregators reading a stored sketch ($34$), \texttt{fill} interpolation
+($36$), a wildcard over tag \emph{keys} rather than values ($31$), and cross-key
+disjunction ($4$). A language-design story cannot rest on that.
+
+It is also worth noticing how nearly this paper reported the opposite. Two earlier
+versions of the translator refused far more: one had the aggregation order backwards and
+refused $348$ occurrences on the strength of a commutation argument
+(\S\ref{sec:rollup-order}), and one refused all $124$ disjunctive scopes as inexpressible
+when $120$ of them were a single regex matcher away (\S\ref{sec:gaps}). Both would have
+produced a larger ``inexpressible'' figure and a more quotable claim. Neither refusal was
+about the languages.
+
+\subsection{The cost is real, and it is that a query does not say what it means}
+
+The gap catalogue is the wrong place to look for the design artefact. The caveats are
+the right one.
+
+Table~\ref{tab:translation-caveats} reports that $96.9\%$ of translated occurrences carry
+\texttt{ROLLUP\_DEFAULT} and $76.3\%$ carry \texttt{METRIC\_TYPE\_UNKNOWN}. Both say the
+same kind of thing. A Datadog query does not state its own rollup interval --- that comes
+from the dashboard's time range, which is not in the query text --- and it does not state
+whether its metric is a counter or a gauge, which is metadata held elsewhere in the
+product. So the translation is exact, but exact relative to two facts the query omits.
+Only $142$ occurrences in the whole corpus depend on neither.
+
+This is a property of the language, not of the translator, and not one PromQL shares: a
+PromQL expression names its own window and carries its reset semantics in the function it
+calls. The switching cost here is therefore not that the target cannot say what the source
+says. It is that the source does not say what it means, so a translation has to supply
+context from outside the query, and the correctness of thousands of translated panels
+rests on supplying it correctly. That \emph{is} a design artefact --- self-containment
+rather than expressiveness --- and it is invisible in $\kappa$, which is exactly why
+\S\ref{sec:emission} makes the emitter report it rather than assume it.
+
+The sharpest illustration appeared while this paper was being written. The second of
+those two caveats was silent until the theorem of \S\ref{sec:kernel-soundness} was
+stated and its hypotheses compared against what the emitter actually recorded
+(Remark~\ref{rem:gauge}). The translations did not change and $\kappa$ did not move;
+three quarters of the output simply stopped claiming more than it could support. An
+unrecorded precondition is free in every number a paper reports.
+
+\subsection{The thesis survives in the other direction}
+
+\S\ref{sec:regular} is where language design does bite, and it bites in a form that
+admits proof rather than measurement. A Datadog tag filter is a glob, and a glob's
+language is either a single word or unbounded in length
+(Lemma~\ref{lem:dichotomy}); from that one fact follows the impossibility of expressing
+$\Sigma$, of expressing $\Sigma^{+}$, and of confining a wildcard to part of the
+alphabet (Corollary~\ref{cor:no-glob}). These are non-expressibility results in
+Felleisen's sense~\citep{felleisen1991}: not ``our converter did not manage it'' but
+``no term of the target denotes it''. Every refusal in
+Table~\ref{tab:regex-glob-reasons} --- $38.3\%$ of the concrete patterns in the corpus
+--- is an instance of one of them.
+
+The asymmetry is also formal, and it predates the measurement.
+Remark~\ref{rem:directional} shows that the information barrier of
+\S\ref{sec:ingestion} is \emph{directional}: because Datadog stores
+$\phi_\rho(D)$ and Prometheus stores $D$, a PromQL query that is not
+$\phi_\rho$-invariant has no sound Datadog translation \emph{for any target expression
+whatsoever}, while no Datadog query is blocked this way going the other direction. The
+target system never holds less than the source did going to Prometheus; it does coming
+back.
+
+Put the two together and the shape of the lock-in is specific. Leaving Datadog for
+Prometheus costs engineering: four constructs, a few weeks, a ceiling of $97.9\%$, plus
+the discipline of supplying the context the source queries omit. Coming back costs
+expressiveness and information, both provably. That is the asymmetry the switching-cost
+literature describes as the mechanism of lock-in rather than its
+symptom~\citep{farrell2007,shapiro1999}: what holds a customer is not that leaving is
+impossible but that the path back is worse than the path out, so the decision is not
+reversible on the same terms it was made.
+
+Two cautions on that paragraph. The reverse translator was not built, so
+\S\ref{sec:regular} is evidence about one sub-problem of the reverse direction --- tag
+filtering --- and not a $\kappa$ for it; the $38.3\%$ is a share of concrete regular
+expressions, not of queries. And \S\ref{sec:regular} measures only what \emph{this}
+corpus writes, which is a corpus of PromQL written by people who were not thinking about
+globs.
+
+\subsection{Partial migration buys less than its share}
+
+\S\ref{sec:staircase} reports coverage against implementation effort and finds a
+staircase rather than a curve: the first few features buy almost nothing, and then one
+buys a great deal. The reason is structural. A query translates only when \emph{every}
+feature it uses is supported, so coverage is conjunctive over features, while the
+popularity that would guide an implementation order is marginal. A feature in $60\%$ of
+queries is worth nothing on its own if those queries also use a second feature in $70\%$
+of them.
+
+This is a switching cost of its own, and not one the gap catalogue shows. It means a
+migration cannot be staged in proportion to effort: half the work does not port half the
+estate, and a team that stops halfway has a tool that handles almost nothing. The
+corollary for anyone reading \S\ref{sec:gaps} as a work plan is that the order matters
+more than the list, which is why \S\ref{sec:staircase} computes a greedy maximum-coverage
+order rather than sorting by frequency.
+
+\subsection{What is not a property of either language}
+
+The largest single finding in \S\ref{sec:regular} is not about regular languages at all.
+Of $8{,}472$ PromQL regex matchers in the corpus, $88.0\%$ have a Grafana template
+variable as their pattern, so the pattern is chosen when somebody looks at the dashboard
+and is not in the query text. No analysis of PromQL and Datadog can say anything about
+those, because the object being ported is not a query: it is a query template plus a
+variable-resolution layer that belongs to the dashboard tool.
+
+That is a limit on this paper's framing and on anyone else's. A portability claim about
+dashboards is partly a claim about Grafana, and the templating layer has no counterpart in
+either query language's grammar. It also suggests where a practical migration tool should
+actually spend its effort, which is not where $\kappa$ points.
+
+\subsection{Other languages, and what would transfer}
+
+The method here is language-agnostic in principle: grammars, an IR with a denotation, an
+ingestion mapping, and a corpus. What transfers depends on how far the target sits from
+the IR of \S\ref{sec:ir}.
+
+LogQL~\citep{logql} is close enough that most of it would transfer directly --- it is
+PromQL-shaped by design, with a log-selection stage in front --- so the interesting part
+would be the ingestion mapping rather than the translation. SPL~\citep{splunk} is not:
+it is a piped search language whose stages carry state, and a series algebra of the kind
+in \S\ref{sec:ir} is the wrong IR for it. Both are worth saying because the CNCF's own
+effort towards a common observability query language~\citep{sharma2025} will meet the
+same split, and the dividing line is not log-versus-metric but whether the language
+denotes a function of a database at an instant.
+
+\subsection{Threats specific to the discussion}
+
+\S\ref{sec:threats} covers the empirical threats; three concern the argument above.
+
+The rollup measurements of \S\ref{sec:ingestion} use synthetic workloads --- steady,
+Poisson, bursty, and bursty with restarts --- so the agreement figures in
+Table~\ref{tab:rollup-live} describe those shapes and not production traffic. They are
+read from a real Prometheus~3.15.0 rather than a model, including the \texttt{anchored}
+modifier, which is verified and not assumed (Table~\ref{tab:model-verification}); what is
+synthetic is the data, not the evaluator.
+
+Two Datadog facts remain unsettled and both bear on claims made here. Bucket closure is
+assumed right-closed, and if it is not, every rollup translation acquires a half-bucket
+offset --- which would not change $\kappa$ but would change what ``exact'' means in
+\S\ref{sec:kernel-soundness}. And whether a glob's \texttt{*} matches the empty string
+decides which of \texttt{.+} and \texttt{.*} has no glob
+(Remark~\ref{rem:star-empty}), worth $124$ occurrences of \S\ref{sec:regular}'s
+headline figure in either direction. Both are specified with predictions recorded in
+advance; neither is run.
+
+Finally, the comparison of $2.0\%$ against $2.4\%$ in \S\ref{sec:gaps} is a comparison
+between a property of the languages and a property of one translator's state on one
+afternoon. The first number is stable; the second falls as work is done, and has already
+fallen twice during this paper. Read as an argument that the main direction's cost is
+engineering, it is sound. Read as a precise ratio, it is not.

@@ -250,9 +250,24 @@ for f in ("SCOPE_BOOL", "SCOPE_IN", "SCOPE_PAREN"):
     share = sub[sub.outcome == "translated"].n.sum() / sub.n.sum()
     print(f"{f:12s} {int(sub.n.sum()):5d} occurrences, {share:.1%} translated")
 
-# §7 quotes these, so re-running the notebook has to reproduce them.
+# §7 and §8 quote these, so re-running the notebook has to reproduce them.
 assert int(kinds.occurrences["language gap"]) == 175, kinds
 assert int(kinds.occurrences["not implemented"]) == 207, kinds
+
+# §8 names the five constructs the language-gap share is made of, with counts, so the
+# breakdown is asserted and not just its total.
+gap_rows = bot[bot.gap_kind == "language gap"]
+weighted = int(gap_rows[gap_rows.detail.astype(str).str.contains("weighted")].n.sum())
+pctile = int(gap_rows[[bool(re.fullmatch(r"p\d{1,3}:", str(x))) for x in gap_rows.detail]].n.sum())
+by_gap = gap_rows.groupby("gap")["n"].sum()
+breakdown = {".weighted()": weighted, "percentiles": pctile,
+             "FILL_INTERPOLATION": int(by_gap.get("FILL_INTERPOLATION", 0)),
+             "LABEL_NAME_GLOB": int(by_gap.get("LABEL_NAME_GLOB", 0)),
+             "SCOPE_DISJUNCTION": int(by_gap.get("SCOPE_DISJUNCTION", 0))}
+print("language-gap breakdown:", breakdown)
+assert breakdown == {".weighted()": 70, "percentiles": 34, "FILL_INTERPOLATION": 36,
+                     "LABEL_NAME_GLOB": 31, "SCOPE_DISJUNCTION": 4}, breakdown
+assert sum(breakdown.values()) == 175, breakdown
 
 
 # %% [markdown]

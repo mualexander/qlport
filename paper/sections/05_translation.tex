@@ -90,6 +90,7 @@ emitter: the corollary said no sound translation reads absolute counter values, 
 type discipline is what enforces it, with no check to forget to run.
 
 \subsection{Where the rollup sits}
+\label{sec:rollup-order}
 One structural fact about Datadog decides the shape of every translated query, and it is
 easy to get backwards. A Datadog query is evaluated ``first by time, then by
 space''~\citep{datadog}: the rollup reduces each series on its own, and the space
