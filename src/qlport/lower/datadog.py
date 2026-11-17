@@ -303,7 +303,12 @@ def _query(node: Tree) -> ir.Expr:
     agg_tok, metric, scope, grouping, *methods = node.children
     space_agg = str(agg_tok.children[0]) if agg_tok is not None else "avg"
     if space_agg not in SPACE_AGGS:
-        _refuse(Gap.UNSUPPORTED_FUNCTION, f"{space_agg}:")   # pNN: percentiles
+        # pNN reads a quantile of the observations behind a distribution metric. That
+        # is not unfinished work and not a shortage of PromQL operators --- PromQL has
+        # `histogram_quantile` -- but an information barrier: a quantile is not a
+        # function of any bucketing of the same observations (paper §3.1,
+        # Proposition prop:quantile), and a bucketing is what Prometheus stores.
+        _refuse(Gap.PHI_QUANTILE, f"{space_agg}:")
     m = _methods(methods)
 
     # Only a COUNT metric is meaningfully rolled up by summing, and `.as_count()` /

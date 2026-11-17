@@ -218,20 +218,29 @@ print(gaps[["gap", "occurrences", "distinct"]].to_string(index=False))
 # across *different* keys, which no selector expresses.
 
 # %%
-# Refusals that rest on something PromQL cannot express, by (gap, detail).
+# Refusals that are not unfinished work, by (gap, detail). Two kinds sit here and the
+# paper keeps them apart: PHI_QUANTILE is an information barrier -- the target does not
+# hold what the source reads -- and the rest are expressiveness gaps, where the data is
+# there and no PromQL term says it. `.weighted()` used to head this set and left it
+# entirely when E9 measured the modifier as the identity.
 EXPRESSIVENESS = {
-    ("UNSUPPORTED_FUNCTION", ".weighted()"),          # time-weighted space average
+    ("PHI_QUANTILE", None),                           # a quantile is not a bucketing
     ("FILL_INTERPOLATION", None),                     # interpolation inside the query
     ("LABEL_NAME_GLOB", None),                        # label names are not queryable
-    ("SCOPE_DISJUNCTION", None),                      # only cross-key cases survive now
 }
+# SCOPE_DISJUNCTION is deliberately *not* here. §5 shows the four surviving cases are
+# sayable in PromQL -- a union of selectors with the rollup distributed over the
+# branches -- just not as the syntax-directed translation of a scope, which is what
+# this translator is. That makes them a limit of the translator and so unfinished work,
+# which is the column they belong in. Counting them as inexpressible put a property of
+# our architecture into a claim about the language.
 
 
 def _is_gap(r) -> bool:
-    if (r.gap, None) in EXPRESSIVENESS or (r.gap, r.detail) in EXPRESSIVENESS:
-        return True
-    # A percentile aggregator reads a sketch the metric carries, not a set of samples.
-    return r.gap == "UNSUPPORTED_FUNCTION" and bool(re.fullmatch(r"p\d{1,3}:", str(r.detail)))
+    # PHI_QUANTILE used to be an UNSUPPORTED_FUNCTION recognised by its detail string,
+    # which made an information barrier look like a missing operator. It has its own
+    # code now, so the classifier reads the code rather than parsing prose.
+    return (r.gap, None) in EXPRESSIVENESS or (r.gap, r.detail) in EXPRESSIVENESS
 
 
 bot = tr[tr.outcome == "bottom"].assign(gap_kind=lambda d: [
@@ -253,23 +262,22 @@ for f in ("SCOPE_BOOL", "SCOPE_IN", "SCOPE_PAREN"):
     print(f"{f:12s} {int(sub.n.sum()):5d} occurrences, {share:.1%} translated")
 
 # §7 and §8 quote these, so re-running the notebook has to reproduce them.
-assert int(kinds.occurrences["language gap"]) == 105, kinds
-assert int(kinds.occurrences["not implemented"]) == 208, kinds
+assert int(kinds.occurrences["language gap"]) == 101, kinds
+assert int(kinds.occurrences["not implemented"]) == 212, kinds
 
 # §8 names the five constructs the language-gap share is made of, with counts, so the
 # breakdown is asserted and not just its total.
 gap_rows = bot[bot.gap_kind == "language gap"]
-weighted = int(gap_rows[gap_rows.detail.astype(str).str.contains("weighted")].n.sum())
 pctile = int(gap_rows[[bool(re.fullmatch(r"p\d{1,3}:", str(x))) for x in gap_rows.detail]].n.sum())
 by_gap = gap_rows.groupby("gap")["n"].sum()
-breakdown = {".weighted()": weighted, "percentiles": pctile,
+breakdown = {"percentiles": pctile,
              "FILL_INTERPOLATION": int(by_gap.get("FILL_INTERPOLATION", 0)),
              "LABEL_NAME_GLOB": int(by_gap.get("LABEL_NAME_GLOB", 0)),
              "SCOPE_DISJUNCTION": int(by_gap.get("SCOPE_DISJUNCTION", 0))}
 print("language-gap breakdown:", breakdown)
-assert breakdown == {".weighted()": 0, "percentiles": 34, "FILL_INTERPOLATION": 36,
-                     "LABEL_NAME_GLOB": 31, "SCOPE_DISJUNCTION": 4}, breakdown
-assert sum(breakdown.values()) == 105, breakdown
+assert breakdown == {"percentiles": 34, "FILL_INTERPOLATION": 36,
+                     "LABEL_NAME_GLOB": 31, "SCOPE_DISJUNCTION": 0}, breakdown
+assert sum(breakdown.values()) == 101, breakdown
 
 
 # %% [markdown]

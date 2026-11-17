@@ -154,9 +154,14 @@ the \emph{choice of target expression}: a PromQL expression that reads absolute 
 values cannot translate any Datadog query, because no Datadog query can see them.
 Sufficient information, however, is not the same as sufficient expressiveness --- to
 reproduce $\sem{q}_{\mathrm{DD}}(\phi_\rho(D),t)$ from $D$, PromQL must be able to
-\emph{say} the composite $\sem{q}_{\mathrm{DD}}\circ\phi_\rho$. No refusal the
-translator of Section~\ref{sec:translation} issues in this direction is accordingly an
-informational one. Section~\ref{sec:gaps} separates those that are genuine expressiveness
+\emph{say} the composite $\sem{q}_{\mathrm{DD}}\circ\phi_\rho$.
+
+That holds for the metric types $\phi_\rho$ is defined on, which are the counters and
+gauges of Definition~\ref{def:phi}, and it fails for a third.
+Corollary~\ref{cor:quantile} exhibits a Datadog query that is blocked informationally in
+the main direction, so the barrier is directional for the ingestion path this paper
+models rather than for Datadog as a whole --- a distinction an earlier draft of this
+remark elided by saying that no refusal in this direction is an informational one. Section~\ref{sec:gaps} separates those that are genuine expressiveness
 gaps from those that are merely unimplemented, and the first kind accounts for $2.0\%$ of
 the corpus against the second kind's $2.4\%$.
 \end{remark}
@@ -173,6 +178,39 @@ emitter sees it, so no input reaches a bare counter selector. The code
 \texttt{PHI\_ABSOLUTE} is reserved for the reverse direction, where the same corollary
 does bite.
 \end{corollary}
+
+\begin{proposition}[A quantile is not a function of a bucketing]\label{prop:quantile}
+Let $B$ be any finite set of bucket boundaries and $0<p<1$. There are finite multisets
+$X,Y$ of observations with identical $B$-bucket counts and $q_p(X)\neq q_p(Y)$.
+\end{proposition}
+\begin{proof}
+Take a bucket $[a,b)\in B$ with $a<b$, let $X$ place $n\ge 1$ observations at $a$ and
+$Y$ place the same $n$ at $(a+b)/2$, and let both agree elsewhere. Every bucket count is
+equal, while every quantile of $X$ that falls in this bucket differs from $Y$'s by
+$(b-a)/2$.
+\end{proof}
+
+\begin{corollary}[Datadog's percentile aggregators are blocked by information]%
+\label{cor:quantile}
+A Datadog distribution metric answers $\mathtt{p}NN$ from a sketch of the raw
+observations. Prometheus stores those observations bucketed --- as
+\texttt{\_bucket} series classically, as an exponential bucketing under native
+histograms --- and by Proposition~\ref{prop:quantile} no function of a bucketing is the
+quantile. So no PromQL expression over what Prometheus holds equals
+$\mathtt{p}NN$, for any expression whatsoever, and the refusal is informational rather
+than a shortage of operators: PromQL has \texttt{histogram\_quantile}, and what it
+computes is an interpolation within a bucket rather than the quantile itself.
+\end{corollary}
+
+\noindent
+Two things about Corollary~\ref{cor:quantile} are worth keeping separate. It is not a
+claim that Datadog is more precise --- a sketch is a lossy summary too, with its own
+relative-error bound --- but that the two systems keep \emph{different} lossy summaries
+of one stream, and neither is recoverable from the other. And it is the reason the
+$34$ percentile occurrences of \S\ref{sec:gaps} carry \texttt{PHI\_QUANTILE} rather
+than \texttt{UNSUPPORTED\_FUNCTION}: an earlier draft filed them under a missing
+operator, which named the wrong obstruction and put them in the same row as work that
+had simply not been done.
 
 \begin{corollary}[\texttt{rate} is inadmissible in general]\label{cor:rate}
 PromQL \texttt{rate} is not $\phi_\rho$-invariant on $\mathcal{D}$. When a series begins

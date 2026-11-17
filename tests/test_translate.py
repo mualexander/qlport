@@ -136,7 +136,7 @@ def test_scope_terms_become_label_matchers(term, want):
     ("sum:x{*-zone}.as_count()", Gap.LABEL_NAME_GLOB),
     ("sum:iis.users.anon{*,!*}.as_count()", Gap.UNSUPPORTED_FUNCTION),
     ("sum:x{*}.fill(zero).as_count()", Gap.FILL_INTERPOLATION),
-    ("p95:x{*}.as_count()", Gap.UNSUPPORTED_FUNCTION),
+    ("p95:x{*}.as_count()", Gap.PHI_QUANTILE),
     ("top(avg:x{*}, 10, 'mean', 'desc')", Gap.UNSUPPORTED_FUNCTION),
     ("per_minute(sum:x{*})", Gap.UNSUPPORTED_FUNCTION),
 ])
@@ -686,3 +686,35 @@ def test_weighted_no_longer_refuses():
     got = emit_detail(lower(parse("datadog", "sum:x{*}.weighted().as_count()", "v2")),
                       default_rollup=60.0)
     assert not isinstance(got, Bottom), got
+
+
+# ------------------------- percentiles: an information barrier, not a missing operator
+
+
+@pytest.mark.parametrize("ddq", [
+    "p50:x{*}", "p75:x{*} by {h}", "p95:trace.openai.request{*}", "p99:x{*}.as_count()",
+])
+def test_a_percentile_is_refused_as_an_information_barrier(ddq):
+    """Not UNSUPPORTED_FUNCTION, which named the wrong obstruction.
+
+    PromQL has `histogram_quantile`, so the operator is not what is missing. What is
+    missing is the data: Datadog answers pNN from a sketch of the raw observations and
+    Prometheus keeps them bucketed, and Proposition prop:quantile shows no function of
+    a bucketing is the quantile. Filing it under a missing function put it in the same
+    row as work that had simply not been done.
+    """
+    got = translate(ddq)
+    assert isinstance(got, Bottom)
+    assert got.gap is Gap.PHI_QUANTILE
+
+
+def test_the_unsupported_function_code_is_now_only_unfinished_work():
+    """The catalogue's largest row should mean one thing.
+
+    It carried the percentiles (a real barrier) and `.weighted()` (a supposed one)
+    alongside genuinely unimplemented functions, so the language-gap split had to be
+    computed by matching detail strings instead of reading codes.
+    """
+    for ddq in ("top(avg:x{*}, 10, 'mean', 'desc')", "per_minute(sum:x{*})"):
+        got = translate(ddq)
+        assert isinstance(got, Bottom) and got.gap is Gap.UNSUPPORTED_FUNCTION, ddq

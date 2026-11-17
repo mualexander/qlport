@@ -91,7 +91,7 @@ ALLOWED: dict[float, str] = {
     20: "automatic rollup interval over an hour, seconds",
     300: "automatic rollup interval over a day, seconds",
     1800: "the one rollup width the differential window cannot hold two of",
-    0: "zero", 1: "one", 2: "two", 3: "three", 4: "four", 6: "six",
+    0: "zero", 1: "one", 2: "two", 3: "three", 6: "six",
     10: "ten", 64: "the glob-union bound B", 100: "a percentage scale factor",
     # --- E9: what `.weighted()` does, and what it would have done if weighted --------
     66.7: "E9: the plain mean of the irregular series, with and without the modifier",

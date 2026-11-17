@@ -11,6 +11,13 @@ unreachable here because the reverse-direction emitter is not built. Kept becaus
 paper names them, not because anything returns them: `grep -rn 'Gap[.]'` is the check on
 which is which.
 
+PHI_QUANTILE is the one code here that names an *information* barrier in the main
+direction, which paper §3.1 otherwise argues cannot arise: phi is defined for counters
+and gauges, and a distribution metric is a third ingestion path where Datadog holds a
+sketch of the raw observations and Prometheus a bucketing of them, neither a function of
+the other. Everything else this emitter refuses is an expressiveness gap or unfinished
+work.
+
 PHI_SERIES_START moved from the second list to the first. It was written for the reverse
 direction and turns out to be a precondition of the counter rules in this one: the
 cumulative difference needs a sample before the bucket to subtract, and the
@@ -26,6 +33,8 @@ class Gap(str, Enum):
     PHI_ABSOLUTE = "query reads absolute counter values erased by ingestion"
     METRIC_TYPE_UNKNOWN = "translation depends on a metric type the dashboard never states"
     PHI_SERIES_START = "result depends on where a series begins inside the window"
+    PHI_QUANTILE = ("query reads a quantile of observations the target stores only "
+                    "in buckets")
     # expressiveness gaps: data exists, target language cannot say it
     OFFSET = "time-shifted selector has no target equivalent"
     SUBQUERY = "subqueries have no target equivalent"

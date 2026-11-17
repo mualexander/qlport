@@ -19,10 +19,13 @@ than the first.
 That is not the result the thesis predicted, and it is worth stating in the strongest
 form the data supports: going from Datadog to PromQL, the switching cost is
 \emph{engineering}. A team with the gap catalogue in hand and a few weeks of work would
-reach the $98.7\%$ ceiling of \S\ref{sec:gaps}, and what remains at that point is four
-constructs covering $1.2\%$ of real usage: the percentile aggregators reading a stored
-sketch ($34$), \texttt{fill} interpolation ($36$), a wildcard over tag \emph{keys}
-rather than values ($31$), and cross-key disjunction ($4$). A language-design story cannot rest on that.
+reach the $98.8\%$ ceiling of \S\ref{sec:gaps}, and what remains at that point is
+three constructs covering $1.2\%$ of real usage, and only two of them are about
+expressiveness: \texttt{fill} interpolation ($36$) and a wildcard over tag \emph{keys}
+rather than values ($31$). The third, the percentile aggregators ($34$), is an
+information barrier --- Prometheus does not hold what the query reads
+(Corollary~\ref{cor:quantile}) --- and no amount of work on either language removes
+it. A language-design story cannot rest on that.
 
 It is also worth noticing how nearly this paper reported the opposite. Two earlier
 versions of the translator refused far more: one had the aggregation order backwards and
@@ -98,7 +101,7 @@ target system never holds less than the source did going to Prometheus; it does 
 back.
 
 Put the two together and the shape of the lock-in is specific. Leaving Datadog for
-Prometheus costs engineering: four constructs, a few weeks, a ceiling of $98.7\%$, plus
+Prometheus costs engineering: three constructs, a few weeks, a ceiling of $98.8\%$, plus
 the discipline of supplying the context the source queries omit. Coming back costs
 expressiveness and information, both provably. That is the asymmetry the switching-cost
 literature describes as the mechanism of lock-in rather than its
