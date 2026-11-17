@@ -74,15 +74,25 @@ out a special case at zero; a third that never resets reads four increments of o
 every bucket, which is what shows the run is reading the bucket it means to.
 \end{remark}
 
-\begin{remark}[$\phi_\rho$ is a model per flush interval]\label{rem:flush}
-$\phi_\rho$ differences consecutive \emph{samples}, which models the agent only when at
-most one sample falls in each interval the agent flushes. Under the flag a decrease
-\emph{overwrites} the value accumulated for the current interval rather than adding to it,
-so two samples in one flush interval whose second is a reset yield the post-reset value
-alone, where $\phi_{\mathsf{zero}}$ would also keep the increase observed before it. The
-agent's default scrape and flush intervals are both $15$\,s, which satisfies the
-hypothesis; a check configured to scrape faster than it flushes would not, and the
-exactness claims below would then hold only up to resets falling inside a flush interval.
+\begin{remark}[$\phi_\rho$ and the flush interval]\label{rem:flush}
+$\phi_\rho$ differences consecutive \emph{samples}, and the agent aggregates samples
+into the interval it flushes. An earlier version of this remark inferred from the source
+that the two part company as soon as a flush holds more than one sample: a decrease
+appeared to \emph{overwrite} what the interval had accumulated rather than adding to it,
+so a flush holding an increase and then a reset should report the post-reset value alone,
+where $\phi_{\mathsf{zero}}$ keeps both. The agent's default scrape and flush intervals
+are both $15$\,s, which would make the question moot in the default configuration and
+was the reason it went untested.
+
+Put to a running agent, it does not happen. Driving the OpenMetrics check at a $5$\,s
+collection interval against the unchanged $15$\,s flush puts three samples in every
+flush, and the bucket holding the reset reports $111$ --- eleven increments of one and
+the reset's own value, which is $\phi_{\mathsf{zero}}$ term for term. Losing the
+increment that shares a flush with the reset would give $110$
+(\texttt{scripts\slash reset\_policy.py -{}-step 5}). So the hypothesis this remark used
+to carry is not needed at that ratio, and the exactness claims below do not depend on
+the scrape and flush intervals agreeing. What the run does not establish is that no
+ratio breaks it: three samples per flush is what was measured, not all of them.
 \end{remark}
 
 \paragraph{The dual-write model.}
@@ -184,10 +194,10 @@ Let $B$ be any finite set of bucket boundaries and $0<p<1$. There are finite mul
 $X,Y$ of observations with identical $B$-bucket counts and $q_p(X)\neq q_p(Y)$.
 \end{proposition}
 \begin{proof}
-Take a bucket $[a,b)\in B$ with $a<b$, let $X$ place $n\ge 1$ observations at $a$ and
-$Y$ place the same $n$ at $(a+b)/2$, and let both agree elsewhere. Every bucket count is
-equal, while every quantile of $X$ that falls in this bucket differs from $Y$'s by
-$(b-a)/2$.
+Let $[a,b)$ be a bucket of $B$ of positive width. Take $X$ to be $n\ge 1$ copies of $a$
+and $Y$ to be $n$ copies of $(a+b)/2$, with no other observations. Both put $n$ in that
+bucket and nothing in any other, so their bucket counts agree. Every quantile of $X$ is
+$a$ and every quantile of $Y$ is $(a+b)/2$, so $q_p$ differs by $(b-a)/2$ for every $p$.
 \end{proof}
 
 \begin{corollary}[Datadog's percentile aggregators are blocked by information]%
@@ -195,8 +205,8 @@ $(b-a)/2$.
 A Datadog distribution metric answers $\mathtt{p}NN$ from a sketch of the raw
 observations. Prometheus stores those observations bucketed --- as
 \texttt{\_bucket} series classically, as an exponential bucketing under native
-histograms --- and by Proposition~\ref{prop:quantile} no function of a bucketing is the
-quantile. So no PromQL expression over what Prometheus holds equals
+histograms --- and by Proposition~\ref{prop:quantile} the quantile is not determined by
+those counts. So no PromQL expression over what Prometheus holds equals
 $\mathtt{p}NN$, for any expression whatsoever, and the refusal is informational rather
 than a shortage of operators: PromQL has \texttt{histogram\_quantile}, and what it
 computes is an interpolation within a bucket rather than the quantile itself.

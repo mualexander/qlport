@@ -698,3 +698,53 @@ def test_the_rig_could_have_seen_a_time_weighting(e9):
     assert got == pytest.approx([66.6667], abs=1e-3)
     weighted_mean = (0 * 50 + 100 * 5 + 100 * 5) / 60
     assert abs(weighted_mean - 66.6667) > 40, "the two readings must be far apart"
+
+
+# --------- the recorded fast-scrape run (rem:flush's hypothesis, put to the agent)
+
+
+E1F = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog" / "e1_fast.json"
+
+
+@pytest.fixture(scope="module")
+def e1_fast() -> dict:
+    if not E1F.exists():  # pragma: no cover - run scripts/reset_policy.py --step 5
+        pytest.skip("e1_fast.json not recorded")
+    return json.loads(E1F.read_text())
+
+
+def test_the_fast_run_really_put_several_samples_in_one_flush(e1_fast):
+    # The agent flushes every 15 s whatever the check interval, so a 5 s collection
+    # interval is three samples per flush. Without that the run tests nothing.
+    assert e1_fast["provenance"]["step"] == 5.0
+    assert e1_fast["provenance"]["samples_per_flush"] == 3.0
+
+
+def test_phi_still_models_the_agent_at_three_samples_per_flush(e1_fast):
+    """Remark rem:flush's hypothesis turns out to be unnecessary at this ratio.
+
+    It says phi models the agent only when at most one sample falls in each flush
+    interval, and that otherwise a decrease overwrites what the interval accumulated,
+    so the increase observed before a reset is lost. Here twelve 5 s samples fall in
+    the 60 s bucket holding the reset: phi_zero predicts eleven increments of one plus
+    the reset's own value, 111, and losing the pre-reset increment would give 110.
+    Datadog stores 111.
+    """
+    case = e1_fast["cases"]["to100"]
+    assert case["consistent_with"] == ["zero"]
+    assert case["reset_bucket_observed"] == [111.0, 12]
+    assert case["reset_bucket_predicted"]["zero"] == [111.0, 12]
+
+
+def test_the_fast_run_agrees_with_prometheus_throughout(e1_fast):
+    for name, case in e1_fast["cases"].items():
+        assert case["prometheus_differs_on"] == {}, name
+        assert len(case["prometheus_agrees_on"]) == len(case["complete_buckets"]), name
+
+
+def test_the_two_reset_runs_differ_only_in_the_scrape_rate(e1, e1_fast):
+    # Same policy, same rig, different sampling: the point of the pair is that the
+    # answer does not depend on which was used.
+    assert e1["cases"]["to100"]["consistent_with"] == \
+        e1_fast["cases"]["to100"]["consistent_with"] == ["zero"]
+    assert e1["provenance"]["step"] != e1_fast["provenance"]["step"]

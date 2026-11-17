@@ -103,6 +103,8 @@ ALLOWED: dict[float, str] = {
     1000: "E1: the counter value just before the scripted reset",
     103: "E1: what Datadog stored over the reset bucket",
     897: "E1: what a raw signed difference would have stored",
+    111: "E1 fast run: the reset bucket at three samples per flush",
+    110: "E1 fast run: what losing the pre-reset increment would have given",
     25: "series-start check: the bucket sum for a series older than the window",
     1760: "E7: avg_over_time of the running totals at the end of the run",
     0.994: "E7: the relative difference after half an hour",

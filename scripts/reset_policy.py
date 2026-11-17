@@ -63,6 +63,11 @@ AGENT_NAME = "qlport-e1-agent"
 PROM_NAME = "qlport-e1-prom"
 
 STEP = 15.0                       # exposition grid, equal to both scrape intervals
+# The agent flushes every 15 s whatever the check's collection interval, so a --step
+# below that puts several samples in one flush. Remark rem:flush says phi stops modelling
+# the agent there, and `--step 5` is how that is put to the system rather than read off
+# its source.
+_STEP = STEP
 INTERVAL = 60.0                   # the rollup bucket under test
 WARMUP = 660.0                    # >=10 min, per the spec: the agent omits its first sample
 TAIL_STEPS = 16                   # four more buckets after the reset
@@ -241,14 +246,19 @@ def agent_scrapes(case: str) -> tuple[np.ndarray, np.ndarray]:
 
 
 def main(argv=None) -> int:
+    global STEP
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--warmup", type=float, default=WARMUP)
+    ap.add_argument("--step", type=float, default=_STEP,
+                    help="exposition grid and check interval; below the agent's 15 s "
+                         "flush this tests rem:flush's hypothesis")
     ap.add_argument("--tail-steps", type=int, default=TAIL_STEPS,
                     help="exposition steps to serve after the reset")
     ap.add_argument("--ingest-wait", type=float, default=INGEST_WAIT)
     ap.add_argument("--no-prometheus", action="store_true")
     args = ap.parse_args(argv)
+    STEP = args.step
 
     creds = credentials()
     now = time.time()
@@ -389,6 +399,7 @@ def main(argv=None) -> int:
                 "site": creds.site, "agent_image": AGENT_IMAGE,
                 "prometheus_image": PROM_IMAGE if not args.no_prometheus else None,
                 "step": STEP, "interval": INTERVAL, "warmup": args.warmup,
+                "samples_per_flush": round(15.0 / STEP, 3),
                 "t0": t0, "reset_at": reset_at, "reset_step": k_reset,
             },
             "exposition": [
