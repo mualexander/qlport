@@ -52,11 +52,12 @@ Datadog's metric query language is not documented as a grammar. What is publishe
 reference manual with examples, which is enough to infer the syntax but not to verify it,
 and \S\ref{sec:datadog-inference} says what we did instead. Semantically the important
 difference is not syntactic at all: Datadog stores a counter as per-interval deltas, and
-a query is evaluated ``first by time, then by space'' --- a rollup reduces each series
-alone and a space aggregator combines the results~\citep{datadog}. Neither the rollup
+a query is evaluated in two stages~\citep{datadog}, first by time and then by
+space~\citep{ddnested} --- a rollup reduces each series alone and a space aggregator
+combines the results. Neither the rollup
 interval nor the metric's type is part of the query text, which turns out to matter more
 than any construct either language has (\S\ref{sec:emission}). Datadog's own ingest
-documents the conversion and the backfill window~\citep{ddhistorical}, and OTLP is a third
+documents the backfill window~\citep{ddhistorical}, and OTLP is a third
 ingestion path with different conventions again~\citep{ddotlp}, which is why
 \S\ref{sec:ingestion} parameterises the mapping rather than describing ``Datadog''.
 
@@ -99,10 +100,14 @@ state the equivalence you mean, then decide it.
 expressive power by asking whether a construct can be eliminated from a language by a
 local, meaning-preserving rewriting~\citep{felleisen1991}, and Mitchell relates
 expressiveness to observational equivalence and
-abstraction~\citep{mitchell1993}. The results of \S\ref{sec:regular} are
-non-expressibility results of this kind, and they are the only claims here that hold
-regardless of how much engineering is applied: no glob denotes the non-empty tag values,
-so no amount of work on a Datadog back end will translate \texttt{.+} into one. Distinguishing such claims from unfinished work is the discipline
+abstraction~\citep{mitchell1993}. What this paper borrows from that literature is the
+\emph{distinction} rather than the criterion: Felleisen's question is whether a
+construct can be eliminated from a language of equal power, and \S\ref{sec:regular}'s
+results are of a blunter kind --- containment facts about two classes of regular
+languages, where the target has no term with the denotation at all. They are the only
+claims here that hold regardless of how much engineering is applied: no glob denotes
+the non-empty tag values, so no amount of work on a Datadog back end will translate
+\texttt{.+} into one. Distinguishing such claims from unfinished work is the discipline
 \S\ref{sec:intro} describes and \S\ref{sec:gaps} measures, and the literature is what
 makes the distinction sharp rather than rhetorical.
 
@@ -110,7 +115,7 @@ makes the distinction sharp rather than rhetorical.
 
 The closest observability work compares implementations of \emph{one} language rather than
 translating between two. Volz's compliance testing found that vendors advertising PromQL
-support disagree with Prometheus on real queries~\citep{volz2020} --- which is this
+support disagree with Prometheus on a generated conformance suite~\citep{volz2020} --- which is this
 paper's problem in miniature, and a warning: if one language's implementations already
 differ, a translation between two languages needs its soundness stated rather than
 assumed. The practice of verifying a candidate against a real server rather than a model

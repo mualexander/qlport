@@ -27,8 +27,10 @@ also contribute $11{,}628$ formula expressions, held aside below.}
 \label{tab:corpus-sources}
 \end{table}
 
-\texttt{kube-prometheus} supplies PromQL written by the Prometheus community's own
-maintainers~\citep{kubemixin}; the Grafana community dashboards supply PromQL written by
+\texttt{kube-prometheus} supplies PromQL written and maintained by the Kubernetes
+monitoring projects themselves: it checks in the rendered output~\citep{kubeprom} of
+the \texttt{kubernetes-mixin} jsonnet~\citep{kubemixin}, and the corpus is pinned to
+the rendered form; the Grafana community dashboards supply PromQL written by
 everyone else~\citep{grafanadash}; and Datadog's \texttt{integrations-core} supplies
 Datadog queries written by Datadog, which matters because no reference grammar for that
 language is published (Section~\ref{sec:datadog-inference}) and vendor-authored queries
@@ -532,7 +534,7 @@ boundary and another strictly inside one, then reading back which bucket each is
 under, shows the buckets are left-closed and named by their \emph{start}
 (Remark~\ref{rem:closure}); two runs at two rollup intervals agree and each rival
 convention is ruled out by at least one reading. Epoch alignment itself \emph{is}
-documented~\citep{datadog}; which edge the timestamp names was not.
+documented~\citep{ddrollup}; which edge the timestamp names was not.
 
 No figure in this paper moved. A model and a candidate evaluated under the same
 convention agree with each other, so what was wrong was a claim about Datadog rather than
@@ -675,8 +677,9 @@ matter a great deal.
 
 \paragraph{One ingestion path.}
 Section~\ref{sec:ingestion}'s $\phi$ models the agent's cumulative-to-delta conversion.
-OTLP ingestion sends monotonic values and applies a different conversion
-again~\citep{ddotlp}, so $\phi$ is a property of a configured pipeline rather than of
+OTLP ingestion applies the same cumulative-to-delta rule but maps metric temporality,
+type and datapoint attributes by its own table~\citep{ddotlp}, so which series exist
+and what kind each one is are properties of a configured pipeline rather than of
 ``Datadog''. A migration on a different path inherits the framework but not the constants.
 
 \paragraph{The automatic rollup interval is assumed, not derived.}

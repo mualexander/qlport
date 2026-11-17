@@ -99,8 +99,8 @@ type discipline is what enforces it, with no check to forget to run.
 \subsection{Where the rollup sits}
 \label{sec:rollup-order}
 One structural fact about Datadog decides the shape of every translated query, and it is
-easy to get backwards. A Datadog query is evaluated ``first by time, then by
-space''~\citep{datadog}: the rollup reduces each series on its own, and the space
+easy to get backwards. A Datadog query is evaluated first by time and then by
+space~\citep{ddnested}: the rollup reduces each series on its own, and the space
 aggregator (\texttt{sum:}, \texttt{avg:}, \texttt{max:}, \texttt{min:},
 \texttt{count:}, with its optional \texttt{by \{...\}}) then combines those reduced
 values. PromQL's range functions have the same shape, so the translation is direct:

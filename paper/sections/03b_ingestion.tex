@@ -29,8 +29,11 @@ v & v<u,\ \rho=\mathsf{zero}\quad\text{(restarted from $0$, as PromQL assumes)}\
 \end{cases}
 \]
 Gauges map by the identity. $\phi_\rho$ extends to databases series by series:
-$\phi_\rho(D)=\{\phi_\rho(s): s\in D\}$. The first sample is omitted, matching Datadog's
-documented cumulative-to-delta conversion~\citep{datadog}. Every claim below names the
+$\phi_\rho(D)=\{\phi_\rho(s): s\in D\}$. The first sample is omitted. For the agent path
+this paper models, that is read from the agent's source rather than from
+documentation~\citep{ddagent}, as Remark~\ref{rem:rho} describes; Datadog documents the
+same rule for its OTLP path, where a cumulative monotonic sum is differenced and the
+first point stored but omitted~\citep{ddotlp}. Every claim below names the
 $\rho$ it holds for.
 \end{definition}
 
@@ -233,7 +236,9 @@ had simply not been done.
 \begin{corollary}[\texttt{rate} is inadmissible in general]\label{cor:rate}
 PromQL \texttt{rate} is not $\phi_\rho$-invariant on $\mathcal{D}$. When a series begins
 inside the window, Prometheus limits start-of-window extrapolation using the absolute
-first sample value $v_1$ (``duration to zero'')~\citep{promql}, and $v_1$ is erased by
+first sample value $v_1$ --- the documentation says only that the calculation
+extrapolates to the ends of the range~\citep{promql}; the dependence on $v_1$ is in the
+implementation, where the quantity is named \texttt{durationToZero} --- and $v_1$ is erased by
 $\phi_\rho$. It
 \emph{is} $\phi_\rho$-invariant on the class $\mathcal{C}_{\mathrm{warm}}$ of databases
 in which no counter series begins within a window being evaluated, because the remaining
@@ -316,9 +321,12 @@ excluded from $\mathcal{C}_\Delta$ by either hypothesis --- and is
 $\phi_{\mathsf{zero}}$-invariant.
 \end{proposition}
 \begin{proof}
-The \texttt{anchored} modifier~\citep{prom0052} pins the left window boundary to the last
-sample at or before $u-\Delta$, performs no extrapolation, and on a decrease
-$v_i<v_{i-1}$ contributes $v_i$ rather than $v_i-v_{i-1}$. Term by term this is exactly
+The \texttt{anchored} modifier pins the left window boundary to the last
+sample at or before $u-\Delta$ and performs no extrapolation, both of which the
+proposal states~\citep{prom0052}. On a decrease $v_i<v_{i-1}$ it contributes $v_i$
+rather than $v_i-v_{i-1}$; the proposal says only that the modifier ``deals with
+counter resets'', so that clause is taken from the readings of
+Table~\ref{tab:model-verification} and Remark~\ref{rem:rho} rather than from the text. Term by term this is exactly
 $\delta_{\mathsf{zero}}$, and by the index argument of
 Proposition~\ref{prop:offset} the terms it sums are those with
 $t_i\in[b,b+\Delta)$, so the total is $\Sigma_{\mathsf{zero},\Delta}(b)$, a function of
@@ -502,7 +510,7 @@ reset policy at all.
 Bucket closure is no longer among them. Remark~\ref{rem:closure} settles it by
 measurement: buckets are left-closed and named by their start, which is the opposite of
 what an earlier draft of this section assumed and the opposite of PromQL's own
-convention. Epoch alignment \emph{is} documented~\citep{datadog}, so the remaining
+convention. Epoch alignment \emph{is} documented~\citep{ddrollup}, so the remaining
 content of \texttt{ROLLUP\_ALIGNMENT} is sharper than ``align the grids'': a PromQL
 window follows the evaluation step, and the step that reads a Datadog bucket is one
 \emph{inside} its right edge rather than on it. Evaluating on the boundary --- the

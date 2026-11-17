@@ -93,9 +93,12 @@ admits proof rather than measurement. A Datadog tag filter is a glob, and a glob
 language is either a single word or unbounded in length
 (Lemma~\ref{lem:dichotomy}); from that one fact follows the impossibility of expressing
 $\Sigma$, of expressing $\Sigma^{+}$, and of confining a wildcard to part of the
-alphabet (Corollary~\ref{cor:no-glob}). These are non-expressibility results in
-Felleisen's sense~\citep{felleisen1991}: not ``our converter did not manage it'' but
-``no term of the target denotes it''. Every refusal in
+alphabet (Corollary~\ref{cor:no-glob}). These make the distinction the expressiveness
+literature is for~\citep{felleisen1991} --- not ``our converter did not manage it'' but
+``no term of the target denotes it'' --- while being simpler than Felleisen's own
+criterion, which asks whether a construct can be eliminated by a local rewriting and
+presupposes two languages of equal power. Here one class of languages simply does not
+contain the other. Every refusal in
 Table~\ref{tab:regex-glob-reasons} --- $38.3\%$ of the matcher occurrences whose
 pattern is concrete --- is an instance of one of them, though \S\ref{sec:glob-corpus}
 separates the ten occurrences no union of globs reaches from the $378$ that a union

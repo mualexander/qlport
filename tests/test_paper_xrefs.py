@@ -124,3 +124,32 @@ def test_every_source_file_the_paper_names_exists():
             if not any(ROOT.glob(f"**/{name}")):
                 missing.setdefault(name, []).append(path.name)
     assert not missing, f"named in the paper, not on disk: {missing}"
+
+
+_CITE = re.compile(r"\\cite[tp]\{([^}]*)\}")
+_BIBITEM = re.compile(r"\\bibitem\[[^\]]*\]\{([^}]*)\}")
+
+
+def _cited() -> set[str]:
+    return {key.strip()
+            for path in TEX
+            for match in _CITE.finditer(_strip(path.read_text()))
+            for key in match.group(1).split(",")}
+
+
+def test_every_citation_has_an_entry():
+    entries = set(_BIBITEM.findall((PAPER / "references.tex").read_text()))
+    dangling = sorted(_cited() - entries)
+    assert not dangling, f"cited with no bibliography entry: {dangling}"
+
+
+def test_every_entry_is_cited():
+    """An entry nothing cites is usually the residue of a claim that moved.
+
+    Repointing four claims at the Datadog pages that actually state them left the
+    original entry cited by nothing, which is the signal that the repoint was
+    incomplete rather than that the source stopped mattering.
+    """
+    entries = set(_BIBITEM.findall((PAPER / "references.tex").read_text()))
+    orphans = sorted(entries - _cited())
+    assert not orphans, f"in the bibliography, cited nowhere: {orphans}"

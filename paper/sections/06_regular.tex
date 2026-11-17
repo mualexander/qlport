@@ -108,7 +108,9 @@ $s_0s_1\cdots s_n\in L(g)$ of length $m(g)$, and every other word of $L(g)$ has 
 $w_i\neq\varepsilon$ and so is strictly longer. Hence $s_0s_1\cdots s_n$ is the shortest
 word of $L(g)$ \emph{and the only word of that length}.
 
-So the procedure is: construct a DFA for $r$ (Rich Thm 5.2) and find its shortest accepted
+So the procedure is: construct a DFA for $r$ --- Rich's regular-expression-to-FSM
+construction (Thm 6.1) followed by the subset construction (Thm 5.3) --- and find its
+shortest accepted
 word $w$ by breadth-first search from the start state, together with the number of
 accepting paths of that length. If $L(r)$ has no unique shortest word, no glob exists. If
 it does, then $w=s_0s_1\cdots s_n$, so $g$ is $w$ with stars inserted at some subset of
