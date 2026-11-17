@@ -195,14 +195,19 @@ variables first.}
 \end{table}
 
 Two results in Table~\ref{tab:parse-coverage} matter beyond the grammar. First, the
-documentation was a poor guide to the language: v1 parsed $92.6\%$ of instantiated
-Datadog queries and v2 parses $99.9\%$, and the constructs in between are not exotic ---
+documentation was a poor guide to the language: v1 parsed $92.6\%$ of the instantiated
+\emph{distinct} Datadog queries and v2 parses $99.9\%$, and the constructs in between
+are not exotic ---
 the single most common, boolean scopes, appears in $139$ distinct queries, and a metric
 with no aggregator prefix in $93$. A grammar inferred from a vendor's own documentation
 misses a measurable fraction of the vendor's own shipped dashboards.
 
 Second, the gap between the raw and instantiated columns is large in both languages:
-$11.8\%$ against $99.9\%$ for Datadog, $71.2\%$ against $99.1\%$ for PromQL. The reason
+$11.8\%$ against $99.9\%$ for Datadog, $71.2\%$ against $99.1\%$ for PromQL. Every rate
+in that table is a share of \emph{distinct} queries, which is the one place in this
+paper where the denominator is not occurrences: a grammar either accepts a string or
+does not, and counting the same string forty times would measure the dashboards rather
+than the language. The reason
 is that dashboard queries are not queries but \emph{templates} --- $87\%$ of Datadog and
 $82\%$ of PromQL corpus queries contain at least one variable such as \texttt{\$host} or
 \texttt{\$\_\_rate\_interval}. A translator for dashboards therefore takes a query

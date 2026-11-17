@@ -286,8 +286,9 @@ its user interface appends --- averaging deltas where \texttt{avg\_over\_time} a
 running totals (\texttt{scripts\slash trial\_checks.py e3}).
 
 The condition was also silent until now, and it is not rare. At an earlier stage of this
-work it appeared to hold of $6{,}381$ translated occurrences, $76.2\%$ of them, because Datadog's default time aggregator is $\mathsf{avg}$ and most queries state
-no method at all. The remaining quarter looked exempt: a $\mathsf{sum}$ rollup needs a
+work it appeared to hold of $6{,}381$ translated occurrences --- $76.2\%$ of the
+translated set as it then stood, which was smaller than today's --- because Datadog's
+default time aggregator is $\mathsf{avg}$ and most queries state no method at all. The remaining quarter looked exempt: a $\mathsf{sum}$ rollup needs a
 counter, the ways to ask for one are \texttt{.as\_count()}, \texttt{.as\_rate()} and
 \texttt{.rollup(sum, $\Delta$)}, and all three are documented for \texttt{COUNT}
 metrics --- so a query using one, we reasoned, establishes the type it does not state.

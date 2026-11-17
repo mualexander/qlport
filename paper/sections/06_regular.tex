@@ -209,8 +209,10 @@ forbidden by part~(2); and \texttt{5[0-9]+} would need a star confined to the di
 forbidden by part~(3). So these $388$ occurrences are not refusals of this translator. For
 the single-glob question we can also say it the other way round, by measurement rather
 than by proof: re-deciding every concrete regular expression with the complete procedure
-of Proposition~\ref{prop:decidable} reaches $168$ of the $183$ within its time budget and
-disagrees with the syntax-directed proposer on \emph{none} of them --- it recovers the
+of Proposition~\ref{prop:decidable} reaches $168$ of the $183$ distinct patterns within
+its time budget --- the counts in this paragraph are of patterns rather than of the
+occurrences above --- and disagrees with the syntax-directed proposer on \emph{none} of
+them --- it recovers the
 same glob for all $60$ of the single-glob cases, and finds no glob for all $45$ refusals
 and all $63$ unions it reached. The remaining $15$ are the ones whose shortest word is
 long enough to make the search expensive, and they are recorded as not reached rather

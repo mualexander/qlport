@@ -11,9 +11,15 @@ registry a notebook writes, or in the allowlist below with a reason. A new unexp
 number fails, which forces the decision rather than letting it pass.
 
 What this catches is arithmetic drift, which was eight of the eleven problems the last
-full read-through found. It does not catch a number that is right and means the wrong
-thing -- §5 quoted 87% for the kernel's reach when 87% was the implementation-order
-figure -- and nothing mechanical will.
+full read-through found.
+
+It used to say here that a number which is right and means the wrong thing could not be
+caught -- §5 once quoted 87% for the kernel's reach when 87% was the implementation-order
+figure -- and that nothing mechanical would. That was too pessimistic. `BOUND` at the
+foot of this file ties named figures to the registry key they came from, so a section
+quoting the wrong quantity fails even when the quantity it quoted is itself correct
+somewhere else. What survives is narrower: a figure nobody thought to bind, and a
+sentence whose prose misdescribes a number that is accurate. Both still need a reader.
 """
 from __future__ import annotations
 
@@ -49,6 +55,11 @@ def _math(text: str) -> list[str]:
     text = re.sub(r"(?<!\\)%.*", "", text)
     text = text.replace(r"\$", "\x00")
     return re.findall(r"\$([^$]*)\$", text)
+
+
+def _math_text(path: Path) -> str:
+    """Every `$...$` span of one file, joined. Prose outside math is not a figure."""
+    return "\x01".join(_math(path.read_text()))
 
 
 def _prose_figures() -> dict[tuple[str, float], set[str]]:
@@ -343,3 +354,115 @@ def test_the_registry_agrees_with_the_tables_on_kappa():
     assert f"{reg['nb03.kappa_occurrences']:,}" in coverage
     assert f"{reg['nb03.kappa_distinct']:,}" in coverage
     assert f"{reg['nb03.kappa_pct']}\\%" in coverage
+
+
+# Prose figures bound to the registry key they came from. The checks above ask whether a
+# number is accounted for *somewhere*; these ask whether this number, in this section, is
+# still what its own source says. The difference is the whole point: when a figure moves,
+# the stale copy in the prose usually still matches something -- another table, another
+# quantity of the same magnitude -- so magnitude alone cannot tell drift from coincidence.
+#
+# Only distinctive values are bound: percentages, and counts of three digits or more. A
+# binding on "6 shapes cover half the occurrences" would pass on any section containing a
+# six, which is every section, so it would record a check that cannot fail.
+#
+# A key absent here is not pinned. Adding one is cheap and is how a new quoted figure
+# should arrive; the list is a statement about which of the paper's numbers are tied to
+# their source by name rather than by luck.
+BOUND: tuple[tuple[str, str], ...] = (
+    ("nb00.ceiling_8_features_pct", "07_evaluation.tex"),
+    ("nb00.ceiling_26_features_pct", "07_evaluation.tex"),
+    ("nb00.ceiling_27_features_pct", "07_evaluation.tex"),
+    ("nb03.caveat_counter_reset_pct", "07_evaluation.tex"),
+    ("nb03.caveat_metric_type_unknown_occurrences", "05_translation.tex"),
+    ("nb03.caveat_metric_type_unknown_pct", "05_translation.tex"),
+    ("nb03.caveat_metric_type_unknown_pct", "07_evaluation.tex"),
+    ("nb03.caveat_phi_series_start_pct", "07_evaluation.tex"),
+    ("nb03.caveat_rollup_default_pct", "01_introduction.tex"),
+    ("nb03.caveat_rollup_default_pct", "07_evaluation.tex"),
+    ("nb03.caveat_rollup_default_pct", "08_discussion.tex"),
+    ("nb03.caveat_rollup_default_pct", "main.tex"),
+    ("nb03.ceiling_pct", "01_introduction.tex"),
+    ("nb03.ceiling_pct", "07_evaluation.tex"),
+    ("nb03.ceiling_pct", "08_discussion.tex"),
+    ("nb03.ceiling_pct", "09_conclusion.tex"),
+    ("nb03.closure_occurrences", "05_translation.tex"),
+    ("nb03.corpus_distinct", "07_evaluation.tex"),
+    ("nb03.corpus_occurrences", "01_introduction.tex"),
+    ("nb03.corpus_occurrences", "07_evaluation.tex"),
+    ("nb03.corpus_occurrences", "08_discussion.tex"),
+    ("nb03.corpus_occurrences", "main.tex"),
+    ("nb03.emitted_expressions", "07_evaluation.tex"),
+    ("nb03.kappa_distinct", "07_evaluation.tex"),
+    ("nb03.kappa_occurrences", "05_translation.tex"),
+    ("nb03.kappa_pct", "01_introduction.tex"),
+    ("nb03.kappa_pct", "05_translation.tex"),
+    ("nb03.kappa_pct", "07_evaluation.tex"),
+    ("nb03.kappa_pct", "08_discussion.tex"),
+    ("nb03.kappa_pct", "09_conclusion.tex"),
+    ("nb03.kappa_pct", "main.tex"),
+    ("nb03.kernel_occurrences", "05_translation.tex"),
+    ("nb03.kernel_pct_corpus", "01_introduction.tex"),
+    ("nb03.kernel_pct_corpus", "05_translation.tex"),
+    ("nb03.kernel_pct_translated", "05_translation.tex"),
+    ("nb03.language_gap_occurrences", "07_evaluation.tex"),
+    ("nb03.language_gap_pct", "01_introduction.tex"),
+    ("nb03.language_gap_pct", "03b_ingestion.tex"),
+    ("nb03.language_gap_pct", "07_evaluation.tex"),
+    ("nb03.language_gap_pct", "08_discussion.tex"),
+    ("nb03.language_gap_pct", "09_conclusion.tex"),
+    ("nb03.language_gap_pct", "main.tex"),
+    ("nb03.not_implemented_occurrences", "07_evaluation.tex"),
+    ("nb03.not_implemented_pct", "01_introduction.tex"),
+    ("nb03.not_implemented_pct", "03b_ingestion.tex"),
+    ("nb03.not_implemented_pct", "07_evaluation.tex"),
+    ("nb03.not_implemented_pct", "08_discussion.tex"),
+    ("nb03.not_implemented_pct", "09_conclusion.tex"),
+    ("nb03.not_implemented_pct", "main.tex"),
+    ("nb03.shaped_occurrences", "07_evaluation.tex"),
+    ("nb03.shapes", "07_evaluation.tex"),
+    ("nb03.shapes", "09_conclusion.tex"),
+    ("nb03.shapes_for_95pct", "07_evaluation.tex"),
+)
+
+
+def _spellings(value: float) -> set[str]:
+    """How the paper may write a registry value: `8{,}364`, `96.3`, `100` or `100.0`.
+
+    A share of exactly one hundred is written both ways in this paper, so both count.
+    """
+    out = {f"{value}"}
+    if float(value) == int(value):
+        out.add(f"{int(value):,}".replace(",", "{,}"))
+    return out
+
+
+def test_a_bound_figure_still_matches_its_source():
+    """A pinned figure must equal what its own source now says, in its own section.
+
+    This is the check `test_every_prose_figure_is_accounted_for` cannot make. When
+    `.weighted()` moved 70 occurrences out of the gap catalogue, the expressiveness
+    share went from 2.0% to 1.2% -- and §3b's stale 2.0% went on matching the integer
+    two for two more read-throughs. Bound to `language_gap_pct`, it fails the moment
+    the key moves and the prose does not follow.
+    """
+    reg = json.loads(REGISTRY.read_text())
+    stale = []
+    for key, section in BOUND:
+        assert key in reg, f"{key} is bound but no longer in the registry"
+        path = MAIN if section == "main.tex" else ROOT / "paper" / "sections" / section
+        text = _math_text(path)
+        if not any(s in text for s in _spellings(reg[key])):
+            stale.append(f"  {section} should state {key} = {reg[key]}")
+    assert not stale, "\n".join(stale)
+
+
+def test_every_binding_names_a_distinctive_value():
+    """A binding on a small count records a check that cannot fail; keep them out."""
+    reg = json.loads(REGISTRY.read_text())
+    weak = sorted({
+        f"{key} = {reg[key]}" for key, _ in BOUND
+        if "pct" not in key.rsplit(".", 1)[-1].split("_")
+        and float(reg[key]) == int(reg[key]) and int(reg[key]) < 100
+    })
+    assert not weak, f"bound to a value too common to mean anything: {weak}"

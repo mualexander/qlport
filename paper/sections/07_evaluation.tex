@@ -43,9 +43,9 @@ alerting rules, $96$ recording rules), and $11{,}628$ Datadog formula expression
 \paragraph{Instantiation.}
 Dashboard queries are not queries. A panel ships \texttt{\$pod},
 \texttt{\$\_\_rate\_interval} or \texttt{\$host} where a value belongs, and
-Table~\ref{tab:parse-coverage} already showed what that costs: $11.8\%$ of Datadog and
-$71.2\%$ of PromQL queries parse as shipped, against $99.9\%$ and $99.1\%$ once
-instantiated. \texttt{corpus.normalise} performs the substitution a dashboard performs
+Table~\ref{tab:parse-coverage} already showed what that costs: $11.8\%$ of distinct
+Datadog and $71.2\%$ of distinct PromQL queries parse as shipped, against $99.9\%$ and
+$99.1\%$ once instantiated. \texttt{corpus.normalise} performs the substitution a dashboard performs
 --- a PromQL range variable becomes a duration, a Datadog scope variable becomes
 \texttt{*}, everything else is left alone --- and every measurement below is made on the
 instantiated form. The consequence for RQ2 is not cosmetic: the object a dashboard
@@ -589,7 +589,7 @@ losing the type evidence altogether, because the kind was read off the \emph{fin
 aggregator and the later \texttt{.rollup} overwrote it. Third, \texttt{.as\_rate()} was
 emitted inside the space aggregation; that is invisible for $\mathsf{sum}$,
 $\mathsf{avg}$, $\mathsf{min}$ and $\mathsf{max}$, which commute with scaling, and the
-one $\mathsf{count}$ shape in the corpus disagreed by exactly $1-1/\Delta$
+one $\mathsf{count}$ shape in the corpus disagreed by exactly a factor of $\Delta$
 (Remark~\ref{rem:as-rate-placement}). Fourth, a binary operation between a grouped and an ungrouped
 vector was emitted with PromQL's default matching, which pairs nothing and returns the
 empty vector where Datadog broadcasts --- silently, since an empty result is not an
