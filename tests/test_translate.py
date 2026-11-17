@@ -609,3 +609,51 @@ def test_a_sum_rollup_is_a_third_piece_of_type_evidence():
     # thing to want, where `.as_count()` on a gauge is a no-op nobody benefits from.
     got = translate("sum:x{*}.rollup(sum, 60)")
     assert got == "sum(x - x offset 60s)"
+
+
+# ------------------------------- vector matching: the subset rule (E8, §5)
+
+
+@pytest.mark.parametrize("ddq,want", [
+    # equal key sets: PromQL's default matching is already a join on those keys,
+    # because aggregation drops `__name__` and leaves exactly the grouping labels
+    ("sum:a.b{*} by {g} / sum:c.d{*} by {g}",
+     "sum by (g) (avg_over_time(a_b[60s])) / sum by (g) (avg_over_time(c_d[60s]))"),
+    # the empty set is a subset of everything: broadcast, matching on nothing
+    ("sum:a.b{*} by {g} / sum:c.d{*}",
+     "sum by (g) (avg_over_time(a_b[60s])) / on() group_left() "
+     "sum(avg_over_time(c_d[60s]))"),
+    ("sum:a.b{*} / sum:c.d{*} by {g}",
+     "sum(avg_over_time(a_b[60s])) / on() group_right() "
+     "sum by (g) (avg_over_time(c_d[60s]))"),
+    # the general subset: match on the smaller set, key the result by the larger
+    ("sum:a.b{*} by {g} / sum:c.d{*} by {g,h}",
+     "sum by (g) (avg_over_time(a_b[60s])) / on(g) group_right() "
+     "sum by (g, h) (avg_over_time(c_d[60s]))"),
+    ("sum:a.b{*} by {g,h} / sum:c.d{*} by {g}",
+     "sum by (g, h) (avg_over_time(a_b[60s])) / on(g) group_left() "
+     "sum by (g) (avg_over_time(c_d[60s]))"),
+])
+def test_operands_pair_when_one_key_set_contains_the_other(ddq, want):
+    assert translate(ddq) == want
+
+
+def test_incomparable_key_sets_are_refused_because_datadog_refuses_them():
+    """A third kind of refusal: neither a language gap nor unfinished work.
+
+    Datadog rejects the query itself -- "Series to be aligned must have group keys that
+    match, or where one set of group keys is a subset of the other" -- so there is no
+    source denotation for a translation to preserve. Measured in E8 rather than assumed,
+    which is what distinguishes this from the refusals §7 counts.
+    """
+    got = emit_detail(lower(parse("datadog", "a.b{*} by {g} / c.d{*} by {h}", "v2")),
+                      default_rollup=60.0)
+    assert isinstance(got, Bottom)
+    assert got.gap is Gap.UNSUPPORTED_FUNCTION
+    assert "Datadog rejects" in got.detail
+
+
+def test_a_scalar_operand_matches_anything_and_keeps_the_vectors_keys():
+    # `100 * q` is pointwise in both languages and needs no matching clause.
+    assert translate("100 * sum:a.b{*} by {g}") == \
+        "100 * sum by (g) (avg_over_time(a_b[60s]))"

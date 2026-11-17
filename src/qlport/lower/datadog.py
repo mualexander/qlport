@@ -1,10 +1,15 @@
 """Datadog AST -> IR (main direction).
 
 Ordered by the corpus feature frequency of `paper/tables/implementation_order.tex`:
-the kernel is scope terms, the space aggregators, `by {...}`, `.as_count()`,
-`.as_rate()` and `.rollup(...)`, which together complete ~87% of the corpus. Anything
-outside it returns a `Bottom` carrying one `Gap`, so the refusals are a catalogue
-rather than a crash.
+scope terms, the space aggregators, `by {...}`, `.as_count()`, `.as_rate()` and
+`.rollup(...)` together complete ~87% of the corpus. Anything outside returns a
+`Bottom` carrying one `Gap`, so the refusals are a catalogue rather than a crash.
+
+That 87% is a statement about a *feature set* -- what a translator limited to those
+constructs would finish -- and is not the reach of paper §5's kernel, which is a
+statement about IR shape and covers 94.6%. A query using a glob or a boolean scope is
+outside the first and inside the second. The two are easy to conflate and an earlier
+draft of §5 did.
 
 Two things the front end has to decide that the query text does not say:
 

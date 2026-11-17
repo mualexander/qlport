@@ -428,17 +428,166 @@ not. The same run with the metric submitted as a \texttt{GAUGE}, where the hypot
 holds, agrees exactly on every bucket (\texttt{scripts\slash type\_assumption.py}).
 
 \noindent
-The theorem is narrow in one respect worth naming. It is a statement about the
-\emph{kernel}, which is where $87\%$ of the corpus lives but not all of it; outside
-$\mathcal{K}$ --- arithmetic between queries, in practice --- exactness follows
-pointwise from the same argument, but the vector matching that $\mathrm{BinOp}$ performs
-is not identical in the two languages, and this paper does not prove it. The honest
+The theorem is a statement about the \emph{kernel}, which is $94.6\%$ of the corpus and
+$99.0\%$ of what the translator emits, but not all of it. What the remainder does is
+arithmetic between kernel queries, and \S\ref{sec:binop-soundness} extends the theorem
+over exactly that. The honest
 summary is that the fragment the corpus overwhelmingly uses is exact under five stated
 conditions, four of which are properties of the evaluation grid and the data rather than
-of either language, and the remaining one of which is a fact a dashboard does not record.
+of either language, and the remaining one of which is a fact a dashboard does not
+record --- and that the extension below adds no sixth.
 
 That is also the answer to the question RQ2 was posed to avoid: the preconditions do not
 make the translation approximate. Conditions (3), (4) and (5) are the ones that can fail
 silently on real data --- the first because nothing in the query settles the type, the
 other two because they are statements about data the translator never sees --- and
 \S\ref{sec:caveats} measures how often each is in play.
+
+A note on the two figures, because an earlier draft quoted a third. The $87\%$ it gave
+is the cumulative column of Table~\ref{tab:implementation-order} --- the share of queries
+a translator \emph{limited to the kernel's features} would complete, which is a
+statement about a feature set. $\mathcal{K}$ is a statement about IR shape, and the two
+differ: a query using a glob or a boolean scope is outside the first and inside the
+second, since Lemma~\ref{lem:scope} covers every scope lowering admits. Computed from
+the lowered IR rather than from the feature list, the kernel carries $8{,}294$
+occurrences.
+
+
+\subsection{Arithmetic between queries}
+\label{sec:binop-soundness}
+
+Outside $\mathcal{K}$ the corpus does one thing: arithmetic. A widget divides one
+aggregated query by another, scales one by a constant, or subtracts two. Extending
+Theorem~\ref{thm:kernel} over that is not a matter of applying it pointwise, because the
+two languages decide \emph{which} pairs of series an operator applies to by different
+rules, and neither rule is documented. Both are therefore measured.
+
+\begin{definition}[Arithmetic closure]\label{def:arith}
+$\mathcal{A}$ is the smallest set of IR terms containing $\mathcal{K}$ and every
+$\mathrm{Number}(c)$, closed under $\mathrm{Scale}(c,\cdot)$ and
+$\mathrm{BinOp}(\oplus,\cdot,\cdot)$ for $\oplus\in\{+,-,\times,\div\}$.
+\end{definition}
+
+\begin{definition}[Key set]\label{def:keyset}
+$\chi(e)$ is $\star$ for $\mathrm{Number}$; $\overline{k}$ for
+$\mathrm{Agg}(\mathit{op},\overline{k},\mathsf{by},\cdot)$; $\chi(e')$ for
+$\mathrm{Scale}(c,e')$; and for $\mathrm{BinOp}(\oplus,l,r)$ it is $\chi(r)$ when
+$\chi(l)=\star$, $\chi(l)$ when $\chi(r)=\star$, and otherwise the larger of $\chi(l)$
+and $\chi(r)$ when one contains the other, and undefined when neither does.
+\end{definition}
+
+\noindent
+$\chi$ is what the emitter computes, so the case analysis below is the one the code
+performs rather than a description of it.
+
+\begin{lemma}[How Datadog pairs series]\label{lem:dd-matching}
+Let $q_1,q_2\in\mathcal{A}$ have results $r_1,r_2$ at $t$ with
+$\chi(q_i)=\overline{k_i}$, and suppose $\overline{k_2}\subseteq\overline{k_1}$. Then
+$q_1\oplus q_2$ has domain
+$\{\lambda\in\mathrm{dom}(r_1) : \pi_{\overline{k_2}}(\lambda)\in\mathrm{dom}(r_2)\}$
+and value $r_1(\lambda)\oplus r_2(\pi_{\overline{k_2}}(\lambda))$. If neither key set
+contains the other, Datadog rejects the query.
+\end{lemma}
+\begin{proof}
+By measurement (\texttt{scripts\slash binop\_matching.py}). Two metrics are given
+groups that overlap in one value and differ elsewhere --- $a$ carries $g{=}x$ and
+$g{=}y$, $b$ carries $g{=}x$ and $g{=}z$ --- so that an inner and an outer rule give
+different answers. With equal key sets, $a/b$ returns $g{=}x$ alone: the groups present
+on one side only are dropped, which is the first clause. With $\chi(q_2)=\emptyset$,
+$a\ \mathsf{by}\ \{g\}\ /\ b$ returns both of $a$'s groups, each divided by $b$'s single
+value, which is the clause at $\overline{k_2}=\emptyset$. With
+$\chi(q_2)\subsetneq\chi(q_1)$ --- grouping one side by $\{g\}$ and the other by
+$\{g,h\}$ --- the result is keyed by $\{g,h\}$ and matched on $g$, in both directions.
+The last clause is not an inference: Datadog answers the disjoint case with
+\emph{``Series to be aligned must have group keys that match, or where one set of group
+keys is a subset of the other''}, which is the rule stated by the system itself.
+\end{proof}
+
+\begin{lemma}[How PromQL pairs series]\label{lem:pq-matching}
+For instant vectors $u,v$: $u\oplus v$ under default matching pairs elements with
+\emph{identical} label sets and drops the rest. $u \oplus \texttt{on}(\overline{k})\ 
+\texttt{group\_left()}\ v$ pairs each element of $u$ with the element of $v$ agreeing
+with it on $\overline{k}$, keeps $u$'s labels, and requires at most one such $v$;
+\texttt{group\_right()} is the mirror image. An aggregation drops every label outside its
+\texttt{by} list, \emph{including} \texttt{\_\_name\_\_}.
+\end{lemma}
+\begin{proof}
+The first three clauses are PromQL's specification~\citep{promql}, and all four were
+checked against a real server on the same four series as Lemma~\ref{lem:dd-matching}. The last
+is the one worth checking rather than assuming, because the whole construction depends on
+it: the operands of a translated division come from \emph{different metrics}, so if
+aggregation kept the metric name their label sets could never be identical and default
+matching would pair nothing at all. It does not keep it, and
+$\texttt{sum by (g)}(a)\,/\,\texttt{sum by (g)}(b)$ duly returns $g{=}x$.
+\end{proof}
+
+\begin{theorem}[Arithmetic soundness]\label{thm:arith}
+Let $q\in\mathcal{A}$ with $E(T(q))=(p,C)\neq\bot$, and suppose every kernel subterm of
+$q$ satisfies the hypotheses of Theorem~\ref{thm:kernel} at $t$. Then
+$\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,t)$, and $C$ is
+the union of those subterms' caveats --- the extension introduces no condition of its
+own.
+\end{theorem}
+\begin{proof}
+Induction on the structure of $q$. For $q\in\mathcal{K}$ this is
+Theorem~\ref{thm:kernel}, and for $q=\mathrm{Number}(c)$ both sides denote $c$.
+
+$\mathrm{Scale}(c,e)$ emits $p_e * c$. Scalar--vector arithmetic is pointwise in both
+languages and preserves the domain, so the claim follows from the hypothesis on $e$; the
+same argument covers a $\mathrm{BinOp}$ one of whose operands is a $\mathrm{Number}$,
+where $\chi$ takes the other operand's value.
+
+For $\mathrm{BinOp}(\oplus,l,r)$ with both operands vectors, write
+$\overline{k_l}=\chi(l)$ and $\overline{k_r}=\chi(r)$. By induction the two operand
+results agree between the systems, so it is enough that the two languages pair them the
+same way and the emitter asks for the pairing that does.
+
+If $\overline{k_l}=\overline{k_r}=\overline{k}$, the emitter emits $p_l \oplus p_r$ with
+no modifier. Each operand's PromQL result carries exactly the labels $\overline{k}$, by
+Lemma~\ref{lem:pq-matching}'s last clause, so matching on identical label sets
+\emph{is} matching on $\overline{k}$; the domain is the intersection and the values are
+pointwise. Lemma~\ref{lem:dd-matching} gives Datadog the same intersection and the same
+values.
+
+If $\overline{k_r}\subsetneq\overline{k_l}$, the emitter emits
+$p_l \oplus \texttt{on}(\overline{k_r})\ \texttt{group\_left()}\ p_r$. By
+Lemma~\ref{lem:pq-matching} the result is keyed by $\overline{k_l}$, each element paired
+with the unique element of $p_r$ agreeing on $\overline{k_r}$ --- unique because $p_r$ is
+an aggregation by $\overline{k_r}$, so its elements have distinct $\overline{k_r}$
+values. That is term for term the first clause of Lemma~\ref{lem:dd-matching}. The
+symmetric case emits \texttt{group\_right()}. Taking $\overline{k_r}=\emptyset$ gives the
+ungrouped operand, where \texttt{on()} matches everything and the broadcast is Datadog's.
+
+If neither key set contains the other, $\chi(q)$ is undefined, the emitter refuses and
+$q\notin\mathrm{dom}(T)$. Finally $C$ gains nothing, because the emitter attaches no
+caveat at a $\mathrm{BinOp}$ or a $\mathrm{Scale}$: the modifiers it chooses are decided
+by $\chi$, which is a function of the query text alone.
+\end{proof}
+
+\noindent
+Theorem~\ref{thm:arith} reaches further than it may look. $\mathcal{A}$ contains
+$8{,}375$ occurrences --- $95.5\%$ of the corpus and, more to the point, \emph{every
+translation the emitter produces}. Nothing this translator emits falls outside the
+fragment proved exact, so the gap between what is claimed and what is shipped is empty
+rather than small. That is the statement \S\ref{sec:framework}'s
+Remark~\ref{rem:two-kappas} wanted and could not previously make: $\kappa$ counts
+translations the emitter is willing to produce, and each of them is now covered by a
+proof as well as by the corpus-scale test of \S\ref{sec:differential}.
+
+\begin{remark}[A third kind of refusal]\label{rem:third-refusal}
+The last case of Theorem~\ref{thm:arith} is a refusal of a kind \S\ref{sec:gaps} does not
+have a column for. It is not a gap in PromQL, which expresses the pairing perfectly well
+once asked, and it is not unfinished work here. It is a query with no source denotation:
+Datadog declines to answer it. A translator cannot preserve a meaning the source system
+does not assign, so the right behaviour is to refuse, and the right accounting is to
+exclude it from both sides of the ledger rather than to count it against either language.
+No corpus query reaches it, so nothing in \S\ref{sec:gaps} moves; the case is recorded
+because the distinction is the one this paper is about and it would otherwise be filed
+under ``unimplemented'' by default.
+
+The subset case is the opposite kind of correction. An earlier version of this emitter
+admitted only $\overline{k_r}=\emptyset$ and refused every other containment, which would
+have been counted as unfinished work --- correctly, since the measurement shows PromQL
+says it with \texttt{on($\overline{k_r}$)} and Datadog accepts it. Measuring the boundary
+moved one case out of the catalogue and sharpened the other.
+\end{remark}

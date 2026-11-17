@@ -15,9 +15,12 @@ by how we wrote the rules --- so RQ1's answer for PromQL is ``LALR(1) modulo one
 documented resolution''.
 
 \textbf{RQ2.} The largest exactly-translating fragment we could build covers $95.5\%$ of
-Datadog query occurrences. Outside it, $2.0\%$ of the corpus is inexpressible in PromQL
---- five constructs, each argued rather than merely reported --- and $2.4\%$ is work this
-translator has not done, giving a ceiling of $97.9\%$. In the reverse direction, on the
+Datadog query occurrences, and it is exact under stated preconditions over the whole of
+that --- the soundness theorems of \S\ref{sec:kernel-soundness} and
+\S\ref{sec:binop-soundness} between them cover every expression the translator emits,
+so nothing is shipped that is not proved. Outside the fragment, $2.0\%$ of the corpus is
+inexpressible in PromQL --- five constructs, each argued rather than merely reported ---
+and $2.4\%$ is work this translator has not done, giving a ceiling of $97.9\%$. In the reverse direction, on the
 sub-problem of tag filtering, the obstructions are theorems: a glob's language is a single
 word or unbounded in length, and three impossibility results follow that account for every
 refusal, $38.3\%$ of the concrete patterns in the corpus.

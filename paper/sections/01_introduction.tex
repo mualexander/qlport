@@ -101,9 +101,10 @@ between these two systems is \emph{directional} --- a result about the languages
 holds for every possible translator, not just ours.
 \item \textbf{Exact rollup translations (\S\ref{sec:ingestion}, \S\ref{sec:translation}).}
 Datadog's \texttt{.as\_count()} and \texttt{.as\_rate()} translated exactly, not merely
-to within $\varepsilon$, with the preconditions named; and a soundness theorem for the
-fragment carrying $87\%$ of the corpus whose hypotheses are exactly the preconditions the
-emitter reports.
+to within $\varepsilon$, with the preconditions named; and soundness theorems whose
+hypotheses are exactly the preconditions the emitter reports, covering first the kernel
+($94.6\%$ of the corpus) and then its arithmetic closure --- which is every expression
+this translator emits.
 \item \textbf{The regular sub-problem (\S\ref{sec:regular}).} Glob-expressibility of a
 regular expression is decidable, by an argument about shortest words, and the
 impossibility results above. The construction that makes most of it work is one fact used

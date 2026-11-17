@@ -593,3 +593,62 @@ def test_a_summing_rollup_over_a_gauge_sums_the_stored_samples(e6):
     assert _only(e6, "gau.rollup_avg") == _approx(50.0)           # their mean
     # Summing is not the no-op that `.as_count()` is here: it reads a third quantity.
     assert _full_bucket(e6, "gau.rollup_sum") != _approx(50.0)
+
+
+# ------------- the recorded E8 measurement (how the two languages pair series)
+
+
+E8 = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog" / "e8.json"
+
+
+@pytest.fixture(scope="module")
+def e8() -> dict:
+    if not E8.exists():  # pragma: no cover - run scripts/binop_matching.py
+        pytest.skip("e8.json not recorded; run scripts/binop_matching.py")
+    return json.loads(E8.read_text())
+
+
+@pytest.mark.parametrize("case", [
+    "both_grouped_div", "both_grouped_add", "rhs_ungrouped", "lhs_ungrouped",
+    "subset_rhs_finer", "subset_lhs_finer",
+])
+def test_the_emitted_form_reproduces_datadogs_pairing(e8, case):
+    """Theorem thm:arith's premise, read off both systems on the same four series.
+
+    `a` carries groups x and y, `b` carries x and z, so the two sides agree on one
+    group and differ on the others -- which the corpus-scale test of §7 can never
+    arrange, since it instantiates both operands from the same filters.
+    """
+    got = e8["cases"][case]
+    assert "__error__" not in got["datadog"], got["datadog"]
+    assert "__error__" not in got["promql"], got["promql"]
+    dd = {k: v[0] for k, v in got["datadog"].items() if v}
+    assert dd == pytest.approx(got["promql"], abs=1e-6), case
+
+
+def test_a_group_on_one_side_only_is_dropped_by_both(e8):
+    # Both systems inner-join on the matched keys: `a` has x and y, `b` has x and z,
+    # and the quotient has x alone. An outer join on either side would have made the
+    # emitted expression wrong on every dashboard whose two series sets differ.
+    assert set(e8["cases"]["both_grouped_div"]["datadog"]) == {"g=x"}
+    assert set(e8["cases"]["both_grouped_div"]["promql"]) == {"g=x"}
+
+
+def test_datadog_rejects_incomparable_groupings_rather_than_pairing_them(e8):
+    """Which is why the emitter's refusal there is not a gap in PromQL.
+
+    The error message is also the specification: group keys must match or one must be a
+    subset of the other. The ungrouped and subset cases above are that rule's two
+    halves, and this is the boundary.
+    """
+    err = e8["cases"]["different_keys"]["datadog"].get("__error__", "")
+    assert "subset" in err, err
+
+
+def test_default_matching_would_have_returned_nothing(e8):
+    # The defect the corpus-scale test surfaced, measured directly: Datadog broadcasts
+    # and PromQL's default matching pairs nothing, silently, since an empty result is
+    # not an error.
+    got = e8["cases"]["rhs_ungrouped_default_matching"]
+    assert got["promql"] == {}
+    assert got["datadog"]

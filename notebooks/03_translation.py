@@ -49,6 +49,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from qlport import corpus as c
+from qlport import ir
 from qlport.diagnostics import Bottom
 from qlport.emit.promql import emit_detail
 from qlport.lower.datadog import lower_all
@@ -269,6 +270,61 @@ assert breakdown == {".weighted()": 70, "percentiles": 34, "FILL_INTERPOLATION":
                      "LABEL_NAME_GLOB": 31, "SCOPE_DISJUNCTION": 4}, breakdown
 assert sum(breakdown.values()) == 175, breakdown
 
+
+# %% [markdown]
+# ### How far the soundness theorems reach
+# §5 states two: one over the kernel $\mathcal{K}$ --- a space aggregation of a rollup
+# of a selector --- and one over its arithmetic closure $\mathcal{A}$. Both are claims
+# about IR *shape*, so their reach is computed from the lowered IR and not from the
+# feature-completion figure of the staircase, which answers a different question.
+
+# %%
+def _is_kernel(e):
+    return (isinstance(e, ir.Agg) and e.mode == "by"
+            and isinstance(e.expr, ir.Rollup)
+            and isinstance(e.expr.expr, ir.Select))
+
+
+def _in_closure(e):
+    if _is_kernel(e) or isinstance(e, ir.Number):
+        return True
+    if isinstance(e, ir.Scale):
+        return _in_closure(e.expr)
+    if isinstance(e, ir.BinOp):
+        return _in_closure(e.lhs) and _in_closure(e.rhs)
+    return False
+
+
+kernel_occ = closure_occ = 0
+for _text, _n in occurrences.items():
+    try:
+        _tree = parse("datadog", _text, "v2")
+    except Exception:                                            # noqa: BLE001
+        continue
+    _lo = lower_all(_tree)
+    if not _lo or any(isinstance(x, Bottom) for x in _lo):
+        continue
+    if any(isinstance(emit_detail(x, default_rollup=DEFAULT_ROLLUP), Bottom)
+           for x in _lo):
+        continue
+    if all(_is_kernel(x) for x in _lo):
+        kernel_occ += _n
+    if all(_in_closure(x) for x in _lo):
+        closure_occ += _n
+
+_tot = int(total_n)
+_tr = int(translated.n.sum())
+print(f"kernel K : {kernel_occ:,} = {kernel_occ / _tot:.1%} of corpus, "
+      f"{kernel_occ / _tr:.1%} of translated")
+print(f"closure A: {closure_occ:,} = {closure_occ / _tot:.1%} of corpus, "
+      f"{closure_occ / _tr:.1%} of translated")
+
+# The closure covers every translation the emitter produces: nothing it emits is outside
+# the fragment §5 proves exact. That is what makes thm:arith worth stating separately
+# from thm:kernel rather than as a footnote to it.
+assert closure_occ == _tr, (closure_occ, _tr)
+assert kernel_occ == 8294, kernel_occ
+assert closure_occ == 8375, closure_occ
 
 # %% [markdown]
 # ### Caveats on the translations we do claim

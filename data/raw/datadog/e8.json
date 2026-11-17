@@ -1,0 +1,119 @@
+{
+ "cases": {
+  "both_grouped_add": {
+   "datadog": {
+    "g=x": [
+     12.0
+    ]
+   },
+   "datadog_query": "sum:qlport.e8.r1794878700.a{*} by {g} + sum:qlport.e8.r1794878700.b{*} by {g}",
+   "promql": {
+    "g=x": 12.0
+   },
+   "promql_query": "sum by (g) (avg_over_time(qlport_e8_a[60s])) + sum by (g) (avg_over_time(qlport_e8_b[60s]))"
+  },
+  "both_grouped_div": {
+   "datadog": {
+    "g=x": [
+     5.0
+    ]
+   },
+   "datadog_query": "sum:qlport.e8.r1794878700.a{*} by {g} / sum:qlport.e8.r1794878700.b{*} by {g}",
+   "promql": {
+    "g=x": 5.0
+   },
+   "promql_query": "sum by (g) (avg_over_time(qlport_e8_a[60s])) / sum by (g) (avg_over_time(qlport_e8_b[60s]))"
+  },
+  "different_keys": {
+   "datadog": {
+    "__error__": "query failed: Invalid query input: Series to be aligned must have group keys that match, or where one set of group keys is a subset of the other."
+   },
+   "datadog_query": "sum:qlport.e8.r1794878700.a{*} by {g} / sum:qlport.e8.r1794878700.b{*} by {h}",
+   "promql": {},
+   "promql_query": "sum by (g) (avg_over_time(qlport_e8_a[60s])) / sum by (h) (avg_over_time(qlport_e8_b[60s]))"
+  },
+  "lhs_ungrouped": {
+   "datadog": {
+    "g=x": [
+     15.0
+    ],
+    "g=z": [
+     6.0
+    ]
+   },
+   "datadog_query": "sum:qlport.e8.r1794878700.a{*} / sum:qlport.e8.r1794878700.b{*} by {g}",
+   "promql": {
+    "g=x": 15.0,
+    "g=z": 6.0
+   },
+   "promql_query": "sum(avg_over_time(qlport_e8_a[60s])) / on() group_right() sum by (g) (avg_over_time(qlport_e8_b[60s]))"
+  },
+  "rhs_ungrouped": {
+   "datadog": {
+    "g=x": [
+     1.428571
+    ],
+    "g=y": [
+     2.857143
+    ]
+   },
+   "datadog_query": "sum:qlport.e8.r1794878700.a{*} by {g} / sum:qlport.e8.r1794878700.b{*}",
+   "promql": {
+    "g=x": 1.428571,
+    "g=y": 2.857143
+   },
+   "promql_query": "sum by (g) (avg_over_time(qlport_e8_a[60s])) / on() group_left() sum(avg_over_time(qlport_e8_b[60s]))"
+  },
+  "rhs_ungrouped_default_matching": {
+   "datadog": {
+    "g=x": [
+     1.428571
+    ],
+    "g=y": [
+     2.857143
+    ]
+   },
+   "datadog_query": "sum:qlport.e8.r1794878700.a{*} by {g} / sum:qlport.e8.r1794878700.b{*}",
+   "promql": {},
+   "promql_query": "sum by (g) (avg_over_time(qlport_e8_a[60s])) / sum(avg_over_time(qlport_e8_b[60s]))"
+  },
+  "subset_lhs_finer": {
+   "datadog": {
+    "g=x,h=p": [
+     5.0
+    ]
+   },
+   "datadog_query": "sum:qlport.e8.r1794878700.a{*} by {g,h} / sum:qlport.e8.r1794878700.b{*} by {g}",
+   "promql": {
+    "g=x,h=p": 5.0
+   },
+   "promql_query": "sum by (g, h) (avg_over_time(qlport_e8_a[60s])) / on(g) group_left() sum by (g) (avg_over_time(qlport_e8_b[60s]))"
+  },
+  "subset_rhs_finer": {
+   "datadog": {
+    "g=x,h=p": [
+     5.0
+    ]
+   },
+   "datadog_query": "sum:qlport.e8.r1794878700.a{*} by {g} / sum:qlport.e8.r1794878700.b{*} by {g,h}",
+   "promql": {
+    "g=x,h=p": 5.0
+   },
+   "promql_query": "sum by (g) (avg_over_time(qlport_e8_a[60s])) / on(g) group_right() sum by (g, h) (avg_over_time(qlport_e8_b[60s]))"
+  }
+ },
+ "provenance": {
+  "collected_at": "2026-11-17T01:52:25Z",
+  "interval": 60.0,
+  "prometheus_image": "prom/prometheus:v3.15.0",
+  "run": "r1794878700",
+  "series": {
+   "a:g=x,h=p": 10.0,
+   "a:g=y,h=q": 20.0,
+   "b:g=x,h=p": 2.0,
+   "b:g=z,h=r": 5.0
+  },
+  "site": "datadoghq.com",
+  "step": 10.0
+ }
+}

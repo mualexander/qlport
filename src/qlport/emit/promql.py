@@ -137,36 +137,50 @@ _SCALAR = object()
 
 
 def _match_keys(e: ir.Expr):
-    """The label set PromQL gives this subexpression, for vector matching.
+    """The grouping keys this subexpression's result is keyed by, in query order.
 
-    An empty frozenset means one unlabelled series --- what a space aggregation with no
-    `by` returns. `_SCALAR` is a number, which matches anything. `None` means two
-    operands of a nested operation already disagreed, so nothing can be said.
+    `()` means one unlabelled series --- what a space aggregation with no `by` returns.
+    `_SCALAR` is a number, which matches anything. `None` means two operands of a nested
+    operation have key sets neither of which contains the other, which Datadog itself
+    rejects (see `_binop`).
 
-    Datadog and PromQL part company here. Datadog broadcasts: dividing a per-group
-    series by an ungrouped one divides every group by that one value. PromQL matches on
-    labels, and two vectors with different label sets have no matching pairs at all, so
-    the same expression returns the empty vector rather than a ratio --- silently, since
-    an empty result is not an error. The corpus-scale differential test of §7 is what
-    surfaced it: two shapes where Datadog returned data and PromQL returned nothing.
+    Datadog and PromQL part company over how operands are paired. Datadog pairs two
+    results when one's key set is a subset of the other's, matching on the smaller and
+    keying the result by the larger; an ungrouped operand is the case where the smaller
+    set is empty, and is broadcast over every group of the other. PromQL's default
+    matching is a one-to-one join on the *entire* label set, so the same expression
+    returns the empty vector rather than a ratio --- silently, since an empty result is
+    not an error. E8 measures both rules; `_binop` emits the `on(...)` and
+    `group_left`/`group_right` modifiers that reconcile them.
     """
     if isinstance(e, ir.Number):
         return _SCALAR
     if isinstance(e, ir.Agg):
-        return frozenset(e.keys) if e.mode == "by" else None
+        return tuple(e.keys) if e.mode == "by" else None
     if isinstance(e, ir.BinOp):
         lhs, rhs = _match_keys(e.lhs), _match_keys(e.rhs)
         if lhs is _SCALAR:
             return rhs
         if rhs is _SCALAR:
             return lhs
-        return lhs if lhs == rhs else None
+        if lhs is None or rhs is None:
+            return None
+        ls, rs = set(lhs), set(rhs)
+        if ls == rs:
+            return lhs
+        # The result carries the finer side's keys, which is what Datadog returns and
+        # what `group_left`/`group_right` keeps.
+        if rs < ls:
+            return lhs
+        if ls < rs:
+            return rhs
+        return None
     inner = getattr(e, "expr", None)
     if inner is None:
         inner = getattr(e, "arg", None)
     if inner is not None and not isinstance(inner, (str, float, int, tuple)):
         return _match_keys(inner)
-    return frozenset()
+    return ()
 
 
 class _Emitter:
@@ -295,12 +309,24 @@ class _Emitter:
         lhs, rhs = self.expr(e.lhs), self.expr(e.rhs)
         lk, rk = _match_keys(e.lhs), _match_keys(e.rhs)
         op = e.op
-        if lk is not _SCALAR and rk is not _SCALAR and lk != rk:
-            if lk is None or rk is None or (lk and rk):
+        if lk is not _SCALAR and rk is not _SCALAR:
+            if lk is None or rk is None:
                 _refuse(Gap.UNSUPPORTED_FUNCTION,
-                        f"operands of {e.op} are grouped on different label sets")
-            # The empty side is the single series; the other is the "many" side.
-            op = f"{e.op} on() {'group_left()' if rk == frozenset() else 'group_right()'}"
+                        f"operands of {e.op} are grouped on incomparable label sets")
+            ls, rs = set(lk), set(rk)
+            if rs < ls:                      # left is the finer, "many" side
+                op = f"{e.op} on({', '.join(rk)}) group_left()"
+            elif ls < rs:                    # right is
+                op = f"{e.op} on({', '.join(lk)}) group_right()"
+            elif ls != rs:
+                # Neither contains the other. Datadog rejects such a query itself ---
+                # "Series to be aligned must have group keys that match, or where one
+                # set of group keys is a subset of the other" -- so this refusal is not
+                # a gap in PromQL and not unfinished work here: there is no source
+                # denotation to preserve.
+                _refuse(Gap.UNSUPPORTED_FUNCTION,
+                        f"operands of {e.op} are grouped on incomparable label sets, "
+                        "which Datadog rejects")
         return f"{_atom(lhs)} {op} {_atom(rhs)}"
 
     # -- dispatch ------------------------------------------------------------
