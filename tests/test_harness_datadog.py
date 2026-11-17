@@ -652,3 +652,49 @@ def test_default_matching_would_have_returned_nothing(e8):
     got = e8["cases"]["rhs_ungrouped_default_matching"]
     assert got["promql"] == {}
     assert got["datadog"]
+
+
+# -------------- the recorded E9 measurement (what `.weighted()` computes)
+
+
+E9 = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog" / "e9.json"
+
+
+@pytest.fixture(scope="module")
+def e9() -> dict:
+    if not E9.exists():  # pragma: no cover - run scripts/weighted_semantics.py
+        pytest.skip("e9.json not recorded; run scripts/weighted_semantics.py")
+    return json.loads(E9.read_text())
+
+
+@pytest.mark.parametrize("plain,weighted", [
+    ("by_plain", "by_weighted"),
+    ("by_rollup_avg", "by_weighted_rollup_avg"),
+    ("by_rollup_sum", "by_weighted_rollup_sum"),
+    ("sum_plain", "sum_weighted"),
+    ("count_type_plain", "count_type_weighted"),
+    ("rate_type_plain", "rate_type_weighted"),
+])
+def test_weighted_changes_nothing(e9, plain, weighted):
+    """On every metric type and query form the rig could construct.
+
+    §7 called it "a time-weighted space average that PromQL has no operator for",
+    which was wrong twice: it is not an average, and whatever it is, Datadog returns
+    the same numbers without it.
+    """
+    assert e9["datadog"][plain] == e9["datadog"][weighted], plain
+
+
+def test_the_rig_could_have_seen_a_time_weighting(e9):
+    """The negative result means something only if the probe could have come out other.
+
+    The irregular series reports at 0 s, 50 s and 55 s of each bucket. A plain mean of
+    its three points is 66.7; a mean weighted by the interval each point covers is
+    (0*50 + 100*5 + 100*5)/60 = 16.7. Datadog reads 66.7 with the modifier and
+    without, so the weighting is not being applied rather than being invisible.
+    """
+    assert e9["provenance"]["irregular"] == [[0.0, 0.0], [50.0, 100.0], [55.0, 100.0]]
+    got = e9["datadog"]["by_rollup_avg"]["d:irregular"]
+    assert got == pytest.approx([66.6667], abs=1e-3)
+    weighted_mean = (0 * 50 + 100 * 5 + 100 * 5) / 60
+    assert abs(weighted_mean - 66.6667) > 40, "the two readings must be far apart"

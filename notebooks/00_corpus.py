@@ -351,6 +351,26 @@ for lang, o in order.items():
           f"{int(hit.step.iloc[0]) if len(hit) else '>' + str(len(o) - 1)} features")
 order["datadog"].head(14)
 
+# %% [markdown]
+# §7 checks $\kappa$ against this curve: a translator supporting $n$ features cannot
+# exceed the ceiling at $n$, so a $\kappa$ above one tells you the feature set is
+# larger than that. The two ceilings it quotes are recorded rather than read off the
+# truncated table above, because the table stops at twenty rows and the bracket moved
+# when `.weighted()` was implemented.
+
+# %%
+_dd = order["datadog"]
+_ceil = {int(r.step): round(r.share * 100, 1) for _, r in _dd.iterrows()}
+_QF = ROOT / "paper" / "quoted_figures.json"
+_existing = json.loads(_QF.read_text()) if _QF.exists() else {}
+_existing.update({f"nb00.ceiling_{k}_features_pct": v for k, v in _ceil.items()})
+_existing["nb00.datadog_features"] = len(_dd) - 1
+_QF.write_text(json.dumps(_existing, indent=1, sort_keys=True) + "\n")
+print("greedy ceilings near kappa:")
+for _k in sorted(_ceil):
+    if _ceil[_k] >= 94.0:
+        print(f"  {_k:>2} features -> {_ceil[_k]}%")
+
 # %%
 dd = order["datadog"]
 rows = [[f"{int(r.step)}", code(r.feature), tex(c.FEATURE_DOC.get(r.feature, "")),

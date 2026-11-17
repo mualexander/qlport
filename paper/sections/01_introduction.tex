@@ -64,10 +64,10 @@ artefact in the direction teams travel, and it is not an expressiveness gap; the
 expressiveness gap is in the direction they do not. Both halves took measurement to
 establish and neither was the expected answer.
 
-Going from Datadog to PromQL, $95.5\%$ of query occurrences translate, and the shortfall
-is mostly unfinished work rather than impossibility: $2.0\%$ of the corpus is
+Going from Datadog to PromQL, $96.3\%$ of query occurrences translate, and the shortfall
+is mostly unfinished work rather than impossibility: $1.2\%$ of the corpus is
 inexpressible in PromQL against $2.4\%$ this translator has not implemented, with a
-ceiling of $97.9\%$ once the latter is done. On that evidence the switching cost in the
+ceiling of $98.7\%$ once the latter is done. On that evidence the switching cost in the
 direction people travel is \emph{engineering} (\S\ref{sec:gaps}).
 
 The design artefact is elsewhere, and \S\ref{sec:discussion} argues it is the more
@@ -103,7 +103,7 @@ holds for every possible translator, not just ours.
 Datadog's \texttt{.as\_count()} and \texttt{.as\_rate()} translated exactly, not merely
 to within $\varepsilon$, with the preconditions named; and soundness theorems whose
 hypotheses are exactly the preconditions the emitter reports, covering first the kernel
-($94.6\%$ of the corpus) and then its arithmetic closure --- which is every expression
+($95.4\%$ of the corpus) and then its arithmetic closure --- which is every expression
 this translator emits.
 \item \textbf{The regular sub-problem (\S\ref{sec:regular}).} Glob-expressibility of a
 regular expression is decidable, by an argument about shortest words, and the

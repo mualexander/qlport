@@ -282,7 +282,7 @@ summing a gauge over a window is an ordinary thing to want --- and the translati
 front end chooses for it, the cumulative difference, computes something else entirely.
 Of the three pieces of evidence the query can carry, the one that is hardest to dismiss
 as author error is the one whose misreading is least benign. With that premise withdrawn the
-caveat holds of all $8{,}375$ translated occurrences, $100\%$ of them
+caveat holds of all $8{,}445$ translated occurrences, $100\%$ of them
 (Table~\ref{tab:translation-caveats}).
 
 Recording it does not move $\kappa$ --- the translations are unchanged --- which is the
@@ -428,7 +428,7 @@ not. The same run with the metric submitted as a \texttt{GAUGE}, where the hypot
 holds, agrees exactly on every bucket (\texttt{scripts\slash type\_assumption.py}).
 
 \noindent
-The theorem is a statement about the \emph{kernel}, which is $94.6\%$ of the corpus and
+The theorem is a statement about the \emph{kernel}, which is $95.4\%$ of the corpus and
 $99.0\%$ of what the translator emits, but not all of it. What the remainder does is
 arithmetic between kernel queries, and \S\ref{sec:binop-soundness} extends the theorem
 over exactly that. The honest
@@ -449,7 +449,7 @@ a translator \emph{limited to the kernel's features} would complete, which is a
 statement about a feature set. $\mathcal{K}$ is a statement about IR shape, and the two
 differ: a query using a glob or a boolean scope is outside the first and inside the
 second, since Lemma~\ref{lem:scope} covers every scope lowering admits. Computed from
-the lowered IR rather than from the feature list, the kernel carries $8{,}294$
+the lowered IR rather than from the feature list, the kernel carries $8{,}364$
 occurrences.
 
 
@@ -566,7 +566,7 @@ by $\chi$, which is a function of the query text alone.
 
 \noindent
 Theorem~\ref{thm:arith} reaches further than it may look. $\mathcal{A}$ contains
-$8{,}375$ occurrences --- $95.5\%$ of the corpus and, more to the point, \emph{every
+$8{,}445$ occurrences --- $96.3\%$ of the corpus and, more to the point, \emph{every
 translation the emitter produces}. Nothing this translator emits falls outside the
 fragment proved exact, so the gap between what is claimed and what is shipped is empty
 rather than small. That is the statement \S\ref{sec:framework}'s

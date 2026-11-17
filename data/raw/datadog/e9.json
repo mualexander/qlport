@@ -1,0 +1,195 @@
+{
+ "datadog": {
+  "by_plain": {
+   "d:irregular": [
+    0.0,
+    30.0,
+    60.0,
+    90.0,
+    100.0
+   ],
+   "d:regular": [
+    40.0
+   ]
+  },
+  "by_rollup_avg": {
+   "d:irregular": [
+    66.6667
+   ],
+   "d:regular": [
+    40.0
+   ]
+  },
+  "by_rollup_count": {
+   "d:irregular": [
+    3.0
+   ],
+   "d:regular": [
+    4.0
+   ]
+  },
+  "by_rollup_sum": {
+   "d:irregular": [
+    200.0
+   ],
+   "d:regular": [
+    160.0
+   ]
+  },
+  "by_weighted": {
+   "d:irregular": [
+    0.0,
+    30.0,
+    60.0,
+    90.0,
+    100.0
+   ],
+   "d:regular": [
+    40.0
+   ]
+  },
+  "by_weighted_rollup_avg": {
+   "d:irregular": [
+    66.6667
+   ],
+   "d:regular": [
+    40.0
+   ]
+  },
+  "by_weighted_rollup_sum": {
+   "d:irregular": [
+    200.0
+   ],
+   "d:regular": [
+    160.0
+   ]
+  },
+  "count_type_plain": {
+   "*": [
+    66.6667
+   ]
+  },
+  "count_type_weighted": {
+   "*": [
+    66.6667
+   ]
+  },
+  "rate_type_plain": {
+   "*": [
+    66.6667
+   ]
+  },
+  "rate_type_weighted": {
+   "*": [
+    66.6667
+   ]
+  },
+  "sum_plain": {
+   "*": [
+    40.0,
+    70.0,
+    100.0,
+    130.0,
+    140.0
+   ]
+  },
+  "sum_weighted": {
+   "*": [
+    40.0,
+    70.0,
+    100.0,
+    130.0,
+    140.0
+   ]
+  }
+ },
+ "datadog_queries": {
+  "by_plain": "sum:qlport.e9.r1794901380.g{*} by {d}",
+  "by_rollup_avg": "sum:qlport.e9.r1794901380.g{*} by {d}.rollup(avg, 60)",
+  "by_rollup_count": "sum:qlport.e9.r1794901380.g{*} by {d}.rollup(count, 60)",
+  "by_rollup_sum": "sum:qlport.e9.r1794901380.g{*} by {d}.rollup(sum, 60)",
+  "by_weighted": "sum:qlport.e9.r1794901380.g{*} by {d}.weighted()",
+  "by_weighted_rollup_avg": "sum:qlport.e9.r1794901380.g{*} by {d}.weighted().rollup(avg, 60)",
+  "by_weighted_rollup_sum": "sum:qlport.e9.r1794901380.g{*} by {d}.weighted().rollup(sum, 60)",
+  "count_type_plain": "sum:qlport.e9.r1794901380.c{*}.rollup(avg, 60)",
+  "count_type_weighted": "sum:qlport.e9.r1794901380.c{*}.weighted().rollup(avg, 60)",
+  "rate_type_plain": "sum:qlport.e9.r1794901380.r{*}.rollup(avg, 60)",
+  "rate_type_weighted": "sum:qlport.e9.r1794901380.r{*}.weighted().rollup(avg, 60)",
+  "sum_plain": "sum:qlport.e9.r1794901380.g{*}",
+  "sum_weighted": "sum:qlport.e9.r1794901380.g{*}.weighted()"
+ },
+ "promql": {
+  "candidate_weighted_mean": {
+   "<none>": 51.4286
+  },
+  "candidate_weighted_sum": {
+   "<none>": 360.0
+  },
+  "per_series_count": {
+   "irregular": 3.0,
+   "regular": 4.0
+  },
+  "per_series_mean": {
+   "irregular": 66.6667,
+   "regular": 40.0
+  },
+  "per_series_sum": {
+   "irregular": 200.0,
+   "regular": 160.0
+  },
+  "plain_mean_of_means": {
+   "<none>": 53.3333
+  },
+  "plain_sum_of_means": {
+   "<none>": 106.6667
+  }
+ },
+ "promql_queries": {
+  "candidate_weighted_mean": "sum(avg_over_time(qlport_e9_g[60s]) * count_over_time(qlport_e9_g[60s])) / sum(count_over_time(qlport_e9_g[60s]))",
+  "candidate_weighted_sum": "sum(avg_over_time(qlport_e9_g[60s]) * count_over_time(qlport_e9_g[60s]))",
+  "per_series_count": "count_over_time(qlport_e9_g[60s])",
+  "per_series_mean": "avg_over_time(qlport_e9_g[60s])",
+  "per_series_sum": "sum_over_time(qlport_e9_g[60s])",
+  "plain_mean_of_means": "avg(avg_over_time(qlport_e9_g[60s]))",
+  "plain_sum_of_means": "sum(avg_over_time(qlport_e9_g[60s]))"
+ },
+ "provenance": {
+  "collected_at": "2026-11-17T08:10:07Z",
+  "interval": 60.0,
+  "irregular": [
+   [
+    0.0,
+    0.0
+   ],
+   [
+    50.0,
+    100.0
+   ],
+   [
+    55.0,
+    100.0
+   ]
+  ],
+  "prometheus_image": "prom/prometheus:v3.15.0",
+  "regular": [
+   [
+    0.0,
+    40.0
+   ],
+   [
+    15.0,
+    40.0
+   ],
+   [
+    30.0,
+    40.0
+   ],
+   [
+    45.0,
+    40.0
+   ]
+  ],
+  "run": "r1794901380",
+  "site": "datadoghq.com"
+ }
+}

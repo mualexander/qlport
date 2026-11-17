@@ -136,7 +136,6 @@ def test_scope_terms_become_label_matchers(term, want):
     ("sum:x{*-zone}.as_count()", Gap.LABEL_NAME_GLOB),
     ("sum:iis.users.anon{*,!*}.as_count()", Gap.UNSUPPORTED_FUNCTION),
     ("sum:x{*}.fill(zero).as_count()", Gap.FILL_INTERPOLATION),
-    ("sum:x{*}.weighted().as_count()", Gap.UNSUPPORTED_FUNCTION),
     ("p95:x{*}.as_count()", Gap.UNSUPPORTED_FUNCTION),
     ("top(avg:x{*}, 10, 'mean', 'desc')", Gap.UNSUPPORTED_FUNCTION),
     ("per_minute(sum:x{*})", Gap.UNSUPPORTED_FUNCTION),
@@ -657,3 +656,33 @@ def test_a_scalar_operand_matches_anything_and_keeps_the_vectors_keys():
     # `100 * q` is pointwise in both languages and needs no matching clause.
     assert translate("100 * sum:a.b{*} by {g}") == \
         "100 * sum by (g) (avg_over_time(a_b[60s]))"
+
+
+# ------------------------------------- .weighted(), measured as the identity (E9)
+
+
+@pytest.mark.parametrize("ddq,want", [
+    # 54 of the 56 distinct corpus forms attach it to `sum:`, not to `avg:`, which is
+    # the first sign it is not the "time-weighted space average" §7 called it.
+    ("sum:k.x{*} by {env}.weighted()",
+     "sum by (env) (avg_over_time(k_x[60s]))"),
+    ("sum:k.x{*}.weighted().rollup(avg, 60)", "sum(avg_over_time(k_x[60s]))"),
+    ("avg:k.x{*} by {h}.weighted()", "avg by (h) (avg_over_time(k_x[60s]))"),
+    # order in the chain must not matter, since it contributes nothing
+    ("sum:k.x{*}.rollup(avg, 60).weighted()", "sum(avg_over_time(k_x[60s]))"),
+])
+def test_weighted_translates_as_the_query_without_it(ddq, want):
+    """E9 could not make the modifier change any reading, so it is dropped.
+
+    Submitting a series whose points fall 0 s, 50 s and 55 s into each bucket -- where
+    a mean weighted by the interval each point covers reads 16.7 against the plain
+    66.7 -- Datadog returns the same figure with the modifier and without it, on
+    GAUGE, COUNT and RATE alike and under avg, sum and count rollups.
+    """
+    assert translate(ddq) == want
+
+
+def test_weighted_no_longer_refuses():
+    got = emit_detail(lower(parse("datadog", "sum:x{*}.weighted().as_count()", "v2")),
+                      default_rollup=60.0)
+    assert not isinstance(got, Bottom), got

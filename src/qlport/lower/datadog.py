@@ -275,6 +275,16 @@ def _methods(nodes: list[Tree]) -> _Methods:
                     m.interval = float(_arg_text(args[1]))
                 except ValueError:
                     _refuse(Gap.UNSUPPORTED_FUNCTION, f".rollup(, {_arg_text(args[1])})")
+        elif name == "weighted":
+            # Measured as the identity, not assumed to be one. E9 submits a series
+            # whose points fall 0 s, 50 s and 55 s into each bucket -- where a mean
+            # weighted by the interval each point covers reads 16.7 against the plain
+            # 66.7 -- and Datadog returns the same figure with the modifier and
+            # without it, on GAUGE, COUNT and RATE alike and under avg, sum and count
+            # rollups. An earlier version refused it as a time-weighted space average
+            # PromQL has no operator for, which was wrong twice over: it is not an
+            # average, and it is not a gap.
+            pass
         elif name == "fill":
             # fill(null) is the default and changes nothing; every other mode
             # invents samples, which no PromQL expression does.

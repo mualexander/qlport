@@ -253,7 +253,7 @@ for f in ("SCOPE_BOOL", "SCOPE_IN", "SCOPE_PAREN"):
     print(f"{f:12s} {int(sub.n.sum()):5d} occurrences, {share:.1%} translated")
 
 # §7 and §8 quote these, so re-running the notebook has to reproduce them.
-assert int(kinds.occurrences["language gap"]) == 175, kinds
+assert int(kinds.occurrences["language gap"]) == 105, kinds
 assert int(kinds.occurrences["not implemented"]) == 208, kinds
 
 # §8 names the five constructs the language-gap share is made of, with counts, so the
@@ -267,9 +267,9 @@ breakdown = {".weighted()": weighted, "percentiles": pctile,
              "LABEL_NAME_GLOB": int(by_gap.get("LABEL_NAME_GLOB", 0)),
              "SCOPE_DISJUNCTION": int(by_gap.get("SCOPE_DISJUNCTION", 0))}
 print("language-gap breakdown:", breakdown)
-assert breakdown == {".weighted()": 70, "percentiles": 34, "FILL_INTERPOLATION": 36,
+assert breakdown == {".weighted()": 0, "percentiles": 34, "FILL_INTERPOLATION": 36,
                      "LABEL_NAME_GLOB": 31, "SCOPE_DISJUNCTION": 4}, breakdown
-assert sum(breakdown.values()) == 175, breakdown
+assert sum(breakdown.values()) == 105, breakdown
 
 
 # %% [markdown]
@@ -324,8 +324,8 @@ print(f"closure A: {closure_occ:,} = {closure_occ / _tot:.1%} of corpus, "
 # the fragment §5 proves exact. That is what makes thm:arith worth stating separately
 # from thm:kernel rather than as a footnote to it.
 assert closure_occ == _tr, (closure_occ, _tr)
-assert kernel_occ == 8294, kernel_occ
-assert closure_occ == 8375, closure_occ
+assert kernel_occ == 8364, kernel_occ
+assert closure_occ == 8445, closure_occ
 
 # %% [markdown]
 # ### Caveats on the translations we do claim
@@ -495,10 +495,10 @@ for k in (50, len(shapes)):
     print(f"  top {k:3} shapes -> ~{series:,} synthetic series")
 
 # §7 and §9 quote these, so a re-run has to reproduce them.
-assert len(shapes) == 322, len(shapes)
-assert total_shaped == 8270, total_shaped
+assert len(shapes) == 325, len(shapes)
+assert total_shaped == 8340, total_shaped
 assert milestones[0.5] == 6 and milestones[0.8] == 23, milestones
-assert milestones[0.9] == 49 and milestones[0.95] == 103, milestones
+assert milestones[0.9] == 50 and milestones[0.95] == 104, milestones
 print("shape-reduction assertions hold")
 
 

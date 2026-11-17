@@ -14,18 +14,18 @@ or a parenthesised expression, and it is forced by the language as specified rat
 by how we wrote the rules --- so RQ1's answer for PromQL is ``LALR(1) modulo one
 documented resolution''.
 
-\textbf{RQ2.} The largest exactly-translating fragment we could build covers $95.5\%$ of
+\textbf{RQ2.} The largest exactly-translating fragment we could build covers $96.3\%$ of
 Datadog query occurrences, and it is exact under stated preconditions over the whole of
 that --- the soundness theorems of \S\ref{sec:kernel-soundness} and
 \S\ref{sec:binop-soundness} between them cover every expression the translator emits,
-so nothing is shipped that is not proved. Outside the fragment, $2.0\%$ of the corpus is
-inexpressible in PromQL --- five constructs, each argued rather than merely reported ---
-and $2.4\%$ is work this translator has not done, giving a ceiling of $97.9\%$. In the reverse direction, on the
+so nothing is shipped that is not proved. Outside the fragment, $1.2\%$ of the corpus is
+inexpressible in PromQL --- four constructs, each argued rather than merely reported ---
+and $2.4\%$ is work this translator has not done, giving a ceiling of $98.7\%$. In the reverse direction, on the
 sub-problem of tag filtering, the obstructions are theorems: a glob's language is a single
 word or unbounded in length, and three impossibility results follow that account for every
 refusal, $38.3\%$ of the concrete patterns in the corpus.
 
-\textbf{RQ3.} Coverage on published dashboards is the $95.5\%$ above, and the shape of the
+\textbf{RQ3.} Coverage on published dashboards is the $96.3\%$ above, and the shape of the
 shortfall matters more than its size. Coverage against implementation effort is a
 staircase, not a curve, because a query translates only when every feature it uses is
 supported while the popularity that would guide an implementation order is marginal. Half
@@ -66,7 +66,7 @@ the reset by a real agent and a real Prometheus at once, and it is the last assu
 
 The same construction has since been run at corpus scale, and it is the reason $\kappa$
 can now be read as a statement about translations that were checked rather than merely
-emitted. Abstracting metric names and tag values away collapses the corpus to $322$
+emitted. Abstracting metric names and tag values away collapses the corpus to $325$
 distinct query shapes, few enough that a single trial account holds every series they
 need; each is instantiated, written to both systems and compared bucket by bucket
 (\S\ref{sec:differential}). It found four translation defects that the unit tests and the

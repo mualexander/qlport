@@ -177,20 +177,23 @@ it.}
 \end{table}
 
 \noindent
-$\kappa = 95.5\%$ of occurrences, and $95.5\%$ of distinct queries. The two agreeing to
+$\kappa = 96.3\%$ of occurrences, and $96.2\%$ of distinct queries. The two agreeing to
 within a tenth of a point is worth a sentence, because there was no reason they should:
 it says the queries the translator refuses are neither more nor less repeated across
 dashboards than the ones it handles. There is no cheap win hiding in the popular queries, and conversely no
 consolation that the failures are all one-offs.
 
 Two sanity conditions hold on the translated set. Every emitted expression parses under
-the PromQL grammar of Section~\ref{sec:grammars} --- all $7{,}498$ of them, since $89$
-of the $7{,}344$ translated queries are comma-separated lists that emit one expression
+the PromQL grammar of Section~\ref{sec:grammars} --- all $7{,}550$ of them, since $89$
+of the $7{,}396$ translated queries are comma-separated lists that emit one expression
 per series. That is checked as an assertion rather than reported as a rate, since the
 only acceptable number of syntactically invalid outputs is zero. And $\kappa$ sits between the ceilings that the
-greedy order of \S\ref{sec:staircase} places on a twenty-three- and a
-twenty-four-feature fragment ($95.5\%$ and $95.9\%$), so the translator is at the
-frontier its feature set allows rather than leaving easy queries unattempted.
+greedy order of \S\ref{sec:staircase} places on a twenty-six- and a
+twenty-seven-feature fragment ($96.2\%$ and $99.3\%$), so the translator is at the
+frontier its feature set allows rather than leaving easy queries unattempted. That
+bracket moved when \texttt{.weighted()} was implemented (Remark~\ref{rem:weighted}),
+which is the staircase of \S\ref{sec:staircase} seen from the other side: one feature
+carried $\kappa$ past two ceilings at once.
 
 \subsection{The gap catalogue}
 \label{sec:gaps}
@@ -208,12 +211,37 @@ corpus.}
 
 \texttt{UNSUPPORTED\_FUNCTION} is the largest and the least interesting: it is a bundle of
 Datadog functions the translator does not implement, led by \texttt{top(...)} ($139$
-occurrences), \texttt{.weighted()} ($70$), the percentile aggregators ($34$, spread over
-five distinct percentiles) and \texttt{per\_second(...)} ($22$). Some are genuine
-semantic gaps --- \texttt{.weighted()} computes a time-weighted space average that PromQL
-has no operator for, and Datadog's percentile aggregators read a sketch the metric
-carries rather than a set of samples. The row is a mixture, which is why the last
-paragraph of this subsection splits the whole table.
+occurrences), the percentile aggregators ($34$, spread over five distinct percentiles)
+and \texttt{per\_second(...)} ($22$). One of them is a genuine semantic gap ---
+Datadog's percentile aggregators read a sketch the metric carries rather than a set of
+samples --- and the rest are work. The row is a mixture, which is why the last paragraph
+of this subsection splits the whole table.
+
+\begin{remark}[\texttt{.weighted()} was the largest claimed gap and is not one]%
+\label{rem:weighted}
+Until recently this row was led by \texttt{.weighted()} at $70$ occurrences, described
+here as ``a time-weighted space average that PromQL has no operator for''. That sentence
+was the entire warrant, and it was wrong in both halves.
+
+It is not an average: $54$ of the $56$ distinct corpus forms attach the modifier to
+\texttt{sum:}. And it is not a gap, because it does not compute anything. A series
+reporting at $0$, $50$ and $55$ seconds into each $60$\,s bucket has a plain mean of
+$66.7$ and a mean weighted by the interval each point covers of $16.7$, so a rig built
+on it can tell the two apart. Datadog returns $66.7$ with the modifier and without it
+--- on \texttt{GAUGE}, \texttt{COUNT} and \texttt{RATE} alike, under \texttt{avg},
+\texttt{sum} and \texttt{count} rollups, grouped and ungrouped
+(\texttt{scripts\slash weighted\_semantics.py}). On everything this corpus does with it,
+\texttt{.weighted()} is the identity.
+
+So the translation of a query carrying it is the translation of the query without it,
+the front end drops the modifier as it already dropped \texttt{.fill(null)}, and $70$
+occurrences move from the inexpressible column to $\kappa$ --- which is the third time
+in this paper that a claimed language gap has turned out to be neither a gap nor even
+work. The residue is a caution rather than a result: a modifier that does nothing
+everywhere we can look may still do something somewhere we cannot, and what is measured
+is every metric type and query shape the rig can build, not every configuration Datadog
+has.
+\end{remark}
 
 \texttt{top(...)} decides where that split falls, so it is worth settling rather than
 asserting. An earlier draft of this paragraph called it ``close to PromQL's
@@ -244,7 +272,8 @@ carry two more preconditions of exactly the kind \S\ref{sec:discussion} argues a
 real switching cost.
 
 \texttt{FILL\_INTERPOLATION} ($36$) and \texttt{LABEL\_NAME\_GLOB} ($31$) are the two
-clean cases, and both are genuine. \texttt{.fill(linear)} and \texttt{.fill(last)}
+clean cases, and both are genuine --- and with \texttt{.weighted()} withdrawn they are
+most of what is left. \texttt{.fill(linear)} and \texttt{.fill(last)}
 interpolate across gaps \emph{inside} the query, which PromQL's staleness handling does
 not express. A wildcard in a tag \emph{key} rather than a value, as in
 \texttt{\{*-location\}}, asks for a match over label \emph{names}, which a PromQL
@@ -259,7 +288,7 @@ makes it a single regex matcher. An earlier version of this translator refused a
 it, at $124$ occurrences, and reported that as a gap in the language. It was not: $120$
 of those occurrences are single-key disjunctions, and implementing
 Proposition~\ref{prop:disjunction} translates them, taking $\kappa$ from $94.2\%$ to
-$95.6\%$ at the time, and $95.5\%$ as it now stands.
+$95.6\%$ at the time, and $96.3\%$ as it now stands.
 
 What survives is four occurrences, and they are the real thing: disjunction across
 different keys (\texttt{\{(status:400 OR s)\}}), a branch that constrains two keys at
@@ -298,15 +327,14 @@ claim.
 \paragraph{How much of the $4.4\%$ is a language gap.}
 Separating the two kinds of refusal is the point of having codes at all, and on this
 corpus the split is lopsided. The refusals that rest on something PromQL cannot say are
-\texttt{.weighted()} ($70$ occurrences --- a time-weighted space average, which no PromQL
-operator computes), the percentile aggregators ($34$, which read a sketch the Datadog
-metric carries rather than a set of samples), \texttt{.fill} interpolation ($36$),
-tag-key globs ($31$) and the four surviving disjunctions: $175$ occurrences, $2.0\%$ of
-the corpus. The other $208$ --- $2.4\%$ --- are constructs this translator has not
-implemented, \texttt{top(...)} chief among them. So the ceiling for this direction is
-$97.9\%$ against the $95.5\%$ measured here, and the distance between the two is
-engineering rather than language design --- as the disjunction rule just demonstrated by
-closing $1.4$ points of it. That is the finding to carry into \S\ref{sec:discussion}:
+the percentile aggregators ($34$, which read a sketch the Datadog metric carries rather
+than a set of samples), \texttt{.fill} interpolation ($36$), tag-key globs ($31$) and
+the four surviving disjunctions: $105$ occurrences, $1.2\%$ of the corpus. The other
+$208$ --- $2.4\%$ --- are constructs this translator has not implemented,
+\texttt{top(...)} chief among them. So the ceiling for this direction is $98.7\%$
+against the $96.3\%$ measured here, and the distance between the two is engineering
+rather than language design --- as the disjunction rule demonstrated by closing $1.4$
+points of it and \texttt{.weighted()} by closing $0.8$ more. That is the finding to carry into \S\ref{sec:discussion}:
 going this way, almost all of the apparent incompatibility is work, and what is left is
 small enough to enumerate query by query.
 
@@ -346,13 +374,13 @@ a finer interval than the range allows is refused outright rather than silently 
 which is the better of the two behaviours for a translator: the limit is on points
 returned per query, so the error is visible instead of the data being quietly coarser
 than asked for.
-\texttt{COUNTER\_RESET} marks the $23.8\%$ that use the cumulative-difference form of
+\texttt{COUNTER\_RESET} marks the $23.6\%$ that use the cumulative-difference form of
 Proposition~\ref{prop:offset}, exact unless a counter resets inside the window;
 Table~\ref{tab:rollup-live} measures what that costs when one does, and
 Proposition~\ref{prop:anchored} removes it at the price of requiring Prometheus~$3.7$ or
 newer.
 
-\texttt{PHI\_SERIES\_START} marks the same $23.8\%$, and marks it for a second reason
+\texttt{PHI\_SERIES\_START} marks the same $23.6\%$, and marks it for a second reason
 that went unrecorded until this draft. The cumulative difference needs a sample
 \emph{before} the bucket to subtract, and a series younger than the window has none, so
 the expression returns no result where Datadog returns the deltas it does hold
@@ -487,27 +515,31 @@ estimate is badly wrong. It does not need every metric the corpus names to exist
 systems. What a differential test exercises is the \emph{operator structure} --- which
 rollup, which aggregation, which matcher shapes --- and two queries that differ only in
 the metric they name are one experiment, not two. Abstracting metric names, tag keys and
-tag values out of the lowered IR collapses the $8{,}270$ translated occurrences that are
-a single query to \textbf{$322$ distinct shapes}, and they are as unevenly distributed as
+tag values out of the lowered IR collapses the $8{,}340$ translated occurrences that are
+a single query to \textbf{$325$ distinct shapes}, and they are as unevenly distributed as
 everything else in this corpus: $6$ shapes cover half the occurrences, $23$ cover $80\%$,
-$49$ cover $90\%$ and $103$ cover $95\%$. A median query has one metric slot and two tag
-keys, so at three label values apiece all $322$ shapes need under a thousand synthetic
+$50$ cover $90\%$ and $104$ cover $95\%$. A median query has one metric slot and two tag
+keys, so at three label values apiece all $325$ shapes need under a thousand synthetic
 series --- a scale a single trial account sustains, which is why the experiment turned
 out not to need a reconstruction of somebody's production estate. The reduction is only
 sound if every query in a class translates the same way, and that is checkable rather
-than arguable: emitting all of them and masking the identifiers leaves each of the $322$
+than arguable: emitting all of them and masking the identifiers leaves each of the $325$
 classes with exactly one form, so a representative stands for its class. Establishing
 that found a wart worth fixing --- the emitter decided parenthesisation by scanning its
 own output for operators, so a hyphen inside a tag value such as \texttt{result:hit-wait}
 was read as one and wrapped the expression in parentheses that meant nothing.
 
-Table~\ref{tab:differential} reports the outcome. Of the $322$ shapes, $320$ could be
-compared, and all $320$ agreed with Datadog on every one of $21{,}766$ bucket
+Table~\ref{tab:differential} reports the outcome. Of the $325$ shapes, $323$ could be
+compared, and all $323$ agreed with Datadog on every one of $21{,}962$ bucket
 comparisons --- to float64 precision rather than bit-identity, since two engines summing
 the same values in a different order differ in the last bit, and the bound is the one the
 model-versus-server check of Section~\ref{sec:ingestion} already uses. Weighted by the
-corpus queries those shapes stand for, that is $8{,}267$ of the $8{,}270$ translated
-single-query occurrences. So $\kappa$ now measures translations that have been checked
+corpus queries those shapes stand for, that is $8{,}337$ of the $8{,}340$ translated
+single-query occurrences. Three of those shapes are new since
+Remark~\ref{rem:weighted}, and their agreeing is a second and independent check on it:
+the modifier was dropped on the strength of a probe built to detect a weighting, and
+the corpus's own \texttt{.weighted()} queries then agreed with Datadog bucket for
+bucket. So $\kappa$ now measures translations that have been checked
 against the vendor rather than merely emitted, which is a claim this paper could not
 previously make.
 
