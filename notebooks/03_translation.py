@@ -40,6 +40,7 @@
 # `paper/figures/coverage_by_gap.pdf`, `data/processed/translations.csv`.
 
 # %%
+import json
 import re
 from pathlib import Path
 
@@ -455,18 +456,26 @@ import collections                            # noqa: E402
 from collections import Counter               # noqa: E402
 from qlport.ir import shape, shape_slots       # noqa: E402
 
+# The population is the one `scripts/shape_differential.py` actually instantiates, so
+# that what is asserted here is what §7 reports: a request that is a comma-separated
+# list of queries is excluded, because the runner needs one expression per
+# representative, and so is anything the emitter refuses. An earlier version of this
+# cell shaped every sub-query of every lowered request and counted 331 classes, which
+# is a defensible number of a different population and was quoted by nothing.
 shapes, slots = Counter(), {}
 for row in tr[tr.outcome == "translated"].itertuples():
     try:
         lowered = lower_all(parse("datadog", row.norm, "v2"))
     except Exception:
         continue
-    for e in lowered:
-        if isinstance(e, Bottom):
-            continue
-        s = shape(e)
-        shapes[s] += int(row.n)
-        slots[s] = max(slots.get(s, (0, 0)), shape_slots(e))
+    if len(lowered) != 1 or isinstance(lowered[0], Bottom):
+        continue
+    e = lowered[0]
+    if isinstance(emit_detail(e, default_rollup=DEFAULT_ROLLUP), Bottom):
+        continue
+    s = shape(e)
+    shapes[s] += int(row.n)
+    slots[s] = max(slots.get(s, (0, 0)), shape_slots(e))
 
 total_shaped = sum(shapes.values())
 print(f"{len(shapes):,} distinct shapes covering {total_shaped:,} occurrences")
@@ -481,14 +490,15 @@ for target in (0.5, 0.8, 0.9, 0.95, 0.99):
     print(f"  {target:5.0%} of occurrences needs {milestones[target]:,} shapes")
 
 LABEL_VALUES = 3     # per grouping key, to make an aggregation non-trivial
-for k in (50, 104, len(shapes)):
+for k in (50, len(shapes)):
     series = sum(slots[s][0] for s, _ in shapes.most_common(k)) * LABEL_VALUES
     print(f"  top {k:3} shapes -> ~{series:,} synthetic series")
 
 # §7 and §9 quote these, so a re-run has to reproduce them.
-assert len(shapes) == 331, len(shapes)
-assert milestones[0.5] == 6 and milestones[0.8] == 22, milestones
-assert milestones[0.9] == 49 and milestones[0.95] == 104, milestones
+assert len(shapes) == 322, len(shapes)
+assert total_shaped == 8270, total_shaped
+assert milestones[0.5] == 6 and milestones[0.8] == 23, milestones
+assert milestones[0.9] == 49 and milestones[0.95] == 103, milestones
 print("shape-reduction assertions hold")
 
 
@@ -536,3 +546,55 @@ divergent = {s: f for s, f in forms.items() if len(f) > 1}
 print(f"{len(forms):,} shape classes; {len(divergent)} emit more than one form")
 assert not divergent, list(divergent.values())[:2]
 print("one representative per shape covers its class")
+
+# %% [markdown]
+# ## Figures the prose quotes
+#
+# Every number §1, §5, §7, §8 and §9 state in running text rather than read off a table
+# is recorded here, so `tests/test_paper_figures.py` can check the prose against the
+# corpus instead of against an earlier draft. Three figures went stale this way before
+# the check existed — $\kappa$ as $95.6\%$ after it moved to $95.5\%$, and the
+# translated and emitted counts by one each — and none of them was visible in any table.
+
+# %%
+_q = {
+    "corpus_occurrences": int(total_n),
+    "corpus_distinct": int(total_d),
+    "distinct_after_instantiation": int(total_d),
+    "kappa_occurrences": int(translated.n.sum()),
+    "kappa_distinct": int(len(translated)),
+    "kappa_pct": round(translated.n.sum() / total_n * 100, 1),
+    "emitted_expressions": int(sum(len(r) for r in tr.parts)),
+    "multi_expression_queries": int(sum(1 for r in tr.parts if len(r) > 1)),
+    "language_gap_occurrences": int(kinds.occurrences["language gap"]),
+    "not_implemented_occurrences": int(kinds.occurrences["not implemented"]),
+    "language_gap_pct": round(kinds.occurrences["language gap"] / total_n * 100, 1),
+    "not_implemented_pct": round(kinds.occurrences["not implemented"] / total_n * 100, 1),
+    "ceiling_pct": round(ceiling * 100, 1),
+    "kernel_occurrences": int(kernel_occ),
+    "kernel_pct_corpus": round(kernel_occ / total_n * 100, 1),
+    "kernel_pct_translated": round(kernel_occ / translated.n.sum() * 100, 1),
+    "closure_occurrences": int(closure_occ),
+    "closure_pct_corpus": round(closure_occ / total_n * 100, 1),
+    "closure_pct_translated": round(closure_occ / translated.n.sum() * 100, 1),
+    "shapes": int(len(shapes)),
+    "shaped_occurrences": int(total_shaped),
+    "shapes_for_half": int(milestones[0.5]),
+    "shapes_for_80pct": int(milestones[0.8]),
+    "shapes_for_90pct": int(milestones[0.9]),
+    "shapes_for_95pct": int(milestones[0.95]),
+}
+for _, _row in cav.iterrows():
+    _q[f"caveat_{_row.c.lower()}_pct"] = round(_row.occurrences / translated.n.sum() * 100, 1)
+    _q[f"caveat_{_row.c.lower()}_occurrences"] = int(_row.occurrences)
+
+# Next to the generated tables rather than in data/processed, which is derived data and
+# gitignored: this is a paper input, and the check that reads it has to work on a fresh
+# clone before any notebook has run.
+_QF = ROOT / "paper" / "quoted_figures.json"
+_existing = json.loads(_QF.read_text()) if _QF.exists() else {}
+_existing.update({f"nb03.{k}": v for k, v in _q.items()})
+_QF.write_text(json.dumps(_existing, indent=1, sort_keys=True) + "\n")
+print(f"wrote {_QF.relative_to(ROOT)} ({len(_q)} figures from notebook 03)")
+for _k in sorted(_q):
+    print(f"  {_k:38s} {_q[_k]}")
