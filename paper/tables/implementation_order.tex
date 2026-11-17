@@ -2,25 +2,25 @@
 \toprule
 Step & Feature & Construct & Pending uses & Queries completed & Cumulative \\
 \midrule
-1 & \texttt{GROUP\_BY} & group by \{...\} & 4,922 & 20 & 1\% \\
-2 & \texttt{MULTI\_QUERY} & comma-separated list of queries & 117 & 9 & 1\% \\
-3 & \texttt{ARITH} & arithmetic between operands & 115 & 5 & 2\% \\
-4 & \texttt{CONST} & numeric literal & 470 & 9 & 2\% \\
-5 & \texttt{FUNC\_APPLIED} & function applied to the query & 205 & 1 & 2\% \\
-6 & \texttt{AGG\_AVG} & space aggregator avg: & 3,885 & 1 & 2\% \\
-7 & \texttt{SCOPE\_VAR} & dashboard template variable in the scope & 7,624 & 2,468 & 30\% \\
-8 & \texttt{AGG\_SUM} & space aggregator sum: & 4,314 & 1,708 & 49\% \\
-9 & \texttt{M\_AS\_COUNT} & .as\_count() & 1,644 & 1,079 & 62\% \\
-10 & \texttt{SCOPE\_EQ} & scope term key:value & 1,347 & 974 & 73\% \\
-11 & \texttt{SCOPE\_ALL} & scope \{*\} & 898 & 810 & 82\% \\
-12 & \texttt{AGG\_MAX} & space aggregator max: & 275 & 245 & 85\% \\
-13 & \texttt{M\_AS\_RATE} & .as\_rate() & 266 & 224 & 87\% \\
-14 & \texttt{STR\_SINGLE\_QUOTED} & single-quoted string literal & 139 & 136 & 89\% \\
-15 & \texttt{M\_FILL} & .fill(...) & 185 & 94 & 90\% \\
-16 & \texttt{SCOPE\_GLOB} & wildcard in a scope value & 143 & 89 & 91\% \\
-17 & \texttt{SCOPE\_NEG} & negated scope term !key:value & 134 & 91 & 92\% \\
-18 & \texttt{M\_WEIGHTED} & .weighted() & 70 & 64 & 93\% \\
-19 & \texttt{AGG\_COUNT} & space aggregator count: & 58 & 53 & 93\% \\
-20 & \texttt{SCOPE\_BOOL} & boolean scope (AND / OR / NOT) & 160 & 37 & 94\% \\
+1 & \texttt{GROUP\_BY} & group by \{...\} & 4,922 & 20 & 1.3\% \\
+2 & \texttt{MULTI\_QUERY} & comma-separated list of queries & 117 & 9 & 1.4\% \\
+3 & \texttt{ARITH} & arithmetic between operands & 115 & 5 & 1.5\% \\
+4 & \texttt{CONST} & numeric literal & 470 & 9 & 1.6\% \\
+5 & \texttt{FUNC\_APPLIED} & function applied to the query & 205 & 1 & 1.6\% \\
+6 & \texttt{AGG\_AVG} & space aggregator avg: & 3,885 & 1 & 1.6\% \\
+7 & \texttt{SCOPE\_VAR} & dashboard template variable in the scope & 7,624 & 2,468 & 29.8\% \\
+8 & \texttt{AGG\_SUM} & space aggregator sum: & 4,314 & 1,708 & 49.3\% \\
+9 & \texttt{M\_AS\_COUNT} & .as\_count() & 1,644 & 1,079 & 61.6\% \\
+10 & \texttt{SCOPE\_EQ} & scope term key:value & 1,347 & 974 & 72.7\% \\
+11 & \texttt{SCOPE\_ALL} & scope \{*\} & 898 & 810 & 81.9\% \\
+12 & \texttt{AGG\_MAX} & space aggregator max: & 275 & 245 & 84.7\% \\
+13 & \texttt{M\_AS\_RATE} & .as\_rate() & 266 & 224 & 87.3\% \\
+14 & \texttt{STR\_SINGLE\_QUOTED} & single-quoted string literal & 139 & 136 & 88.8\% \\
+15 & \texttt{M\_FILL} & .fill(...) & 185 & 94 & 89.9\% \\
+16 & \texttt{SCOPE\_GLOB} & wildcard in a scope value & 143 & 89 & 90.9\% \\
+17 & \texttt{SCOPE\_NEG} & negated scope term !key:value & 134 & 91 & 92.0\% \\
+18 & \texttt{M\_WEIGHTED} & .weighted() & 70 & 64 & 92.7\% \\
+19 & \texttt{AGG\_COUNT} & space aggregator count: & 58 & 53 & 93.3\% \\
+20 & \texttt{SCOPE\_BOOL} & boolean scope (AND / OR / NOT) & 160 & 37 & 93.7\% \\
 \bottomrule
 \end{tabular}

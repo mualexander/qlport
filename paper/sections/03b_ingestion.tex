@@ -171,9 +171,9 @@ gauges of Definition~\ref{def:phi}, and it fails for a third.
 Corollary~\ref{cor:quantile} exhibits a Datadog query that is blocked informationally in
 the main direction, so the barrier is directional for the ingestion path this paper
 models rather than for Datadog as a whole --- a distinction an earlier draft of this
-remark elided by saying that no refusal in this direction is an informational one. Section~\ref{sec:gaps} separates those that are genuine expressiveness
-gaps from those that are merely unimplemented, and the first kind accounts for $2.0\%$ of
-the corpus against the second kind's $2.4\%$.
+remark elided by saying that no refusal in this direction is an informational one. Section~\ref{sec:gaps} keeps the three apart --- what Prometheus does
+not hold, what PromQL cannot say, and what this translator has not built --- and the
+first two together account for $1.2\%$ of the corpus against the third's $2.4\%$.
 \end{remark}
 
 \begin{corollary}[Raw selectors are inadmissible]\label{cor:raw}
@@ -347,7 +347,8 @@ invariance class holds --- no reset inside the window --- and the anchored form,
 reset handling \emph{is} $\delta_{\mathsf{zero}}$, is exact everywhere. Both are
 confirmed in Table~\ref{tab:rollup-live}: over four synthetic workloads at two rollup
 intervals, the cumulative difference agrees with the modelled rollup on every bucket of
-the reset-free workloads and falls to $92$--$98\%$ once counters restart, with relative
+the reset-free workloads and falls to between $91.5\%$ and $98.3\%$ once counters
+restart, with relative
 error as large as $1.68$, while the anchored form is exact on every bucket of every
 workload. ``Modelled'' is the right word there and is not a hedge: that table reads
 Datadog's side from the reference evaluator of \S\ref{sec:replay}, and it is the replay
@@ -437,7 +438,8 @@ imitate: in the half hour used here the per-minute rate swings seventeenfold wit
 being asked to. We take the busiest half hour of the Kennedy Space Center HTTP logs of
 July~1995~\citep{nasahttp}, count requests at a $15$\,s scrape interval into one counter
 per HTTP status class, and write the cumulative series to Prometheus and its image under
-$\phi_{\mathsf{zero}}$ --- the per-interval deltas --- to Datadog, at the same timestamps.
+$\phi_{\mathsf{zero}}$ --- the per-interval deltas --- to Datadog, at the same timestamps
+(\texttt{scripts\slash replay\_dualwrite.py}).
 The trace's publishers ask that it not be analysed beyond general traffic patterns, and
 the parser enforces that rather than promising it: it keeps a timestamp and a status
 class and discards the host and the request line, so what is replayed is a count of
@@ -481,6 +483,12 @@ $\kappa$ is what it was.
 This section began with two facts about Datadog that its documentation does not settle,
 and carried a third about its backend. None is still an assumption, and the two it began
 with did not turn out the way they were guessed.
+
+The reset policy $\rho$ is no longer among them either, and it is the one that was
+settled twice: read from the agent's source and then put to a running agent, which
+agreed with the reading (Remark~\ref{rem:rho}). It too went against the guess --- the
+prediction recorded in advance was discarding the interval, which turns out not to be a
+reset policy at all.
 
 Bucket closure is no longer among them. Remark~\ref{rem:closure} settles it by
 measurement: buckets are left-closed and named by their start, which is the opposite of

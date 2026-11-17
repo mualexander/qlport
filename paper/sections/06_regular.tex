@@ -179,7 +179,8 @@ parses with the variable in place. For these the reverse direction is not hard b
 than of either language.
 
 Among the $1{,}013$ occurrences whose pattern is concrete, Table~\ref{tab:regex-glob}
-gives the three-way split. A glob exists for $625$ of them ($61.7\%$), but for more than
+gives the three-way split and Table~\ref{tab:regex-glob-examples} what each outcome
+looks like. A glob exists for $625$ of them ($61.7\%$), but for more than
 half of those only as a union: one glob covers $281$ occurrences ($27.7\%$) and a bounded
 union covers $344$ ($34.0\%$). Treating a single glob as the target --- the obvious
 reading of ``does this regex have a glob'' --- would therefore have understated the
@@ -213,8 +214,9 @@ disagrees with the syntax-directed proposer on \emph{none} of them --- it recove
 same glob for all $60$ of the single-glob cases, and finds no glob for all $45$ refusals
 and all $63$ unions it reached. The remaining $15$ are the ones whose shortest word is
 long enough to make the search expensive, and they are recorded as not reached rather
-than as agreeing. The run is cached, and
-\texttt{tests\slash test\_regular.py} fails if a disagreement ever appears.
+than as agreeing. The run is cached
+(\texttt{scripts\slash crosscheck\_globs.py}), and \texttt{tests\slash test\_regular.py}
+fails if a disagreement ever appears.
 
 \begin{remark}[The largest refusal turned on an undocumented detail]%
 \label{rem:star-empty}

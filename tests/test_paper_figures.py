@@ -63,18 +63,25 @@ def _prose_figures() -> dict[tuple[str, float], set[str]]:
 
 
 def _accounted() -> set[tuple[str, float]]:
+    """What the generated artifacts state, as counts and as shares separately.
+
+    Kind is part of the claim. A table cell is a percentage when it carries `\\%` and a
+    count otherwise; a registry value is a percentage when its name says so. An earlier
+    version of this function cross-licensed the two, so any table printing a bare `2`
+    licensed a `$2.0\\%$` anywhere in the prose -- which is how §3b kept a stale
+    expressiveness share through two full read-throughs.
+    """
     ok: set[tuple[str, float]] = set()
     for path in TABLES:
         for tok, pct in _NUM.findall(re.sub(r"(?<!\\)%.*", "", path.read_text())):
             key = _norm(tok, pct)
             if key:
                 ok.add(key)
-                ok.add(("pct" if key[0] == "num" else "num", key[1]))
     if REGISTRY.exists():
-        for value in json.loads(REGISTRY.read_text()).values():
+        for name, value in json.loads(REGISTRY.read_text()).items():
             if isinstance(value, (int, float)):
-                ok.add(("num", round(float(value), 4)))
-                ok.add(("pct", round(float(value), 4)))
+                share = "pct" in name.rsplit(".", 1)[-1].split("_")
+                ok.add(("pct" if share else "num", round(float(value), 4)))
     return ok
 
 
@@ -87,16 +94,20 @@ ALLOWED: dict[float, str] = {
     # --- constants of the apparatus -------------------------------------------------
     3.15: "Prometheus version the measurements were taken against",
     3.7: "Prometheus version that introduced the anchored modifier",
-    15: "scrape interval, seconds", 60: "rollup interval, seconds",
-    20: "automatic rollup interval over an hour, seconds",
+    15: "scrape interval, seconds",
+    60: "rollup interval (seconds); also the first share in the discussion's "
+        "worked illustration of conjunctive coverage, which is hypothetical "
+        "and not measured",
+    20: "automatic rollup interval over an hour (seconds); also the upper end of "
+        "rate's bucket disagreement in the replay, and the proverb's 20% of the work",
     300: "automatic rollup interval over a day, seconds",
     1800: "the one rollup width the differential window cannot hold two of",
     0: "zero", 1: "one", 2: "two", 3: "three", 6: "six",
     10: "ten", 64: "the glob-union bound B", 100: "a percentage scale factor",
+    80: "the proverbial 80% of queries, which this corpus does not support",
     # --- E9: what `.weighted()` does, and what it would have done if weighted --------
     66.7: "E9: the plain mean of the irregular series, with and without the modifier",
     16.7: "E9: what a mean weighted by each point's interval would have read",
-    56: "E9: distinct corpus forms carrying .weighted()",
     54: "E9: of those, the ones attaching it to sum:",
     0.8: "points of kappa that implementing .weighted() closed",
     # --- E1, E7, E8: values from cached experiment records ---------------------------
@@ -137,19 +148,18 @@ ALLOWED: dict[float, str] = {
     133: "unregistered (nb 04): occurrences of .+",
     96: "unregistered (nb 00): PromQL recording rules",
     93: "unregistered (nb 01): queries needing a bare metric name",
-    70: "unregistered (nb 03): .weighted() occurrences",
+    70: "unregistered (nb 03): .weighted() occurrences; also the second share "
+        "in the discussion's hypothetical illustration",
     63: "unregistered (nb 04): unions the complete procedure reached",
     49: "unregistered (nb 04): occurrences of the most elaborate regex",
     45: "unregistered (nb 04): refusals the complete procedure reached",
     36: "unregistered (nb 03): FILL_INTERPOLATION occurrences",
-    34: "unregistered (nb 03): percentile-aggregator occurrences",
     31: "unregistered (nb 03): LABEL_NAME_GLOB occurrences",
     22: "unregistered (nb 00): per_second() occurrences",
     9: "unregistered (nb 04): occurrences of .*",
     8: "unregistered (nb 03): unparsed occurrences",
     99.9: "unregistered (nb 01): Datadog instantiated parse rate, v2",
     99.1: "unregistered (nb 01): PromQL instantiated parse rate",
-    98: "unregistered (nb 02): upper end of the cumulative-difference agreement",
     95: "unregistered (nb 00): share of Datadog space aggregators that are sum/avg",
     92.6: "unregistered (nb 01): Datadog instantiated parse rate, v1",
     88: "unregistered (nb 04): share of regex matchers that are template variables",
@@ -158,14 +168,17 @@ ALLOWED: dict[float, str] = {
     71.2: "unregistered (nb 01): PromQL raw parse rate",
     69: "unregistered (nb 00): share of PromQL functions that are rate/irate",
     61.7: "unregistered (nb 04): patterns with a glob, as a share",
-    56: "unregistered (nb 00): Datadog queries using by {...}",
+    56: "E9 distinct corpus forms carrying .weighted(), and the share of Datadog queries using by {...}",
     38.3: "unregistered (nb 04): refusals as a share of concrete patterns",
-    34.0: "unregistered (nb 04): union share",
+    34: "unregistered: percentile-aggregator occurrences (nb 03), and the union share (nb 04)",
     27.7: "unregistered (nb 04): single-glob share",
     27.4: "unregistered (replay): aligned-grid agreement on the bucket edge",
     23: "unregistered (nb 03): shapes covering 80% -- also an allowed small integer",
     21962: "unregistered (nb 05): bucket comparisons in the differential",
-    19: "unregistered (replay): lower end of rate's bucket disagreement",
+    19: "unregistered (replay): lower end of rate's bucket disagreement, percent",
+    30: "the rollup width E6 separates the two divisor placements at (seconds); also the "
+        "uniform error the differential's shared-metric-name fault produced, an "
+        "observation of a broken run rather than a computed figure",
     11.8: "unregistered (nb 01): Datadog raw parse rate",
     11.5: "unregistered (nb 00): formulas applying one function",
     8337: "unregistered (nb 05): occurrences compared in the differential",
@@ -178,9 +191,24 @@ ALLOWED: dict[float, str] = {
     1.4: "unregistered (nb 03): points of kappa the disjunction rule closed",
     1.1: "unregistered (nb 00): PromQL subquery share",
     0.9: "unregistered (nb 03): the 90% line on the coverage figure",
+    90: "the same line quoted as a threshold in the staircase prose",
     0.3: "unregistered (nb 00): PromQL offset share",
     323: "unregistered (nb 05): shapes compared in the differential",
-    2: "two",
+}
+
+
+# Values above that are counts, versions, seconds or bare integers. They license a plain
+# numeral and must never license a *percentage* of the same magnitude.
+#
+# §3b carried "$2.0\\%$" for the expressiveness gap through two full review passes after
+# the figure moved to 1.2%, because the integer 2 is allowlisted here and the match was
+# made on magnitude alone. A share and a count are different claims; a checker that
+# cannot tell them apart launders one into the other.
+SCALAR_ONLY: set[float] = {
+    3.15, 3.7, 15, 25, 64, 300, 1000, 1800,
+    0, 1, 2, 3, 6, 10, 45, 49, 54, 63, 103, 110, 111, 133, 137,
+    139, 168, 183, 221, 238, 281, 344, 388, 481, 625, 723, 763, 897, 1013,
+    1760, 5227, 5389, 7863, 8096, 8472, 8337, 8766, 11628, 21962, 28490, 28501,
 }
 
 
@@ -213,15 +241,32 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
 def unexplained():
     ok = _accounted()
     allowed = {round(float(v), 4) for v in ALLOWED}
+    scalar = {round(float(v), 4) for v in SCALAR_ONLY}
     out = {}
     for key, files in _prose_figures().items():
-        if key in ok or key[1] in allowed:
+        kind, value = key
+        if key in ok:
             continue
-        scoped = ALLOWED_IN.get(key[1])
+        if value in allowed and not (kind == "pct" and value in scalar):
+            continue
+        scoped = ALLOWED_IN.get(value)
         if scoped and set(files) <= scoped[1]:
             continue
         out[key] = sorted(files)
     return out
+
+
+def test_no_scalar_allowance_can_license_a_percentage():
+    """The hole that hid a stale figure for two review passes, kept shut.
+
+    A percentage is a different claim from a count of the same magnitude, so the
+    allowlist entry for one must not stand in for the other. Pinned by construction
+    rather than by the absence of a failure, since the absence is what let it through.
+    """
+    assert SCALAR_ONLY <= {round(float(v), 4) for v in ALLOWED}, \
+        "SCALAR_ONLY names a value that is not allowlisted at all"
+    assert not ({0, 1, 2, 3, 6, 10} - SCALAR_ONLY), \
+        "a bare small integer must never license a share"
 
 
 def test_the_registry_was_written():
@@ -238,6 +283,31 @@ def test_every_prose_figure_is_accounted_for(unexplained):
     assert not unexplained, "\n".join(
         f"  {kind} {value:g} in {', '.join(files)}"
         for (kind, value), files in sorted(unexplained.items()))
+
+
+def test_the_allowlist_has_no_duplicate_keys():
+    """Two reasons under one key means one of them was silently discarded.
+
+    `34` and `34.0` are the same dict key, and so are two separate `56` entries, so the
+    file was losing a documented justification per collision without saying so -- in a
+    file whose whole premise is that every unchecked number carries its reason. Only
+    the source text shows this; the dict it builds no longer can.
+    """
+    import ast
+    import collections
+
+    src = Path(__file__).read_text()
+    for node in ast.walk(ast.parse(src)):
+        target = None
+        if isinstance(node, ast.AnnAssign):
+            target = node.target
+        elif isinstance(node, ast.Assign) and len(node.targets) == 1:
+            target = node.targets[0]
+        if getattr(target, "id", None) not in {"ALLOWED", "ALLOWED_IN"}:
+            continue
+        keys = [ast.literal_eval(k) for k in node.value.keys]
+        dupes = sorted(k for k, n in collections.Counter(keys).items() if n > 1)
+        assert not dupes, f"{target.id} states two reasons for: {dupes}"
 
 
 def test_the_allowlist_has_no_dead_entries():

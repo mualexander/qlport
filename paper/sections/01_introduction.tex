@@ -55,8 +55,9 @@ intermediate representation with a denotation; built a translator that lowers Da
 queries into it and emits PromQL, refusing with a named gap code rather than guessing;
 proved the translations exact under stated preconditions and verified the PromQL side
 against a real Prometheus~3.15.0 rather than against our own model of it; and ran the
-whole thing over $28{,}490$ queries extracted from $763$ published dashboard and
-alerting documents, with nothing sampled and nothing hand-classified.
+whole thing over the $8{,}766$ Datadog metric queries of a corpus of $28{,}490$
+extracted from $763$ published dashboard and alerting documents, with nothing sampled
+and nothing hand-classified.
 
 \paragraph{What we found.}
 The thesis survives, but not in the form it was posed. There is a language-design
@@ -73,9 +74,8 @@ direction people travel is \emph{engineering} (\S\ref{sec:gaps}).
 The design artefact is elsewhere, and \S\ref{sec:discussion} argues it is the more
 interesting finding. A Datadog query does not state its own rollup interval --- that comes
 from the dashboard's time range --- and does not state whether its metric is a counter or
-a gauge. So $96.9\%$ of the translations we emit depend on an interval the query omits, and
-\emph{every one} depends on a type it omits; no occurrence in the corpus depends on
-neither. The
+a gauge. So $96.9\%$ of the translations we emit depend on an interval the query omits,
+\emph{every one} depends on a type it omits, and the $96.9\%$ depend on both at once. The
 translations are exact, but exact relative to context supplied from outside the query. A
 PromQL expression names its own window and carries its reset semantics in the function it
 calls. That is a property of the languages, and it is invisible in any coverage number.

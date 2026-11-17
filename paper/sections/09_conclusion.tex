@@ -42,17 +42,19 @@ Prometheus~3.15.0, and the anchoring of label-matcher regular expressions. One t
 read from source rather than measured: Datadog's reset policy, taken from its open-source
 agent at a pinned commit.
 
-Six things are measured against the vendor itself rather than assumed: the bucket
+Seven things are measured against the vendor itself rather than assumed: the bucket
 convention (left-closed and named by its start, the opposite of what this work assumed
 until it asked), the automatic rollup interval as a function of the query range, the
 default time aggregator of a bare query on a counter, whether a glob's \texttt{*} matches
 the empty string, where \texttt{.as\_rate()} sits relative to the rollup and to the space
-aggregation, and the reset policy --- read first from the agent's source and then put to
-a running agent, which agreed with the reading. Four of the six confirmed what the paper
-had assumed. Two did not: the bucket convention,
-and \texttt{.as\_rate()}, which turned out to divide the aggregated result rather than
+aggregation, what \texttt{.weighted()} computes, and the reset policy --- read first from
+the agent's source and then put to a running agent, which agreed with the reading. Four
+of the seven confirmed what the paper had assumed. Three did not: the bucket convention;
+\texttt{.as\_rate()}, which turned out to divide the aggregated result rather than
 each series, and whose presence in a query turned out not to establish the metric's type
-at all, because Datadog accepts the modifier on a gauge and ignores it. A seventh,
+at all, because Datadog accepts the modifier on a gauge and ignores it; and
+\texttt{.weighted()}, carried here as the largest gap in the catalogue until the account
+was asked and returned the same number with the modifier and without it. An eighth,
 whether \texttt{top(...)} is expressible at all, was settled against a real Prometheus
 rather than against Datadog, and decides which column $139$ corpus occurrences belong
 in.
@@ -71,7 +73,7 @@ emitted. Abstracting metric names and tag values away collapses the corpus to $3
 distinct query shapes, few enough that a single trial account holds every series they
 need; each is instantiated, written to both systems and compared bucket by bucket
 (\S\ref{sec:differential}). It found four translation defects that the unit tests and the
-single-trace replay had both missed --- and, three times over, found its own harness
+single-trace replay had both missed --- and, six times over, found its own harness
 first, which is the more useful lesson about differential rigs than the agreement rate
 is.
 

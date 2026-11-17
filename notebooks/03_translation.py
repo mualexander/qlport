@@ -37,7 +37,7 @@
 #
 # Outputs: `paper/tables/translation_coverage.tex`, `paper/tables/gap_catalogue.tex`,
 # `paper/tables/translation_examples.tex`, `paper/tables/gap_by_feature.tex`,
-# `paper/figures/coverage_by_gap.pdf`, `data/processed/translations.csv`.
+# `data/processed/translations.csv`.
 
 # %%
 import json
@@ -396,25 +396,6 @@ tabular("lll", ["Feature", "Datadog", "PromQL"], rows,
         TABLES / "translation_examples.tex")
 for r in rows:
     print(r[0])
-
-# %%
-fig, ax = plt.subplots(figsize=(5.2, 2.9))
-shares = tr.groupby("outcome")["n"].sum().reindex(order).fillna(0) / total_n
-left = 0.0
-for o, colour in zip(order, ["#2b6cb0", "#e2a03f", "#cbd5e0"]):
-    if shares[o] <= 0:
-        continue
-    ax.barh(["corpus"], [shares[o]], left=left, color=colour,
-            label=f"{label[o].replace(r'($\kappa$)', '(κ)').replace(r'$\bot$', '⊥')}"
-                  f" ({shares[o]:.0%})")
-    left += shares[o]
-ax.set_xlim(0, 1)
-ax.set_xlabel("share of Datadog query occurrences in the corpus")
-ax.set_yticks([])
-ax.legend(fontsize=7, frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.35), ncol=2)
-fig.tight_layout()
-fig.savefig(FIGURES / "coverage_by_gap.pdf")
-print("wrote paper/figures/coverage_by_gap.pdf")
 
 # %% [markdown]
 # ## Findings (to carry into §5 and §7)

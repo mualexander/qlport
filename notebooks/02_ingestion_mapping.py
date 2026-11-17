@@ -23,7 +23,7 @@
 # 2. How far off is the "obvious" translation, `rate()`?
 # 3. How do counter resets affect each candidate?
 #
-# Outputs: `paper/tables/rollup_translation.tex`, `paper/figures/rate_error_vs_window.pdf`,
+# Outputs: `paper/figures/rate_error_vs_window.pdf`,
 # `paper/tables/model_verification.tex`, `paper/tables/rollup_translation_live.tex`.
 
 # %%
@@ -103,20 +103,18 @@ summary = (results.groupby(["workload", "interval", "candidate"], sort=False)["e
 summary
 
 # %% [markdown]
-# ## Table for the paper
+# ## The modelled summary
+#
+# This is the version §3 *used* to cite, computed from our own PromQL evaluator. The
+# live table below replaces it, read off a real server, and the paper shows only that
+# one. What this cell is still for is the comparison between the two: §3 claims they
+# agree on every summary statistic, so the modelled numbers have to exist to be
+# compared against. They are no longer written to `paper/tables/`, because a generated
+# file the paper does not `\input` is a cell computing for nobody.
 
 # %%
-def fmt_row(r):
-    exact = f"{r.exact:.0%}".replace("%", r"\%")
-    return f"{r.workload} & {int(r.interval)} & \\texttt{{{r.candidate}}} & {exact} & {r["median"]:.3f} & {r['max']:.3f} \\\\"
-
-lines = [r"\begin{tabular}{@{}lrlrrr@{}}", r"\toprule",
-         r"Workload & $\Delta$ (s) & PromQL candidate & Exact & Median $d$ & Max $d$ \\", r"\midrule"]
-lines += [fmt_row(r).replace("Δ", r"$\Delta$") for _, r in summary.iterrows()]
-lines += [r"\bottomrule", r"\end{tabular}"]
 TABLES.mkdir(parents=True, exist_ok=True)
-(TABLES / "rollup_translation.tex").write_text("\n".join(lines) + "\n")
-print("\n".join(lines[:8]))
+print(summary.to_string(index=False))
 
 # %% [markdown]
 # ## How the `rate()` error shrinks with the window
@@ -235,7 +233,7 @@ lines = [r"\begin{tabular}{@{}lrlrrr@{}}", r"\toprule",
          r"Workload & $\Delta$ (s) & PromQL candidate & Exact & Median $d$ & Max $d$ \\",
          r"\midrule"]
 for _, r in live_summary.iterrows():
-    exact = f"{r.exact:.0%}".replace("%", r"\%")
+    exact = f"{r.exact:.1%}".replace("%", r"\%")
     cand = r.candidate.replace("Δ", r"$\Delta$")
     lines.append(f"{r.workload} & {int(r.interval)} & \\texttt{{{cand}}} & {exact} & "
                  f"{r['median']:.3f} & {r['max']:.3f} \\\\")

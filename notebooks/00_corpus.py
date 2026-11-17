@@ -25,7 +25,7 @@
 #    the sequence of features that covers the most queries *completely* per step.
 #
 # Outputs: `paper/tables/corpus_sources.tex`, `paper/tables/parse_coverage.tex`,
-# `paper/tables/grammar_gaps.tex`, `paper/tables/feature_frequency.tex`,
+# `paper/tables/grammar_gaps.tex`,
 # `paper/tables/operator_frequency.tex`, `paper/tables/implementation_order.tex`,
 # `paper/figures/feature_frequency.pdf`, `paper/figures/cumulative_coverage.pdf`,
 # `data/processed/features.csv`, `data/processed/parse_outcomes.csv`.
@@ -49,7 +49,7 @@ TABLES, FIGURES = ROOT / "paper" / "tables", ROOT / "paper" / "figures"
 for p in (TABLES, FIGURES, PROCESSED):
     p.mkdir(parents=True, exist_ok=True)
 
-TOP_N = 20          # rows per language in the paper's feature table and figure
+TOP_N = 20          # rows per language in the paper's feature-frequency figure
 EXAMPLE_CHARS = 26  # excerpt width in the gap table
 
 queries = c.read_queries(CORPUS / "queries.jsonl")
@@ -245,13 +245,6 @@ freq.head(15)
 # ### Table and figure
 
 # %%
-rows = []
-for lang in ("datadog", "promql"):
-    for _, r in freq[freq.lang == lang].head(TOP_N).iterrows():
-        rows.append([tex(lang), code(r.feature), tex(c.FEATURE_DOC[r.feature]),
-                     f"{r.n:,}", f"{r.share:.0%}".replace("%", r"\%")])
-tabular("lllrr", ["Language", "Feature", "Construct", "Queries", "Share"],
-        rows, TABLES / "feature_frequency.tex")
 
 fig, axes = plt.subplots(1, 2, figsize=(7.2, 4.2))
 for ax, lang, title in zip(axes, ("datadog", "promql"),
@@ -374,7 +367,7 @@ for _k in sorted(_ceil):
 # %%
 dd = order["datadog"]
 rows = [[f"{int(r.step)}", code(r.feature), tex(c.FEATURE_DOC.get(r.feature, "")),
-         f"{int(r.pending):,}", f"{int(r.gained):,}", f"{r.share:.0%}".replace("%", r"\%")]
+         f"{int(r.pending):,}", f"{int(r.gained):,}", f"{r.share:.1%}".replace("%", r"\%")]
         for _, r in dd[dd.step > 0].head(TOP_N).iterrows()]
 tabular("rllrrr",
         ["Step", "Feature", "Construct", "Pending uses", "Queries completed", "Cumulative"],

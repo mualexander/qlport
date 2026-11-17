@@ -147,7 +147,7 @@ seventeen of PromQL's twenty-four.}
 
 The shape is the finding. The first six Datadog features complete $45$ queries between
 them --- $0.5\%$ of the corpus, on top of the $1.1\%$ that use no feature at all --- and
-then template-variable scopes and \texttt{sum:} take two steps to $49\%$. Half the corpus
+then template-variable scopes and \texttt{sum:} take two steps to $49.3\%$. Half the corpus
 needs nine features; $90\%$ needs sixteen of the twenty-eight. PromQL behaves the same way
 and slightly worse: its first six features complete $221$ of $8{,}096$ queries
 ($2.7\%$), half the corpus needs fourteen features and $90\%$ needs seventeen of
@@ -211,13 +211,20 @@ corpus.}
 
 \texttt{UNSUPPORTED\_FUNCTION} is the largest and the least interesting: it is a bundle
 of Datadog functions the translator does not implement, led by \texttt{top(...)} ($139$
-occurrences) and \texttt{per\_second(...)} ($22$). It is now exactly the unimplemented
-set and nothing else, which it was not when this section was first written: the
+occurrences) and \texttt{per\_second(...)} ($22$). Everything in it is now unimplemented
+work and nothing else, which it was not when this section was first written: the
 percentile aggregators sat in it as a genuine gap and \texttt{.weighted()} as a
 supposed one, so the row was a mixture and the split at the end of this subsection had
 to be computed by reading detail strings rather than codes. Both have moved ---
 \texttt{.weighted()} out of the catalogue entirely (Remark~\ref{rem:weighted}) and the
 percentiles into a code that names their obstruction.
+
+The converse does not hold, and the comparison this subsection ends with depends on
+noticing it: this row is not the whole of the unimplemented column. The four surviving
+disjunctions below are unfinished work too and carry \texttt{SCOPE\_DISJUNCTION}, so
+the $212$ of that column is this row's $208$ plus those four. One code has stopped being
+a mixture; the column still spans two, and it is the column rather than the code that
+the comparison is about.
 
 \begin{remark}[\texttt{.weighted()} was the largest claimed gap and is not one]%
 \label{rem:weighted}
@@ -528,7 +535,8 @@ reads off the lowered IR which series the query's own filters select, synthesise
 writes the cumulative counter to a local Prometheus and its image under $\phi$ to a real
 Datadog account, then evaluates the Datadog query against Datadog and its translation
 against Prometheus --- on the bucket grid that query's own rollup interval defines --- and
-compares the two readings bucket by bucket.
+compares the two readings bucket by bucket
+(\texttt{scripts\slash shape\_differential.py}; cached and regression-tested).
 
 It is a smaller experiment than it looks, which is worth recording because the obvious
 estimate is badly wrong. It does not need every metric the corpus names to exist in both
