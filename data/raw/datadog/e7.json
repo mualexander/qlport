@@ -1,0 +1,615 @@
+{
+ "provenance": {
+  "collected_at": "2026-11-17T00:25:17Z",
+  "delta": 10.0,
+  "interval": 30.0,
+  "points": 180,
+  "prometheus_image": "prom/prometheus:v3.15.0",
+  "run": "r1794872910",
+  "site": "datadoghq.com",
+  "step": 10.0
+ },
+ "rows": [
+  {
+   "age_s": 0.0,
+   "bucket": 1794872910.0,
+   "d_counter": 0.5,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 20.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 30.0,
+   "bucket": 1794872940.0,
+   "d_counter": 0.8,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 50.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 60.0,
+   "bucket": 1794872970.0,
+   "d_counter": 0.875,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 80.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 90.0,
+   "bucket": 1794873000.0,
+   "d_counter": 0.9090909090909091,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 110.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 120.0,
+   "bucket": 1794873030.0,
+   "d_counter": 0.9285714285714286,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 140.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 150.0,
+   "bucket": 1794873060.0,
+   "d_counter": 0.9411764705882353,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 170.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 180.0,
+   "bucket": 1794873090.0,
+   "d_counter": 0.95,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 200.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 210.0,
+   "bucket": 1794873120.0,
+   "d_counter": 0.9565217391304348,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 230.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 240.0,
+   "bucket": 1794873150.0,
+   "d_counter": 0.9615384615384616,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 260.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 270.0,
+   "bucket": 1794873180.0,
+   "d_counter": 0.9655172413793104,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 290.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 300.0,
+   "bucket": 1794873210.0,
+   "d_counter": 0.96875,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 320.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 330.0,
+   "bucket": 1794873240.0,
+   "d_counter": 0.9714285714285714,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 350.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 360.0,
+   "bucket": 1794873270.0,
+   "d_counter": 0.9736842105263158,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 380.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 390.0,
+   "bucket": 1794873300.0,
+   "d_counter": 0.975609756097561,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 410.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 420.0,
+   "bucket": 1794873330.0,
+   "d_counter": 0.9772727272727273,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 440.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 450.0,
+   "bucket": 1794873360.0,
+   "d_counter": 0.9787234042553191,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 470.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 480.0,
+   "bucket": 1794873390.0,
+   "d_counter": 0.98,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 500.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 510.0,
+   "bucket": 1794873420.0,
+   "d_counter": 0.9811320754716981,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 530.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 540.0,
+   "bucket": 1794873450.0,
+   "d_counter": 0.9821428571428571,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 560.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 570.0,
+   "bucket": 1794873480.0,
+   "d_counter": 0.9830508474576272,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 590.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 600.0,
+   "bucket": 1794873510.0,
+   "d_counter": 0.9838709677419355,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 620.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 630.0,
+   "bucket": 1794873540.0,
+   "d_counter": 0.9846153846153847,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 650.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 660.0,
+   "bucket": 1794873570.0,
+   "d_counter": 0.9852941176470589,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 680.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 690.0,
+   "bucket": 1794873600.0,
+   "d_counter": 0.9859154929577465,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 710.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 720.0,
+   "bucket": 1794873630.0,
+   "d_counter": 0.9864864864864865,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 740.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 750.0,
+   "bucket": 1794873660.0,
+   "d_counter": 0.987012987012987,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 770.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 780.0,
+   "bucket": 1794873690.0,
+   "d_counter": 0.9875,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 800.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 810.0,
+   "bucket": 1794873720.0,
+   "d_counter": 0.9879518072289156,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 830.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 840.0,
+   "bucket": 1794873750.0,
+   "d_counter": 0.9883720930232558,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 860.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 870.0,
+   "bucket": 1794873780.0,
+   "d_counter": 0.9887640449438202,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 890.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 900.0,
+   "bucket": 1794873810.0,
+   "d_counter": 0.9891304347826086,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 920.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 930.0,
+   "bucket": 1794873840.0,
+   "d_counter": 0.9894736842105263,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 950.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 960.0,
+   "bucket": 1794873870.0,
+   "d_counter": 0.9897959183673469,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 980.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 990.0,
+   "bucket": 1794873900.0,
+   "d_counter": 0.9900990099009901,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1010.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1020.0,
+   "bucket": 1794873930.0,
+   "d_counter": 0.9903846153846154,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1040.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1050.0,
+   "bucket": 1794873960.0,
+   "d_counter": 0.9906542056074766,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1070.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1080.0,
+   "bucket": 1794873990.0,
+   "d_counter": 0.990909090909091,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1100.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1110.0,
+   "bucket": 1794874020.0,
+   "d_counter": 0.9911504424778761,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1130.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1140.0,
+   "bucket": 1794874050.0,
+   "d_counter": 0.9913793103448276,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1160.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1170.0,
+   "bucket": 1794874080.0,
+   "d_counter": 0.9915966386554622,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1190.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1200.0,
+   "bucket": 1794874110.0,
+   "d_counter": 0.9918032786885246,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1220.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1230.0,
+   "bucket": 1794874140.0,
+   "d_counter": 0.992,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1250.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1260.0,
+   "bucket": 1794874170.0,
+   "d_counter": 0.9921875,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1280.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1290.0,
+   "bucket": 1794874200.0,
+   "d_counter": 0.9923664122137404,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1310.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1320.0,
+   "bucket": 1794874230.0,
+   "d_counter": 0.9925373134328358,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1340.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1350.0,
+   "bucket": 1794874260.0,
+   "d_counter": 0.9927007299270073,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1370.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1380.0,
+   "bucket": 1794874290.0,
+   "d_counter": 0.9928571428571429,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1400.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1410.0,
+   "bucket": 1794874320.0,
+   "d_counter": 0.993006993006993,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1430.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1440.0,
+   "bucket": 1794874350.0,
+   "d_counter": 0.9931506849315068,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1460.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1470.0,
+   "bucket": 1794874380.0,
+   "d_counter": 0.9932885906040269,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1490.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1500.0,
+   "bucket": 1794874410.0,
+   "d_counter": 0.993421052631579,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1520.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1530.0,
+   "bucket": 1794874440.0,
+   "d_counter": 0.9935483870967742,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1550.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1560.0,
+   "bucket": 1794874470.0,
+   "d_counter": 0.9936708860759493,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1580.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1590.0,
+   "bucket": 1794874500.0,
+   "d_counter": 0.9937888198757764,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1610.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1620.0,
+   "bucket": 1794874530.0,
+   "d_counter": 0.9939024390243902,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1640.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1650.0,
+   "bucket": 1794874560.0,
+   "d_counter": 0.9940119760479041,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1670.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1680.0,
+   "bucket": 1794874590.0,
+   "d_counter": 0.9941176470588236,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1700.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1710.0,
+   "bucket": 1794874620.0,
+   "d_counter": 0.9942196531791907,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1730.0,
+   "promql_gauge": 10.0
+  },
+  {
+   "age_s": 1740.0,
+   "bucket": 1794874650.0,
+   "d_counter": 0.9943181818181818,
+   "d_gauge": 0.0,
+   "datadog_counter": 10.0,
+   "datadog_gauge": 10.0,
+   "promql_counter": 1760.0,
+   "promql_gauge": 10.0
+  }
+ ],
+ "summary": {
+  "buckets": 59,
+  "counter_first": 0.5,
+  "counter_last": 0.9943181818181818,
+  "counter_max_d": 0.9943181818181818,
+  "counter_min_d": 0.5,
+  "datadog_counter_value": 10.0,
+  "gauge_max_d": 0.0,
+  "promql_counter_first": 20.0,
+  "promql_counter_last": 1760.0
+ }
+}

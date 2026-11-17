@@ -467,7 +467,17 @@ def main(argv=None) -> int:
                 if k % 50 == 0:
                     print(f"    pass {attempt}: {k}/{len(pending)}")
                 row = compare_one(r)
-                if row["status"] == "no-data" and attempt < 6:
+                # A newly created metric is not queryable yet (no-data), and a run this
+                # long occasionally draws a 429 or a 503 from the API. Neither is a
+                # statement about the translation, so both are retried; recording a
+                # rate limit as a shape that could not be compared would be the harness
+                # masquerading as a result, which is the failure mode this rig has had
+                # four times already.
+                transient = row["status"] == "no-data" or (
+                    row["status"] == "error"
+                    and any(code in str(row.get("detail", ""))
+                            for code in ("429", "503", "Resource Exhausted", "timed out")))
+                if transient and attempt < 6:
                     still.append(r)
                 else:
                     results[r["index"]] = row

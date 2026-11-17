@@ -184,8 +184,8 @@ dashboards than the ones it handles. There is no cheap win hiding in the popular
 consolation that the failures are all one-offs.
 
 Two sanity conditions hold on the translated set. Every emitted expression parses under
-the PromQL grammar of Section~\ref{sec:grammars} --- all $7{,}499$ of them, since $89$
-of the $7{,}345$ translated queries are comma-separated lists that emit one expression
+the PromQL grammar of Section~\ref{sec:grammars} --- all $7{,}498$ of them, since $89$
+of the $7{,}344$ translated queries are comma-separated lists that emit one expression
 per series. That is checked as an assertion rather than reported as a rate, since the
 only acceptable number of syntactically invalid outputs is zero. And $\kappa$ sits between the ceilings that the
 greedy order of \S\ref{sec:staircase} places on a twenty-three- and a
@@ -351,6 +351,21 @@ Proposition~\ref{prop:offset}, exact unless a counter resets inside the window;
 Table~\ref{tab:rollup-live} measures what that costs when one does, and
 Proposition~\ref{prop:anchored} removes it at the price of requiring Prometheus~$3.7$ or
 newer.
+
+\texttt{PHI\_SERIES\_START} marks the same $23.8\%$, and marks it for a second reason
+that went unrecorded until this draft. The cumulative difference needs a sample
+\emph{before} the bucket to subtract, and a series younger than the window has none, so
+the expression returns no result where Datadog returns the deltas it does hold
+(Remark~\ref{rem:series-start}). The code existed from the start --- it was written for
+the reverse direction --- and the counter rules had been emitting without it. The two
+shares coincide because in this corpus the same translations carry both: every counter
+rule here is the cumulative difference, which needs a predecessor sample and a
+reset-free window alike. They are not the same condition, and the anchored form
+separates them --- it discharges both for a $\mathsf{sum}$ rollup, and only the reset
+one for the mean-of-deltas rule, whose denominator counts samples where Datadog counts
+deltas however the numerator is written. Where it does discharge both, its
+experimental-flag requirement is a better bargain than
+Remark~\ref{rem:anchored-flag} alone suggests.
 
 \texttt{METRIC\_TYPE\_UNKNOWN} is new to this table and is the reason to report caveats at
 all rather than to list them once in prose. An \texttt{avg}, \texttt{min}, \texttt{max} or

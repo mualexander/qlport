@@ -134,6 +134,13 @@ def main(argv=None) -> int:
         "gau.as_count": f"sum:{gau}{{*}}.as_count()",
         "gau.as_count.rollup_avg": f"sum:{gau}{{*}}.as_count().rollup(avg, {int(ROLLUP)})",
         "gau.as_rate.rollup_sum": f"sum:{gau}{{*}}.as_rate().rollup(sum, {int(ROLLUP)})",
+        # (b'') a summing rollup over a GAUGE is *not* ignored: it sums the stored
+        # samples, which is a meaningful query someone might intend. So of the three
+        # pieces of type evidence a query can carry, the one hardest to dismiss as
+        # author error is the one whose misreading is least benign -- the front end
+        # reads it as a counter and emits a cumulative difference instead.
+        "gau.rollup_sum": f"sum:{gau}{{*}}.rollup(sum, {int(ROLLUP)})",
+        "gau.rollup_count": f"sum:{gau}{{*}}.rollup(count, {int(ROLLUP)})",
         # (a') the same ordering question against a summing rollup: dividing each delta
         # by its own 10 s interval and summing gives 3, rolling up and dividing once by
         # 30 gives 1.

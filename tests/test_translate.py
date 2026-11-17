@@ -554,3 +554,58 @@ def test_two_different_groupings_are_refused_rather_than_guessed():
                       default_rollup=60.0)
     assert isinstance(got, Bottom)
     assert got.gap is Gap.UNSUPPORTED_FUNCTION
+
+
+# ------------------------------------------- the series-start precondition (§3.1)
+
+
+def test_a_counter_rule_records_that_it_needs_a_sample_before_the_bucket():
+    """`x - x offset D` has nothing to subtract for a series younger than the window.
+
+    Prometheus then returns no result at all, where Datadog returns the sum of the
+    deltas it does hold -- a disagreement `d` scores as infinite rather than large,
+    since the domains differ. The code naming this condition existed from the start,
+    written for the reverse direction, while the counter rules emitted without it.
+    """
+    got = emit_detail(lower(parse("datadog", "sum:x{*}.as_count()", "v2")),
+                      default_rollup=60.0)
+    assert Gap.PHI_SERIES_START in got.caveats
+    assert Gap.COUNTER_RESET in got.caveats
+
+
+def test_the_mean_of_deltas_rule_records_it_too_and_for_its_own_reason():
+    # Its denominator counts samples where Datadog counts deltas, and a series
+    # beginning inside the bucket has one fewer delta than it has samples.
+    got = emit_detail(lower(parse("datadog", "avg:x{*}.as_count().rollup(avg, 60)", "v2")),
+                      default_rollup=60.0)
+    assert Gap.PHI_SERIES_START in got.caveats
+
+
+def test_a_gauge_rollup_needs_no_such_precondition():
+    # `avg_over_time` reduces the samples in the window and needs no predecessor.
+    got = emit_detail(lower(parse("datadog", "avg:x{*}.rollup(avg, 60)", "v2")),
+                      default_rollup=60.0)
+    assert Gap.PHI_SERIES_START not in got.caveats
+    assert Gap.COUNTER_RESET not in got.caveats
+
+
+def test_the_anchored_form_discharges_both_counter_preconditions():
+    """Which is the bargain Remark rem:series-start adds to the flag's cost.
+
+    Measured against a real server: on a bucket holding one series that began before it
+    and one that began inside it, `increase(x[60s] anchored)` returns both of Datadog's
+    figures while the cumulative difference returns only the first.
+    """
+    got = emit_detail(lower(parse("datadog", "sum:x{*}.as_count()", "v2")),
+                      anchored=True, default_rollup=60.0)
+    assert Gap.ANCHORED_VERSION in got.caveats
+    assert Gap.PHI_SERIES_START not in got.caveats
+    assert Gap.COUNTER_RESET not in got.caveats
+
+
+def test_a_sum_rollup_is_a_third_piece_of_type_evidence():
+    # §5 said the only ways were `.as_count()` and `.as_rate()`. `.rollup(sum, D)` is a
+    # third, and the weakest: summing a gauge's samples over a window is an ordinary
+    # thing to want, where `.as_count()` on a gauge is a no-op nobody benefits from.
+    got = translate("sum:x{*}.rollup(sum, 60)")
+    assert got == "sum(x - x offset 60s)"

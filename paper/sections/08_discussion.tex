@@ -69,8 +69,12 @@ The sharpest illustration appeared while this paper was being written. The secon
 those two caveats was silent until the theorem of \S\ref{sec:kernel-soundness} was
 stated and its hypotheses compared against what the emitter actually recorded
 (Remark~\ref{rem:gauge}). The translations did not change and $\kappa$ did not move;
-three quarters of the output simply stopped claiming more than it could support. An
-unrecorded precondition is free in every number a paper reports.
+three quarters of the output simply stopped claiming more than it could support, and a
+later measurement took it to all of it. The same thing happened a third time, to a
+different precondition: the counter rules need a sample older than the bucket they read,
+and the code naming that condition had been sitting unused in the catalogue while the
+rules emitted without it (Remark~\ref{rem:series-start}). An unrecorded precondition is
+free in every number a paper reports, which is exactly why they accumulate.
 
 \subsection{The thesis survives in the other direction}
 
@@ -95,7 +99,7 @@ target system never holds less than the source did going to Prometheus; it does 
 back.
 
 Put the two together and the shape of the lock-in is specific. Leaving Datadog for
-Prometheus costs engineering: four constructs, a few weeks, a ceiling of $97.9\%$, plus
+Prometheus costs engineering: five constructs, a few weeks, a ceiling of $97.9\%$, plus
 the discipline of supplying the context the source queries omit. Coming back costs
 expressiveness and information, both provably. That is the asymmetry the switching-cost
 literature describes as the mechanism of lock-in rather than its

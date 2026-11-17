@@ -233,8 +233,9 @@ must therefore lie strictly \emph{inside} the bucket.
 
 \begin{proposition}[Cumulative difference]\label{prop:offset}
 Let $\sigma$ be the least gap between consecutive samples, let $\mathcal{C}_{\Delta}$ be
-the databases in which no counter series resets within $[b,b+\Delta)$, and assume
-Prometheus's lookback covers $\sigma$. Then on $\mathcal{C}_{\Delta}$ the expression
+the databases in which no counter series resets within $[b,b+\Delta)$ \emph{and every
+counter series has a sample before $b$}, and assume Prometheus's lookback covers
+$\sigma$. Then on $\mathcal{C}_{\Delta}$ the expression
 \texttt{x - x offset $\Delta$}, evaluated at $u=b+\Delta-\varepsilon$ for any
 $0<\varepsilon\le\sigma$, is $\phi_\rho$-invariant and equals $\Sigma_\Delta(b)$ exactly.
 \end{proposition}
@@ -253,7 +254,8 @@ function of $\phi_\rho(s)$ alone.
 \begin{proposition}[Anchored increase]\label{prop:anchored}
 Let $\rho=\mathsf{zero}$ and $\varepsilon$ be as above. Then
 \texttt{increase(x[$\Delta$] anchored)} evaluated at $b+\Delta-\varepsilon$ equals
-$\Sigma_{\mathsf{zero},\Delta}(b)$ on all of $\mathcal{D}$, and is
+$\Sigma_{\mathsf{zero},\Delta}(b)$ on all of $\mathcal{D}$ --- including the series
+excluded from $\mathcal{C}_\Delta$ by either hypothesis --- and is
 $\phi_{\mathsf{zero}}$-invariant.
 \end{proposition}
 \begin{proof}
@@ -266,16 +268,43 @@ $t_i\in[b,b+\Delta)$, so the total is $\Sigma_{\mathsf{zero},\Delta}(b)$, a func
 $\phi_{\mathsf{zero}}(s)$ alone.
 \end{proof}
 
+\begin{remark}[The second hypothesis, and the second advantage]\label{rem:series-start}
+The series-start hypothesis was missing from an earlier statement of
+Proposition~\ref{prop:offset}, whose proof names ``the last sample before $b$'' without
+requiring one to exist. When none does, \texttt{x offset $\Delta$} selects nothing and
+the difference returns \emph{no result} where Datadog returns the sum of the deltas it
+holds --- a disagreement that $d$ scores as $\infty$ rather than as a large number,
+since the two results have different domains. Read off a real server on a bucket holding
+two series, one beginning before it and one inside it: the difference returns $25$ for
+the first and nothing for the second, where $\phi_{\mathsf{zero}}$ sums the second's
+deltas to $20$.
+
+The same reading gives the anchored form more than Proposition~\ref{prop:anchored} was
+stated to claim. \texttt{increase(x[$\Delta$] anchored)} returns $25$ and $20$ --- both
+of Datadog's figures, the new series included. So the anchored form's advantage over the
+cumulative difference is not only that it survives a reset; it is also the only one of
+the two that is right about a series younger than the window. For a migration that is
+the more common case of the two, since every series is new on the day the dual-write
+starts, and it is the reason the emitter now records \texttt{PHI\_SERIES\_START}
+alongside \texttt{COUNTER\_RESET} on the plain form. The mean-of-deltas rule of
+\S\ref{sec:emission} carries it for a second reason: its denominator counts samples
+where Datadog counts deltas, and a series beginning inside the bucket has one fewer
+delta than it has samples.
+\end{remark}
+
 \noindent
 Propositions~\ref{prop:offset} and~\ref{prop:anchored} explain the measurements rather
 than merely accompanying them. The cumulative difference is exact exactly where its
 invariance class holds --- no reset inside the window --- and the anchored form, whose
 reset handling \emph{is} $\delta_{\mathsf{zero}}$, is exact everywhere. Both are
 confirmed in Table~\ref{tab:rollup-live}: over four synthetic workloads at two rollup
-intervals, the cumulative difference agrees with Datadog on every bucket of the
-reset-free workloads and falls to $92$--$98\%$ once counters restart, with relative
+intervals, the cumulative difference agrees with the modelled rollup on every bucket of
+the reset-free workloads and falls to $92$--$98\%$ once counters restart, with relative
 error as large as $1.68$, while the anchored form is exact on every bucket of every
-workload. \texttt{rate} is exact only on perfectly regular traffic.
+workload. ``Modelled'' is the right word there and is not a hedge: that table reads
+Datadog's side from the reference evaluator of \S\ref{sec:replay}, and it is the replay
+of \S\ref{sec:replay} and the scripted reset of Remark~\ref{rem:rho} that put the same
+claims to the system itself. \texttt{rate} is exact only on perfectly regular traffic.
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/rollup_translation_live}

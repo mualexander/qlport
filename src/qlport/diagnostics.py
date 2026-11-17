@@ -3,13 +3,19 @@
 The codes double as the rows of the gap catalogue (paper §5) and the failure
 breakdown for κ (paper §7), so add a code rather than reusing a vague one.
 
-Nine of these are reachable from the Datadog → PromQL emitter; the rest name gaps the
-paper argues about but no implemented path raises. PHI_ABSOLUTE, PHI_SERIES_START,
-OFFSET, SUBQUERY, MANY_TO_ONE and RATE_EXTRAPOLATION belong to the reverse direction,
-and REGEX_NOT_GLOB to §6's regex → glob conversion, which `regular.py` now decides;
-the code stays unreachable here because the reverse-direction emitter is not built. Kept
-because the paper names them, not because anything returns them: `grep -rn 'Gap[.]'` is
-the check on which is which.
+Ten of these are reachable from the Datadog → PromQL emitter; the rest name gaps the
+paper argues about but no implemented path raises. PHI_ABSOLUTE, OFFSET, SUBQUERY,
+MANY_TO_ONE and RATE_EXTRAPOLATION belong to the reverse direction, and REGEX_NOT_GLOB
+to §6's regex → glob conversion, which `regular.py` now decides; the code stays
+unreachable here because the reverse-direction emitter is not built. Kept because the
+paper names them, not because anything returns them: `grep -rn 'Gap[.]'` is the check on
+which is which.
+
+PHI_SERIES_START moved from the second list to the first. It was written for the reverse
+direction and turns out to be a precondition of the counter rules in this one: the
+cumulative difference needs a sample before the bucket to subtract, and the
+mean-of-deltas form needs one because its denominator counts samples where Datadog
+counts deltas. Both were emitting without recording it.
 """
 from dataclasses import dataclass
 from enum import Enum

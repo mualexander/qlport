@@ -177,6 +177,36 @@
     ]
    }
   },
+  "gau.rollup_count": {
+   "n_points": {
+    "*": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.gau{*}.rollup(count, 30)",
+   "reported_interval": 30,
+   "series": 1,
+   "values": {
+    "*": [
+     1.0,
+     2.0,
+     3.0
+    ]
+   }
+  },
+  "gau.rollup_sum": {
+   "n_points": {
+    "*": 61
+   },
+   "query": "sum:qlport.ar.r1794863577.gau{*}.rollup(sum, 30)",
+   "reported_interval": 30,
+   "series": 1,
+   "values": {
+    "*": [
+     50.0,
+     100.0,
+     150.0
+    ]
+   }
+  },
   "grp.count": {
    "n_points": {
     "g:g0": 61,

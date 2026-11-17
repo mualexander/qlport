@@ -323,3 +323,86 @@ def test_logql_is_not_promql():
     assert not c.is_promql('{app="loki",container="loki"} != "x" !~ "info"')
     assert c.is_promql('rate(x{job="y"}[5m])')
     assert c.is_promql('up{job="y"} != 0')
+
+
+# ----------------------------------- name mangling on the corpus (paper §5, lem:scope)
+
+
+def _corpus_identifiers():
+    """Original Datadog metric names and grouping keys, before mangling."""
+    from lark import Token, Tree
+
+    from pathlib import Path
+
+    from qlport.corpus import normalise, read_queries
+    from qlport.parse import parse
+
+    root = Path(__file__).resolve().parent.parent
+    qs = [q for q in read_queries(root / "data" / "corpus" / "queries.jsonl")
+          if q.lang == "datadog"]
+    metrics, keys = set(), set()
+
+    def walk(n):
+        if not isinstance(n, Tree):
+            return
+        if str(n.data) == "query":
+            for c in n.children:
+                if isinstance(c, Token) and c.type in ("METRIC", "NAME", "CNAME"):
+                    metrics.add(str(c))
+                    break
+        if str(n.data) == "grouping":
+            keys.update(str(c) for c in n.children[1:] if isinstance(c, Token))
+        for c in n.children:
+            walk(c)
+
+    for text in {normalise("datadog", q.text) for q in qs}:
+        try:
+            walk(parse("datadog", text, "v2"))
+        except Exception:                                    # noqa: BLE001
+            continue
+    return metrics, keys
+
+
+def _collisions(names, mangle):
+    out = {}
+    for n in names:
+        out.setdefault(mangle(n), set()).add(n)
+    return {k: v for k, v in out.items() if len(v) > 1}
+
+
+def test_the_corpus_does_contain_colliding_names():
+    """Lemma lem:scope's injectivity hypothesis is not vacuous on this corpus.
+
+    An earlier draft discharged it by asserting that no corpus source contains a pair
+    like `a.b` and `a_b`. It contains three, and the queries using the two metric pairs
+    are all translated, so two distinct Datadog metrics are emitted as one PromQL
+    selector. Pinned here because the claim it replaces was checked by reading.
+    """
+    from qlport.lower.datadog import label_name, metric_name
+
+    metrics, keys = _corpus_identifiers()
+    mc = _collisions(metrics, metric_name)
+    kc = _collisions(keys, label_name)
+
+    assert set(mc) == {"openstack_nova_hypervisor_load_1",
+                       "rabbitmq_queue_messages_ready"}, mc
+    assert set(kc) == {"cluster_name"}, kc
+    assert mc["rabbitmq_queue_messages_ready"] == {
+        "rabbitmq.queue.messages.ready", "rabbitmq.queue.messages_ready"}
+    assert kc["cluster_name"] == {"cluster-name", "cluster_name"}
+
+
+def test_the_collision_rate_is_low_enough_to_quote():
+    # §5 quotes these denominators; a corpus change that moved them should fail here
+    # rather than silently date the prose.
+    metrics, keys = _corpus_identifiers()
+    assert len(metrics) == 5389, len(metrics)
+    assert len(keys) == 723, len(keys)
+
+
+def test_a_hyphen_in_a_label_name_cannot_be_mangled_around():
+    # The third collision is forced rather than incidental: PromQL label names are
+    # [a-zA-Z_][a-zA-Z0-9_]*, so `cluster-name` has nowhere else to go.
+    from qlport.lower.datadog import label_name
+
+    assert label_name("cluster-name") == label_name("cluster_name") == "cluster_name"

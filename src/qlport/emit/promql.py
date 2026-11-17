@@ -267,6 +267,18 @@ class _Emitter:
             if _kind_of(e.expr) != "gauge":
                 self.note(Gap.METRIC_TYPE_UNKNOWN)
             body = f"{_RANGE_FNS[e.op]}({self.expr(e.expr)}[{duration(width)}])"
+        # Every form that reads a counter needs a sample older than the bucket, and for
+        # two different reasons. The cumulative difference has nothing to subtract
+        # without one, so it returns no result where Datadog returns the deltas it does
+        # hold. The mean- and count-of-deltas forms divide by, or return,
+        # `count_over_time`, which counts *samples* where Datadog counts *deltas* --- and
+        # a series beginning inside the bucket has one fewer delta than samples, since
+        # phi drops the first. The anchored form is the one exception: it anchors to the
+        # first sample it can find and returns Datadog's figure for a new series too,
+        # which is a second advantage of it beyond reset handling and is measured rather
+        # than assumed.
+        if _is_counter(e.expr) and not (e.op == "sum" and self.anchored):
+            self.note(Gap.PHI_SERIES_START)
         return f"{_atom(body)} / {_number(width)}" if (e.per_second and scale) else body
 
     def _binop(self, e: ir.BinOp) -> str:

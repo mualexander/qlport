@@ -21,7 +21,7 @@ an \emph{ingestion mapping}, because the two systems do not store the same thing
 Prometheus counter is a running total and a Datadog counter is a sequence of
 per-interval deltas. Every refusal carries a typed gap code, and the resulting catalogue
 separates what the target cannot express from what we have not built. Over $28{,}490$
-queries extracted from published dashboards, $95.6\%$ of Datadog query occurrences
+queries extracted from published dashboards, $95.5\%$ of Datadog query occurrences
 translate exactly; the shortfall is $2.0\%$ inexpressible against $2.4\%$ unimplemented,
 so in the direction teams travel the cost is engineering. The language-design artefact
 lies elsewhere: $96.9\%$ of our translations depend on a rollup interval the query omits

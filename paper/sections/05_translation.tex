@@ -122,13 +122,16 @@ query.
 
 The first is the metric's \textbf{kind}. Whether a Datadog metric was submitted as COUNT
 or GAUGE decides which rule its rollup may use, and a dashboard's JSON never records it.
-What the query does carry is evidence: \texttt{.as\_count()} and \texttt{.as\_rate()}
-apply only to COUNT, so their presence in the method chain establishes the type. But the
+What the query carries is evidence rather than a statement: \texttt{.as\_count()},
+\texttt{.as\_rate()} and a \texttt{.rollup(sum, $\Delta$)} are all documented for COUNT
+metrics, so the front end reads any of them as the type the query does not give. The
+evidence is weaker than it looks and Remark~\ref{rem:gauge} measures how much weaker;
+what matters here is the shape of the inference, not its strength. The
 method chain is a \emph{sibling} of the scope, and the kind belongs to the
 $\mathrm{Select}$ beneath it, so the attribute is synthesised at the query node and
 inherited downward --- an attribute grammar in Knuth's sense~\citep{knuth1968} rather
-than a bottom-up transduction. Absent that evidence the kind stays $\text{unknown}$ and
-the back end is left to say what it rests on.
+than a bottom-up transduction. Absent any such evidence the kind stays $\text{unknown}$
+and the back end is left to say what it rests on.
 
 The second is the rollup \textbf{interval}. Datadog derives it from the dashboard's time
 range when \texttt{.rollup} does not give one, and the query text does not contain the
@@ -225,13 +228,16 @@ observed itself needing and which the IR does not record as satisfied.
 The caveats are not a disclaimer. They are the hypotheses of
 Theorem~\ref{thm:kernel} below, collected by the only component in a position to know
 which ones a given query incurred, and \S\ref{sec:caveats} reports how often each is
-incurred. Four arise:
+incurred. Five arise:
 \texttt{ROLLUP\_ALIGNMENT} on every rollup, since Datadog's buckets are epoch-aligned,
 left-closed and named by their start (Remark~\ref{rem:closure}) while a PromQL window is
 right-closed and follows the evaluation step;
 \texttt{ROLLUP\_DEFAULT} when the interval was assumed;
 \texttt{COUNTER\_RESET} on the cumulative difference, or \texttt{ANCHORED\_VERSION} on the
-form that avoids it; and \texttt{METRIC\_TYPE\_UNKNOWN}, which deserves its own paragraph.
+form that avoids it; \texttt{PHI\_SERIES\_START} on the forms that read a counter, which
+need a sample older than the bucket and which the anchored form again avoids
+(Remark~\ref{rem:series-start}); and \texttt{METRIC\_TYPE\_UNKNOWN}, which deserves its
+own paragraph.
 
 \begin{remark}[The assumption that underwrites all of the output]%
 \label{rem:gauge}
@@ -256,9 +262,9 @@ running totals (\texttt{scripts\slash trial\_checks.py e3}).
 The condition was also silent until now, and it is not rare. At an earlier stage of this
 work it appeared to hold of $6{,}381$ translated occurrences, $76.2\%$ of them, because Datadog's default time aggregator is $\mathsf{avg}$ and most queries state
 no method at all. The remaining quarter looked exempt: a $\mathsf{sum}$ rollup needs a
-counter, the only way to ask for one is \texttt{.as\_count()} or \texttt{.as\_rate()},
-and both are documented for \texttt{COUNT} metrics --- so a query using one, we reasoned,
-establishes the type it does not state.
+counter, the ways to ask for one are \texttt{.as\_count()}, \texttt{.as\_rate()} and
+\texttt{.rollup(sum, $\Delta$)}, and all three are documented for \texttt{COUNT}
+metrics --- so a query using one, we reasoned, establishes the type it does not state.
 
 It does not, and the error was of a kind this paper has made before: a rule read in a
 manual and never asked of the system. Submitting a \texttt{GAUGE} and querying it with
@@ -266,7 +272,16 @@ each modifier returns the plain rollup, unchanged and undivided --- Datadog acce
 on a gauge and silently ignores them rather than rejecting the query
 (\texttt{scripts\slash as\_rate\_order.py}). The modifier therefore records what the
 dashboard's author took the metric to be. It is evidence about a person, not about a
-type, and no reading of the query distinguishes the two. With that premise withdrawn the
+type, and no reading of the query distinguishes the two.
+
+The third way is weaker still, and for a different reason. \texttt{.rollup(sum, $\Delta$)}
+over a \texttt{GAUGE} is not ignored: the same experiment reads it as the sum of the
+stored samples, which is a perfectly meaningful query that a dashboard author might well
+intend. So where \texttt{.as\_count()} on a gauge is a mistake nobody benefits from,
+summing a gauge over a window is an ordinary thing to want --- and the translation this
+front end chooses for it, the cumulative difference, computes something else entirely.
+Of the three pieces of evidence the query can carry, the one that is hardest to dismiss
+as author error is the one whose misreading is least benign. With that premise withdrawn the
 caveat holds of all $8{,}375$ translated occurrences, $100\%$ of them
 (Table~\ref{tab:translation-caveats}).
 
@@ -299,9 +314,37 @@ Proposition~\ref{prop:glob-regex}; a bare key or \texttt{key:*} is presence, whi
 \texttt{=\textasciitilde{}".+"} and not \texttt{".*"}, the latter also matching series
 carrying no such label; a single-key disjunction is
 Proposition~\ref{prop:disjunction}. Conjunction is the comma in both languages.
-Injectivity is needed because mangling sends \texttt{a.b} and \texttt{a\_b} to one name;
-none of the three corpus sources contains such a pair.
+Injectivity is needed because mangling sends \texttt{a.b} and \texttt{a\_b} to one name.
 \end{proof}
+
+\begin{remark}[The injectivity hypothesis is not vacuous]\label{rem:mangling}
+An earlier version of this proof discharged that hypothesis by asserting that no corpus
+source contains such a pair. It does --- three times:
+\begin{center}\footnotesize
+\begin{tabular}{@{}ll@{}}
+\texttt{openstack.nova.hypervisor.load\_1} & \texttt{openstack.nova.hypervisor\_load.1}\\
+\texttt{rabbitmq.queue.messages.ready} & \texttt{rabbitmq.queue.messages\_ready}\\
+\texttt{cluster-name} & \texttt{cluster\_name}\\
+\end{tabular}
+\end{center}
+All four queries using the two metric pairs are translated, so two distinct Datadog
+metrics are emitted as one PromQL selector. The third pair is grouping keys, and it is
+forced rather than incidental: a PromQL label name cannot contain a hyphen, so no
+mangling avoids it.
+
+The hypothesis is therefore a real condition on the target database and not a formality.
+A translation of either \texttt{rabbitmq} query is exact in a database carrying one of
+the pair and wrong in a database carrying both, where the selector would sum over series
+the source query never saw. The corpus cannot say which, because a corpus of queries is
+not a database. What it can say is that the collision rate is low and non-zero: three
+pairs among $5{,}389$ metric names and $723$ grouping keys, pinned by test so the claim
+cannot drift.
+
+Reporting it is the same discipline as Remark~\ref{rem:refusal} applied to a hypothesis
+rather than to a refusal. The assertion it replaces was checked by reading rather than by
+computing, which is how a false empirical claim survived in the proof of the lemma the
+soundness theorem rests on.
+\end{remark}
 
 \begin{theorem}[Kernel soundness]\label{thm:kernel}
 Let $q\in\mathcal{K}$ with $E(T(q))=(p,C)$, and let $t$ be an evaluation time. If
@@ -310,10 +353,15 @@ Let $q\in\mathcal{K}$ with $E(T(q))=(p,C)$, and let $t$ be an evaluation time. I
       $t+\Delta-\varepsilon$ rather than at $t$ or $t+\Delta$
       \hfill (\texttt{ROLLUP\_ALIGNMENT})
 \item $\Delta$ is the interval the query states \hfill (\texttt{ROLLUP\_DEFAULT})
-\item for $\mathit{op}_t=\mathsf{sum}$: no series resets in $[t,t+\Delta)$, or the
-      anchored form was emitted \hfill (\texttt{COUNTER\_RESET}, \texttt{ANCHORED\_VERSION})
-\item for $\mathit{op}_t\neq\mathsf{sum}$: the metric is a gauge
+\item the metric's type is the one the query's methods imply: a \texttt{COUNT} where the
+      query carries \texttt{.as\_count()}, \texttt{.as\_rate()} or
+      \texttt{.rollup(sum,$\Delta$)}, a \texttt{GAUGE} otherwise
       \hfill (\texttt{METRIC\_TYPE\_UNKNOWN})
+\item where the emitted form is the cumulative difference: no series resets in
+      $[t,t+\Delta)$, or the anchored form was emitted
+      \hfill (\texttt{COUNTER\_RESET}, \texttt{ANCHORED\_VERSION})
+\item where the emitted form reads a counter: every series has a sample before $t$
+      \hfill (\texttt{PHI\_SERIES\_START})
 \end{enumerate}
 and Lemma~\ref{lem:scope}'s injectivity holds, then
 $\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,t)$ ---
@@ -326,22 +374,58 @@ to match the two reductions on one series $s$ and then the space aggregation.
 
 For the time reduction, (1) makes $[t,t+\Delta)$ and the PromQL window at
 $t+\Delta-\varepsilon$ cover the same samples, by the index argument of
-Proposition~\ref{prop:offset}; (2) makes it the same width. If $\mathit{op}_t=\mathsf{sum}$ and $\kappa$ is a counter,
-Datadog reports $\Sigma_\Delta(t)$ and the emitted form equals it by
-Proposition~\ref{prop:offset} under (3)'s first branch or by
-Proposition~\ref{prop:anchored} under its second. If $\mathit{op}_t\neq\mathsf{sum}$ then
-(4) gives $\phi_{\mathsf{zero}}(s)=s$, since $\phi$ is the identity on gauges, so
-Datadog's stored points in the bucket are exactly the samples
-$s|_{[t,t+\Delta)}$ that \texttt{$\mathit{op}_t$\_over\_time} reduces at that instant, and the two
-reductions are the same commutative operation on the same multiset. The
-$\mathit{per\_second}$ divisor is $\Delta$ on both sides.
+Proposition~\ref{prop:offset}; (2) makes it the same width. Hypothesis (3) fixes
+$\kappa$, and the emitter has a rule for each case it admits.
+
+If $\kappa$ is a gauge, $\phi_{\mathsf{zero}}(s)=s$, so Datadog's stored points in the
+bucket are exactly the samples $s|_{[t,t+\Delta)}$ that
+\texttt{$\mathit{op}_t$\_over\_time} reduces at that instant, and the two reductions are
+the same commutative operation on the same multiset.
+
+If $\kappa$ is a counter and $\mathit{op}_t=\mathsf{sum}$, Datadog reports
+$\Sigma_\Delta(t)$ and the emitted form equals it by Proposition~\ref{prop:offset}
+under (4)'s first branch and (5), or by Proposition~\ref{prop:anchored} under (4)'s
+second, which needs neither.
+
+If $\kappa$ is a counter and $\mathit{op}_t=\mathsf{avg}$, Datadog reports the mean of
+the deltas it stores in the bucket. The emitted form is
+$\Sigma_\Delta(t)/\texttt{count\_over\_time}$, whose numerator is that sum by the
+previous case and whose denominator counts the samples in the window. By (5) the series
+began before $t$, so every sample in $[t,t+\Delta)$ contributes exactly one delta and
+the two counts agree; the quotient is the mean.
+
+If $\kappa$ is a counter and $\mathit{op}_t=\mathsf{count}$, Datadog reports how many
+deltas it stores in the bucket and the emitted \texttt{count\_over\_time} reports how
+many samples the window holds; (5) makes those the same number, by the same
+correspondence. For $\mathit{op}_t\in\{\mathsf{min},\mathsf{max}\}$ over a counter no
+rule exists --- the individual deltas are reachable only through a subquery over a
+sample grid the query does not state --- so the emitter refuses,
+$q\notin\mathrm{dom}(T)$, and there is nothing to prove.
+The $\mathit{per\_second}$ divisor is $\Delta$ on both sides.
 
 For the space reduction, Definition~\ref{def:ir-sem}'s $\mathrm{Agg}$ is what PromQL's
 $\mathit{op}_s$ \texttt{by} $(\overline{k})$ computes and what Datadog's
 $\mathit{op}_s{:}$ with \texttt{by \{$\overline{k}$\}} computes, on inputs just shown
-equal. That $C$ contains nothing further is by inspection of the emitter: the four codes
+equal. That $C$ contains nothing further is by inspection of the emitter: the five codes
 above are the only ones it records.
 \end{proof}
+
+\noindent
+Hypothesis (3) is the one that changed shape while this paper was being written, and
+twice. It began as ``the metric is a gauge'', which was the only case the emitter then
+handled; a counter under an averaging rollup was being emitted as
+\texttt{avg\_over\_time} of the running totals, which is not a function of the deltas
+Datadog reduces at all, and the corpus-scale differential test of \S\ref{sec:differential}
+is what caught it. It then stopped being dischargeable from the query text, when the
+modifiers it rests on turned out not to establish the type (Remark~\ref{rem:gauge}).
+What it costs when it fails is measured rather than asserted: writing one stream of
+counter observations to both systems and asking the commonest shape in the corpus ---
+a query with no method at all --- Datadog reads the mean of the deltas, $10$ throughout,
+while \texttt{avg\_over\_time} reads the mean of the running totals, climbing from $20$
+to $1{,}760$ over half an hour. The relative difference runs from $0.50$ to $0.994$ and
+is unbounded in the counter's age, because one quantity grows with it and the other does
+not. The same run with the metric submitted as a \texttt{GAUGE}, where the hypothesis
+holds, agrees exactly on every bucket (\texttt{scripts\slash type\_assumption.py}).
 
 \noindent
 The theorem is narrow in one respect worth naming. It is a statement about the
@@ -349,10 +433,12 @@ The theorem is narrow in one respect worth naming. It is a statement about the
 $\mathcal{K}$ --- arithmetic between queries, in practice --- exactness follows
 pointwise from the same argument, but the vector matching that $\mathrm{BinOp}$ performs
 is not identical in the two languages, and this paper does not prove it. The honest
-summary is that the fragment the corpus overwhelmingly uses is exact under four stated
-conditions, three of which are properties of the evaluation grid and the data rather than
-of either language, and the fourth of which is a fact a dashboard does not record.
+summary is that the fragment the corpus overwhelmingly uses is exact under five stated
+conditions, four of which are properties of the evaluation grid and the data rather than
+of either language, and the remaining one of which is a fact a dashboard does not record.
 
 That is also the answer to the question RQ2 was posed to avoid: the preconditions do not
-make the translation approximate. Condition (3) is the only one that can fail silently on
-real data, and \S\ref{sec:caveats} measures how often it does.
+make the translation approximate. Conditions (3), (4) and (5) are the ones that can fail
+silently on real data --- the first because nothing in the query settles the type, the
+other two because they are statements about data the translator never sees --- and
+\S\ref{sec:caveats} measures how often each is in play.

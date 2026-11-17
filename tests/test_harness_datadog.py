@@ -520,3 +520,76 @@ def test_the_run_met_the_warm_up_the_design_committed_to(e1):
     # experiment from the one the prediction table was written for.
     assert e1["provenance"]["warmup"] >= 600.0
     assert sum(1 for e in e1["exposition"] if e["agent"]) > 40
+
+
+# --------------- the recorded E7 measurement (what the type assumption costs)
+
+
+E7 = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog" / "e7.json"
+
+
+@pytest.fixture(scope="module")
+def e7() -> dict:
+    if not E7.exists():  # pragma: no cover - run scripts/type_assumption.py
+        pytest.skip("e7.json not recorded; run scripts/type_assumption.py")
+    return json.loads(E7.read_text())
+
+
+def test_the_assumption_holding_is_exact(e7):
+    # A GAUGE carrying the same stored values agrees on every bucket, which is the
+    # content of Theorem thm:kernel's type hypothesis when it is satisfied.
+    assert e7["summary"]["gauge_max_d"] == pytest.approx(0.0, abs=1e-12)
+
+
+def test_the_assumption_failing_is_unbounded_not_approximate(e7):
+    """§5 calls the wrong case "not approximately right but unrelated". This is that.
+
+    Datadog reduces the deltas it stores and reads the same value in every bucket;
+    `avg_over_time` reduces the running totals and climbs with the counter's age. The
+    relative difference therefore has no bound that does not mention how long the
+    counter has been running -- it approaches 1 and never settles.
+    """
+    s = e7["summary"]
+    assert s["counter_first"] > 0.4
+    assert s["counter_last"] > 0.99
+    assert s["counter_last"] > s["counter_first"]
+    # one side constant, the other growing: that is why no fixed epsilon covers it
+    assert s["promql_counter_last"] > 50 * s["promql_counter_first"]
+    assert s["datadog_counter_value"] == pytest.approx(10.0)
+
+
+def test_the_error_grows_monotonically_with_the_counters_age(e7):
+    rows = [r for r in e7["rows"] if r["d_counter"] is not None]
+    ds = [r["d_counter"] for r in rows]
+    assert len(ds) > 20
+    # not strictly monotone point to point, but the trend must be unmistakable
+    assert ds[-1] > ds[0]
+    assert ds[len(ds) // 2] > ds[0]
+
+
+def _full_bucket(e6: dict, key: str) -> float:
+    """The largest recorded value of a query whose edge buckets are partial.
+
+    A summing or counting rollup reads less at the ends of the window, where the bucket
+    holds one or two of its three samples rather than all three, so the full bucket is
+    the maximum rather than the only value.
+    """
+    rec = e6["queries"][key]
+    assert "error" not in rec, f"{key}: {rec.get('error')}"
+    return max(v for series in rec["values"].values() for v in series)
+
+
+def test_a_summing_rollup_over_a_gauge_sums_the_stored_samples(e6):
+    """The third piece of type evidence, and the one whose misreading is least benign.
+
+    `.as_count()` and `.as_rate()` are no-ops on a gauge, so a query carrying either
+    over one is a mistake nobody benefits from. `.rollup(sum, D)` is not ignored: it
+    sums the samples in the bucket, which is an ordinary thing to want. The front end
+    reads all three as evidence of a COUNT and emits a cumulative difference, which for
+    a gauge computes something else entirely.
+    """
+    assert _full_bucket(e6, "gau.rollup_count") == _approx(3.0)   # three samples
+    assert _full_bucket(e6, "gau.rollup_sum") == _approx(150.0)   # and their sum
+    assert _only(e6, "gau.rollup_avg") == _approx(50.0)           # their mean
+    # Summing is not the no-op that `.as_count()` is here: it reads a third quantity.
+    assert _full_bucket(e6, "gau.rollup_sum") != _approx(50.0)
