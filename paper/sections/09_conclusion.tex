@@ -24,7 +24,7 @@ them an information barrier rather than an expressiveness gap --- while $2.4\%$ 
 this translator has not done, giving a ceiling of $98.8\%$. In the reverse direction, on the
 sub-problem of tag filtering, the obstructions are theorems: a glob's language is a single
 word or unbounded in length, and three impossibility results follow that account for every
-refusal, $38.3\%$ of the concrete patterns in the corpus.
+refusal, $38.3\%$ of the matcher occurrences whose pattern is concrete.
 
 \textbf{RQ3.} Coverage on published dashboards is the $96.3\%$ above, and the shape of the
 shortfall matters more than its size. Coverage against implementation effort is a
@@ -36,11 +36,13 @@ the work does not port half the estate.
 Three things here are proved: the directional information barrier, which holds for every
 possible translator and not only ours; the exactness of the rollup translations on a
 stated class, with the preconditions enumerated as the hypotheses of a theorem; and the
-non-expressibility results of \S\ref{sec:regular}. Two things are verified against a real
-system rather than a model: the PromQL semantics the rollup rules depend on, read off
-Prometheus~3.15.0, and the anchoring of label-matcher regular expressions. One thing is
-read from source rather than measured: Datadog's reset policy, taken from its open-source
-agent at a pinned commit.
+non-expressibility results of \S\ref{sec:regular}. Four things are verified against a
+real system rather than a model, all of them against Prometheus~3.15.0: the PromQL semantics
+the rollup rules depend on, the anchoring of label-matcher regular expressions, the
+series pairing that Theorem~\ref{thm:arith} rests on, and the two parse behaviours
+\S\ref{sec:grammars} and Remark~\ref{rem:anchored-flag} turn on. Nothing is left that
+was read from source and not then measured: Datadog's reset policy was taken from its
+open-source agent at a pinned commit and afterwards put to a running one.
 
 Seven things are measured against the vendor itself rather than assumed: the bucket
 convention (left-closed and named by its start, the opposite of what this work assumed

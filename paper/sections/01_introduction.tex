@@ -66,16 +66,17 @@ expressiveness gap is in the direction they do not. Both halves took measurement
 establish and neither was the expected answer.
 
 Going from Datadog to PromQL, $96.3\%$ of query occurrences translate, and the shortfall
-is mostly unfinished work rather than impossibility: $1.2\%$ of the corpus is
-inexpressible in PromQL against $2.4\%$ this translator has not implemented, with a
+is mostly unfinished work rather than impossibility: $1.2\%$ of the corpus is beyond
+reach --- two constructs PromQL cannot say and one the target system does not hold ---
+against $2.4\%$ this translator has not implemented, with a
 ceiling of $98.8\%$ once the latter is done. On that evidence the switching cost in the
 direction people travel is \emph{engineering} (\S\ref{sec:gaps}).
 
 The design artefact is elsewhere, and \S\ref{sec:discussion} argues it is the more
 interesting finding. A Datadog query does not state its own rollup interval --- that comes
 from the dashboard's time range --- and does not state whether its metric is a counter or
-a gauge. So $96.9\%$ of the translations we emit depend on an interval the query omits,
-\emph{every one} depends on a type it omits, and the $96.9\%$ depend on both at once. The
+a gauge. So $96.9\%$ of the translations we emit depend on an interval the query omits
+and \emph{every one} depends on a type it omits. The
 translations are exact, but exact relative to context supplied from outside the query. A
 PromQL expression names its own window and carries its reset semantics in the function it
 calls. That is a property of the languages, and it is invisible in any coverage number.
@@ -84,8 +85,8 @@ Coming back is a different matter, and here the obstructions are proved. A Datad
 filter is a glob, and \S\ref{sec:regular} shows a glob's language is either a single word
 or unbounded in length --- from which it follows that no glob denotes a single arbitrary
 character, nor the non-empty values, nor a wildcard confined to part of the alphabet.
-Those three cover every refusal in that section, $38.3\%$ of the concrete patterns the
-corpus contains. Together with the directional barrier of \S\ref{sec:ingestion}, the
+Those three cover every refusal in that section, $38.3\%$ of the corpus's matcher
+occurrences whose pattern is concrete. Together with the directional barrier of \S\ref{sec:ingestion}, the
 picture is an asymmetry: leaving costs engineering, returning costs expressiveness.
 
 \paragraph{Contributions.}
@@ -130,8 +131,9 @@ An earlier version of this work refused $348$ query occurrences on a commutation
 that the real evaluation order never raises; a later one reported all $124$
 disjunctive scopes as a language gap when $120$ of them were a single regex matcher away;
 a third called \texttt{.weighted()} inexpressible for $70$ occurrences when the modifier
-turns out to compute nothing at all; and a fourth counted four cross-key disjunctions as
-beyond PromQL two paragraphs from the sentence explaining how PromQL says them. All four
+turns out to compute nothing at all; and a fourth counted the four disjunctions no
+single key covers as beyond PromQL two paragraphs from the sentence explaining how
+PromQL says them. All four
 would have produced a stronger-sounding claim, and all four erred in the same direction.
 \S\ref{sec:gaps} and \S\ref{sec:glob-corpus} report which refusals now have which
 warrant.

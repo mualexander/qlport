@@ -231,8 +231,10 @@ is what admits those. And a branch that merely asks for the tag to be present su
 every value, so the union collapses to
 \texttt{k=\textasciitilde{}".+"} rather than growing an alternative.
 
-What remains refused is disjunction across \emph{different} keys, which
-\S\ref{sec:gaps} measures at four query occurrences in the corpus. Those stay sayable in
+What remains refused is every disjunction whose branches do not all constrain
+\emph{one} key --- across different keys, or within a branch that constrains two at
+once --- which \S\ref{sec:gaps} measures at four query occurrences in the corpus and
+sorts into its three shapes there. Those stay sayable in
 PromQL --- as a set union of selectors with the rollup distributed over the branches,
 $2^k$ selectors for $k$ disjunctions --- but not as the syntax-directed translation of a
 scope, which is what this translator is.
@@ -593,11 +595,17 @@ by $\chi$, which is a function of the query text alone.
 \end{proof}
 
 \noindent
-Theorem~\ref{thm:arith} reaches further than it may look. $\mathcal{A}$ contains
-$8{,}445$ occurrences --- $96.3\%$ of the corpus and, more to the point, \emph{every
-translation the emitter produces}. Nothing this translator emits falls outside the
-fragment proved exact, so the gap between what is claimed and what is shipped is empty
-rather than small. That is the statement \S\ref{sec:framework}'s
+Theorem~\ref{thm:arith} reaches further than it may look. Every term the \emph{front
+end} can build lies in $\mathcal{A}$, and that is where the universal comes from ---
+not from the emitter, which would happily aggregate anything handed to it, and not from
+this corpus. Lowering constructs an $\mathrm{Agg}$ at exactly one place, always over a
+$\mathrm{Rollup}$ of a $\mathrm{Select}$, which is $\mathcal{K}$; its only other
+constructors are $\mathrm{Number}$, $\mathrm{Scale}$ and $\mathrm{BinOp}$ over terms it
+has already lowered, which is the closure. $\mathrm{Window}$ and $\mathrm{RangeFn}$ are
+reachable from neither, and the emitter refuses them in any case. The corpus then checks
+what the construction establishes: $\mathcal{A}$ covers $8{,}445$ occurrences, $96.3\%$
+of the corpus and $100\%$ of what was emitted. So the gap between what is claimed and
+what is shipped is empty rather than small. That is the statement \S\ref{sec:framework}'s
 Remark~\ref{rem:two-kappas} wanted and could not previously make: $\kappa$ counts
 translations the emitter is willing to produce, and each of them is now covered by a
 proof as well as by the corpus-scale test of \S\ref{sec:differential}.

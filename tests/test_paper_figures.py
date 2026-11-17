@@ -104,7 +104,6 @@ def _accounted() -> set[tuple[str, float]]:
 ALLOWED: dict[float, str] = {
     # --- constants of the apparatus -------------------------------------------------
     3.15: "Prometheus version the measurements were taken against",
-    3.7: "Prometheus version that introduced the anchored modifier",
     15: "scrape interval, seconds",
     60: "rollup interval (seconds); also the first share in the discussion's "
         "worked illustration of conjunctive coverage, which is hypothetical "
@@ -148,6 +147,8 @@ ALLOWED: dict[float, str] = {
     625: "unregistered (nb 04): patterns with a glob",
     481: "unregistered (nb 00): distinct formula strings",
     388: "unregistered (nb 04): refused patterns",
+    378: "of those, the two constructs that are finite unions exceeding the bound "
+         "(238 + 140 from the reasons table), leaving 10 refused outright",
     344: "unregistered (nb 04): patterns needing a union",
     281: "unregistered (nb 04): patterns with a single glob",
     238: "unregistered (nb 04): refusals that are .+ or contain it",
@@ -216,7 +217,7 @@ ALLOWED: dict[float, str] = {
 # made on magnitude alone. A share and a count are different claims; a checker that
 # cannot tell them apart launders one into the other.
 SCALAR_ONLY: set[float] = {
-    3.15, 3.7, 15, 25, 64, 300, 1000, 1800,
+    3.15, 15, 25, 64, 300, 1000, 1800,
     0, 1, 2, 3, 6, 10, 45, 49, 54, 63, 103, 110, 111, 133, 137,
     139, 168, 183, 221, 238, 281, 344, 388, 481, 625, 723, 763, 897, 1013,
     1760, 5227, 5389, 7863, 8096, 8472, 8337, 8766, 11628, 21962, 28490, 28501,

@@ -185,8 +185,9 @@ consolation that the failures are all one-offs.
 
 Two sanity conditions hold on the translated set. Every emitted expression parses under
 the PromQL grammar of Section~\ref{sec:grammars} --- all $7{,}550$ of them, since $89$
-of the $7{,}396$ translated queries are comma-separated lists that emit one expression
-per series. That is checked as an assertion rather than reported as a rate, since the
+of the $7{,}396$ translated \emph{distinct} queries are comma-separated lists that emit
+one expression per series. Those two counts are by distinct query rather than by
+occurrence, because what is being checked is a property of each emitted string. That is checked as an assertion rather than reported as a rate, since the
 only acceptable number of syntactically invalid outputs is zero. And $\kappa$ sits between the ceilings that the
 greedy order of \S\ref{sec:staircase} places on a twenty-six- and a
 twenty-seven-feature fragment ($96.2\%$ and $99.3\%$), so the translator is at the
@@ -280,8 +281,8 @@ reach the ceiling below only for a translator that is told the time range, and w
 carry two more preconditions of exactly the kind \S\ref{sec:discussion} argues are the
 real switching cost.
 
-\texttt{PHI\_QUANTILE} ($34$) is the only information barrier the main direction
-produces, and \S\ref{sec:ingestion} proves it rather than asserting it: a Datadog
+\texttt{PHI\_QUANTILE} ($34$) is the only information barrier this corpus raises in the
+main direction, and \S\ref{sec:ingestion} proves it rather than asserting it: a Datadog
 distribution metric answers $\mathtt{p}NN$ from a sketch of the raw observations,
 Prometheus keeps those observations bucketed, and no function of a bucketing is the
 quantile (Corollary~\ref{cor:quantile}). The point is not that one system is more
@@ -404,8 +405,9 @@ than asked for.
 \texttt{COUNTER\_RESET} marks the $23.6\%$ that use the cumulative-difference form of
 Proposition~\ref{prop:offset}, exact unless a counter resets inside the window;
 Table~\ref{tab:rollup-live} measures what that costs when one does, and
-Proposition~\ref{prop:anchored} removes it at the price of requiring Prometheus~$3.7$ or
-newer.
+Proposition~\ref{prop:anchored} removes it at the price of a server started with an
+experimental feature enabled --- a stronger condition than a version number, and
+Remark~\ref{rem:anchored-flag} is about how we came to believe otherwise.
 
 \texttt{PHI\_SERIES\_START} marks the same $23.6\%$, and marks it for a second reason
 that went unrecorded until this draft. The cumulative difference needs a sample
@@ -440,7 +442,7 @@ somebody relies on the translation.
 
 Adding it also falsifies something an earlier draft of this section claimed. That draft
 said $116$ occurrences carried \texttt{ROLLUP\_ALIGNMENT} alone and were the only
-translations resting on nothing but the grid. With the fourth code in place the true
+translations resting on nothing but the grid. With this code in place the true
 figure is \emph{none}: every one of those $116$ is an \texttt{avg} rollup and now carries
 \texttt{METRIC\_TYPE\_UNKNOWN} too. No translation in this corpus is exact on the strength
 of the evaluation grid alone, which is a stronger claim than the one it replaces and was
@@ -530,7 +532,8 @@ subsection reports it.
 \label{sec:differential}
 
 The construction is the one Section~\ref{sec:replay} applies to a single trace, applied
-instead to every distinct query shape the corpus contains. For each shape the harness
+instead to every distinct query shape among the corpus occurrences this translator
+emits a single expression for. For each shape the harness
 reads off the lowered IR which series the query's own filters select, synthesises them,
 writes the cumulative counter to a local Prometheus and its image under $\phi$ to a real
 Datadog account, then evaluates the Datadog query against Datadog and its translation
@@ -567,9 +570,10 @@ single-query occurrences. Three of those shapes are new since
 Remark~\ref{rem:weighted}, and their agreeing is a second and independent check on it:
 the modifier was dropped on the strength of a probe built to detect a weighting, and
 the corpus's own \texttt{.weighted()} queries then agreed with Datadog bucket for
-bucket. So $\kappa$ now measures translations that have been checked
-against the vendor rather than merely emitted, which is a claim this paper could not
-previously make.
+bucket. So all but about a hundred of $\kappa$'s occurrences are now translations
+checked against the vendor rather than merely emitted --- the remainder being the
+comma-separated lists, which the shape reduction does not cover --- which is a claim
+this paper could not previously make at all.
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/differential}
@@ -629,7 +633,7 @@ trace is for, and the two are complementary rather than redundant.
 
 \paragraph{The corpus is published dashboards.}
 Vendor and community dashboards may be tidier and more heavily templated than
-in-house ones. The template-variable share ($87\%$ of Datadog, $82\%$ of PromQL queries)
+in-house ones. The template-variable share ($87\%$ of Datadog, $82\%$ of PromQL occurrences)
 is the figure most likely to be inflated this way; $\kappa$ is less exposed, since the
 gaps it reports are structural constructs rather than stylistic ones. A corpus of
 private dashboards would be the better test and is not obtainable.

@@ -204,13 +204,16 @@ misses a measurable fraction of the vendor's own shipped dashboards.
 
 Second, the gap between the raw and instantiated columns is large in both languages:
 $11.8\%$ against $99.9\%$ for Datadog, $71.2\%$ against $99.1\%$ for PromQL. Every rate
-in that table is a share of \emph{distinct} queries, which is the one place in this
-paper where the denominator is not occurrences: a grammar either accepts a string or
-does not, and counting the same string forty times would measure the dashboards rather
-than the language. The reason
+in that table is a share of \emph{distinct} queries, and the reason is worth stating
+because coverage in \S\ref{sec:evaluation} is deliberately not: a grammar either accepts
+a string or does not, so counting the same string forty times would measure the
+dashboards rather than the language, while a migration that must rewrite forty panels
+by hand is counting panels. Both denominators appear in this paper and each claim says
+which it uses. The reason
 is that dashboard queries are not queries but \emph{templates} --- $87\%$ of Datadog and
-$82\%$ of PromQL corpus queries contain at least one variable such as \texttt{\$host} or
-\texttt{\$\_\_rate\_interval}. A translator for dashboards therefore takes a query
+$82\%$ of PromQL query \emph{occurrences} contain at least one variable such as
+\texttt{\$host} or \texttt{\$\_\_rate\_interval}, so these two shares are counted the
+other way from the parse rates beside them. A translator for dashboards therefore takes a query
 schema, not a query, and \S\ref{sec:evaluation} measures coverage on the instantiated
 form for that reason.
 

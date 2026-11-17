@@ -190,8 +190,9 @@ direction.
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/regex_glob_reasons}
-\caption{The constructs behind the $388$ refused occurrences. Each is a consequence of
-Corollary~\ref{cor:no-glob} rather than a limit of the procedure.}
+\caption{The constructs behind the $388$ refused occurrences. Each is ruled out as a
+single glob by Corollary~\ref{cor:no-glob}; only the third is also beyond a bounded
+union of them.}
 \label{tab:regex-glob-reasons}
 \end{table}
 
@@ -201,12 +202,25 @@ Corollary~\ref{cor:no-glob} rather than a limit of the procedure.}
 \label{tab:regex-glob-examples}
 \end{table}
 
-Table~\ref{tab:regex-glob-reasons} is the part this section can be held to. Three
-constructs account for every refusal, and each is an instance of
+Table~\ref{tab:regex-glob-reasons} is the part this section can be held to, and it has
+to be read against the target of \S\ref{sec:glob-unions} rather than against a single
+glob. Three constructs account for every refusal, and each is an instance of
 Corollary~\ref{cor:no-glob}: a single-character wildcard such as \texttt{5..} would need a
 glob for $\Sigma$, which part~(1) forbids; \texttt{.+} would need one for $\Sigma^{+}$,
 forbidden by part~(2); and \texttt{5[0-9]+} would need a star confined to the digits,
-forbidden by part~(3). So these $388$ occurrences are not refusals of this translator. For
+forbidden by part~(3).
+
+The three are not equally final, and saying so costs less than leaving it implied. The
+target here is a union of at most $B$ globs, and the first two constructs \emph{are}
+finite unions: $\Sigma^{+}$ is $\bigcup_{c\in\Sigma}L(c*)$ and $\Sigma$ is the union of
+its one-character words, so each needs one branch per alphabet character, or
+$|\Sigma|^{2}$ of them for \texttt{5..}. Those refusals therefore rest on the bound as
+well as on the corollary, and on an alphabet larger than $B$, which this paper does not
+pin down --- the proposer refuses them structurally rather than by counting branches.
+Only part~(3) is unconditional: an infinite language needs a star, a glob's star admits
+every character, and no union of finitely many such globs confines it to the digits. So
+$378$ of the $388$ occurrences are refused by a theorem about single globs plus a bound
+this paper chose, and $10$ by a theorem about globs outright. For
 the single-glob question we can also say it the other way round, by measurement rather
 than by proof: re-deciding every concrete regular expression with the complete procedure
 of Proposition~\ref{prop:decidable} reaches $168$ of the $183$ distinct patterns within
@@ -245,8 +259,9 @@ can be redone under the other one if Datadog's behaviour changes.
 \noindent
 The practical conclusion for the reverse direction is narrower than
 Table~\ref{tab:regex-glob} suggests on its own. A Datadog scope cannot say what
-\texttt{5..} says, and cannot say what \texttt{.+} says under the reading taken here; both
-are ordinary things to write in PromQL, and both are refused for a reason that is a
-theorem about globs rather than an unfinished case. That is the kind of gap this paper set
-out to distinguish from the other kind, and in this corner of the problem the proportion is
-unusually clear: every refusal here is of the first kind.
+\texttt{5..} says, and cannot say what \texttt{.+} says under the reading taken here, in
+any scope a person would maintain; both are ordinary things to write in PromQL. That is
+the kind of gap this paper set out to distinguish from the other kind, and in this
+corner of the problem no refusal is unfinished work: each is either a theorem about
+globs or that theorem together with the branch bound, and neither is removed by
+building more.

@@ -35,7 +35,7 @@ did not belong there: the aggregation order backwards, refusing $348$ occurrence
 commutation argument (\S\ref{sec:rollup-order}); all $124$ disjunctive scopes called a
 language gap when $120$ were a single regex matcher away (\S\ref{sec:gaps});
 \texttt{.weighted()} called inexpressible for $70$ occurrences when it computes nothing
-(Remark~\ref{rem:weighted}); and the four surviving cross-key disjunctions counted
+(Remark~\ref{rem:weighted}); and the four disjunctions no single key covers counted
 against PromQL when \S\ref{sec:disjunction} says how PromQL expresses them. The fourth is a residue of the second, so together they
 are $542$ distinct occurrences, more than six points of $\kappa$, every one an error in
 the direction that would have made the thesis look better. None was a fact about the
@@ -52,9 +52,10 @@ Table~\ref{tab:translation-caveats} reports that $96.9\%$ of translated occurren
 same kind of thing. A Datadog query does not state its own rollup interval --- that comes
 from the dashboard's time range, which is not in the query text --- and it does not state
 whether its metric is a counter or a gauge, which is metadata held elsewhere in the
-product. So the translation is exact, but exact relative to two facts the query omits
---- and for $96.9\%$ of translated occurrences, relative to both at once. There is no
-part of this corpus that a self-contained query covers.
+product. So the translation is exact, but exact relative to two facts the query omits,
+and the second of them is carried by every translation the emitter produces. Within the
+part of the corpus this translator handles, there is nothing a self-contained query
+covers.
 
 A third instance arrived from an unrelated direction, which is what makes the pattern
 worth calling a property of the language rather than an artefact of two rules.
@@ -95,8 +96,11 @@ $\Sigma$, of expressing $\Sigma^{+}$, and of confining a wildcard to part of the
 alphabet (Corollary~\ref{cor:no-glob}). These are non-expressibility results in
 Felleisen's sense~\citep{felleisen1991}: not ``our converter did not manage it'' but
 ``no term of the target denotes it''. Every refusal in
-Table~\ref{tab:regex-glob-reasons} --- $38.3\%$ of the concrete patterns in the corpus
---- is an instance of one of them.
+Table~\ref{tab:regex-glob-reasons} --- $38.3\%$ of the matcher occurrences whose
+pattern is concrete --- is an instance of one of them, though \S\ref{sec:glob-corpus}
+separates the ten occurrences no union of globs reaches from the $378$ that a union
+reaches only by spending one branch per alphabet character. Neither kind is removed by
+building more, and only the first is non-expressibility in the strict sense.
 
 The asymmetry is also formal, and it predates the measurement.
 Remark~\ref{rem:directional} shows that the information barrier of
@@ -119,8 +123,9 @@ reversible on the same terms it was made.
 
 Two cautions on that paragraph. The reverse translator was not built, so
 \S\ref{sec:regular} is evidence about one sub-problem of the reverse direction --- tag
-filtering --- and not a $\kappa$ for it; the $38.3\%$ is a share of concrete regular
-expressions, not of queries. And \S\ref{sec:regular} measures only what \emph{this}
+filtering --- and not a $\kappa$ for it; the $38.3\%$ is a share of concrete regex
+\emph{matcher occurrences}, not of queries, and by distinct pattern the same refusals
+are $27.3\%$ (Table~\ref{tab:regex-glob}). And \S\ref{sec:regular} measures only what \emph{this}
 corpus writes, which is a corpus of PromQL written by people who were not thinking about
 globs.
 
