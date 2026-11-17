@@ -55,17 +55,24 @@ $s|_{(a,b]}$ for its samples in that interval:
   &= \{\, s\in D \;:\; \mathrm{name}(s)=m,\ \lambda(s)\models\overline{\mu} \,\}\\
 \sem{\mathrm{Window}(e,w)}(D,t) &= \{\, (\lambda(s),\ s|_{(t-w,\,t]}) \;:\; s\in\sem{e}(D,t) \,\}\\
 \sem{\mathrm{Rollup}(\mathit{op},\Delta,e,b)}(D,t)
-  &= \{\, (\lambda(s),\ \mathit{op}(s|_{[t,\,t+\Delta)})\,/\,\Delta^{[b]}) \;:\; s\in\sem{e}(D,t) \,\}
+  &= \{\, (\lambda(s),\ \mathit{op}(s|_{[t,\,t+\Delta)})) \;:\; s\in\sem{e}(D,t) \,\}
 \end{align*}
-where $\Delta^{[b]}$ divides only when $b$ (Datadog's \texttt{.as\_rate()}) holds. For
-space aggregation let $\pi_{\overline{k}}$ keep the labels in $\overline{k}$ under
+For space aggregation let $\pi_{\overline{k}}$ keep the labels in $\overline{k}$ under
 $\mathit{mode}=\mathsf{by}$ and drop them under $\mathsf{without}$, and let $G_\lambda$
 collect the values of $\sem{e}(D,t)$ whose label set agrees with $\lambda$ on
 $\overline{k}$; then
 \[
 \sem{\mathrm{Agg}(\mathit{op},\overline{k},\mathit{mode},e)}(D,t)
-  = \{\,(\pi_{\overline{k}}(\lambda),\ \mathit{op}(G_\lambda))\,\}.
+  = \{\,(\pi_{\overline{k}}(\lambda),\ \mathit{op}(G_\lambda)\,/\,\Delta^{[b]})\,\}.
 \]
+Here $\Delta^{[b]}$ divides only when $e$ is a $\mathrm{Rollup}$ whose $b$ (Datadog's
+\texttt{.as\_rate()}) holds, and a $\mathrm{Rollup}$ that no $\mathrm{Agg}$ encloses
+divides its own values instead. Putting the divisor on the space aggregation rather
+than on the rollup is not presentational: Remark~\ref{rem:as-rate-placement} measures
+Datadog dividing the aggregated result, and the two placements differ for
+$\mathit{op}=\mathsf{count}$. An earlier version of this definition divided per series,
+which matched neither the vendor nor, after the differential test of
+\S\ref{sec:differential}, our own emitter.
 $\mathrm{Number}$, $\mathrm{Scale}$ and
 $\mathrm{BinOp}$ are pointwise on matching label sets. A matcher is satisfied as
 PromQL satisfies it, with $=\!\sim$ anchored over the whole value
@@ -392,10 +399,18 @@ Let $q\in\mathcal{K}$ with $E(T(q))=(p,C)$, and let $t$ be an evaluation time. I
 \item where the emitted form reads a counter: every series has a sample before $t$
       \hfill (\texttt{PHI\_SERIES\_START})
 \end{enumerate}
-and Lemma~\ref{lem:scope}'s injectivity holds, then
+and Lemma~\ref{lem:scope}'s injectivity holds, and Prometheus's lookback covers the
+sample spacing as Proposition~\ref{prop:offset} requires, then
 $\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,t)$ ---
-exactly, not within $\varepsilon$. Each hypothesis is an element of $C$, and $C$ contains
-no others.
+exactly, not within $\varepsilon$. The five numbered hypotheses are exactly the elements
+of $C$; the last two are not, and that asymmetry is worth stating rather than hiding in
+the list. Injectivity and the lookback are conditions on the \emph{target deployment} ---
+on which metric names collide once mangled, and on how the server is configured --- and
+the emitter cannot observe either, so no code records them. $C$ is therefore what the
+translator can tell you about a translation, not everything the translation needs.
+Remark~\ref{rem:mangling} shows the first is not vacuous on this corpus; the second
+fails only on a server whose scrape interval exceeds its lookback delta, which is a
+misconfiguration rather than a choice, but it is unreported either way.
 \end{theorem}
 \begin{proof}
 By Lemma~\ref{lem:scope} both systems reduce over the same set of series, so it suffices

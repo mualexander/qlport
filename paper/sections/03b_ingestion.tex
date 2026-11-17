@@ -84,15 +84,23 @@ where $\phi_{\mathsf{zero}}$ keeps both. The agent's default scrape and flush in
 are both $15$\,s, which would make the question moot in the default configuration and
 was the reason it went untested.
 
-Put to a running agent, it does not happen. Driving the OpenMetrics check at a $5$\,s
-collection interval against the unchanged $15$\,s flush puts three samples in every
-flush, and the bucket holding the reset reports $111$ --- eleven increments of one and
-the reset's own value, which is $\phi_{\mathsf{zero}}$ term for term. Losing the
-increment that shares a flush with the reset would give $110$
-(\texttt{scripts\slash reset\_policy.py -{}-step 5}). So the hypothesis this remark used
-to carry is not needed at that ratio, and the exactness claims below do not depend on
-the scrape and flush intervals agreeing. What the run does not establish is that no
-ratio breaks it: three samples per flush is what was measured, not all of them.
+Put to a running agent, it does not happen --- though not quite for the reason the run
+was designed to test, and the difference is worth keeping. Driving the OpenMetrics
+check at a $5$\,s collection interval against the unchanged $15$\,s flush, the bucket
+holding the reset reports $111$: eleven increments of one and the reset's own value,
+which is $\phi_{\mathsf{zero}}$ term for term. Losing the increment that shares a flush
+with the reset would give $110$ (\texttt{scripts\slash reset\_policy.py -{}-step 5}).
+
+What the stored data then shows is that no flush combined anything. Every complete
+$60$\,s bucket holds twelve points, one per collection, where three samples to a flush
+would have left four. So the agent forwarded each sample rather than aggregating within
+the flush, and the overwrite this remark used to posit had no opportunity to occur. The
+hypothesis is therefore unexercised rather than refuted, and what the run does
+establish is the end-to-end fact the exactness claims actually use: at this ratio
+Datadog stores $\phi_{\mathsf{zero}}$ term for term, so those claims do not depend on
+the scrape and flush intervals agreeing. The ratio itself was configured and not
+observed --- the record computes it from the two interval settings --- and no run here
+drives it to a point where a flush must combine samples.
 \end{remark}
 
 \paragraph{The dual-write model.}
@@ -258,10 +266,11 @@ That the bucket is \emph{left}-closed and named by its \emph{start} is measured 
 than assumed, and it is not what we first assumed. Submitting one point at an exact
 multiple of $\Delta$ and one strictly inside a bucket, and reading back which bucket each
 is reported under, separates the four conventions: a point on a boundary is reported
-under the bucket \emph{starting} there. Two runs at two rollup intervals agree, and each
-of the other three conventions is ruled out by at least one reading
-(\texttt{scripts\slash trial\_checks.py e2}; the responses are cached and
-regression-tested).
+under the bucket \emph{starting} there. Each of the other three conventions is ruled out
+by at least one of the two readings (\texttt{scripts\slash trial\_checks.py e2}; the
+responses are cached and regression-tested). It is one run at one rollup interval ---
+the script fixes $\Delta$ at $60$\,s --- so what is pinned is the convention at that
+width, not its independence of the width.
 
 The convention PromQL uses for its own range selectors is the opposite one, $(u-w,u]$,
 which is why it was the natural guess. Getting it wrong cost nothing numerically --- a

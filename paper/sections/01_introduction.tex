@@ -103,7 +103,8 @@ holds for every possible translator, not just ours.
 \item \textbf{Exact rollup translations (\S\ref{sec:ingestion}, \S\ref{sec:translation}).}
 Datadog's \texttt{.as\_count()} and \texttt{.as\_rate()} translated exactly, not merely
 to within $\varepsilon$, with the preconditions named; and soundness theorems whose
-hypotheses are exactly the preconditions the emitter reports, covering first the kernel
+hypotheses are the preconditions the emitter reports, plus two it cannot see and the
+paper therefore states instead, covering first the kernel
 ($95.4\%$ of the corpus) and then its arithmetic closure --- which is every expression
 this translator emits.
 \item \textbf{The regular sub-problem (\S\ref{sec:regular}).} Glob-expressibility of a

@@ -237,10 +237,15 @@ It is not an average: $54$ of the $56$ distinct corpus forms attach the modifier
 \texttt{sum:}. And it is not a gap, because it does not compute anything. A series
 reporting at $0$, $50$ and $55$ seconds into each $60$\,s bucket has a plain mean of
 $66.7$ and a mean weighted by the interval each point covers of $16.7$, so a rig built
-on it can tell the two apart. Datadog returns $66.7$ with the modifier and without it
---- on \texttt{GAUGE}, \texttt{COUNT} and \texttt{RATE} alike, under \texttt{avg},
-\texttt{sum} and \texttt{count} rollups, grouped and ungrouped
-(\texttt{scripts\slash weighted\_semantics.py}). On everything this corpus does with it,
+on it can tell the two apart. Datadog returns $66.7$ with the modifier and without it,
+on \texttt{GAUGE}, \texttt{COUNT} and \texttt{RATE} alike
+(\texttt{scripts\slash weighted\_semantics.py}). The probe is narrower than that list
+makes it sound, and the gap is worth naming: the grouped forms and the \texttt{sum} and
+\texttt{avg} rollups were run on the gauge only, the counter types were probed
+ungrouped under \texttt{avg}, and the modifier was never paired with a \texttt{count}
+rollup at all. What closes that is not the probe but the corpus: three
+\texttt{.weighted()} shapes went through the differential of \S\ref{sec:differential}
+and agreed with Datadog bucket for bucket. On everything this corpus does with it,
 \texttt{.weighted()} is the identity.
 
 So the translation of a query carrying it is the translation of the query without it,
@@ -267,11 +272,14 @@ across the graph:
 \begin{center}\footnotesize
 \texttt{q and on($\overline{k}$) topk($n$, max\_over\_time(q[$R$] @ $T$))}
 \end{center}
-Read off a real Prometheus~3.15.0, this reproduces Datadog's selection exactly for all
-five ranking functions the corpus uses, at $n=2$ and $n=3$, and the selection is constant
-across the range as Datadog's is, while the naive \texttt{topk($n$, q)} changes membership
-within the same workload (\texttt{scripts\slash verify\_topk.py}; cached and
-regression-tested). So \texttt{top(...)} is unimplemented work, and the catalogue's split
+Read off a real Prometheus~3.15.0, this reproduces for all five ranking functions the
+corpus uses, at $n=2$ and $n=3$, the selection that Datadog's documented rule predicts
+--- aggregate each series over the whole range, take the top $n$ --- and holds it
+constant across the range, while the naive \texttt{topk($n$, q)} changes membership
+within the same workload at $n=2$ (\texttt{scripts\slash verify\_topk.py}; cached and
+regression-tested). The Prometheus side is measured and the Datadog side is a model of
+the documentation, which is the weaker half of the comparison and the half this paper
+has twice found wrong; \S\ref{sec:not-measured} counts it accordingly. So \texttt{top(...)} is unimplemented work, and the catalogue's split
 stands.
 
 What the expression costs is the interesting part. $R$ is the dashboard's time range and
@@ -293,9 +301,18 @@ the missing operator; it is a different approximation.
 \texttt{FILL\_INTERPOLATION} ($36$) and \texttt{LABEL\_NAME\_GLOB} ($31$) are the two
 clean expressiveness cases, and both are genuine --- and with \texttt{.weighted()}
 withdrawn and the disjunctions reclassified, they and the percentiles are all that is
-left. \texttt{.fill(linear)} and \texttt{.fill(last)}
-interpolate across gaps \emph{inside} the query, which PromQL's staleness handling does
-not express. A wildcard in a tag \emph{key} rather than a value, as in
+left. The code's name is a poor fit for what it mostly catches, which is worth saying
+because the name is what an earlier draft of this paragraph argued from. Datadog's
+interpolating modes are \texttt{.fill(linear)} and \texttt{.fill(last)}, and this corpus
+contains one \texttt{last} and no \texttt{linear} at all: the other $35$ occurrences
+are \emph{constant} fills, \texttt{.fill(zero)} and its numeric spellings. Both kinds
+are refused and for the same underlying reason, but it is not interpolation. A fill
+substitutes a value at a timestamp where the series has no sample, and a PromQL
+expression cannot: it has no term that introduces a sample where the database holds
+none, and the staleness rule that governs absence is the evaluator's rather than the
+query's. \texttt{or vector(0)} is the nearest thing and is not it --- it supplies one
+unlabelled series for the whole expression rather than a value per missing series, so
+it cannot fill a gap in a grouped result at all. A wildcard in a tag \emph{key} rather than a value, as in
 \texttt{\{*-location\}}, asks for a match over label \emph{names}, which a PromQL
 selector cannot do at all, because label names are not queryable there.
 
@@ -315,7 +332,13 @@ different keys (\texttt{\{(status:400 OR s)\}}), a branch that constrains two ke
 once (\texttt{\{(a:1 AND b:1) OR (a:2 AND b:2)\}}), and one De~Morgan case that becomes
 the same thing. Those remain sayable in PromQL as a union of selectors, but not as the
 syntax-directed translation of a scope --- which is why the split below counts them as
-unfinished work rather than as a language gap. An earlier version of this section put
+unfinished work rather than as a language gap. That expressibility claim is held to a
+weaker standard than the one \texttt{top(...)} is held to four paragraphs above, and
+the asymmetry should be visible rather than quietly enjoyed: the union there was
+written out and read off a real server, while this one is sketched and never built, so
+what moves these four occurrences into the engineering column is an argument rather
+than a reading. Four occurrences do not move the split, but the standard is the point
+of the split. An earlier version of this section put
 them in the inexpressible column, where they contradicted the sentence above that says
 PromQL expresses them; a property of this translator's architecture is not a property
 of the target language.

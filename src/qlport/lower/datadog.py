@@ -286,8 +286,13 @@ def _methods(nodes: list[Tree]) -> _Methods:
             # average, and it is not a gap.
             pass
         elif name == "fill":
-            # fill(null) is the default and changes nothing; every other mode
-            # invents samples, which no PromQL expression does.
+            # fill(null) is the default and changes nothing. Every other mode supplies a
+            # value where the series has no sample -- `linear`/`last` by interpolating,
+            # `zero` and numeric spellings by substituting a constant -- and no PromQL
+            # term introduces a sample the database does not hold. In this corpus the
+            # refusals are almost all the constant kind, despite the gap code's name:
+            # 35 constant against one `last` and no `linear` (see the gap catalogue
+            # discussion in the paper's evaluation section).
             if not args or _arg_text(args[0]) != "null":
                 _refuse(Gap.FILL_INTERPOLATION,
                         f".fill({_arg_text(args[0]) if args else ''})")
