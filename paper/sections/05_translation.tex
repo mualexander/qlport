@@ -329,6 +329,43 @@ to choose and never has to stop. So the same unstated fact is a diagnostic that 
 occur and a precondition that always does.
 \end{remark}
 
+\begin{remark}[How often the inference is wrong]\label{rem:type-measured}
+A precondition that holds of all the output and cannot be checked is the weakest thing
+this paper carries, and it turns out to be checkable. The dashboards do not record a
+metric's type --- but the repository they come from does. Beside each integration's
+\texttt{assets\slash dashboards\slash}, \texttt{integrations-core} ships a
+\texttt{metadata.csv} with a \texttt{metric\_type} column, and
+\texttt{scripts\slash fetch\_corpus.py} had taken only the dashboards.
+\texttt{scripts\slash fetch\_metric\_types.py} fetches the rest, reading the commit
+from the corpus's own record so the declarations cannot come from a different tree than
+the queries. At that commit those files declare $37{,}070$ metric names: $23{,}597$
+\texttt{gauge}, $13{,}140$ \texttt{count}, $330$ \texttt{rate} and three that two
+integrations declare incompatibly.
+
+Joining the two settles the hypothesis for most of the corpus
+(\texttt{scripts\slash type\_declared.py}). Of the $8{,}445$ translated occurrences,
+$7{,}562$ --- $89.5\%$ --- name a metric the repository declares as a gauge or a count,
+and the front end's inference disagrees with the declaration on $496$ of them: $6.6\%$
+of the decidable set, $5.7\%$ of the corpus. The two directions of error are both
+present and are different failures. In $242$ occurrences the metric is a
+\texttt{count} and the query carries no evidence of it, so the emitter translates it as
+a gauge and the \texttt{*\_over\_time} it produces reduces running totals where
+Datadog reduces deltas --- the case this remark describes as unrelated rather than
+approximate. In $254$ the metric is a \texttt{gauge} and the query carries
+\texttt{.as\_count()}, \texttt{.as\_rate()} or \texttt{.rollup(sum, $\Delta$)}
+anyway, so the evidence is not merely weak but actively wrong, and the emitter chooses
+a counter rule for a series that has no deltas to difference.
+
+What this is evidence of, and what it is not. \texttt{metadata.csv} states what an
+integration submits, so a disagreement says the inference is wrong, not that it must
+be: a dashboard can query a metric the integration does not ship, and an operator can
+submit the same name as something else. That is the same standard \S\ref{sec:emission}
+applies to the modifier evidence this replaces, and it is a sharper instrument than the
+one it replaces rather than a proof. The remaining $732$ occurrences name metrics the
+repository does not declare and $134$ name \texttt{rate} metrics, which is a third
+submission type Definition~\ref{def:phi} does not model at all.
+\end{remark}
+
 \subsection{What the composite guarantees}
 \label{sec:kernel-soundness}
 

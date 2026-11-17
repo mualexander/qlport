@@ -26,7 +26,9 @@ sub-problem of tag filtering, the obstructions are theorems: a glob's language i
 word or unbounded in length, and three impossibility results follow that account for every
 refusal, $38.3\%$ of the matcher occurrences whose pattern is concrete.
 
-\textbf{RQ3.} Coverage on published dashboards is the $96.3\%$ above, and the shape of the
+\textbf{RQ3.} Coverage on published dashboards is the $96.3\%$ above, of which $496$
+occurrences carry a metric type the vendor's own repository contradicts, so coverage
+and correctness differ by more than the inexpressible column is worth. The shape of the
 shortfall matters more than its size. Coverage against implementation effort is a
 staircase, not a curve, because a query translates only when every feature it uses is
 supported while the popularity that would guide an implementation order is marginal. Half
@@ -64,6 +66,17 @@ was asked and returned the same number with the modifier and without it. An eigh
 whether \texttt{top(...)} is expressible at all, was settled against a real Prometheus
 rather than against Datadog, and decides which column $139$ corpus occurrences belong
 in.
+
+One assumption is settled from the vendor's source tree rather than from its API, and
+it is the one that held of all the output. Every translation carries
+\texttt{METRIC\_TYPE\_UNKNOWN} because a dashboard does not record whether a metric is
+a counter or a gauge --- but \texttt{integrations-core} declares the type of each
+metric it ships, in a file beside the dashboards that the corpus fetch had passed over.
+For the $89.5\%$ of translated occurrences whose metric is declared, the front end's
+inference is wrong on $6.6\%$: $496$ occurrences, more than the whole $1.2\%$ this
+paper calls beyond reach (Remark~\ref{rem:type-measured}). $\kappa$ counts them as
+translations, so the gap between coverage and correctness has a number for the first
+time, and it is not zero.
 
 One thing that was assumed throughout is now measured. The counter rules are checked
 against Datadog itself, by replaying a real request trace into both systems and comparing

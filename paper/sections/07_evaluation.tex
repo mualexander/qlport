@@ -478,6 +478,18 @@ expressions are the same ones --- which is exactly why it is worth having: an un
 precondition costs nothing in any number the paper reports, right up to the point where
 somebody relies on the translation.
 
+How often it is \emph{violated} is now measured rather than left as a worry, and it is
+the one place in this paper where a precondition turns out to fail at a rate worth
+reporting. The repository the dashboards come from declares each metric's type in a
+file the corpus fetch had passed over, which settles the question for $7{,}562$ of the
+$8{,}445$ translated occurrences --- $89.5\%$. On $496$ of those the front end's
+inference disagrees with the declaration: $6.6\%$ of the decidable set and $5.7\%$ of
+the corpus, split $242$ counters translated as gauges and $254$ gauges translated as
+counters (Remark~\ref{rem:type-measured}). So $\kappa$ counts those $496$ among its
+translations and they are, on the vendor's own declaration, wrong. $\kappa$ is a
+coverage measure and was never a correctness measure; this is the first number in the
+paper that says how far apart the two are.
+
 Adding it also falsifies something an earlier draft of this section claimed. That draft
 said $116$ occurrences carried \texttt{ROLLUP\_ALIGNMENT} alone and were the only
 translations resting on nothing but the grid. With this code in place the true

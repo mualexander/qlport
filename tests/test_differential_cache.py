@@ -94,3 +94,79 @@ def test_the_rows_are_still_one_per_shape(run):
             shapes.append(shape(lowered[0]))
     assert len(shapes) == 323, len(shapes)
     assert len(set(shapes)) == 323, f"{len(shapes) - len(set(shapes))} collisions"
+
+
+# --- the declared-metric-type join --------------------------------------------------
+# `scripts/type_declared.py` checks the one precondition the paper carries on 100% of
+# its output: the metric type the front end infers from the query text. The repository
+# the dashboards come from declares each metric's type in metadata.csv, so for the
+# metrics this corpus names the assumption is decidable. The figures it produces are
+# quoted in four sections, and the verdict for a given query is a property of today's
+# inference rules -- so both are pinned.
+
+TYPES = CACHE.parent.parent / "datadog" / "type_declared.json"
+
+
+@pytest.fixture(scope="module")
+def types() -> dict:
+    if not TYPES.exists():                       # pragma: no cover - cache is committed
+        pytest.skip(f"{TYPES} missing; run scripts/type_declared.py")
+    return json.loads(TYPES.read_text())
+
+
+def test_the_type_join_is_internally_consistent(types):
+    occ = types["occurrences"]
+    assert sum(occ.values()) == types["translated_occurrences"] == 8445
+    decidable = occ["agree"] + occ["wrong-gauge"] + occ["wrong-counter"]
+    assert decidable == types["decidable_occurrences"] == 7562
+    assert occ["wrong-gauge"] + occ["wrong-counter"] == types["wrong_occurrences"] == 496
+    assert types["wrong_share_of_decidable_pct"] == 6.6
+    assert types["decidable_share_of_translated_pct"] == 89.5
+
+
+def test_the_join_is_pinned_to_the_corpus_commit(types):
+    """The declarations must come from the tree the queries came from, not from master.
+
+    `fetch_metric_types.py` reads the commit out of the corpus's own `.fetch.json`, so
+    this pins that it did and that the commit is still the one the corpus records.
+    """
+    assert types["provenance"]["commit"].startswith("452093828d")
+    assert types["provenance"]["declarations_in_population"] == 37070
+    assert types["declared_population"] == {
+        "gauge": 23597, "count": 13140, "rate": 330, "conflict": 3,
+    }
+
+
+def test_todays_inference_still_gives_the_recorded_verdicts(types):
+    """A verdict is a claim about the inference rules, so it is re-derived here.
+
+    Changing what counts as evidence of a counter -- adding a method, dropping one --
+    moves these without moving any other number in the paper.
+    """
+    import sys
+
+    sys.path.insert(0, str(CACHE.parents[3] / "scripts"))
+    import type_declared as td
+
+    declared_raw = types["declared_for_corpus_metrics"]
+    by_mangled: dict[str, str] = {}
+    for name, kind in declared_raw.items():
+        key = td.metric_name(name)
+        if key in by_mangled and by_mangled[key] != kind:
+            by_mangled[key] = "ambiguous"
+        else:
+            by_mangled.setdefault(key, kind)
+
+    for expected, queries in types["examples"].items():
+        for q in queries:
+            kinds = []
+            for e in lower_all(parse("datadog", q, "v2")):
+                if isinstance(e, Bottom):
+                    continue
+                if isinstance(emit_detail(e, default_rollup=ROLLUP), Bottom):
+                    continue
+                kinds += [td.verdict(s.kind, by_mangled.get(s.metric))
+                          for s in td.selects(e)]
+            worst = next(r for r in ("wrong-gauge", "wrong-counter", "ambiguous",
+                                     "rate", "undeclared", "agree") if r in kinds)
+            assert worst == expected, (q, worst, expected)

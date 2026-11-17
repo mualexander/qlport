@@ -577,6 +577,24 @@ for _, _row in cav.iterrows():
     _q[f"caveat_{_row.c.lower()}_pct"] = round(_row.occurrences / translated.n.sum() * 100, 1)
     _q[f"caveat_{_row.c.lower()}_occurrences"] = int(_row.occurrences)
 
+# METRIC_TYPE_UNKNOWN holds of 100% of the translated set, and until now that was the
+# whole of what could be said about it. `scripts/type_declared.py` joins the corpus
+# against the metric types the same repository declares in metadata.csv, so the
+# assumption is checkable for the metrics this corpus names. These figures are read
+# from that cached record rather than recomputed here, because the record is the
+# experiment and the paper quotes it in four sections.
+_td = json.loads((ROOT / "data" / "raw" / "datadog" / "type_declared.json").read_text())
+_q["type_decidable_occurrences"] = int(_td["decidable_occurrences"])
+_q["type_decidable_pct"] = _td["decidable_share_of_translated_pct"]
+_q["type_wrong_occurrences"] = int(_td["wrong_occurrences"])
+_q["type_wrong_pct"] = _td["wrong_share_of_decidable_pct"]
+_q["type_wrong_gauge_occurrences"] = int(_td["occurrences"]["wrong-gauge"])
+_q["type_wrong_counter_occurrences"] = int(_td["occurrences"]["wrong-counter"])
+_q["type_undeclared_occurrences"] = int(_td["occurrences"]["undeclared"])
+_q["type_rate_occurrences"] = int(_td["occurrences"]["rate"])
+_q["type_wrong_pct_of_corpus"] = round(
+    _td["wrong_occurrences"] / int(total_n) * 100, 1)
+
 # Next to the generated tables rather than in data/processed, which is derived data and
 # gitignored: this is a paper input, and the check that reads it has to work on a fresh
 # clone before any notebook has run.

@@ -18,7 +18,10 @@ than the first.
 
 That is not the result the thesis predicted, and it is worth stating in the strongest
 form the data supports: going from Datadog to PromQL, the switching cost is
-\emph{engineering}. A team working through the gap catalogue would reach the $98.8\%$
+\emph{engineering} --- with the qualification, measured below, that part of that
+engineering is not implementing language constructs at all but supplying metadata the
+query omits, and that a translator which skips it gets $6.6\%$ of its metric types
+wrong. A team working through the gap catalogue would reach the $98.8\%$
 ceiling of \S\ref{sec:gaps} --- how long that takes is not something this paper
 measures, and the catalogue is a list of constructs rather than an estimate --- and
 what remains at that point is
@@ -88,7 +91,17 @@ $\phi_\rho$ branches on it --- Datadog stores deltas for a \texttt{COUNT} and sa
 for a \texttt{GAUGE}, so one query text reads two different stored quantities, where
 Prometheus stores samples either way. That is the ingestion mapping of
 \S\ref{sec:ingestion} showing up a second time, not a second property of the language,
-and \S\ref{sec:discussion}'s ledger should not charge it twice.
+and this section's ledger should not charge it twice.
+
+Charging it once is enough, because it now has a price. The type the query omits is
+declared, for $89.5\%$ of translated occurrences, in the repository the dashboards come
+from, and the front end's inference is wrong on $6.6\%$ of those ---
+Remark~\ref{rem:type-measured}. That is $496$ panels a migration would carry across
+believing them exact, more than the entire $1.2\%$ this paper calls beyond reach, and
+it is caused by the ingestion mapping rather than by anything either language can or
+cannot say. The directional barrier of \S\ref{sec:ingestion} was argued as a matter of
+information; this is what it costs in practice, in the direction the paper calls
+cheap.
 
 What survives is narrower than the claim this section opened with and still worth
 making: a PromQL expression names its own window where a Datadog query has nowhere to

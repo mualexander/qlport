@@ -66,5 +66,14 @@
  "nb03.shapes_for_80pct": 23,
  "nb03.shapes_for_90pct": 50,
  "nb03.shapes_for_95pct": 104,
- "nb03.shapes_for_half": 6
+ "nb03.shapes_for_half": 6,
+ "nb03.type_decidable_occurrences": 7562,
+ "nb03.type_decidable_pct": 89.5,
+ "nb03.type_rate_occurrences": 134,
+ "nb03.type_undeclared_occurrences": 732,
+ "nb03.type_wrong_counter_occurrences": 254,
+ "nb03.type_wrong_gauge_occurrences": 242,
+ "nb03.type_wrong_occurrences": 496,
+ "nb03.type_wrong_pct": 6.6,
+ "nb03.type_wrong_pct_of_corpus": 5.7
 }

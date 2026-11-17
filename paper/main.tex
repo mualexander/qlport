@@ -23,8 +23,11 @@ per-interval deltas. Every refusal carries a typed gap code, and the resulting c
 separates what the target does not hold from what it cannot say and from what we have
 not built. Over the $8{,}766$ Datadog metric
 queries of a corpus of $28{,}490$ extracted from published dashboards, $96.3\%$ of
-occurrences translate exactly; the shortfall is $1.2\%$ beyond reach against $2.4\%$ unimplemented,
-so in the direction teams travel the cost is engineering. The language-design artefact
+occurrences translate; the shortfall is $1.2\%$ beyond reach against $2.4\%$ unimplemented,
+so in the direction teams travel the cost is engineering. ``Exactly'' needs one
+qualification we can now measure: every translation assumes a metric type the query
+omits, and where the vendor's own repository declares that type the assumption is wrong
+for $6.6\%$ of them. The language-design artefact
 lies elsewhere: $96.9\%$ of our translations depend on a rollup interval the query has
 no slot to state, against $55.4\%$ of the corpus's PromQL range selectors that leave
 their own slot to a dashboard variable.

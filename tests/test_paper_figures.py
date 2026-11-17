@@ -115,6 +115,11 @@ ALLOWED: dict[float, str] = {
     0: "zero", 1: "one", 2: "two", 3: "three", 6: "six",
     10: "ten", 64: "the glob-union bound B", 100: "a percentage scale factor",
     80: "the proverbial 80% of queries, which this corpus does not support",
+    # --- the declared metric types, from data/raw/datadog/metric_types.json ----------
+    37070: "metric names integrations-core declares at the pinned commit",
+    23597: "of those, declared gauge",
+    13140: "of those, declared count",
+    330: "of those, declared rate",
     # --- E9: what `.weighted()` does, and what it would have done if weighted --------
     66.7: "E9: the plain mean of the irregular series, with and without the modifier",
     16.7: "E9: what a mean weighted by each point's interval would have read",
