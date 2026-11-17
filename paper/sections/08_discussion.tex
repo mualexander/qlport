@@ -48,14 +48,26 @@ the right one.
 
 Table~\ref{tab:translation-caveats} reports that $96.9\%$ of translated occurrences carry
 \texttt{ROLLUP\_DEFAULT} and that \emph{all} of them carry
-\texttt{METRIC\_TYPE\_UNKNOWN}. Both say the
-same kind of thing. A Datadog query does not state its own rollup interval --- that comes
-from the dashboard's time range, which is not in the query text --- and it does not state
-whether its metric is a counter or a gauge, which is metadata held elsewhere in the
-product. So the translation is exact, but exact relative to two facts the query omits,
-and the second of them is carried by every translation the emitter produces. Within the
-part of the corpus this translator handles, there is nothing a self-contained query
-covers.
+\texttt{METRIC\_TYPE\_UNKNOWN}. An earlier version of this section said both say the same
+kind of thing. They do not, and separating them costs the argument one of its two
+pillars while making the other checkable.
+
+\texttt{ROLLUP\_DEFAULT} is the language one. A Datadog query has no slot for the rollup
+interval: the grammar of \S\ref{sec:grammars} offers \texttt{.rollup($\mathit{op}$,
+$\Delta$)} and most queries do not use it, so the interval comes from the dashboard's
+time range and no care by the query's author puts it in the text. PromQL does have the
+slot --- a range selector is part of the expression --- which is the contrast this
+section used to draw categorically.
+
+It should not be drawn categorically, and the corpus says so. Of the $3{,}620$ PromQL
+occurrences that carry a range selector at all, $2{,}006$ --- $55.4\%$ --- fill it with
+a dashboard template variable rather than a duration, overwhelmingly
+\texttt{\$\_\_rate\_interval} or \texttt{\$\_\_interval}. Those panels take their window
+from the dashboard's time range too, by a different mechanism and with the same
+consequence for anyone translating them. The comparison is therefore $96.9\%$ against
+$55.4\%$: a real difference, and a difference of degree. The categorical version was
+available to be checked against this corpus from the beginning and was not, which makes
+it the one claim in this paper that went longest without the control it needed.
 
 A third instance arrived from an unrelated direction, which is what makes the pattern
 worth calling a property of the language rather than an artefact of two rules.
@@ -66,9 +78,21 @@ the query states neither. Three constructs, arrived at independently, all turn o
 translatable only relative to context the query does not carry. Each of the three would
 be exactly self-contained in PromQL.
 
-This is a property of the language, not of the translator, and not one PromQL shares: a
-PromQL expression names its own window and carries its reset semantics in the function it
-calls. The switching cost here is therefore not that the target cannot say what the source
+\texttt{METRIC\_TYPE\_UNKNOWN} is a different animal, and calling it self-containment
+double-counts a fact this paper has already banked. Neither language declares a metric's
+type in the query text: \S\ref{sec:framework}'s Definition~\ref{def:model} puts the kind
+on the series, and choosing \texttt{rate} over \texttt{avg\_over\_time} records what a
+PromQL author believed exactly as \texttt{.as\_count()} records what a Datadog author
+believed (Remark~\ref{rem:gauge}). What makes the type load-bearing \emph{here} is that
+$\phi_\rho$ branches on it --- Datadog stores deltas for a \texttt{COUNT} and samples
+for a \texttt{GAUGE}, so one query text reads two different stored quantities, where
+Prometheus stores samples either way. That is the ingestion mapping of
+\S\ref{sec:ingestion} showing up a second time, not a second property of the language,
+and \S\ref{sec:discussion}'s ledger should not charge it twice.
+
+What survives is narrower than the claim this section opened with and still worth
+making: a PromQL expression names its own window where a Datadog query has nowhere to
+name one, even though half the PromQL panels here decline to use the slot. The switching cost here is therefore not that the target cannot say what the source
 says. It is that the source does not say what it means, so a translation has to supply
 context from outside the query, and the correctness of thousands of translated panels
 rests on supplying it correctly. That \emph{is} a design artefact --- self-containment
@@ -124,13 +148,30 @@ symptom~\citep{farrell2007,shapiro1999}: what holds a customer is not that leavi
 impossible but that the path back is worse than the path out, so the decision is not
 reversible on the same terms it was made.
 
-Two cautions on that paragraph. The reverse translator was not built, so
-\S\ref{sec:regular} is evidence about one sub-problem of the reverse direction --- tag
-filtering --- and not a $\kappa$ for it; the $38.3\%$ is a share of concrete regex
-\emph{matcher occurrences}, not of queries, and by distinct pattern the same refusals
-are $27.3\%$ (Table~\ref{tab:regex-glob}). And \S\ref{sec:regular} measures only what \emph{this}
-corpus writes, which is a corpus of PromQL written by people who were not thinking about
-globs.
+Four cautions on that paragraph, and the last two are the ones a reader should hold
+the asymmetry to.
+
+The reverse translator was not built, so \S\ref{sec:regular} is evidence about one
+sub-problem of the reverse direction --- tag filtering --- and not a $\kappa$ for it.
+And \S\ref{sec:regular} measures only what \emph{this} corpus writes, which is a corpus
+of PromQL written by people who were not thinking about globs.
+
+The units differ on the two sides of the comparison. The $38.3\%$ is a share of concrete
+regex \emph{matcher occurrences} --- by distinct pattern the same refusals are $27.3\%$
+(Table~\ref{tab:regex-glob}) --- while $\kappa$'s $3.6\%$ is a share of whole queries. A
+query carries several matchers and fails if any one of them does, so the per-query
+reverse refusal rate is not $38.3\%$ and is not measured here; the conjunctive structure
+that makes \S\ref{sec:staircase}'s staircase would push it up, and nothing in this
+paper says by how much.
+
+The two directions are also counted under different corpus policies, which cuts the
+other way. Going forward, \S\ref{sec:corpus} \emph{instantiates} a template --- a
+Datadog scope variable becomes \texttt{*} --- and the query is then translated like any
+other. Coming back, the $7{,}459$ template-valued matchers are set aside as statically
+undefined rather than instantiated, which is why the denominator is $1{,}013$ and not
+$8{,}472$. Against the larger denominator the refusals are $4.6\%$. Both policies are
+defensible and they are not the same policy, so ``leaving costs work, returning costs
+expressiveness'' is a claim about two differently-drawn populations.
 
 \subsection{Partial migration buys less than its share}
 

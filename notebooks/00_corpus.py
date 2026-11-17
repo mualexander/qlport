@@ -32,6 +32,7 @@
 
 # %%
 import json
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -358,6 +359,34 @@ _QF = ROOT / "paper" / "quoted_figures.json"
 _existing = json.loads(_QF.read_text()) if _QF.exists() else {}
 _existing.update({f"nb00.ceiling_{k}_features_pct": v for k, v in _ceil.items()})
 _existing["nb00.datadog_features"] = len(_dd) - 1
+
+# %% [markdown]
+# ### Does a PromQL query name its own window?
+# §8 argues the design artefact is that a Datadog query is not self-contained: it states
+# neither its rollup interval nor its metric type. That is a *comparative* claim, and the
+# comparison was never run. A PromQL range selector is a slot in the grammar, but a
+# dashboard is free to fill it with a template variable, in which case the window comes
+# from the dashboard's time range exactly as Datadog's does -- by a different mechanism
+# and with the same consequence for a translator.
+
+# %%
+_RANGE = re.compile(r"\[([^\]]+)\]")
+_pq = df[df.lang == "promql"]
+_ranged = _var = 0
+for _text in _pq.text:
+    _spans = [s for s in _RANGE.findall(_text) if not s.startswith("{")]
+    if not _spans:
+        continue
+    _ranged += 1
+    _var += any("$" in s for s in _spans)
+_existing["nb00.promql_with_range"] = int(_ranged)
+_existing["nb00.promql_window_from_variable"] = int(_var)
+_existing["nb00.promql_window_from_variable_pct"] = round(_var / _ranged * 100, 1)
+print(f"promql occurrences with a range selector: {_ranged:,}")
+print(f"  window supplied by a template variable: {_var:,} "
+      f"({_var / _ranged * 100:.1f}%)")
+
+# %%
 _QF.write_text(json.dumps(_existing, indent=1, sort_keys=True) + "\n")
 print("greedy ceilings near kappa:")
 for _k in sorted(_ceil):

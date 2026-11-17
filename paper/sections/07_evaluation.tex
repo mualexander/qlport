@@ -212,9 +212,17 @@ corpus.}
 \label{tab:gap-catalogue}
 \end{table}
 
-\texttt{UNSUPPORTED\_FUNCTION} is the largest and the least interesting: it is a bundle
-of Datadog functions the translator does not implement, led by \texttt{top(...)} ($139$
-occurrences) and \texttt{per\_second(...)} ($22$). Everything in it is now unimplemented
+\texttt{UNSUPPORTED\_FUNCTION} is the largest and the least interesting: it is mostly a
+bundle of Datadog functions the translator does not implement. \texttt{top(...)} leads
+it at $139$ occurrences, and \texttt{per\_second(...)} follows at $22$.
+Mostly, and not wholly: $10$ of its $208$ are not functions at all. Nine are a negated match-all,
+\texttt{\{*,!*\}}, which is a scope and which the catalogue's own shortest example for
+this row happens to be; one is a \texttt{.rollup(max)} over a known counter, which the
+proof of Theorem~\ref{thm:kernel} classifies as a case where no rule exists rather than
+as unwritten code. Both stay in the unimplemented column: PromQL can denote an empty
+selection with a contradictory matcher pair, and the individual deltas a
+\texttt{max} rollup needs are reachable through a subquery over a sample grid the
+query does not state --- the same omission as everywhere else in this section. Everything in it is now unimplemented
 work and nothing else, which it was not when this section was first written: the
 percentile aggregators sat in it as a genuine gap and \texttt{.weighted()} as a
 supposed one, so the row was a mixture and the split at the end of this subsection had
@@ -384,9 +392,14 @@ the percentile aggregators ($34$, blocked by information rather than by expressi
 --- Corollary~\ref{cor:quantile}), \texttt{.fill} interpolation ($36$) and tag-key
 globs ($31$): $101$ occurrences, $1.2\%$ of the corpus. The other
 $212$ --- $2.4\%$ --- are constructs this translator has not implemented,
-\texttt{top(...)} chief among them. So the ceiling for this direction is $98.8\%$
-against the $96.3\%$ measured here, and the distance between the two is engineering
-rather than language design --- as the disjunction rule demonstrated by closing $1.4$
+\texttt{top(...)} chief among them. Because a query is abandoned at its first obstruction (Remark~\ref{rem:one-gap}),
+$98.8\%$ is an upper bound on what implementing the unimplemented set would reach: a
+refused query could carry a second, inexpressible construct behind the first. Re-reading
+the $212$ for the other three codes' constructs finds exactly one --- a
+\texttt{.fill(60)} nested inside a \texttt{top(...)} --- so the bound is tight and the
+ceiling is $98.8\%$ to the decimal it is quoted at. So the ceiling for this direction is
+$98.8\%$ against the $96.3\%$ measured here, and the distance between the two is
+engineering rather than language design --- as the disjunction rule demonstrated by closing $1.4$
 points of it and \texttt{.weighted()} by closing $0.8$ more. That is the finding to carry into \S\ref{sec:discussion}:
 going this way, almost all of the apparent incompatibility is work, and what is left is
 small enough to enumerate query by query.
@@ -652,6 +665,19 @@ and there is nothing to compare. The data is synthetic: the shapes are the corpu
 series are not, so the test exercises operator structure and not the distributional
 oddities of real traffic --- which is what Section~\ref{sec:replay}'s replay of a real
 trace is for, and the two are complementary rather than redundant.
+
+The sharper limit is which hypotheses the run can reach, and it is the two that matter
+most. The harness submits each metric under the kind the \emph{translator inferred}
+from the query text, and fixes a four-hour query range precisely because E4 measured
+four hours as the $60$\,s the emitter assumes. So hypotheses (2) and (3) of
+Theorem~\ref{thm:kernel} --- the interval and the metric type, carried by $96.9\%$ and
+$100\%$ of translations --- hold by construction in all $323$ compared shapes. That is
+the right design for testing the rules, since a run in which the assumptions were
+already wrong would measure the assumptions rather than the arithmetic. But it means
+the agreement reported here is agreement \emph{given} the two conditions
+\S\ref{sec:discussion} argues are the real switching cost, and the run is silent on
+what happens when they fail --- which Remark~\ref{rem:gauge} measures separately, and
+measures as unbounded.
 
 \subsection{Threats to validity}
 \label{sec:threats}

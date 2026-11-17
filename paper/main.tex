@@ -25,8 +25,9 @@ not built. Over the $8{,}766$ Datadog metric
 queries of a corpus of $28{,}490$ extracted from published dashboards, $96.3\%$ of
 occurrences translate exactly; the shortfall is $1.2\%$ beyond reach against $2.4\%$ unimplemented,
 so in the direction teams travel the cost is engineering. The language-design artefact
-lies elsewhere: $96.9\%$ of our translations depend on a rollup interval the query omits
-and every one on a metric type it omits, because a Datadog query is not self-contained.
+lies elsewhere: $96.9\%$ of our translations depend on a rollup interval the query has
+no slot to state, against $55.4\%$ of the corpus's PromQL range selectors that leave
+their own slot to a dashboard variable.
 Going back is different in kind --- a Datadog tag filter is a glob, glob-expressibility
 of a regular expression is decidable, and three impossibility results account for every
 refusal we measure in that direction. Leaving costs work; returning costs expressiveness.

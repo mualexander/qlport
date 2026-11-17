@@ -10,9 +10,9 @@
 \textbf{RQ1.} Both languages admit deterministic one-token-lookahead parsers, with a
 caveat that is itself a finding. The inferred Datadog grammar is conflict-free. PromQL has
 exactly one shift/reduce conflict, on the parenthesis that begins either a grouping clause
-or a parenthesised expression, and it is forced by the language as specified rather than
-by how we wrote the rules --- so RQ1's answer for PromQL is ``LALR(1) modulo one
-documented resolution''.
+or a parenthesised expression, and it comes from that construct's optionality rather than
+from how we layered the rules --- so RQ1's answer for PromQL is ``LALR(1) modulo one
+documented resolution'', for this grammar, with no claim that none does better.
 
 \textbf{RQ2.} The largest exactly-translating fragment we could build covers $96.3\%$ of
 Datadog query occurrences, and it is exact under stated preconditions over the whole of

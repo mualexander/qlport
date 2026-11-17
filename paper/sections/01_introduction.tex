@@ -73,13 +73,14 @@ ceiling of $98.8\%$ once the latter is done. On that evidence the switching cost
 direction people travel is \emph{engineering} (\S\ref{sec:gaps}).
 
 The design artefact is elsewhere, and \S\ref{sec:discussion} argues it is the more
-interesting finding. A Datadog query does not state its own rollup interval --- that comes
-from the dashboard's time range --- and does not state whether its metric is a counter or
-a gauge. So $96.9\%$ of the translations we emit depend on an interval the query omits
-and \emph{every one} depends on a type it omits. The
-translations are exact, but exact relative to context supplied from outside the query. A
-PromQL expression names its own window and carries its reset semantics in the function it
-calls. That is a property of the languages, and it is invisible in any coverage number.
+interesting finding. A Datadog query has no slot for its rollup interval --- that comes
+from the dashboard's time range --- so $96.9\%$ of the translations we emit depend on an
+interval the query omits. PromQL has the slot, and $55.4\%$ of the corpus's range
+selectors fill it with a dashboard variable anyway, so the contrast is one of degree
+rather than of kind; \S\ref{sec:discussion} runs that comparison, which an earlier
+version of this paper asserted without measuring. The translations are exact, but exact
+relative to context supplied from outside the query, and that is invisible in any
+coverage number.
 
 Coming back is a different matter, and here the obstructions are proved. A Datadog tag
 filter is a glob, and \S\ref{sec:regular} shows a glob's language is either a single word

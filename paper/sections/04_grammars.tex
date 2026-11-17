@@ -114,10 +114,15 @@ parenthesised right operand:
 \begin{center}\footnotesize
 \texttt{a * on(x) group\_left (y) b}\qquad vs.\qquad\texttt{a * on(x) group\_left (b)}
 \end{center}
-One token of lookahead cannot distinguish them, and the ambiguity is in the language
-rather than in the grammar: making the label list mandatory removes the conflict
-entirely, which is how we identify it as the cause, but it also rejects
-\texttt{group\_left b}, which the language allows.
+One token of lookahead cannot distinguish them at that point, and the conflict comes
+from the optionality rather than from our layering: making the label list mandatory
+removes it entirely, which is how we identify the cause, but that also rejects
+\texttt{group\_left b}, which the language allows. What this shows is that \emph{this}
+grammar is not LALR(1), not that no LALR(1) grammar for PromQL exists --- the language
+is not ambiguous, since the expression above has one parse, which Prometheus produces
+and then rejects for want of an operand. We make no claim about the whole class of
+grammars for this language; a formulation that defers the decision past the
+parenthesis may well exist.
 
 The resolution is to shift --- to read the parenthesis as the label list --- and the
 consequence is that \texttt{a * on(x) group\_left (b)} is rejected even though a reader
@@ -133,9 +138,10 @@ of the server readings in this paper.
 
 So RQ1's answer for PromQL is ``LALR(1) modulo one documented resolution'', not
 ``conflict-free'' --- and the resolution is the one the reference implementation already
-makes. A language whose own grammar cannot be parsed deterministically without a
-tie-break is a small piece of evidence for this paper's thesis in its own right: the
-difficulty is in the language design, not in the tooling.
+makes. We draw nothing further from it. A tie-break on an optional parenthesised label
+list in the \emph{target} language costs a migration nothing, no corpus query is
+affected, and an earlier version of this section offered it as evidence for the paper's
+thesis, which it is not.
 
 \subsection{Lexical decisions}
 
