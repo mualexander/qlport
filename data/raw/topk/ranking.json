@@ -3,6 +3,7 @@
   {
    "by": "max",
    "constant": true,
+   "direction": "desc",
    "expr": "q and on(svc) topk(2, max_over_time(q[1200s] @ 1700001140))",
    "matches_model": true,
    "model": [
@@ -23,11 +24,40 @@
      "b",
      "e"
     ]
-   }
+   },
+   "selector": "topk"
   },
   {
    "by": "max",
    "constant": true,
+   "direction": "asc",
+   "expr": "q and on(svc) bottomk(2, max_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "c",
+    "d"
+   ],
+   "n": 2,
+   "selected": {
+    "at end": [
+     "c",
+     "d"
+    ],
+    "midway": [
+     "c",
+     "d"
+    ],
+    "near start": [
+     "c",
+     "d"
+    ]
+   },
+   "selector": "bottomk"
+  },
+  {
+   "by": "max",
+   "constant": true,
+   "direction": "desc",
    "expr": "q and on(svc) topk(3, max_over_time(q[1200s] @ 1700001140))",
    "matches_model": true,
    "model": [
@@ -52,11 +82,44 @@
      "b",
      "e"
     ]
-   }
+   },
+   "selector": "topk"
+  },
+  {
+   "by": "max",
+   "constant": true,
+   "direction": "asc",
+   "expr": "q and on(svc) bottomk(3, max_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "a",
+    "c",
+    "d"
+   ],
+   "n": 3,
+   "selected": {
+    "at end": [
+     "a",
+     "c",
+     "d"
+    ],
+    "midway": [
+     "a",
+     "c",
+     "d"
+    ],
+    "near start": [
+     "a",
+     "c",
+     "d"
+    ]
+   },
+   "selector": "bottomk"
   },
   {
    "by": "mean",
    "constant": true,
+   "direction": "desc",
    "expr": "q and on(svc) topk(2, avg_over_time(q[1200s] @ 1700001140))",
    "matches_model": true,
    "model": [
@@ -77,11 +140,40 @@
      "a",
      "b"
     ]
-   }
+   },
+   "selector": "topk"
   },
   {
    "by": "mean",
    "constant": true,
+   "direction": "asc",
+   "expr": "q and on(svc) bottomk(2, avg_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "d",
+    "e"
+   ],
+   "n": 2,
+   "selected": {
+    "at end": [
+     "d",
+     "e"
+    ],
+    "midway": [
+     "d",
+     "e"
+    ],
+    "near start": [
+     "d",
+     "e"
+    ]
+   },
+   "selector": "bottomk"
+  },
+  {
+   "by": "mean",
+   "constant": true,
+   "direction": "desc",
    "expr": "q and on(svc) topk(3, avg_over_time(q[1200s] @ 1700001140))",
    "matches_model": true,
    "model": [
@@ -106,11 +198,44 @@
      "b",
      "c"
     ]
-   }
+   },
+   "selector": "topk"
+  },
+  {
+   "by": "mean",
+   "constant": true,
+   "direction": "asc",
+   "expr": "q and on(svc) bottomk(3, avg_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "c",
+    "d",
+    "e"
+   ],
+   "n": 3,
+   "selected": {
+    "at end": [
+     "c",
+     "d",
+     "e"
+    ],
+    "midway": [
+     "c",
+     "d",
+     "e"
+    ],
+    "near start": [
+     "c",
+     "d",
+     "e"
+    ]
+   },
+   "selector": "bottomk"
   },
   {
    "by": "min",
    "constant": true,
+   "direction": "desc",
    "expr": "q and on(svc) topk(2, min_over_time(q[1200s] @ 1700001140))",
    "matches_model": true,
    "model": [
@@ -131,11 +256,40 @@
      "a",
      "c"
     ]
-   }
+   },
+   "selector": "topk"
   },
   {
    "by": "min",
    "constant": true,
+   "direction": "asc",
+   "expr": "q and on(svc) bottomk(2, min_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "d",
+    "e"
+   ],
+   "n": 2,
+   "selected": {
+    "at end": [
+     "d",
+     "e"
+    ],
+    "midway": [
+     "d",
+     "e"
+    ],
+    "near start": [
+     "d",
+     "e"
+    ]
+   },
+   "selector": "bottomk"
+  },
+  {
+   "by": "min",
+   "constant": true,
+   "direction": "desc",
    "expr": "q and on(svc) topk(3, min_over_time(q[1200s] @ 1700001140))",
    "matches_model": true,
    "model": [
@@ -160,11 +314,44 @@
      "b",
      "c"
     ]
-   }
+   },
+   "selector": "topk"
+  },
+  {
+   "by": "min",
+   "constant": true,
+   "direction": "asc",
+   "expr": "q and on(svc) bottomk(3, min_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "b",
+    "d",
+    "e"
+   ],
+   "n": 3,
+   "selected": {
+    "at end": [
+     "b",
+     "d",
+     "e"
+    ],
+    "midway": [
+     "b",
+     "d",
+     "e"
+    ],
+    "near start": [
+     "b",
+     "d",
+     "e"
+    ]
+   },
+   "selector": "bottomk"
   },
   {
    "by": "sum",
    "constant": true,
+   "direction": "desc",
    "expr": "q and on(svc) topk(2, sum_over_time(q[1200s] @ 1700001140))",
    "matches_model": true,
    "model": [
@@ -185,11 +372,40 @@
      "a",
      "b"
     ]
-   }
+   },
+   "selector": "topk"
   },
   {
    "by": "sum",
    "constant": true,
+   "direction": "asc",
+   "expr": "q and on(svc) bottomk(2, sum_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "d",
+    "e"
+   ],
+   "n": 2,
+   "selected": {
+    "at end": [
+     "d",
+     "e"
+    ],
+    "midway": [
+     "d",
+     "e"
+    ],
+    "near start": [
+     "d",
+     "e"
+    ]
+   },
+   "selector": "bottomk"
+  },
+  {
+   "by": "sum",
+   "constant": true,
+   "direction": "desc",
    "expr": "q and on(svc) topk(3, sum_over_time(q[1200s] @ 1700001140))",
    "matches_model": true,
    "model": [
@@ -214,11 +430,44 @@
      "b",
      "c"
     ]
-   }
+   },
+   "selector": "topk"
+  },
+  {
+   "by": "sum",
+   "constant": true,
+   "direction": "asc",
+   "expr": "q and on(svc) bottomk(3, sum_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "c",
+    "d",
+    "e"
+   ],
+   "n": 3,
+   "selected": {
+    "at end": [
+     "c",
+     "d",
+     "e"
+    ],
+    "midway": [
+     "c",
+     "d",
+     "e"
+    ],
+    "near start": [
+     "c",
+     "d",
+     "e"
+    ]
+   },
+   "selector": "bottomk"
   },
   {
    "by": "last",
    "constant": true,
+   "direction": "desc",
    "expr": "q and on(svc) topk(2, last_over_time(q[1200s] @ 1700001140))",
    "matches_model": true,
    "model": [
@@ -239,11 +488,40 @@
      "a",
      "b"
     ]
-   }
+   },
+   "selector": "topk"
   },
   {
    "by": "last",
    "constant": true,
+   "direction": "asc",
+   "expr": "q and on(svc) bottomk(2, last_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "d",
+    "e"
+   ],
+   "n": 2,
+   "selected": {
+    "at end": [
+     "d",
+     "e"
+    ],
+    "midway": [
+     "d",
+     "e"
+    ],
+    "near start": [
+     "d",
+     "e"
+    ]
+   },
+   "selector": "bottomk"
+  },
+  {
+   "by": "last",
+   "constant": true,
+   "direction": "desc",
    "expr": "q and on(svc) topk(3, last_over_time(q[1200s] @ 1700001140))",
    "matches_model": true,
    "model": [
@@ -268,7 +546,39 @@
      "b",
      "c"
     ]
-   }
+   },
+   "selector": "topk"
+  },
+  {
+   "by": "last",
+   "constant": true,
+   "direction": "asc",
+   "expr": "q and on(svc) bottomk(3, last_over_time(q[1200s] @ 1700001140))",
+   "matches_model": true,
+   "model": [
+    "c",
+    "d",
+    "e"
+   ],
+   "n": 3,
+   "selected": {
+    "at end": [
+     "c",
+     "d",
+     "e"
+    ],
+    "midway": [
+     "c",
+     "d",
+     "e"
+    ],
+    "near start": [
+     "c",
+     "d",
+     "e"
+    ]
+   },
+   "selector": "bottomk"
   }
  ],
  "naive": [
@@ -316,7 +626,7 @@
  ],
  "provenance": {
   "anchor": 1700001140,
-  "collected_at": "2026-11-16T17:50:47+00:00",
+  "collected_at": "2026-11-17T22:30:04+00:00",
   "image": "prom/prometheus:v3.15.0",
   "image_digest": "prom/prometheus@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e",
   "n_points": 20,

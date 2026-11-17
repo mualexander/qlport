@@ -431,6 +431,14 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb03.shapes", "07_evaluation.tex"),
     ("nb03.shapes", "09_conclusion.tex"),
     ("nb03.shapes_for_95pct", "07_evaluation.tex"),
+    # `top(...)`'s occurrence count decides which column the largest unimplemented entry
+    # belongs in, and the two counts beside it are what the measurement covers: 134 was
+    # the reach of the claim before `bottomk` was probed, and 111 is how often the corpus
+    # asks for the ranking function the probe leads with.
+    ("nb00.top_occurrences", "07_evaluation.tex"),
+    ("nb00.top_occurrences", "09_conclusion.tex"),
+    ("nb00.top_desc_occurrences", "07_evaluation.tex"),
+    ("nb00.top_rank_mean_calls", "07_evaluation.tex"),
 )
 
 

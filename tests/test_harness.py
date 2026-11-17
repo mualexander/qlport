@@ -304,6 +304,32 @@ def test_every_ranking_function_was_covered(topk_run):
     assert {"max", "mean", "min", "sum", "last"} <= covered, covered
 
 
+def test_both_ranking_directions_were_covered(topk_run):
+    """`topk` is the descending half of `top()`, and the corpus uses both halves.
+
+    Five of the 139 occurrences rank ascending. While only `topk` was probed, the
+    verified claim covered 134 of them and the paper said 139; `bottomk` closes that.
+    """
+    covered = {(c["by"], c["direction"]) for c in topk_run["cases"]}
+    assert {d for _, d in covered} == {"desc", "asc"}, sorted(covered)
+    for by in ("max", "mean", "min", "sum", "last"):
+        assert (by, "asc") in covered and (by, "desc") in covered, by
+    selectors = {c["direction"]: c["selector"] for c in topk_run["cases"]}
+    assert selectors == {"desc": "topk", "asc": "bottomk"}, selectors
+
+
+def test_the_workload_is_the_one_the_vendor_was_shown(topk_run):
+    """Both halves of the comparison must have seen the same series, or it compares
+    nothing. `harness/ranking.py` holds the one definition; this pins the cache to it.
+    """
+    from qlport.harness import ranking
+
+    recorded = topk_run["provenance"]["series"]
+    assert recorded == {k: ranking.values(k) for k in ranking.SERIES}
+    assert (topk_run["provenance"]["n_points"], topk_run["provenance"]["step"]) \
+        == (ranking.N, ranking.STEP)
+
+
 def test_the_pinned_ranking_is_constant_while_the_naive_one_is_not(topk_run):
     """Why the `@` modifier is load-bearing rather than decorative."""
     assert all(c["constant"] for c in topk_run["cases"])

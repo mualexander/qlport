@@ -1,0 +1,7466 @@
+{
+ "agreement": {
+  "cases": 22,
+  "matching_model": 22
+ },
+ "cases": [
+  {
+   "by": "last",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'last', 'desc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "b"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "a": 20,
+    "b": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "b"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "last",
+   "direction": "asc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'last', 'asc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "d",
+    "e"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "d": 20,
+    "e": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "d",
+    "e"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "last",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'last', 'desc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "b",
+    "c"
+   ],
+   "n": 3,
+   "points_per_series": {
+    "a": 20,
+    "b": 20,
+    "c": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "b",
+    "c"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "last",
+   "direction": "asc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'last', 'asc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "c",
+    "d",
+    "e"
+   ],
+   "n": 3,
+   "points_per_series": {
+    "c": 20,
+    "d": 20,
+    "e": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "c",
+    "d",
+    "e"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "max",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'max', 'desc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "b",
+    "e"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "b": 20,
+    "e": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "b",
+    "e"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "max",
+   "direction": "asc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'max', 'asc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "c",
+    "d"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "c": 20,
+    "d": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "c",
+    "d"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "max",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'max', 'desc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "b",
+    "e"
+   ],
+   "n": 3,
+   "points_per_series": {
+    "a": 20,
+    "b": 20,
+    "e": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "b",
+    "e"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "max",
+   "direction": "asc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'max', 'asc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "c",
+    "d"
+   ],
+   "n": 3,
+   "points_per_series": {
+    "a": 20,
+    "c": 20,
+    "d": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "c",
+    "d"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "mean",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'mean', 'desc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "b"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "a": 20,
+    "b": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "b"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "mean",
+   "direction": "asc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'mean', 'asc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "d",
+    "e"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "d": 20,
+    "e": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "d",
+    "e"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "mean",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'mean', 'desc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "b",
+    "c"
+   ],
+   "n": 3,
+   "points_per_series": {
+    "a": 20,
+    "b": 20,
+    "c": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "b",
+    "c"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "mean",
+   "direction": "asc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'mean', 'asc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "c",
+    "d",
+    "e"
+   ],
+   "n": 3,
+   "points_per_series": {
+    "c": 20,
+    "d": 20,
+    "e": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "c",
+    "d",
+    "e"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "min",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'min', 'desc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "c"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "a": 20,
+    "c": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "c"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "min",
+   "direction": "asc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'min', 'asc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "d",
+    "e"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "d": 20,
+    "e": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "d",
+    "e"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "min",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'min', 'desc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "b",
+    "c"
+   ],
+   "n": 3,
+   "points_per_series": {
+    "a": 20,
+    "b": 20,
+    "c": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "b",
+    "c"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "min",
+   "direction": "asc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'min', 'asc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "b",
+    "d",
+    "e"
+   ],
+   "n": 3,
+   "points_per_series": {
+    "b": 20,
+    "d": 20,
+    "e": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "b",
+    "d",
+    "e"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "sum",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'sum', 'desc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "b"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "a": 20,
+    "b": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "b"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "sum",
+   "direction": "asc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'sum', 'asc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "d",
+    "e"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "d": 20,
+    "e": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "d",
+    "e"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "sum",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'sum', 'desc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "b",
+    "c"
+   ],
+   "n": 3,
+   "points_per_series": {
+    "a": 20,
+    "b": 20,
+    "c": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "b",
+    "c"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "sum",
+   "direction": "asc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'sum', 'asc')",
+   "from": 1794952980,
+   "indices": [
+    0,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "c",
+    "d",
+    "e"
+   ],
+   "n": 3,
+   "points_per_series": {
+    "c": 20,
+    "d": 20,
+    "e": 20
+   },
+   "reported_interval": 60,
+   "selected": [
+    "c",
+    "d",
+    "e"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "full"
+  },
+  {
+   "by": "max",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'max', 'desc')",
+   "from": 1794953580,
+   "indices": [
+    10,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "b"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "a": 10,
+    "b": 10
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "b"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "second half"
+  },
+  {
+   "by": "mean",
+   "direction": "desc",
+   "expr": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'mean', 'desc')",
+   "from": 1794953580,
+   "indices": [
+    10,
+    20
+   ],
+   "matches_model": true,
+   "model": [
+    "a",
+    "b"
+   ],
+   "n": 2,
+   "points_per_series": {
+    "a": 10,
+    "b": 10
+   },
+   "reported_interval": 60,
+   "selected": [
+    "a",
+    "b"
+   ],
+   "to": 1794954180,
+   "whole_trajectories": true,
+   "window": "second half"
+  }
+ ],
+ "control": {
+  "expr": "avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60)",
+  "series": {
+   "a": {
+    "1794952980.0": 100.0,
+    "1794953040.0": 100.0,
+    "1794953100.0": 100.0,
+    "1794953160.0": 100.0,
+    "1794953220.0": 100.0,
+    "1794953280.0": 100.0,
+    "1794953340.0": 100.0,
+    "1794953400.0": 100.0,
+    "1794953460.0": 100.0,
+    "1794953520.0": 100.0,
+    "1794953580.0": 100.0,
+    "1794953640.0": 100.0,
+    "1794953700.0": 100.0,
+    "1794953760.0": 100.0,
+    "1794953820.0": 100.0,
+    "1794953880.0": 100.0,
+    "1794953940.0": 100.0,
+    "1794954000.0": 100.0,
+    "1794954060.0": 100.0,
+    "1794954120.0": 100.0
+   },
+   "b": {
+    "1794952980.0": 10.0,
+    "1794953040.0": 19.0,
+    "1794953100.0": 28.0,
+    "1794953160.0": 37.0,
+    "1794953220.0": 46.0,
+    "1794953280.0": 55.0,
+    "1794953340.0": 64.0,
+    "1794953400.0": 73.0,
+    "1794953460.0": 82.0,
+    "1794953520.0": 91.0,
+    "1794953580.0": 100.0,
+    "1794953640.0": 109.0,
+    "1794953700.0": 118.0,
+    "1794953760.0": 127.0,
+    "1794953820.0": 136.0,
+    "1794953880.0": 145.0,
+    "1794953940.0": 154.0,
+    "1794954000.0": 163.0,
+    "1794954060.0": 172.0,
+    "1794954120.0": 181.0
+   },
+   "c": {
+    "1794952980.0": 95.0,
+    "1794953040.0": 95.0,
+    "1794953100.0": 95.0,
+    "1794953160.0": 95.0,
+    "1794953220.0": 95.0,
+    "1794953280.0": 95.0,
+    "1794953340.0": 95.0,
+    "1794953400.0": 95.0,
+    "1794953460.0": 95.0,
+    "1794953520.0": 95.0,
+    "1794953580.0": 95.0,
+    "1794953640.0": 95.0,
+    "1794953700.0": 95.0,
+    "1794953760.0": 95.0,
+    "1794953820.0": 95.0,
+    "1794953880.0": 95.0,
+    "1794953940.0": 95.0,
+    "1794954000.0": 95.0,
+    "1794954060.0": 95.0,
+    "1794954120.0": 95.0
+   },
+   "d": {
+    "1794952980.0": 1.0,
+    "1794953040.0": 1.0,
+    "1794953100.0": 1.0,
+    "1794953160.0": 1.0,
+    "1794953220.0": 1.0,
+    "1794953280.0": 1.0,
+    "1794953340.0": 1.0,
+    "1794953400.0": 1.0,
+    "1794953460.0": 1.0,
+    "1794953520.0": 1.0,
+    "1794953580.0": 1.0,
+    "1794953640.0": 1.0,
+    "1794953700.0": 1.0,
+    "1794953760.0": 1.0,
+    "1794953820.0": 1.0,
+    "1794953880.0": 1.0,
+    "1794953940.0": 1.0,
+    "1794954000.0": 1.0,
+    "1794954060.0": 1.0,
+    "1794954120.0": 1.0
+   },
+   "e": {
+    "1794952980.0": 200.0,
+    "1794953040.0": 1.0,
+    "1794953100.0": 1.0,
+    "1794953160.0": 1.0,
+    "1794953220.0": 1.0,
+    "1794953280.0": 1.0,
+    "1794953340.0": 1.0,
+    "1794953400.0": 1.0,
+    "1794953460.0": 1.0,
+    "1794953520.0": 1.0,
+    "1794953580.0": 1.0,
+    "1794953640.0": 1.0,
+    "1794953700.0": 1.0,
+    "1794953760.0": 1.0,
+    "1794953820.0": 1.0,
+    "1794953880.0": 1.0,
+    "1794953940.0": 1.0,
+    "1794954000.0": 1.0,
+    "1794954060.0": 1.0,
+    "1794954120.0": 1.0
+   }
+  },
+  "stored_matches_input": {
+   "a": true,
+   "b": true,
+   "c": true,
+   "d": true,
+   "e": true
+  }
+ },
+ "provenance": {
+  "collected_at": "2026-11-17T22:31:44+00:00",
+  "metric": "qlport.top.r1794952980.q",
+  "n_points": 20,
+  "rollup_seconds": 60,
+  "series": {
+   "a": [
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0,
+    100.0
+   ],
+   "b": [
+    10.0,
+    19.0,
+    28.0,
+    37.0,
+    46.0,
+    55.0,
+    64.0,
+    73.0,
+    82.0,
+    91.0,
+    100.0,
+    109.0,
+    118.0,
+    127.0,
+    136.0,
+    145.0,
+    154.0,
+    163.0,
+    172.0,
+    181.0
+   ],
+   "c": [
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0,
+    95.0
+   ],
+   "d": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "e": [
+    200.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  "site": "datadoghq.com",
+  "step": 60,
+  "submitted": [
+   {
+    "series": [
+     {
+      "metric": "qlport.top.r1794952980.q",
+      "points": [
+       {
+        "timestamp": 1794952980,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953040,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953100,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953160,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953220,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953280,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953340,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953400,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953460,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953520,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953580,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953640,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953700,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953760,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953820,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953880,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953940,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794954000,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794954060,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794954120,
+        "value": 100.0
+       }
+      ],
+      "tags": [
+       "svc:a",
+       "rig:top"
+      ],
+      "type": 3
+     }
+    ]
+   },
+   {
+    "series": [
+     {
+      "metric": "qlport.top.r1794952980.q",
+      "points": [
+       {
+        "timestamp": 1794952980,
+        "value": 10.0
+       },
+       {
+        "timestamp": 1794953040,
+        "value": 19.0
+       },
+       {
+        "timestamp": 1794953100,
+        "value": 28.0
+       },
+       {
+        "timestamp": 1794953160,
+        "value": 37.0
+       },
+       {
+        "timestamp": 1794953220,
+        "value": 46.0
+       },
+       {
+        "timestamp": 1794953280,
+        "value": 55.0
+       },
+       {
+        "timestamp": 1794953340,
+        "value": 64.0
+       },
+       {
+        "timestamp": 1794953400,
+        "value": 73.0
+       },
+       {
+        "timestamp": 1794953460,
+        "value": 82.0
+       },
+       {
+        "timestamp": 1794953520,
+        "value": 91.0
+       },
+       {
+        "timestamp": 1794953580,
+        "value": 100.0
+       },
+       {
+        "timestamp": 1794953640,
+        "value": 109.0
+       },
+       {
+        "timestamp": 1794953700,
+        "value": 118.0
+       },
+       {
+        "timestamp": 1794953760,
+        "value": 127.0
+       },
+       {
+        "timestamp": 1794953820,
+        "value": 136.0
+       },
+       {
+        "timestamp": 1794953880,
+        "value": 145.0
+       },
+       {
+        "timestamp": 1794953940,
+        "value": 154.0
+       },
+       {
+        "timestamp": 1794954000,
+        "value": 163.0
+       },
+       {
+        "timestamp": 1794954060,
+        "value": 172.0
+       },
+       {
+        "timestamp": 1794954120,
+        "value": 181.0
+       }
+      ],
+      "tags": [
+       "svc:b",
+       "rig:top"
+      ],
+      "type": 3
+     }
+    ]
+   },
+   {
+    "series": [
+     {
+      "metric": "qlport.top.r1794952980.q",
+      "points": [
+       {
+        "timestamp": 1794952980,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953040,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953100,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953160,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953220,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953280,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953340,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953400,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953460,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953520,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953580,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953640,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953700,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953760,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953820,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953880,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794953940,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794954000,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794954060,
+        "value": 95.0
+       },
+       {
+        "timestamp": 1794954120,
+        "value": 95.0
+       }
+      ],
+      "tags": [
+       "svc:c",
+       "rig:top"
+      ],
+      "type": 3
+     }
+    ]
+   },
+   {
+    "series": [
+     {
+      "metric": "qlport.top.r1794952980.q",
+      "points": [
+       {
+        "timestamp": 1794952980,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953040,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953100,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953160,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953220,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953280,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953340,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953400,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953460,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953520,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953580,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953640,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953700,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953760,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953820,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953880,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953940,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794954000,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794954060,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794954120,
+        "value": 1.0
+       }
+      ],
+      "tags": [
+       "svc:d",
+       "rig:top"
+      ],
+      "type": 3
+     }
+    ]
+   },
+   {
+    "series": [
+     {
+      "metric": "qlport.top.r1794952980.q",
+      "points": [
+       {
+        "timestamp": 1794952980,
+        "value": 200.0
+       },
+       {
+        "timestamp": 1794953040,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953100,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953160,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953220,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953280,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953340,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953400,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953460,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953520,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953580,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953640,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953700,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953760,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953820,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953880,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794953940,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794954000,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794954060,
+        "value": 1.0
+       },
+       {
+        "timestamp": 1794954120,
+        "value": 1.0
+       }
+      ],
+      "tags": [
+       "svc:e",
+       "rig:top"
+      ],
+      "type": 3
+     }
+    ]
+   }
+  ],
+  "t0": 1794952980,
+  "windows": {
+   "full": {
+    "from": 1794952980,
+    "indices": [
+     0,
+     20
+    ],
+    "to": 1794954180
+   },
+   "second half": {
+    "from": 1794953580,
+    "indices": [
+     10,
+     20
+    ],
+    "to": 1794954180
+   }
+  }
+ },
+ "range_relative": {
+  "max": {
+   "as_model_predicts": true,
+   "full": [
+    "b",
+    "e"
+   ],
+   "model_moves": true,
+   "moved": true,
+   "second half": [
+    "a",
+    "b"
+   ]
+  },
+  "mean": {
+   "as_model_predicts": true,
+   "full": [
+    "a",
+    "b"
+   ],
+   "model_moves": false,
+   "moved": false,
+   "second half": [
+    "a",
+    "b"
+   ]
+  }
+ },
+ "raw": {
+  "control": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60)",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "qlport.top.r1794952980.q",
+     "end": 1794954179000,
+     "expression": "avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60)",
+     "interval": 60,
+     "length": 20,
+     "metric": "qlport.top.r1794952980.q",
+     "pointlist": [
+      [
+       1794952980000.0,
+       100.0
+      ],
+      [
+       1794953040000.0,
+       100.0
+      ],
+      [
+       1794953100000.0,
+       100.0
+      ],
+      [
+       1794953160000.0,
+       100.0
+      ],
+      [
+       1794953220000.0,
+       100.0
+      ],
+      [
+       1794953280000.0,
+       100.0
+      ],
+      [
+       1794953340000.0,
+       100.0
+      ],
+      [
+       1794953400000.0,
+       100.0
+      ],
+      [
+       1794953460000.0,
+       100.0
+      ],
+      [
+       1794953520000.0,
+       100.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "qlport.top.r1794952980.q",
+     "end": 1794954179000,
+     "expression": "avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60)",
+     "interval": 60,
+     "length": 20,
+     "metric": "qlport.top.r1794952980.q",
+     "pointlist": [
+      [
+       1794952980000.0,
+       10.0
+      ],
+      [
+       1794953040000.0,
+       19.0
+      ],
+      [
+       1794953100000.0,
+       28.0
+      ],
+      [
+       1794953160000.0,
+       37.0
+      ],
+      [
+       1794953220000.0,
+       46.0
+      ],
+      [
+       1794953280000.0,
+       55.0
+      ],
+      [
+       1794953340000.0,
+       64.0
+      ],
+      [
+       1794953400000.0,
+       73.0
+      ],
+      [
+       1794953460000.0,
+       82.0
+      ],
+      [
+       1794953520000.0,
+       91.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "qlport.top.r1794952980.q",
+     "end": 1794954179000,
+     "expression": "avg:qlport.top.r1794952980.q{svc:c}.rollup(avg, 60)",
+     "interval": 60,
+     "length": 20,
+     "metric": "qlport.top.r1794952980.q",
+     "pointlist": [
+      [
+       1794952980000.0,
+       95.0
+      ],
+      [
+       1794953040000.0,
+       95.0
+      ],
+      [
+       1794953100000.0,
+       95.0
+      ],
+      [
+       1794953160000.0,
+       95.0
+      ],
+      [
+       1794953220000.0,
+       95.0
+      ],
+      [
+       1794953280000.0,
+       95.0
+      ],
+      [
+       1794953340000.0,
+       95.0
+      ],
+      [
+       1794953400000.0,
+       95.0
+      ],
+      [
+       1794953460000.0,
+       95.0
+      ],
+      [
+       1794953520000.0,
+       95.0
+      ],
+      [
+       1794953580000.0,
+       95.0
+      ],
+      [
+       1794953640000.0,
+       95.0
+      ],
+      [
+       1794953700000.0,
+       95.0
+      ],
+      [
+       1794953760000.0,
+       95.0
+      ],
+      [
+       1794953820000.0,
+       95.0
+      ],
+      [
+       1794953880000.0,
+       95.0
+      ],
+      [
+       1794953940000.0,
+       95.0
+      ],
+      [
+       1794954000000.0,
+       95.0
+      ],
+      [
+       1794954060000.0,
+       95.0
+      ],
+      [
+       1794954120000.0,
+       95.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:c",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:c"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "qlport.top.r1794952980.q",
+     "end": 1794954179000,
+     "expression": "avg:qlport.top.r1794952980.q{svc:d}.rollup(avg, 60)",
+     "interval": 60,
+     "length": 20,
+     "metric": "qlport.top.r1794952980.q",
+     "pointlist": [
+      [
+       1794952980000.0,
+       1.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:d",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:d"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "qlport.top.r1794952980.q",
+     "end": 1794954179000,
+     "expression": "avg:qlport.top.r1794952980.q{svc:e}.rollup(avg, 60)",
+     "interval": 60,
+     "length": 20,
+     "metric": "qlport.top.r1794952980.q",
+     "pointlist": [
+      [
+       1794952980000.0,
+       200.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:e",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:e"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|last|2|asc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'last', 'asc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'last','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:d}.rollup(avg, 60),2,'last','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'last','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       1.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:d",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:d"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'last','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:e}.rollup(avg, 60),2,'last','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'last','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       200.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:e",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:e"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|last|2|desc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'last', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'last','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),2,'last','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'last','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       10.0
+      ],
+      [
+       1794953040000.0,
+       19.0
+      ],
+      [
+       1794953100000.0,
+       28.0
+      ],
+      [
+       1794953160000.0,
+       37.0
+      ],
+      [
+       1794953220000.0,
+       46.0
+      ],
+      [
+       1794953280000.0,
+       55.0
+      ],
+      [
+       1794953340000.0,
+       64.0
+      ],
+      [
+       1794953400000.0,
+       73.0
+      ],
+      [
+       1794953460000.0,
+       82.0
+      ],
+      [
+       1794953520000.0,
+       91.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'last','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),2,'last','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'last','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       100.0
+      ],
+      [
+       1794953040000.0,
+       100.0
+      ],
+      [
+       1794953100000.0,
+       100.0
+      ],
+      [
+       1794953160000.0,
+       100.0
+      ],
+      [
+       1794953220000.0,
+       100.0
+      ],
+      [
+       1794953280000.0,
+       100.0
+      ],
+      [
+       1794953340000.0,
+       100.0
+      ],
+      [
+       1794953400000.0,
+       100.0
+      ],
+      [
+       1794953460000.0,
+       100.0
+      ],
+      [
+       1794953520000.0,
+       100.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|last|3|asc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'last', 'asc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:e}.rollup(avg, 60),3,'last','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       200.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:e",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:e"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:d}.rollup(avg, 60),3,'last','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       1.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:d",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:d"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:c}.rollup(avg, 60),3,'last','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       95.0
+      ],
+      [
+       1794953040000.0,
+       95.0
+      ],
+      [
+       1794953100000.0,
+       95.0
+      ],
+      [
+       1794953160000.0,
+       95.0
+      ],
+      [
+       1794953220000.0,
+       95.0
+      ],
+      [
+       1794953280000.0,
+       95.0
+      ],
+      [
+       1794953340000.0,
+       95.0
+      ],
+      [
+       1794953400000.0,
+       95.0
+      ],
+      [
+       1794953460000.0,
+       95.0
+      ],
+      [
+       1794953520000.0,
+       95.0
+      ],
+      [
+       1794953580000.0,
+       95.0
+      ],
+      [
+       1794953640000.0,
+       95.0
+      ],
+      [
+       1794953700000.0,
+       95.0
+      ],
+      [
+       1794953760000.0,
+       95.0
+      ],
+      [
+       1794953820000.0,
+       95.0
+      ],
+      [
+       1794953880000.0,
+       95.0
+      ],
+      [
+       1794953940000.0,
+       95.0
+      ],
+      [
+       1794954000000.0,
+       95.0
+      ],
+      [
+       1794954060000.0,
+       95.0
+      ],
+      [
+       1794954120000.0,
+       95.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:c",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:c"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|last|3|desc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'last', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),3,'last','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       10.0
+      ],
+      [
+       1794953040000.0,
+       19.0
+      ],
+      [
+       1794953100000.0,
+       28.0
+      ],
+      [
+       1794953160000.0,
+       37.0
+      ],
+      [
+       1794953220000.0,
+       46.0
+      ],
+      [
+       1794953280000.0,
+       55.0
+      ],
+      [
+       1794953340000.0,
+       64.0
+      ],
+      [
+       1794953400000.0,
+       73.0
+      ],
+      [
+       1794953460000.0,
+       82.0
+      ],
+      [
+       1794953520000.0,
+       91.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),3,'last','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       100.0
+      ],
+      [
+       1794953040000.0,
+       100.0
+      ],
+      [
+       1794953100000.0,
+       100.0
+      ],
+      [
+       1794953160000.0,
+       100.0
+      ],
+      [
+       1794953220000.0,
+       100.0
+      ],
+      [
+       1794953280000.0,
+       100.0
+      ],
+      [
+       1794953340000.0,
+       100.0
+      ],
+      [
+       1794953400000.0,
+       100.0
+      ],
+      [
+       1794953460000.0,
+       100.0
+      ],
+      [
+       1794953520000.0,
+       100.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:c}.rollup(avg, 60),3,'last','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'last','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       95.0
+      ],
+      [
+       1794953040000.0,
+       95.0
+      ],
+      [
+       1794953100000.0,
+       95.0
+      ],
+      [
+       1794953160000.0,
+       95.0
+      ],
+      [
+       1794953220000.0,
+       95.0
+      ],
+      [
+       1794953280000.0,
+       95.0
+      ],
+      [
+       1794953340000.0,
+       95.0
+      ],
+      [
+       1794953400000.0,
+       95.0
+      ],
+      [
+       1794953460000.0,
+       95.0
+      ],
+      [
+       1794953520000.0,
+       95.0
+      ],
+      [
+       1794953580000.0,
+       95.0
+      ],
+      [
+       1794953640000.0,
+       95.0
+      ],
+      [
+       1794953700000.0,
+       95.0
+      ],
+      [
+       1794953760000.0,
+       95.0
+      ],
+      [
+       1794953820000.0,
+       95.0
+      ],
+      [
+       1794953880000.0,
+       95.0
+      ],
+      [
+       1794953940000.0,
+       95.0
+      ],
+      [
+       1794954000000.0,
+       95.0
+      ],
+      [
+       1794954060000.0,
+       95.0
+      ],
+      [
+       1794954120000.0,
+       95.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:c",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:c"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|max|2|asc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'max', 'asc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:d}.rollup(avg, 60),2,'max','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       1.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:d",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:d"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:c}.rollup(avg, 60),2,'max','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       95.0
+      ],
+      [
+       1794953040000.0,
+       95.0
+      ],
+      [
+       1794953100000.0,
+       95.0
+      ],
+      [
+       1794953160000.0,
+       95.0
+      ],
+      [
+       1794953220000.0,
+       95.0
+      ],
+      [
+       1794953280000.0,
+       95.0
+      ],
+      [
+       1794953340000.0,
+       95.0
+      ],
+      [
+       1794953400000.0,
+       95.0
+      ],
+      [
+       1794953460000.0,
+       95.0
+      ],
+      [
+       1794953520000.0,
+       95.0
+      ],
+      [
+       1794953580000.0,
+       95.0
+      ],
+      [
+       1794953640000.0,
+       95.0
+      ],
+      [
+       1794953700000.0,
+       95.0
+      ],
+      [
+       1794953760000.0,
+       95.0
+      ],
+      [
+       1794953820000.0,
+       95.0
+      ],
+      [
+       1794953880000.0,
+       95.0
+      ],
+      [
+       1794953940000.0,
+       95.0
+      ],
+      [
+       1794954000000.0,
+       95.0
+      ],
+      [
+       1794954060000.0,
+       95.0
+      ],
+      [
+       1794954120000.0,
+       95.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:c",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:c"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|max|2|desc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'max', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:e}.rollup(avg, 60),2,'max','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       200.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:e",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:e"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),2,'max','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       10.0
+      ],
+      [
+       1794953040000.0,
+       19.0
+      ],
+      [
+       1794953100000.0,
+       28.0
+      ],
+      [
+       1794953160000.0,
+       37.0
+      ],
+      [
+       1794953220000.0,
+       46.0
+      ],
+      [
+       1794953280000.0,
+       55.0
+      ],
+      [
+       1794953340000.0,
+       64.0
+      ],
+      [
+       1794953400000.0,
+       73.0
+      ],
+      [
+       1794953460000.0,
+       82.0
+      ],
+      [
+       1794953520000.0,
+       91.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|max|3|asc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'max', 'asc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:d}.rollup(avg, 60),3,'max','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       1.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:d",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:d"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:c}.rollup(avg, 60),3,'max','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       95.0
+      ],
+      [
+       1794953040000.0,
+       95.0
+      ],
+      [
+       1794953100000.0,
+       95.0
+      ],
+      [
+       1794953160000.0,
+       95.0
+      ],
+      [
+       1794953220000.0,
+       95.0
+      ],
+      [
+       1794953280000.0,
+       95.0
+      ],
+      [
+       1794953340000.0,
+       95.0
+      ],
+      [
+       1794953400000.0,
+       95.0
+      ],
+      [
+       1794953460000.0,
+       95.0
+      ],
+      [
+       1794953520000.0,
+       95.0
+      ],
+      [
+       1794953580000.0,
+       95.0
+      ],
+      [
+       1794953640000.0,
+       95.0
+      ],
+      [
+       1794953700000.0,
+       95.0
+      ],
+      [
+       1794953760000.0,
+       95.0
+      ],
+      [
+       1794953820000.0,
+       95.0
+      ],
+      [
+       1794953880000.0,
+       95.0
+      ],
+      [
+       1794953940000.0,
+       95.0
+      ],
+      [
+       1794954000000.0,
+       95.0
+      ],
+      [
+       1794954060000.0,
+       95.0
+      ],
+      [
+       1794954120000.0,
+       95.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:c",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:c"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),3,'max','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       100.0
+      ],
+      [
+       1794953040000.0,
+       100.0
+      ],
+      [
+       1794953100000.0,
+       100.0
+      ],
+      [
+       1794953160000.0,
+       100.0
+      ],
+      [
+       1794953220000.0,
+       100.0
+      ],
+      [
+       1794953280000.0,
+       100.0
+      ],
+      [
+       1794953340000.0,
+       100.0
+      ],
+      [
+       1794953400000.0,
+       100.0
+      ],
+      [
+       1794953460000.0,
+       100.0
+      ],
+      [
+       1794953520000.0,
+       100.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|max|3|desc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'max', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:e}.rollup(avg, 60),3,'max','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       200.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:e",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:e"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),3,'max','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       10.0
+      ],
+      [
+       1794953040000.0,
+       19.0
+      ],
+      [
+       1794953100000.0,
+       28.0
+      ],
+      [
+       1794953160000.0,
+       37.0
+      ],
+      [
+       1794953220000.0,
+       46.0
+      ],
+      [
+       1794953280000.0,
+       55.0
+      ],
+      [
+       1794953340000.0,
+       64.0
+      ],
+      [
+       1794953400000.0,
+       73.0
+      ],
+      [
+       1794953460000.0,
+       82.0
+      ],
+      [
+       1794953520000.0,
+       91.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),3,'max','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'max','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       100.0
+      ],
+      [
+       1794953040000.0,
+       100.0
+      ],
+      [
+       1794953100000.0,
+       100.0
+      ],
+      [
+       1794953160000.0,
+       100.0
+      ],
+      [
+       1794953220000.0,
+       100.0
+      ],
+      [
+       1794953280000.0,
+       100.0
+      ],
+      [
+       1794953340000.0,
+       100.0
+      ],
+      [
+       1794953400000.0,
+       100.0
+      ],
+      [
+       1794953460000.0,
+       100.0
+      ],
+      [
+       1794953520000.0,
+       100.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|mean|2|asc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'mean', 'asc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:d}.rollup(avg, 60),2,'mean','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       1.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:d",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:d"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:e}.rollup(avg, 60),2,'mean','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       200.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:e",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:e"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|mean|2|desc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'mean', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),2,'mean','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       100.0
+      ],
+      [
+       1794953040000.0,
+       100.0
+      ],
+      [
+       1794953100000.0,
+       100.0
+      ],
+      [
+       1794953160000.0,
+       100.0
+      ],
+      [
+       1794953220000.0,
+       100.0
+      ],
+      [
+       1794953280000.0,
+       100.0
+      ],
+      [
+       1794953340000.0,
+       100.0
+      ],
+      [
+       1794953400000.0,
+       100.0
+      ],
+      [
+       1794953460000.0,
+       100.0
+      ],
+      [
+       1794953520000.0,
+       100.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),2,'mean','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       10.0
+      ],
+      [
+       1794953040000.0,
+       19.0
+      ],
+      [
+       1794953100000.0,
+       28.0
+      ],
+      [
+       1794953160000.0,
+       37.0
+      ],
+      [
+       1794953220000.0,
+       46.0
+      ],
+      [
+       1794953280000.0,
+       55.0
+      ],
+      [
+       1794953340000.0,
+       64.0
+      ],
+      [
+       1794953400000.0,
+       73.0
+      ],
+      [
+       1794953460000.0,
+       82.0
+      ],
+      [
+       1794953520000.0,
+       91.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|mean|3|asc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'mean', 'asc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:d}.rollup(avg, 60),3,'mean','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       1.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:d",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:d"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:e}.rollup(avg, 60),3,'mean','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       200.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:e",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:e"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:c}.rollup(avg, 60),3,'mean','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       95.0
+      ],
+      [
+       1794953040000.0,
+       95.0
+      ],
+      [
+       1794953100000.0,
+       95.0
+      ],
+      [
+       1794953160000.0,
+       95.0
+      ],
+      [
+       1794953220000.0,
+       95.0
+      ],
+      [
+       1794953280000.0,
+       95.0
+      ],
+      [
+       1794953340000.0,
+       95.0
+      ],
+      [
+       1794953400000.0,
+       95.0
+      ],
+      [
+       1794953460000.0,
+       95.0
+      ],
+      [
+       1794953520000.0,
+       95.0
+      ],
+      [
+       1794953580000.0,
+       95.0
+      ],
+      [
+       1794953640000.0,
+       95.0
+      ],
+      [
+       1794953700000.0,
+       95.0
+      ],
+      [
+       1794953760000.0,
+       95.0
+      ],
+      [
+       1794953820000.0,
+       95.0
+      ],
+      [
+       1794953880000.0,
+       95.0
+      ],
+      [
+       1794953940000.0,
+       95.0
+      ],
+      [
+       1794954000000.0,
+       95.0
+      ],
+      [
+       1794954060000.0,
+       95.0
+      ],
+      [
+       1794954120000.0,
+       95.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:c",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:c"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|mean|3|desc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'mean', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),3,'mean','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       100.0
+      ],
+      [
+       1794953040000.0,
+       100.0
+      ],
+      [
+       1794953100000.0,
+       100.0
+      ],
+      [
+       1794953160000.0,
+       100.0
+      ],
+      [
+       1794953220000.0,
+       100.0
+      ],
+      [
+       1794953280000.0,
+       100.0
+      ],
+      [
+       1794953340000.0,
+       100.0
+      ],
+      [
+       1794953400000.0,
+       100.0
+      ],
+      [
+       1794953460000.0,
+       100.0
+      ],
+      [
+       1794953520000.0,
+       100.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),3,'mean','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       10.0
+      ],
+      [
+       1794953040000.0,
+       19.0
+      ],
+      [
+       1794953100000.0,
+       28.0
+      ],
+      [
+       1794953160000.0,
+       37.0
+      ],
+      [
+       1794953220000.0,
+       46.0
+      ],
+      [
+       1794953280000.0,
+       55.0
+      ],
+      [
+       1794953340000.0,
+       64.0
+      ],
+      [
+       1794953400000.0,
+       73.0
+      ],
+      [
+       1794953460000.0,
+       82.0
+      ],
+      [
+       1794953520000.0,
+       91.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:c}.rollup(avg, 60),3,'mean','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'mean','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       95.0
+      ],
+      [
+       1794953040000.0,
+       95.0
+      ],
+      [
+       1794953100000.0,
+       95.0
+      ],
+      [
+       1794953160000.0,
+       95.0
+      ],
+      [
+       1794953220000.0,
+       95.0
+      ],
+      [
+       1794953280000.0,
+       95.0
+      ],
+      [
+       1794953340000.0,
+       95.0
+      ],
+      [
+       1794953400000.0,
+       95.0
+      ],
+      [
+       1794953460000.0,
+       95.0
+      ],
+      [
+       1794953520000.0,
+       95.0
+      ],
+      [
+       1794953580000.0,
+       95.0
+      ],
+      [
+       1794953640000.0,
+       95.0
+      ],
+      [
+       1794953700000.0,
+       95.0
+      ],
+      [
+       1794953760000.0,
+       95.0
+      ],
+      [
+       1794953820000.0,
+       95.0
+      ],
+      [
+       1794953880000.0,
+       95.0
+      ],
+      [
+       1794953940000.0,
+       95.0
+      ],
+      [
+       1794954000000.0,
+       95.0
+      ],
+      [
+       1794954060000.0,
+       95.0
+      ],
+      [
+       1794954120000.0,
+       95.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:c",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:c"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|min|2|asc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'min', 'asc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'min','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:d}.rollup(avg, 60),2,'min','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'min','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       1.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:d",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:d"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'min','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:e}.rollup(avg, 60),2,'min','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'min','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       200.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:e",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:e"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|min|2|desc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'min', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'min','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),2,'min','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'min','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       100.0
+      ],
+      [
+       1794953040000.0,
+       100.0
+      ],
+      [
+       1794953100000.0,
+       100.0
+      ],
+      [
+       1794953160000.0,
+       100.0
+      ],
+      [
+       1794953220000.0,
+       100.0
+      ],
+      [
+       1794953280000.0,
+       100.0
+      ],
+      [
+       1794953340000.0,
+       100.0
+      ],
+      [
+       1794953400000.0,
+       100.0
+      ],
+      [
+       1794953460000.0,
+       100.0
+      ],
+      [
+       1794953520000.0,
+       100.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'min','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:c}.rollup(avg, 60),2,'min','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'min','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       95.0
+      ],
+      [
+       1794953040000.0,
+       95.0
+      ],
+      [
+       1794953100000.0,
+       95.0
+      ],
+      [
+       1794953160000.0,
+       95.0
+      ],
+      [
+       1794953220000.0,
+       95.0
+      ],
+      [
+       1794953280000.0,
+       95.0
+      ],
+      [
+       1794953340000.0,
+       95.0
+      ],
+      [
+       1794953400000.0,
+       95.0
+      ],
+      [
+       1794953460000.0,
+       95.0
+      ],
+      [
+       1794953520000.0,
+       95.0
+      ],
+      [
+       1794953580000.0,
+       95.0
+      ],
+      [
+       1794953640000.0,
+       95.0
+      ],
+      [
+       1794953700000.0,
+       95.0
+      ],
+      [
+       1794953760000.0,
+       95.0
+      ],
+      [
+       1794953820000.0,
+       95.0
+      ],
+      [
+       1794953880000.0,
+       95.0
+      ],
+      [
+       1794953940000.0,
+       95.0
+      ],
+      [
+       1794954000000.0,
+       95.0
+      ],
+      [
+       1794954060000.0,
+       95.0
+      ],
+      [
+       1794954120000.0,
+       95.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:c",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:c"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|min|3|asc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'min', 'asc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:d}.rollup(avg, 60),3,'min','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       1.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:d",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:d"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:e}.rollup(avg, 60),3,'min','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       200.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:e",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:e"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),3,'min','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       10.0
+      ],
+      [
+       1794953040000.0,
+       19.0
+      ],
+      [
+       1794953100000.0,
+       28.0
+      ],
+      [
+       1794953160000.0,
+       37.0
+      ],
+      [
+       1794953220000.0,
+       46.0
+      ],
+      [
+       1794953280000.0,
+       55.0
+      ],
+      [
+       1794953340000.0,
+       64.0
+      ],
+      [
+       1794953400000.0,
+       73.0
+      ],
+      [
+       1794953460000.0,
+       82.0
+      ],
+      [
+       1794953520000.0,
+       91.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|min|3|desc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'min', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),3,'min','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       100.0
+      ],
+      [
+       1794953040000.0,
+       100.0
+      ],
+      [
+       1794953100000.0,
+       100.0
+      ],
+      [
+       1794953160000.0,
+       100.0
+      ],
+      [
+       1794953220000.0,
+       100.0
+      ],
+      [
+       1794953280000.0,
+       100.0
+      ],
+      [
+       1794953340000.0,
+       100.0
+      ],
+      [
+       1794953400000.0,
+       100.0
+      ],
+      [
+       1794953460000.0,
+       100.0
+      ],
+      [
+       1794953520000.0,
+       100.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:c}.rollup(avg, 60),3,'min','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       95.0
+      ],
+      [
+       1794953040000.0,
+       95.0
+      ],
+      [
+       1794953100000.0,
+       95.0
+      ],
+      [
+       1794953160000.0,
+       95.0
+      ],
+      [
+       1794953220000.0,
+       95.0
+      ],
+      [
+       1794953280000.0,
+       95.0
+      ],
+      [
+       1794953340000.0,
+       95.0
+      ],
+      [
+       1794953400000.0,
+       95.0
+      ],
+      [
+       1794953460000.0,
+       95.0
+      ],
+      [
+       1794953520000.0,
+       95.0
+      ],
+      [
+       1794953580000.0,
+       95.0
+      ],
+      [
+       1794953640000.0,
+       95.0
+      ],
+      [
+       1794953700000.0,
+       95.0
+      ],
+      [
+       1794953760000.0,
+       95.0
+      ],
+      [
+       1794953820000.0,
+       95.0
+      ],
+      [
+       1794953880000.0,
+       95.0
+      ],
+      [
+       1794953940000.0,
+       95.0
+      ],
+      [
+       1794954000000.0,
+       95.0
+      ],
+      [
+       1794954060000.0,
+       95.0
+      ],
+      [
+       1794954120000.0,
+       95.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:c",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:c"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),3,'min','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'min','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       10.0
+      ],
+      [
+       1794953040000.0,
+       19.0
+      ],
+      [
+       1794953100000.0,
+       28.0
+      ],
+      [
+       1794953160000.0,
+       37.0
+      ],
+      [
+       1794953220000.0,
+       46.0
+      ],
+      [
+       1794953280000.0,
+       55.0
+      ],
+      [
+       1794953340000.0,
+       64.0
+      ],
+      [
+       1794953400000.0,
+       73.0
+      ],
+      [
+       1794953460000.0,
+       82.0
+      ],
+      [
+       1794953520000.0,
+       91.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|sum|2|asc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'sum', 'asc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'sum','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:d}.rollup(avg, 60),2,'sum','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'sum','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       1.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:d",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:d"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'sum','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:e}.rollup(avg, 60),2,'sum','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'sum','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       200.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:e",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:e"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|sum|2|desc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'sum', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'sum','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),2,'sum','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'sum','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       100.0
+      ],
+      [
+       1794953040000.0,
+       100.0
+      ],
+      [
+       1794953100000.0,
+       100.0
+      ],
+      [
+       1794953160000.0,
+       100.0
+      ],
+      [
+       1794953220000.0,
+       100.0
+      ],
+      [
+       1794953280000.0,
+       100.0
+      ],
+      [
+       1794953340000.0,
+       100.0
+      ],
+      [
+       1794953400000.0,
+       100.0
+      ],
+      [
+       1794953460000.0,
+       100.0
+      ],
+      [
+       1794953520000.0,
+       100.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'sum','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),2,'sum','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'sum','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       10.0
+      ],
+      [
+       1794953040000.0,
+       19.0
+      ],
+      [
+       1794953100000.0,
+       28.0
+      ],
+      [
+       1794953160000.0,
+       37.0
+      ],
+      [
+       1794953220000.0,
+       46.0
+      ],
+      [
+       1794953280000.0,
+       55.0
+      ],
+      [
+       1794953340000.0,
+       64.0
+      ],
+      [
+       1794953400000.0,
+       73.0
+      ],
+      [
+       1794953460000.0,
+       82.0
+      ],
+      [
+       1794953520000.0,
+       91.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|sum|3|asc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'sum', 'asc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:d}.rollup(avg, 60),3,'sum','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       1.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:d",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:d"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:e}.rollup(avg, 60),3,'sum','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       200.0
+      ],
+      [
+       1794953040000.0,
+       1.0
+      ],
+      [
+       1794953100000.0,
+       1.0
+      ],
+      [
+       1794953160000.0,
+       1.0
+      ],
+      [
+       1794953220000.0,
+       1.0
+      ],
+      [
+       1794953280000.0,
+       1.0
+      ],
+      [
+       1794953340000.0,
+       1.0
+      ],
+      [
+       1794953400000.0,
+       1.0
+      ],
+      [
+       1794953460000.0,
+       1.0
+      ],
+      [
+       1794953520000.0,
+       1.0
+      ],
+      [
+       1794953580000.0,
+       1.0
+      ],
+      [
+       1794953640000.0,
+       1.0
+      ],
+      [
+       1794953700000.0,
+       1.0
+      ],
+      [
+       1794953760000.0,
+       1.0
+      ],
+      [
+       1794953820000.0,
+       1.0
+      ],
+      [
+       1794953880000.0,
+       1.0
+      ],
+      [
+       1794953940000.0,
+       1.0
+      ],
+      [
+       1794954000000.0,
+       1.0
+      ],
+      [
+       1794954060000.0,
+       1.0
+      ],
+      [
+       1794954120000.0,
+       1.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:e",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:e"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','asc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:c}.rollup(avg, 60),3,'sum','asc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','asc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       95.0
+      ],
+      [
+       1794953040000.0,
+       95.0
+      ],
+      [
+       1794953100000.0,
+       95.0
+      ],
+      [
+       1794953160000.0,
+       95.0
+      ],
+      [
+       1794953220000.0,
+       95.0
+      ],
+      [
+       1794953280000.0,
+       95.0
+      ],
+      [
+       1794953340000.0,
+       95.0
+      ],
+      [
+       1794953400000.0,
+       95.0
+      ],
+      [
+       1794953460000.0,
+       95.0
+      ],
+      [
+       1794953520000.0,
+       95.0
+      ],
+      [
+       1794953580000.0,
+       95.0
+      ],
+      [
+       1794953640000.0,
+       95.0
+      ],
+      [
+       1794953700000.0,
+       95.0
+      ],
+      [
+       1794953760000.0,
+       95.0
+      ],
+      [
+       1794953820000.0,
+       95.0
+      ],
+      [
+       1794953880000.0,
+       95.0
+      ],
+      [
+       1794953940000.0,
+       95.0
+      ],
+      [
+       1794954000000.0,
+       95.0
+      ],
+      [
+       1794954060000.0,
+       95.0
+      ],
+      [
+       1794954120000.0,
+       95.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:c",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:c"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "full|sum|3|desc": {
+   "from_date": 1794952980000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 3, 'sum', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),3,'sum','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       100.0
+      ],
+      [
+       1794953040000.0,
+       100.0
+      ],
+      [
+       1794953100000.0,
+       100.0
+      ],
+      [
+       1794953160000.0,
+       100.0
+      ],
+      [
+       1794953220000.0,
+       100.0
+      ],
+      [
+       1794953280000.0,
+       100.0
+      ],
+      [
+       1794953340000.0,
+       100.0
+      ],
+      [
+       1794953400000.0,
+       100.0
+      ],
+      [
+       1794953460000.0,
+       100.0
+      ],
+      [
+       1794953520000.0,
+       100.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),3,'sum','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       10.0
+      ],
+      [
+       1794953040000.0,
+       19.0
+      ],
+      [
+       1794953100000.0,
+       28.0
+      ],
+      [
+       1794953160000.0,
+       37.0
+      ],
+      [
+       1794953220000.0,
+       46.0
+      ],
+      [
+       1794953280000.0,
+       55.0
+      ],
+      [
+       1794953340000.0,
+       64.0
+      ],
+      [
+       1794953400000.0,
+       73.0
+      ],
+      [
+       1794953460000.0,
+       82.0
+      ],
+      [
+       1794953520000.0,
+       91.0
+      ],
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:c}.rollup(avg, 60),3,'sum','desc')",
+     "interval": 60,
+     "length": 20,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),3,'sum','desc')",
+     "pointlist": [
+      [
+       1794952980000.0,
+       95.0
+      ],
+      [
+       1794953040000.0,
+       95.0
+      ],
+      [
+       1794953100000.0,
+       95.0
+      ],
+      [
+       1794953160000.0,
+       95.0
+      ],
+      [
+       1794953220000.0,
+       95.0
+      ],
+      [
+       1794953280000.0,
+       95.0
+      ],
+      [
+       1794953340000.0,
+       95.0
+      ],
+      [
+       1794953400000.0,
+       95.0
+      ],
+      [
+       1794953460000.0,
+       95.0
+      ],
+      [
+       1794953520000.0,
+       95.0
+      ],
+      [
+       1794953580000.0,
+       95.0
+      ],
+      [
+       1794953640000.0,
+       95.0
+      ],
+      [
+       1794953700000.0,
+       95.0
+      ],
+      [
+       1794953760000.0,
+       95.0
+      ],
+      [
+       1794953820000.0,
+       95.0
+      ],
+      [
+       1794953880000.0,
+       95.0
+      ],
+      [
+       1794953940000.0,
+       95.0
+      ],
+      [
+       1794954000000.0,
+       95.0
+      ],
+      [
+       1794954060000.0,
+       95.0
+      ],
+      [
+       1794954120000.0,
+       95.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:c",
+     "start": 1794952980000,
+     "tag_set": [
+      "svc:c"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "second half|max|2|desc": {
+   "from_date": 1794953580000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'max', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),2,'max','desc')",
+     "interval": 60,
+     "length": 10,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','desc')",
+     "pointlist": [
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794953580000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),2,'max','desc')",
+     "interval": 60,
+     "length": 10,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'max','desc')",
+     "pointlist": [
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794953580000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  },
+  "second half|mean|2|desc": {
+   "from_date": 1794953580000,
+   "group_by": [
+    "svc"
+   ],
+   "message": "",
+   "query": "top(avg:qlport.top.r1794952980.q{*} by {svc}.rollup(avg, 60), 2, 'mean', 'desc')",
+   "res_type": "time_series",
+   "resp_version": 1,
+   "series": [
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:b}.rollup(avg, 60),2,'mean','desc')",
+     "interval": 60,
+     "length": 10,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','desc')",
+     "pointlist": [
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       109.0
+      ],
+      [
+       1794953700000.0,
+       118.0
+      ],
+      [
+       1794953760000.0,
+       127.0
+      ],
+      [
+       1794953820000.0,
+       136.0
+      ],
+      [
+       1794953880000.0,
+       145.0
+      ],
+      [
+       1794953940000.0,
+       154.0
+      ],
+      [
+       1794954000000.0,
+       163.0
+      ],
+      [
+       1794954060000.0,
+       172.0
+      ],
+      [
+       1794954120000.0,
+       181.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:b",
+     "start": 1794953580000,
+     "tag_set": [
+      "svc:b"
+     ],
+     "unit": null
+    },
+    {
+     "aggr": "avg",
+     "attributes": {},
+     "display_name": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','desc')",
+     "end": 1794954179000,
+     "expression": "top(avg:qlport.top.r1794952980.q{svc:a}.rollup(avg, 60),2,'mean','desc')",
+     "interval": 60,
+     "length": 10,
+     "metric": "top(avg:qlport.top.r1794952980.q{*}.rollup(avg, 60),2,'mean','desc')",
+     "pointlist": [
+      [
+       1794953580000.0,
+       100.0
+      ],
+      [
+       1794953640000.0,
+       100.0
+      ],
+      [
+       1794953700000.0,
+       100.0
+      ],
+      [
+       1794953760000.0,
+       100.0
+      ],
+      [
+       1794953820000.0,
+       100.0
+      ],
+      [
+       1794953880000.0,
+       100.0
+      ],
+      [
+       1794953940000.0,
+       100.0
+      ],
+      [
+       1794954000000.0,
+       100.0
+      ],
+      [
+       1794954060000.0,
+       100.0
+      ],
+      [
+       1794954120000.0,
+       100.0
+      ]
+     ],
+     "query_index": 0,
+     "scope": "svc:a",
+     "start": 1794953580000,
+     "tag_set": [
+      "svc:a"
+     ],
+     "unit": null
+    }
+   ],
+   "status": "ok",
+   "times": [],
+   "to_date": 1794954180000,
+   "values": []
+  }
+ }
+}

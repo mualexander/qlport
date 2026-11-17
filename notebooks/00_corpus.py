@@ -386,6 +386,41 @@ print(f"promql occurrences with a range selector: {_ranged:,}")
 print(f"  window supplied by a template variable: {_var:,} "
       f"({_var / _ranged * 100:.1f}%)")
 
+# %% [markdown]
+# ### Which ranking functions does `top()` use, and in which direction?
+# §7 settles whether `top(...)` is expressible by checking the candidate expression for
+# every ranking function the corpus asks for, so which those are is a load-bearing fact
+# and was asserted rather than counted. Counted here: four functions, not the five the
+# probe covers, and two *directions* -- which matters more than the count, because
+# `topk` is the descending one and an ascending `top()` needs `bottomk`.
+
+# %%
+_TOPCALL = re.compile(r"\btop\s*\(")
+_RANKARGS = re.compile(r",\s*\d+\s*,\s*'([a-z0-9]+)'\s*,\s*'(asc|desc)'")
+_rank, _dir = Counter(), Counter()
+_top_occ = _asc_occ = 0
+for _text in df.loc[df.lang == "datadog", "text"]:
+    if not _TOPCALL.search(_text):
+        continue
+    _top_occ += 1
+    _args = _RANKARGS.findall(_text)
+    for _by, _d in _args:
+        _rank[_by] += 1
+    _dirs = {_d for _, _d in _args}
+    for _d in _dirs:
+        _dir[_d] += 1
+    _asc_occ += "asc" in _dirs
+# A query may carry two `top()` calls, so the per-function counts sum above _top_occ.
+_existing["nb00.top_occurrences"] = int(_top_occ)
+_existing["nb00.top_rank_functions"] = len(_rank)
+_existing["nb00.top_asc_occurrences"] = int(_asc_occ)
+_existing["nb00.top_desc_occurrences"] = int(_dir["desc"])
+for _by, _n in _rank.items():
+    _existing[f"nb00.top_rank_{_by}_calls"] = int(_n)
+print(f"top() occurrences: {_top_occ:,}; ranking functions: "
+      + ", ".join(f"{k} {v}" for k, v in _rank.most_common()))
+print(f"  ascending: {_asc_occ}  descending: {_dir['desc']}")
+
 # %%
 _QF.write_text(json.dumps(_existing, indent=1, sort_keys=True) + "\n")
 print("greedy ceilings near kappa:")

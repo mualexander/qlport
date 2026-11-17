@@ -408,6 +408,44 @@ an odd thing to have in a real tag set, so if the `web-` series does not appear 
 worth confirming that Datadog stored it at all before concluding anything about `*`.
 Query `sum:qlport.e5.star{probe:web-}` to check.
 
+## E10 — does `top()` do what the documentation says? (Rig B) — **done: yes**
+
+**Answer: yes, on all 22 selections, and the ranking is range-relative.** §7 classified
+`top()`'s 139 occurrences as unimplemented work on the strength of an expressibility
+argument with one measured half: the candidate expression was read off a real Prometheus,
+while Datadog's side of it was a reading of the documentation. That is the weaker kind of
+evidence and the kind this project has twice found wrong — the aggregation order and the
+bucket closure were both read off the documentation and both wrong — so the vendor was
+asked.
+
+Five series as a GAUGE, 20 points each at 60 s, chosen so that ranking over the window
+disagrees with ranking at an instant: a flat high series, a riser, a flat runner-up, a
+flat low series, and one with a single early spike. The workload lives in
+`src/qlport/harness/ranking.py` and is imported by both `scripts/verify_topk.py` and
+`scripts/datadog_top.py`, so the two halves of the comparison cannot drift apart; the
+tests pin each cached run to that one definition.
+
+| Claim | Reading |
+|---|---|
+| ranks by an aggregation over the whole queried range | **22/22** selections match, over five ranking functions × n ∈ {2,3} × both directions |
+| returns whole trajectories, not winning instants | the spiking series comes back with **all 20 buckets** under `max` |
+| the selection depends on the queried range | by `max`, the full window gives {riser, spike} and the last ten buckets give {riser, flat high} — while `mean` does not move, so the probe discriminates |
+
+The third row is the one that changes an argument rather than confirming one. §8 counts
+`top()` as a third instance of a translation needing context the query does not carry;
+that the context is load-bearing was asserted, and is now measured.
+
+Two corrections fell out of the corpus side rather than the account. The corpus uses
+**four** ranking functions, not the five §7 claimed — `mean` in 111 calls, `last` 34,
+`max` 15, `sum` 3, and no `min` at all. And 5 of the 139 occurrences rank **ascending**,
+which `topk` does not cover; `verify_topk.py` now probes `bottomk` for them, so the
+verified claim reaches all 139 rather than 134.
+
+  python scripts/datadog_top.py [--dry-run]
+
+Costs five custom metric series for one run, against the one or two this document asks
+for elsewhere: five is what a ranking needs, and they are one metric name used once.
+
 ## The dual-write replay — **done**
 
 Not one of the numbered checks, but the experiment they were all working towards.
@@ -450,6 +488,8 @@ curl -o NASA_access_log_Jul95.gz ftp://ita.ee.lbl.gov/traces/NASA_access_log_Jul
 | interval table confirmed | `ROLLUP_DEFAULT` cites a documented table; `DEFAULT_ROLLUP = 60.0` in notebook 03 becomes range-dependent and κ is recomputed per range |
 | `*` matches the empty string | §6 stands as written: `.+` has no glob, 238 refused occurrences |
 | `*` requires a character | `STAR_MATCHES_EMPTY = False` in `regular.py`; §6's table is recomputed by notebook 04, with `.*`-shaped patterns moving into the refusals and `.+`-shaped ones out |
+| **`top()` matches the documented rule (observed)** | §7's expressibility claim has two measured halves instead of one, and §8's "needs the dashboard's time range" stops being an assertion: narrowing the window moves the selection |
+| `top()` ranks by something else | 139 occurrences move from unimplemented work to the inexpressible column, which inverts §7's split and §8's comparison |
 
 ## Threats to validity
 

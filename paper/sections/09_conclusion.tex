@@ -50,22 +50,24 @@ the three above, and the difference is in the artefact rather than in the readin
 Nothing is left that was read from source and not then measured: Datadog's reset policy was taken from its
 open-source agent at a pinned commit and afterwards put to a running one.
 
-Seven things are measured against the vendor itself rather than assumed: the bucket
+Eight things are measured against the vendor itself rather than assumed: the bucket
 convention (left-closed and named by its start, the opposite of what this work assumed
 until it asked), the automatic rollup interval as a function of the query range, the
 default time aggregator of a bare query on a counter, whether a glob's \texttt{*} matches
 the empty string, where \texttt{.as\_rate()} sits relative to the rollup and to the space
-aggregation, what \texttt{.weighted()} computes, and the reset policy --- read first from
-the agent's source and then put to a running agent, which agreed with the reading. Four
-of the seven confirmed what the paper had assumed. Three did not: the bucket convention;
+aggregation, what \texttt{.weighted()} computes, what \texttt{top(...)} ranks by and over
+which window, and the reset policy --- read first from
+the agent's source and then put to a running agent, which agreed with the reading. Five
+of the eight confirmed what the paper had assumed. Three did not: the bucket convention;
 \texttt{.as\_rate()}, which turned out to divide the aggregated result rather than
 each series, and whose presence in a query turned out not to establish the metric's type
 at all, because Datadog accepts the modifier on a gauge and ignores it; and
 \texttt{.weighted()}, carried here as the largest gap in the catalogue until the account
-was asked and returned the same number with the modifier and without it. An eighth,
-whether \texttt{top(...)} is expressible at all, was settled against a real Prometheus
-rather than against Datadog, and decides which column $139$ corpus occurrences belong
-in.
+was asked and returned the same number with the modifier and without it. The last of the
+eight decides which column $139$ corpus occurrences belong in, and is the only one
+measured on both sides: over one workload, the candidate expression against a real
+Prometheus in $20$ cases and \texttt{top()} itself against Datadog in $22$, each
+agreeing with the documented rule throughout.
 
 One assumption is settled from the vendor's source tree rather than from its API, and
 it is the one that held of all the output. Every translation carries

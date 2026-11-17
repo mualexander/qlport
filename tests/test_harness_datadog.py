@@ -748,3 +748,109 @@ def test_the_two_reset_runs_differ_only_in_the_scrape_rate(e1, e1_fast):
     assert e1["cases"]["to100"]["consistent_with"] == \
         e1_fast["cases"]["to100"]["consistent_with"] == ["zero"]
     assert e1["provenance"]["step"] != e1_fast["provenance"]["step"]
+
+
+# ------------- top(): the vendor's own answer, not a model of its docs ---------
+#
+# `tests/test_harness.py` pins the Prometheus half of paper §7's `top()` argument. This
+# is the other half, which until now was a reading of the documentation -- the weaker
+# kind of evidence, and the kind this paper has twice found wrong (the aggregation order
+# and the bucket closure). `scripts/datadog_top.py` asks a real account.
+
+TOP = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog" / "top.json"
+
+
+@pytest.fixture(scope="module")
+def top_run() -> dict:
+    if not TOP.exists():  # pragma: no cover - run scripts/datadog_top.py
+        pytest.skip("top.json not recorded; run scripts/datadog_top.py (needs an account)")
+    return json.loads(TOP.read_text())
+
+
+def test_the_vendor_ranks_over_the_whole_queried_range(top_run):
+    """Datadog's documented rule, recomputed from the cache rather than trusted.
+
+    Every (function, n, direction) is re-predicted here through `harness/ranking.py` and
+    compared against the selection the account returned, so a stored verdict cannot
+    carry a result the recorded selections do not support.
+    """
+    from qlport.harness.ranking import model_rank
+
+    assert top_run["cases"], "no cases recorded"
+    for case in top_run["cases"]:
+        lo, hi = case["indices"]
+        want = model_rank(case["by"], case["n"], case["direction"], lo, hi)
+        assert case["model"] == want, case
+        assert case["selected"] == want, case
+        assert case["matches_model"], case
+    assert top_run["agreement"]["matching_model"] == top_run["agreement"]["cases"]
+
+
+def test_both_directions_and_every_probed_function_were_asked_of_the_vendor(top_run):
+    full = [c for c in top_run["cases"] if c["window"] == "full"]
+    covered = {(c["by"], c["n"], c["direction"]) for c in full}
+    for by in ("max", "mean", "min", "sum", "last"):
+        for n in (2, 3):
+            for direction in ("desc", "asc"):
+                assert (by, n, direction) in covered, (by, n, direction)
+
+
+def test_the_vendor_returns_whole_trajectories_not_winning_instants(top_run):
+    """What separates `top()` from a `topk`-shaped operator, measured.
+
+    Series `e` spikes at index 0 and sits at 1 for the other nineteen buckets. It is
+    selected by `max` and it comes back with all twenty points -- an operator that ranked
+    per instant would return it only where it was winning.
+    """
+    for case in top_run["cases"]:
+        lo, hi = case["indices"]
+        assert case["whole_trajectories"], case
+        assert all(n == hi - lo for n in case["points_per_series"].values()), case
+    spike = next(c for c in top_run["cases"] if c["window"] == "full"
+                 and (c["by"], c["n"], c["direction"]) == ("max", 2, "desc"))
+    assert "e" in spike["points_per_series"], spike
+    assert spike["points_per_series"]["e"] == top_run["provenance"]["n_points"], spike
+
+
+def test_the_selection_moves_with_the_queried_range(top_run):
+    """Why §8 calls the dashboard's time range a precondition rather than a detail.
+
+    Over all twenty buckets the top two by `max` are the riser and the spike; over the
+    last ten the spike is outside the window and the answer changes. `mean` is the
+    control: its selection does not move, so a run in which everything moved would be
+    an apparatus fault rather than this result.
+    """
+    rr = top_run["range_relative"]
+    assert set(rr) == {"max", "mean"}, sorted(rr)
+    assert rr["max"]["moved"] and rr["max"]["model_moves"], rr["max"]
+    assert not rr["mean"]["moved"] and not rr["mean"]["model_moves"], rr["mean"]
+    assert all(obs["as_model_predicts"] for obs in rr.values()), rr
+
+
+def test_the_vendor_stored_the_values_the_ranking_is_about(top_run):
+    """A ranking over numbers the server does not hold would prove nothing."""
+    assert top_run["control"]["stored_matches_input"] == \
+        {k: True for k in top_run["provenance"]["series"]}
+    assert {c["reported_interval"] for c in top_run["cases"]} == \
+        {top_run["provenance"]["rollup_seconds"]}
+
+
+def test_both_halves_of_the_comparison_saw_the_same_series(top_run):
+    """The Prometheus run and this one must share a workload or compare nothing.
+
+    `harness/ranking.py` is the single definition; `tests/test_harness.py` pins the
+    Prometheus cache to it and this pins the Datadog one.
+    """
+    from qlport.harness import ranking
+
+    prov = top_run["provenance"]
+    assert prov["series"] == {k: ranking.values(k) for k in ranking.SERIES}
+    assert (prov["n_points"], prov["step"]) == (ranking.N, ranking.STEP)
+
+
+def test_the_run_was_isolated_from_earlier_runs(top_run):
+    # E2's lesson: a metric name shared across runs lets one run read another's points.
+    prov = top_run["provenance"]
+    assert str(prov["t0"]) in prov["metric"], prov["metric"]
+    for case in top_run["cases"]:
+        assert prov["metric"] in case["expr"], case["expr"]

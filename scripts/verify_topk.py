@@ -14,7 +14,12 @@ The candidate is
     q and on(<labels>) topk(n, <agg>_over_time(q[RANGE] @ END))
 
 where `@` pins the ranking to one evaluation so that it does not drift across the graph,
-which is what makes the selection constant the way Datadog's is.
+which is what makes the selection constant the way Datadog's is. `bottomk` stands in for
+`topk` where the Datadog query ranks ascending, which 5 of the 139 occurrences do.
+
+The ranking functions probed are the five `harness/ranking.py` models. The corpus uses
+four of them -- `mean` 111 times, `last` 34, `max` 15 and `sum` 3 -- and `min` is here
+because the candidate has to hold for it, not because a dashboard asks for it.
 
 The workload is five series chosen so the ranking over the window disagrees with the
 ranking at individual instants --- a flat high series, a riser that ends highest, a flat
@@ -46,19 +51,15 @@ IMAGE = "prom/prometheus:v3.15.0"
 PORT = 19092                       # 19090 and 19091 belong to the other two scripts
 OUT = ROOT / "data" / "raw" / "topk" / "ranking.json"
 
-STEP, N, T0 = 60, 20, 1_700_000_000
+T0 = 1_700_000_000
 METRIC = "q"
 
-# value(i) for i in 0..N-1. Designed so that no two rankings coincide by accident.
-SERIES: dict[str, object] = {
-    "a": lambda i: 100.0,                      # flat and high: wins on mean, not on max
-    "b": lambda i: 10.0 + 9 * i,               # rises to the top: wins on last and max
-    "c": lambda i: 95.0,                       # flat runner-up: wins at early instants
-    "d": lambda i: 1.0,                        # flat and low: never wins
-    "e": lambda i: 200.0 if i == 0 else 1.0,   # one early spike: wins on max, loses mean
-}
-AGGS = {"max": "max_over_time", "mean": "avg_over_time", "min": "min_over_time",
-        "sum": "sum_over_time", "last": "last_over_time"}
+# The workload and the ranking model live in `harness/ranking.py`, because
+# `scripts/datadog_top.py` asks the vendor the same question about the same series and a
+# comparison between the two halves is only valid if the series are identical.
+from qlport.harness.ranking import (                                  # noqa: E402
+    N, PROMQL_OVER_TIME as AGGS, SERIES, STEP, model_rank,
+)
 
 
 def run(*cmd: str, **kw) -> subprocess.CompletedProcess:
@@ -124,14 +125,6 @@ def selected(raw: dict) -> list[str]:
     return sorted(x["metric"].get("svc", "?") for x in raw["data"]["result"])
 
 
-def model_top(by: str, n: int) -> list[str]:
-    """Datadog's ranking: aggregate each series over the whole range, take the top n."""
-    agg = {"max": max, "min": min, "sum": sum,
-           "mean": lambda v: sum(v) / len(v), "last": lambda v: v[-1]}[by]
-    scored = {k: agg([f(i) for i in range(N)]) for k, f in SERIES.items()}
-    return sorted(sorted(scored, key=lambda k: -scored[k])[:n])
-
-
 def main() -> int:
     if not shutil.which("docker"):
         print("docker not found; see the module docstring", file=sys.stderr)
@@ -171,17 +164,23 @@ def main() -> int:
 
         for by, fn in AGGS.items():
             for n in (2, 3):
-                expr = (f'{METRIC} and on(svc) '
-                        f'topk({n}, {fn}({METRIC}[{width}s] @ {end}))')
-                want = model_top(by, n)
-                got = {label: selected(query(base, expr, at))
-                       for label, at in probe_at.items()}
-                payload["cases"].append({
-                    "by": by, "n": n, "expr": expr, "model": want,
-                    "selected": got,
-                    "constant": len({tuple(v) for v in got.values()}) == 1,
-                    "matches_model": all(v == want for v in got.values()),
-                })
+                # The corpus uses both directions -- 5 of its 139 occurrences rank
+                # ascending -- and `topk` covers only one of them. `bottomk` is the
+                # counterpart, and asking for it is the difference between a claim about
+                # 134 occurrences and a claim about 139.
+                for direction, selector in (("desc", "topk"), ("asc", "bottomk")):
+                    expr = (f'{METRIC} and on(svc) '
+                            f'{selector}({n}, {fn}({METRIC}[{width}s] @ {end}))')
+                    want = model_rank(by, n, direction)
+                    got = {label: selected(query(base, expr, at))
+                           for label, at in probe_at.items()}
+                    payload["cases"].append({
+                        "by": by, "n": n, "direction": direction, "selector": selector,
+                        "expr": expr, "model": want,
+                        "selected": got,
+                        "constant": len({tuple(v) for v in got.values()}) == 1,
+                        "matches_model": all(v == want for v in got.values()),
+                    })
 
         # The translation anybody writes first, recorded so the difference is on file.
         for n in (2, 3):
@@ -203,7 +202,8 @@ def main() -> int:
     print(f"  {ok}/{len(payload['cases'])} ranking cases reproduce Datadog's top()")
     for c in payload["cases"]:
         mark = "ok " if c["matches_model"] else "NO "
-        print(f"  {mark} by={c['by']:<5} n={c['n']}  model={c['model']}  "
+        print(f"  {mark} by={c['by']:<5} n={c['n']} {c['direction']:<4} "
+              f"model={c['model']}  "
               f"got={sorted({tuple(v) for v in c['selected'].values()})}")
     for c in payload["naive"]:
         print(f"  naive topk({c['n']}, q): constant across range = {c['constant']}  "

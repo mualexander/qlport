@@ -77,7 +77,8 @@ worth calling a property of the language rather than an artefact of two rules.
 \S\ref{sec:gaps} shows that \texttt{top(...)} \emph{is} expressible in PromQL, so it stays
 on the engineering side of the ledger --- but the expression that denotes it needs the
 dashboard's time range twice over, once as a window and once as an \texttt{@} anchor, and
-the query states neither. Three constructs, arrived at independently, all turn out to be
+the query states neither. That the range is load-bearing rather than cosmetic is itself
+measured: narrowing the window moves which series Datadog's own \texttt{top()} returns. Three constructs, arrived at independently, all turn out to be
 translatable only relative to context the query does not carry. Each of the three would
 be exactly self-contained in PromQL.
 

@@ -595,6 +595,21 @@ _q["type_rate_occurrences"] = int(_td["occurrences"]["rate"])
 _q["type_wrong_pct_of_corpus"] = round(
     _td["wrong_occurrences"] / int(total_n) * 100, 1)
 
+# `top(...)` is the largest single entry in the unimplemented column, and whether it
+# belongs there turns on an expressibility claim that §7 now reads off both systems
+# rather than one: the candidate expression against a real Prometheus
+# (`scripts/verify_topk.py`) and `top()` itself against a real Datadog
+# (`scripts/datadog_top.py`), over the one workload `harness/ranking.py` defines.
+_tk = json.loads((ROOT / "data" / "raw" / "topk" / "ranking.json").read_text())
+_tv = json.loads((ROOT / "data" / "raw" / "datadog" / "top.json").read_text())
+_q["top_promql_cases"] = len(_tk["cases"])
+_q["top_promql_matching"] = sum(c["matches_model"] for c in _tk["cases"])
+_q["top_vendor_cases"] = int(_tv["agreement"]["cases"])
+_q["top_vendor_matching"] = int(_tv["agreement"]["matching_model"])
+_q["top_rank_functions_probed"] = len({c["by"] for c in _tk["cases"]})
+_q["top_workload_series"] = len(_tv["provenance"]["series"])
+_q["top_workload_buckets"] = int(_tv["provenance"]["n_points"])
+
 # Next to the generated tables rather than in data/processed, which is derived data and
 # gitignored: this is a paper input, and the check that reads it has to work on a fresh
 # clone before any notebook has run.
