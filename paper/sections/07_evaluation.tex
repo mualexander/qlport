@@ -237,9 +237,9 @@ on it can tell the two apart. Datadog returns $66.7$ with the modifier and witho
 
 So the translation of a query carrying it is the translation of the query without it,
 the front end drops the modifier as it already dropped \texttt{.fill(null)}, and $70$
-occurrences move from the inexpressible column to $\kappa$ --- which is the third time
-in this paper that a claimed language gap has turned out to be neither a gap nor even
-work. The residue is a caution rather than a result: a modifier that does nothing
+occurrences move from the inexpressible column to $\kappa$. That is the third claimed
+language gap in this paper to turn out not to be one, and the first to turn out not to
+be work either: the other two were implemented, and this one needed deleting. The residue is a caution rather than a result: a modifier that does nothing
 everywhere we can look may still do something somewhere we cannot, and what is measured
 is every metric type and query shape the rig can build, not every configuration Datadog
 has.
@@ -340,9 +340,13 @@ touching bare tag keys. Reading such a row as a statement about its own feature 
 have overstated the gaps, which is why the gap catalogue and not this table is the
 claim.
 
-\paragraph{How much of the $4.4\%$ is a language gap.}
-Separating the two kinds of refusal is the point of having codes at all, and on this
-corpus the split is lopsided. The refusals that are not unfinished work are
+\paragraph{How much of the $3.6\%$ is beyond reach.}
+Separating the kinds of refusal is the point of having codes at all, and on this
+corpus the split is lopsided. Three kinds arise and the catalogue keeps them apart:
+what Prometheus does not \emph{hold} (the percentile aggregators), what PromQL cannot
+\emph{say} (two constructs), and what this translator has not \emph{built}
+(everything else). A fourth is possible and empty here --- a query Datadog itself
+rejects, which Remark~\ref{rem:third-refusal} describes. The refusals that are not unfinished work are
 the percentile aggregators ($34$, blocked by information rather than by expressiveness
 --- Corollary~\ref{cor:quantile}), \texttt{.fill} interpolation ($36$) and tag-key
 globs ($31$): $101$ occurrences, $1.2\%$ of the corpus. The other
@@ -578,24 +582,30 @@ aggregator and the later \texttt{.rollup} overwrote it. Third, \texttt{.as\_rate
 emitted inside the space aggregation; that is invisible for $\mathsf{sum}$,
 $\mathsf{avg}$, $\mathsf{min}$ and $\mathsf{max}$, which commute with scaling, and the
 one $\mathsf{count}$ shape in the corpus disagreed by exactly $1-1/\Delta$
-(Remark~\ref{rem:gauge}). Fourth, a binary operation between a grouped and an ungrouped
+(Remark~\ref{rem:as-rate-placement}). Fourth, a binary operation between a grouped and an ungrouped
 vector was emitted with PromQL's default matching, which pairs nothing and returns the
 empty vector where Datadog broadcasts --- silently, since an empty result is not an
 error; the two corpus occurrences now carry an explicit matching clause. None of the four
 is a gap in either language. All four are translator defects of the kind that a coverage
 number cannot see, because a wrong translation and a right one are both translations.
 
-Before any of the four was visible, three other systematic disagreements had to be
-chased down, and every one of them was the harness rather than the systems. That ratio is
-the honest summary of the exercise, and the more useful lesson about differential rigs
-than the agreement rate is. Metric names
-shared across runs let Datadog see two runs' points where Prometheus saw one, which
-looked like a uniform $30\%$ error. A global $60$~s bucket grid compared a
-\texttt{.rollup(sum, 300)} bucket against a PromQL window covering a fifth of its span,
-which looked like $21$ broken shapes. Tag keys containing dots were submitted in PromQL's
-normalised spelling while the Datadog query still asked for the dotted one, so Datadog
-grouped by a tag that was not there. In each case the parameter was read from somewhere
-other than the query that stated it.
+Six systematic failures came out of this rig and every one was the harness rather than
+the systems: three had to be cleared before any of the four defects was visible at all,
+and three more surfaced as the run was tightened. That ratio is the honest summary of
+the exercise, and a more useful lesson about differential rigs than the agreement rate
+is. Metric names shared across runs let Datadog see two runs' points where Prometheus
+saw one, which looked like a uniform $30\%$ error. A global $60$~s bucket grid compared
+a \texttt{.rollup(sum, 300)} bucket against a PromQL window covering a fifth of its
+span, which looked like $21$ broken shapes. Reading a group's value off the query's
+scope rather than the response's tag set took the glob the query asked for instead of
+the value it matched, which looked like $32$ shapes whose groups did not line up. Tag
+keys containing dots were submitted in PromQL's normalised spelling while the Datadog
+query still asked for the dotted one, so Datadog grouped by a tag that was not there. A
+scope term requiring a tag to be non-empty was satisfied by leaving the tag off, which
+Prometheus reads as empty, so that side selected nothing. And a rate limit from the API
+was recorded as a shape that could not be compared. In every case a parameter was read
+from somewhere other than the place that stated it --- which is the same sentence as
+\S\ref{sec:caveats}'s, about a rig instead of a query.
 
 The run does not cover everything, and Table~\ref{tab:differential} says so rather than
 quietly dropping what it misses. One shape states a $1800$~s rollup, which the run's

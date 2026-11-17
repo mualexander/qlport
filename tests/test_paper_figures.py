@@ -172,7 +172,7 @@ ALLOWED: dict[float, str] = {
     7.5: "unregistered (nb 00): formulas containing arithmetic",
     6.6: "unregistered (nb 00): as_count to as_rate ratio",
     4.8: "unregistered (nb 00): formulas with a numeric constant",
-    4.4: "unregistered (nb 03): the bottom share",
+    3.6: "unregistered (nb 03): the bottom share",
     2.7: "unregistered (nb 01): PromQL queries the first six features complete",
     1.68: "unregistered (nb 02): worst relative error under a reset",
     1.4: "unregistered (nb 03): points of kappa the disjunction rule closed",
@@ -189,6 +189,8 @@ ALLOWED: dict[float, str] = {
 # entry would license the stale value *anywhere* -- and a stale kappa in the abstract is
 # exactly the bug this file exists to catch. The value and the place are both the claim.
 ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
+    542: ("the four misclassified episodes, less the overlap between two of them",
+          {"08_discussion.tex"}),
     348: ("refusals under the commutation argument",
           {"01_introduction.tex", "05_translation.tex", "08_discussion.tex"}),
     124: ("disjunctive scopes before prop:disjunction",

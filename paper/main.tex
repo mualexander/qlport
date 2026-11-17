@@ -20,9 +20,10 @@ define an intermediate representation with a denotation, and state soundness rel
 an \emph{ingestion mapping}, because the two systems do not store the same thing: a
 Prometheus counter is a running total and a Datadog counter is a sequence of
 per-interval deltas. Every refusal carries a typed gap code, and the resulting catalogue
-separates what the target cannot express from what we have not built. Over $28{,}490$
+separates what the target does not hold from what it cannot say and from what we have
+not built. Over $28{,}490$
 queries extracted from published dashboards, $96.3\%$ of Datadog query occurrences
-translate exactly; the shortfall is $1.2\%$ inexpressible against $2.4\%$ unimplemented,
+translate exactly; the shortfall is $1.2\%$ beyond reach against $2.4\%$ unimplemented,
 so in the direction teams travel the cost is engineering. The language-design artefact
 lies elsewhere: $96.9\%$ of our translations depend on a rollup interval the query omits
 and every one on a metric type it omits, because a Datadog query is not self-contained.

@@ -27,13 +27,17 @@ information barrier --- Prometheus does not hold what the query reads
 (Corollary~\ref{cor:quantile}) --- and no amount of work on either language removes
 it. A language-design story cannot rest on that.
 
-It is also worth noticing how nearly this paper reported the opposite. Two earlier
-versions of the translator refused far more: one had the aggregation order backwards and
-refused $348$ occurrences on the strength of a commutation argument
-(\S\ref{sec:rollup-order}), and one refused all $124$ disjunctive scopes as inexpressible
-when $120$ of them were a single regex matcher away (\S\ref{sec:gaps}). Both would have
-produced a larger ``inexpressible'' figure and a more quotable claim. Neither refusal was
-about the languages.
+It is also worth noticing how nearly this paper reported the opposite, and how often.
+Four times a refusal or a classification put something in the inexpressible column that
+did not belong there: the aggregation order backwards, refusing $348$ occurrences on a
+commutation argument (\S\ref{sec:rollup-order}); all $124$ disjunctive scopes called a
+language gap when $120$ were a single regex matcher away (\S\ref{sec:gaps});
+\texttt{.weighted()} called inexpressible for $70$ occurrences when it computes nothing
+(Remark~\ref{rem:weighted}); and the four surviving cross-key disjunctions counted
+against PromQL when \S\ref{sec:disjunction} says how PromQL expresses them. The fourth is a residue of the second, so together they
+are $542$ distinct occurrences, more than six points of $\kappa$, every one an error in
+the direction that would have made the thesis look better. None was a fact about the
+languages.
 
 \subsection{The cost is real, and it is that a query does not say what it means}
 

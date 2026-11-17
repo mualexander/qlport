@@ -110,8 +110,11 @@ regular expression is decidable, by an argument about shortest words, and the
 impossibility results above. The construction that makes most of it work is one fact used
 in both directions.
 \item \textbf{A gap catalogue, split (\S\ref{sec:gaps}).} Every refusal carries a code,
-and the catalogue separates what PromQL cannot express from what we have not built ---
-a distinction most translation work leaves implicit.
+and the catalogue separates three things most translation work runs together: what the
+target system does not \emph{hold}, what PromQL cannot \emph{say}, and what we have not
+\emph{built}. The first was the surprise: \S\ref{sec:ingestion} argues the information
+barrier runs the other way, and one Datadog construct turns out to sit on the wrong side
+of it.
 \item \textbf{Coverage on real dashboards (\S\ref{sec:evaluation}).} $\kappa$ over the
 whole corpus, by occurrence rather than by distinct string, with the implementation order
 that produced it and the features that cost the remainder.
@@ -119,15 +122,19 @@ that produced it and the features that cost the remainder.
 
 \paragraph{A note on method.}
 One discipline runs through all of it and is worth stating in advance, because this paper
-twice got it wrong. A translator's refusal looks like a fact about the languages and is
-in the first instance a fact about the translator. Separating the two takes something
+got it wrong four times. A translator's refusal looks like a fact about the languages and
+is in the first instance a fact about the translator. Separating the two takes something
 independent: a proof that no target expression exists, a decision procedure that agrees,
-or an implementation that removes the refusal and so demonstrates it was never a gap. An
-earlier version of this work refused $348$ query occurrences on a commutation argument
-that the real evaluation order never raises, and a later one reported all $124$
-disjunctive scopes as a language gap when $120$ of them were a single regex matcher away.
-Both would have produced a stronger-sounding claim. \S\ref{sec:gaps} and
-\S\ref{sec:glob-corpus} report which refusals now have which warrant.
+or an implementation that removes the refusal and so demonstrates it was never a gap.
+An earlier version of this work refused $348$ query occurrences on a commutation argument
+that the real evaluation order never raises; a later one reported all $124$
+disjunctive scopes as a language gap when $120$ of them were a single regex matcher away;
+a third called \texttt{.weighted()} inexpressible for $70$ occurrences when the modifier
+turns out to compute nothing at all; and a fourth counted four cross-key disjunctions as
+beyond PromQL two paragraphs from the sentence explaining how PromQL says them. All four
+would have produced a stronger-sounding claim, and all four erred in the same direction.
+\S\ref{sec:gaps} and \S\ref{sec:glob-corpus} report which refusals now have which
+warrant.
 
 \paragraph{Road map.}
 \S\ref{sec:background} places the problem among query-translation and expressiveness
