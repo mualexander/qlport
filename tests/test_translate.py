@@ -257,7 +257,9 @@ def test_emitted_promql_parses_across_the_corpus():
             continue
         p.parse(out)                          # raises if any translation is not PromQL
         emitted += 1
-    assert emitted > 3000, emitted            # the kernel really does carry the corpus
+    # Pinned, not floored. `> 3000` would have passed after losing well over half the
+    # translated corpus, which is not what "the kernel carries the corpus" means.
+    assert emitted == 7307, emitted
 
 
 # --- meaning: the emitted form agrees with Datadog's rollup ---------------------------
@@ -325,7 +327,7 @@ def test_lowering_never_exposes_a_bare_counter_selector():
                 continue
             assert selects_are_wrapped(e), text
             checked += 1
-    assert checked > 7_000, checked
+    assert checked == 7551, checked           # pinned for the same reason as above
 
 
 # --- single-label disjunction ---------------------------------------------------------
@@ -467,12 +469,23 @@ def test_a_hyphen_in_a_label_value_is_not_an_operator():
     # The property, not a literal: two queries of identical structure must emit
     # identical structure, so the only difference is the tag value itself.
     assert plain.replace('"miss"', "@") == hyphen.replace('"hit-wait"', "@")
-    assert "(avg_over_time" not in plain or plain.count("(") == hyphen.count("(")
+
+    # The form above is one the fix does not change, so on its own it pins nothing:
+    # reverting `_blank_strings` leaves it byte-identical. This one does change --
+    # without the fix the hyphen is read as an operator and the operand is wrapped.
+    scaled = translate("100 * sum:x{result:hit-wait}.rollup(avg, 60)")
+    assert scaled == "100 * sum(avg_over_time(x{result=\"hit-wait\"}[60s]))", scaled
+    assert "((" not in scaled
 
 
 def test_a_real_operator_still_parenthesises():
-    got = translate("sum:x{*} / sum:y{*}")
-    assert "(" in got and ")" in got
+    """An operand that really does contain an operator must be wrapped.
+
+    The old form here was `sum:x{*} / sum:y{*}`, whose parentheses come from the
+    aggregations either way, so it held whatever `_atom` did.
+    """
+    got = translate("(sum:a{*} / sum:b{*}) * 2")
+    assert got == "(sum(avg_over_time(a[60s])) / sum(avg_over_time(b[60s]))) * 2", got
 
 
 # --- a known counter reduced by something other than sum -------------------------
@@ -718,3 +731,105 @@ def test_the_unsupported_function_code_is_now_only_unfinished_work():
     for ddq in ("top(avg:x{*}, 10, 'mean', 'desc')", "per_minute(sum:x{*})"):
         got = translate(ddq)
         assert isinstance(got, Bottom) and got.gap is Gap.UNSUPPORTED_FUNCTION, ddq
+
+
+# --- behaviours the suite did not constrain ------------------------------------------
+# Each of these was found by deliberately breaking the source and watching all 547
+# tests pass. They are grouped here rather than scattered because what they have in
+# common is the reason they were missed: no corpus query reaches any of them, so only
+# a unit test can hold them.
+
+
+def test_fill_null_stays_inside_kappa():
+    """`.fill(null)` is the default and changes nothing, so it must not be refused.
+
+    Refusing every `.fill` -- `null` included -- left the whole suite green, while
+    moving the 36-occurrence FILL_INTERPOLATION row and everything it is compared
+    against in the gap catalogue.
+    """
+    assert translate("avg:x{*}.fill(null)") == "avg(avg_over_time(x[60s]))"
+    for mode in ("zero", "last", "linear", "0"):
+        out = translate(f"avg:x{{*}}.fill({mode})")
+        assert isinstance(out, Bottom) and out.gap is Gap.FILL_INTERPOLATION, mode
+
+
+def test_a_colon_in_a_grouping_key_is_mangled_away():
+    """PromQL label names forbid `:` where Datadog tag keys allow it (lem:scope).
+
+    The test that claimed this used `kube_app.name` and `openai.request.model`,
+    neither of which contains a colon.
+    """
+    assert label_name("a:b") == "a_b"
+    assert label_name("http:status:code") == "http_status_code"
+
+
+def test_an_unknown_rollup_aggregator_refuses_rather_than_raising():
+    """rem:one-gap says every failure is a Bottom carrying one code, never an exception."""
+    out = translate("avg:x{*}.rollup(median, 60)")
+    assert isinstance(out, Bottom), out
+    assert out.gap is Gap.UNSUPPORTED_FUNCTION
+
+
+def test_a_star_inside_a_membership_list_is_tag_presence():
+    """`k IN (v, *)` means "k is v or k is anything", i.e. presence -- not match-all.
+
+    Mapping the `*` member to the scope-level match-all dropped the key constraint
+    altogether, so the emitted selector also matched series carrying no such tag. The
+    `or` spelling, which prop:disjunction calls equivalent, was already correct, so the
+    two spellings disagreed.
+    """
+    presence = 'avg(avg_over_time(x{a=~".+"}[60s]))'
+    assert translate("avg:x{a:p or a:*}") == presence
+    assert translate("avg:x{a IN (p,*)}") == presence
+    assert translate("avg:x{a IN (*)}") == presence
+    assert translate("avg:x{a NOT IN (p,*)}") == 'avg(avg_over_time(x{a!~".+"}[60s]))'
+
+
+def test_an_all_star_glob_is_presence_not_dot_star():
+    """lem:scope's proof turns on presence being `.+`: `.*` also matches an absent label."""
+    presence = 'avg(avg_over_time(x{a=~".+"}[60s]))'
+    for q in ("avg:x{a:*}", "avg:x{a:**}", "avg:x{a IN (p,**)}"):
+        assert translate(q) == presence, q
+
+
+def test_a_nested_binary_operation_carries_the_finer_operands_keys():
+    """`chi` of a BinOp feeds the matching clause of any operation enclosing it.
+
+    Swapping which side's key set a BinOp reports left the suite green, because every
+    binary-operator test used a single top-level operation whose own key set is never
+    read by anything.
+    """
+    got = translate("(avg:a{*} by {g,h} / avg:b{*} by {g}) / avg:c{*} by {g}")
+    assert got.count("group_left()") == 2, got
+    assert "on(g)" in got
+
+
+def test_the_reachable_gap_codes_are_the_ones_the_catalogue_claims():
+    """The gap catalogue is organised around which codes an emitter can raise.
+
+    `diagnostics.py` states the partition in prose and names `grep -rn 'Gap[.]'` as the
+    check, which nothing ran: the docstring said ten reachable while eleven were, and
+    UNTESTED_LOOKBACK appeared in neither list. A code that silently becomes reachable
+    adds a row to §7's catalogue; one that stops being reachable removes a claim.
+    """
+    import re
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parent.parent / "src" / "qlport"
+    referenced = {m.group(1)
+                  for f in src.rglob("*.py")
+                  for m in re.finditer(r"Gap\.([A-Z_]+)", f.read_text())}
+
+    # Raised by the Datadog -> PromQL path, as caveats or as refusals.
+    assert referenced == {
+        "UNSUPPORTED_FUNCTION", "LABEL_NAME_GLOB", "SCOPE_DISJUNCTION", "PHI_QUANTILE",
+        "FILL_INTERPOLATION", "ROLLUP_DEFAULT", "ROLLUP_ALIGNMENT",
+        "METRIC_TYPE_UNKNOWN", "COUNTER_RESET", "ANCHORED_VERSION", "PHI_SERIES_START",
+    }, sorted(referenced)
+
+    # Declared because the paper argues about them; nothing raises them here.
+    declared = {g.name for g in Gap}
+    assert declared - referenced == {
+        "PHI_ABSOLUTE", "OFFSET", "SUBQUERY", "MANY_TO_ONE", "RATE_EXTRAPOLATION",
+        "REGEX_NOT_GLOB", "UNTESTED_LOOKBACK",
+    }, sorted(declared - referenced)

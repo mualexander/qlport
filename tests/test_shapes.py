@@ -67,8 +67,12 @@ def test_grouping_produces_several_series_so_aggregation_has_work():
     assert got.group_keys == ("host",)
 
 
-def test_a_grouping_key_the_scope_pins_keeps_its_value():
-    """Varying it would make the query select nothing, which is the opposite of useful."""
+def test_a_grouping_key_the_scope_pins_keeps_its_value_in_the_ir():
+    """Varying it would make the query select nothing, which is the opposite of useful.
+
+    Named apart from the Datadog-text test of the same property further down: the two
+    shared a name, so this one was shadowed and never ran.
+    """
     got = instantiate(rolled(sel((ir.Matcher("host", "=", "h1"),)), keys=("host",)))
     assert got.ok
     assert {s.labels["host"] for s in got.series} == {"h1"}

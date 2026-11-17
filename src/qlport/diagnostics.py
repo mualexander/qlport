@@ -3,11 +3,13 @@
 The codes double as the rows of the gap catalogue (paper §5) and the failure
 breakdown for κ (paper §7), so add a code rather than reusing a vague one.
 
-Ten of these are reachable from the Datadog → PromQL emitter; the rest name gaps the
-paper argues about but no implemented path raises. PHI_ABSOLUTE, OFFSET, SUBQUERY,
+Eleven of these are reachable from the Datadog → PromQL emitter; the rest name gaps
+the paper argues about but no implemented path raises. PHI_ABSOLUTE, OFFSET, SUBQUERY,
 MANY_TO_ONE and RATE_EXTRAPOLATION belong to the reverse direction, and REGEX_NOT_GLOB
 to §6's regex → glob conversion, which `regular.py` now decides; the code stays
-unreachable here because the reverse-direction emitter is not built. Kept because the
+unreachable here because the reverse-direction emitter is not built. UNTESTED_LOOKBACK
+belongs to the differential harness, which reports the condition in its own status
+column rather than as a Gap, so nothing raises it either. Kept because the
 paper names them, not because anything returns them: `grep -rn 'Gap[.]'` is the check on
 which is which.
 

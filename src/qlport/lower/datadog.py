@@ -7,7 +7,7 @@ scope terms, the space aggregators, `by {...}`, `.as_count()`, `.as_rate()` and
 
 That 87% is a statement about a *feature set* -- what a translator limited to those
 constructs would finish -- and is not the reach of paper §5's kernel, which is a
-statement about IR shape and covers 94.6%. A query using a glob or a boolean scope is
+statement about IR shape and covers 95.4%. A query using a glob or a boolean scope is
 outside the first and inside the second. The two are easy to conflate and an earlier
 draft of §5 did.
 
@@ -113,7 +113,10 @@ def _tag_matchers(term: str, *, negated: bool) -> tuple[ir.Matcher, ...]:
     if is_glob(key):
         _refuse(Gap.LABEL_NAME_GLOB, term)
     lab = label_name(key)
-    if not sep or value == "*":
+    if not sep or _is_all_stars(value):
+        # A bare key, `k:*` or any all-star glob asks for the tag to be present. The
+        # matcher has to be `.+`: `.*` also matches a series carrying no such label,
+        # which is the reading paper lemma lem:scope's proof explicitly rules out.
         return (ir.Matcher(lab, "!~" if negated else "=~", ".+"),)
     if is_glob(value):
         return (ir.Matcher(lab, "!~" if negated else "=~", glob_to_regex(value)),)
@@ -134,7 +137,14 @@ def _tag_matchers(term: str, *, negated: bool) -> tuple[ir.Matcher, ...]:
 _PRESENT = ".+"   # the tag is present, whatever its value
 
 
+def _is_all_stars(value: str) -> bool:
+    """`*`, `**`, ... -- a glob whose language is every value, i.e. tag presence."""
+    return value != "" and set(value) == {"*"}
+
+
 def _value_regex(value: str) -> str:
+    if _is_all_stars(value):
+        return ".+"
     return glob_to_regex(value) if is_glob(value) else re.escape(value)
 
 
@@ -178,7 +188,12 @@ def _one_label_disjunction(pairs: list[tuple[str, str] | None], *, negated: bool
     """
     if any(p is None for p in pairs):
         if negated:
-            # `NOT (a:1 OR *)` excludes every series; PromQL cannot say "match nothing".
+            # `NOT (a:1 OR *)` excludes every series. PromQL *can* denote an empty
+            # selection -- a contradictory matcher pair such as `a="",a!=""` does, and
+            # Prometheus accepts it because one matcher is non-empty -- so this is
+            # unimplemented work rather than an expressiveness gap, which is the column
+            # the catalogue puts it in. An earlier comment here claimed PromQL cannot
+            # say "match nothing", which would have made it a gap in the language.
             _refuse(Gap.UNSUPPORTED_FUNCTION, "negated match-all")
         return ()
     keys = {k for k, _ in pairs}
@@ -217,7 +232,11 @@ def _scope(node, *, negated: bool = False) -> tuple[ir.Matcher, ...]:
         if any(":" in v for v in values):
             # `k IN (a:1)` would be a tag inside a tag; Datadog's IN takes bare values.
             _refuse(Gap.SCOPE_DISJUNCTION, "IN (...) over a compound term")
-        pairs = [None if v == "*" else (key, _value_regex(v)) for v in values]
+        # Every member is a value of `key`, so `*` here means "any value of key",
+        # i.e. presence -- not the scope-level match-all that `None` stands for. An
+        # earlier version mapped it to None, which dropped the constraint and selected
+        # series carrying no such tag at all.
+        pairs = [(key, _value_regex(v)) for v in values]
         return _one_label_disjunction(pairs, negated=negated != inverted,
                                       detail="IN (...) across tag keys")
     _refuse(Gap.UNSUPPORTED_FUNCTION, f"scope node {data}")

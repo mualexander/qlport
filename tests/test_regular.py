@@ -11,6 +11,7 @@ independent agrees.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -40,14 +41,26 @@ def test_a_question_mark_in_a_glob_is_a_literal():
     assert glob_to_regex("a?b") == r"a\?b"
 
 
-def test_the_emission_and_comparison_renderings_denote_one_language():
+@pytest.mark.parametrize("glob,yes,no", [
+    ("kube-dns",  ["kube-dns"],            ["kube-dnsx", "kubedns", ""]),
+    ("istiod-*",  ["istiod-", "istiod-a"], ["istiod", "xistiod-a"]),
+    ("a.b",       ["a.b"],                 ["axb", "ab"]),
+    ("x*y",       ["xy", "xaby"],          ["x", "y", "xyz"]),
+    ("a+b",       ["a+b"],                 ["ab", "aab"]),
+])
+def test_the_emission_and_comparison_renderings_denote_one_language(glob, yes, no):
+    """Both renderings must accept the same strings, checked by membership.
+
+    This compared `_glob_for_comparison(g)` with itself, which is true of anything.
+    The two renderings cannot be compared as strings -- the emitted form carries
+    escapes the decider's parser rejects -- so the language is checked directly.
+    """
     from qlport.regular import _glob_for_comparison
-    for g in ("kube-dns", "istiod-*", "a.b", "x*y", "a+b"):
-        assert equivalent(_glob_for_comparison(g), _glob_for_comparison(g))
-        # The emitted form carries redundant escapes the decider's parser rejects; what
-        # matters is that the two forms are the same language where both parse.
-        if "-" not in g and "+" not in g:
-            assert glob_to_regex(g) == _glob_for_comparison(g)
+    for rendering in (glob_to_regex(glob), _glob_for_comparison(glob)):
+        for s in yes:
+            assert re.fullmatch(rendering, s), (rendering, s)
+        for s in no:
+            assert not re.fullmatch(rendering, s), (rendering, s)
 
 
 # ---------------------------------------------------------------- anchors
@@ -155,8 +168,15 @@ def test_no_glob_confines_a_star_to_part_of_the_alphabet():
 ])
 def test_shortest_word_and_its_uniqueness(regex, word, unique):
     got, is_unique = shortest_word(regex)
-    assert len(got) == len(word)
     assert is_unique is unique
+    if unique:
+        # When the shortest word is unique it is a specific string, and the glob
+        # construction reads its characters -- so the content is the claim, not the
+        # length. Asserting only the length let a mutation returning the wrong
+        # character survive.
+        assert got == word
+    else:
+        assert len(got) == len(word)
 
 
 def test_the_empty_language_has_no_shortest_word():
@@ -240,12 +260,14 @@ def test_the_proposer_and_the_complete_procedure_never_disagreed(crosscheck):
 
 
 def test_the_cross_check_actually_reached_most_of_the_corpus(crosscheck):
-    tally = crosscheck["tally"]
-    agreed = sum(n for k, n in tally.items() if k.startswith("agree:"))
-    assert agreed >= 150, tally
-    # And it covered all three outcomes, not just the easy ones.
-    for kind in ("single", "union", "none"):
-        assert tally.get(f"agree:{kind}", 0) > 0, tally
+    """The per-outcome tally is quoted in the paper, so it is pinned figure by figure.
+
+    A floor of 150 with a positive count per outcome would have passed while the
+    cross-check silently degraded by eighteen patterns.
+    """
+    assert crosscheck["tally"] == {
+        "agree:single": 60, "agree:union": 63, "agree:none": 45, "not-reached": 15,
+    }, crosscheck["tally"]
 
 
 def test_the_cross_check_was_run_under_the_reading_the_paper_states(crosscheck):
@@ -279,3 +301,43 @@ def test_dropping_escapes_does_not_change_the_language():
     from qlport.regular import drop_redundant_escapes
     for r in (r"kube\-system", r"a\-b|c\-d", r"x\-"):
         assert equivalent(r.replace("\\-", "-"), drop_redundant_escapes(r))
+
+
+# --- the gate that makes "a returned glob is exact" true ------------------------------
+# `regex_to_globs` proposes a glob set from the regex's syntax and then *decides*
+# equivalence before returning it. §6 rests on that gate: it is what makes a returned
+# glob exact and a refusal a statement about the proposer rather than about the
+# languages. Every other test here feeds it regexes the proposer already gets right, so
+# the gate itself was dead code as far as the suite was concerned -- disabling it, or
+# returning a known-wrong proposal as verified, left all 547 tests passing.
+
+
+def test_a_wrong_proposal_is_refused_by_the_equivalence_gate(monkeypatch):
+    """Force the proposer to lie and check the gate catches it."""
+    import qlport.regular as R
+
+    monkeypatch.setattr(R, "_pattern_globs", lambda pattern: ["definitely-not-abc"])
+    got = R.regex_to_globs("abc")
+    assert not got.verified and not got.exact
+    assert got.reason == "proposal-not-equivalent"
+    assert got.globs == ()
+
+
+def test_a_wrong_proposal_is_refused_even_when_it_is_close(monkeypatch):
+    """A near-miss is the case a syntax-directed proposer would actually produce."""
+    import qlport.regular as R
+
+    # `ab.*` denotes ab-anything; proposing the bare literal `ab` drops every longer
+    # word, which only a language-equivalence check notices.
+    monkeypatch.setattr(R, "_pattern_globs", lambda pattern: ["ab"])
+    got = R.regex_to_globs("ab.*")
+    assert got.reason == "proposal-not-equivalent", got
+
+
+def test_the_gate_passes_a_correct_proposal_through(monkeypatch):
+    """The companion: the gate must not refuse everything, or the above is vacuous."""
+    import qlport.regular as R
+
+    monkeypatch.setattr(R, "_pattern_globs", lambda pattern: ["ab*"])
+    got = R.regex_to_globs("ab.*")
+    assert got.verified and got.exact and got.globs == ("ab*",)
