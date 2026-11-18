@@ -1,0 +1,23 @@
+\begin{remark}[Two conditions that coincide in this corpus without being one]\label{rem:counter-caveats}
+\texttt{COUNTER\_RESET} marks the $23.6\%$ that use the cumulative-difference form of
+Proposition~\ref{prop:offset}, exact unless a counter resets inside the window;
+Table~\ref{tab:rollup-live} measures what that costs when one does, and
+Proposition~\ref{prop:anchored} removes it at the price of a server started with an
+experimental feature enabled --- a stronger condition than a version number, and
+Remark~\ref{rem:anchored-flag} is about how we came to believe otherwise.
+
+\texttt{PHI\_SERIES\_START} marks the same $23.6\%$, and marks it for a second reason
+that went unrecorded until this draft. The cumulative difference needs a sample
+\emph{before} the bucket to subtract, and a series younger than the window has none, so
+the expression returns no result where Datadog returns the deltas it does hold
+(Remark~\ref{rem:series-start}). The code existed from the start --- it was written for
+the reverse direction --- and the counter rules had been emitting without it. The two
+shares coincide because in this corpus the same translations carry both: every counter
+rule here is the cumulative difference, which needs a predecessor sample and a
+reset-free window alike. They are not the same condition, and the anchored form
+separates them --- it discharges both for a $\mathsf{sum}$ rollup, and only the reset
+one for the mean-of-deltas rule, whose denominator counts samples where Datadog counts
+deltas however the numerator is written. Where it does discharge both, its
+experimental-flag requirement is a better bargain than
+Remark~\ref{rem:anchored-flag} alone suggests.
+\end{remark}

@@ -1,0 +1,23 @@
+\begin{remark}[Three preconditions of the run that were wrong]\label{rem:differential-fixes}
+Three preconditions of this run were wrong in the version of it reported before the
+seventh reading of the apparatus, and all three made agreement easier to obtain. The
+scrape grid began at an arbitrary whole second, and off a bucket boundary a left-closed
+Datadog bucket and a right-closed PromQL window hold the same samples --- so the
+evaluation instant could have been wrong by up to half a scrape and still agreed on every
+bucket, which makes the one convention this paper got wrong in draft the one the
+corpus-scale test was silent about. It is now floored to a multiple of $300$\,s, which is
+a multiple of every interval this corpus states below the run's window, so the samples
+land on boundaries and the instant is load-bearing. A scope requiring a tag merely to be
+\emph{present} pinned that tag to one value, so eight shapes grouping by the very key
+they test for presence were compared over a single series and their space aggregation was
+never exercised. And the rollup interval was not part of a shape, so $70$ occurrences were
+tested at a window width they do not state. All three are fixed, the shape count rose
+from $325$ to $335$ as the finer abstraction split six classes, and then to $332$ when
+the empty-value scopes of Remark~\ref{rem:empty-tag} left the translated set, and the
+agreement did not
+move: $329$ of $329$, on a grid where the closure convention is visible and where every
+occurrence is tested at its own width. The one occurrence class the fix removed rather
+than repaired is the second \texttt{window-too-short} row --- a $3600$\,s rollup, which
+the old abstraction had folded in with $300$\,s and credited as agreeing, and which this
+rig provably cannot hold two buckets of.
+\end{remark}

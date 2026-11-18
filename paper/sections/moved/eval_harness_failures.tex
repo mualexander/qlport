@@ -1,0 +1,19 @@
+\begin{remark}[Six systematic failures, every one the harness]\label{rem:harness-failures}
+Six systematic failures came out of this rig and every one was the harness rather than
+the systems: three had to be cleared before any of the four defects was visible at all,
+and three more surfaced as the run was tightened. That ratio is the honest summary of
+the exercise, and a more useful lesson about differential rigs than the agreement rate
+is. Metric names shared across runs let Datadog see two runs' points where Prometheus
+saw one, which looked like a uniform $30\%$ error. A global $60$~s bucket grid compared
+a \texttt{.rollup(sum, 300)} bucket against a PromQL window covering a fifth of its
+span, which looked like $21$ broken shapes. Reading a group's value off the query's
+scope rather than the response's tag set took the glob the query asked for instead of
+the value it matched, which looked like $32$ shapes whose groups did not line up. Tag
+keys containing dots were submitted in PromQL's normalised spelling while the Datadog
+query still asked for the dotted one, so Datadog grouped by a tag that was not there. A
+scope term requiring a tag to be non-empty was satisfied by leaving the tag off, which
+Prometheus reads as empty, so that side selected nothing. And a rate limit from the API
+was recorded as a shape that could not be compared. In every case a parameter was read
+from somewhere other than the place that stated it --- which is the same sentence as
+\S\ref{sec:caveats}'s, about a rig instead of a query.
+\end{remark}

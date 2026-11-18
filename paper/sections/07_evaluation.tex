@@ -41,14 +41,10 @@ in dashboards registered under a Prometheus datasource --- and are dropped rathe
 counted as PromQL the grammar fails on, leaving $22{,}894$ in three populations:
 $8{,}770$ Datadog metric queries, $8{,}102$ PromQL expressions ($7{,}867$ panels, $139$
 alerting rules, $96$ recording rules), and $6{,}022$ Datadog formula expressions.
-Three of those counts moved in the seventh reading of the extractor, and in the direction
-that costs an excuse rather than buying one: a request may carry its query as a singular
-object rather than in a list, which distribution widgets do and which hid four Datadog
-queries; a Grafana library panel keeps its model in the dashboard's \texttt{\_\_elements}
-map rather than in \texttt{panels}, which hid four more; and \emph{two} of what had been
-eleven LogQL panels were PromQL alerting rules whose only offence was a backtick raw
-string in a matcher, which PromQL permits and a LogQL line-filter pattern matched.
-The formula population fell by nearly half for a different reason, given below.
+\iffull\input{sections/moved/eval_extraction_fixes}\fi
+
+The formula population fell by nearly half for a different reason
+(\apref{app:eval}).
 
 \paragraph{Instantiation.}
 Dashboard queries are not queries. A panel ships \texttt{\$pod},
@@ -191,90 +187,34 @@ information the query text does not contain. This is the single largest qualific
 $\kappa$ and it is a property of the source language, not of the translator: a Datadog
 query is not self-contained, so a translated query cannot be either.
 
-How much that costs is now measured rather than left open. Asked of a real account, the
-interval a bare query receives is a function of the query range: $20$\,s over an hour,
-$60$\,s over four hours, $300$\,s over a day, monotone in between
-(\texttt{scripts\slash trial\_checks.py e4}). The translator assumes $60$\,s, so it is
-exactly right for a four-hour dashboard and wrong by a factor of three for the one-hour
-view --- and the window width is not a detail, since it is the $\Delta$ in every rollup
-rule of \S\ref{sec:ingestion}. The assumption is therefore not unverified but
-\emph{conditional}, and the condition is a dashboard setting no query carries. Asking for
-a finer interval than the range allows is refused outright rather than silently widened,
-which is the better of the two behaviours for a translator: the limit is on points
-returned per query, so the error is visible instead of the data being quietly coarser
-than asked for.
-\texttt{COUNTER\_RESET} marks the $23.6\%$ that use the cumulative-difference form of
-Proposition~\ref{prop:offset}, exact unless a counter resets inside the window;
-Table~\ref{tab:rollup-live} measures what that costs when one does, and
-Proposition~\ref{prop:anchored} removes it at the price of a server started with an
-experimental feature enabled --- a stronger condition than a version number, and
-Remark~\ref{rem:anchored-flag} is about how we came to believe otherwise.
 
-\texttt{PHI\_SERIES\_START} marks the same $23.6\%$, and marks it for a second reason
-that went unrecorded until this draft. The cumulative difference needs a sample
-\emph{before} the bucket to subtract, and a series younger than the window has none, so
-the expression returns no result where Datadog returns the deltas it does hold
-(Remark~\ref{rem:series-start}). The code existed from the start --- it was written for
-the reverse direction --- and the counter rules had been emitting without it. The two
-shares coincide because in this corpus the same translations carry both: every counter
-rule here is the cumulative difference, which needs a predecessor sample and a
-reset-free window alike. They are not the same condition, and the anchored form
-separates them --- it discharges both for a $\mathsf{sum}$ rollup, and only the reset
-one for the mean-of-deltas rule, whose denominator counts samples where Datadog counts
-deltas however the numerator is written. Where it does discharge both, its
-experimental-flag requirement is a better bargain than
-Remark~\ref{rem:anchored-flag} alone suggests.
+\iffull\input{sections/moved/eval_rollup_default}\fi
 
-\texttt{METRIC\_TYPE\_UNKNOWN} is new to this table and is the reason to report caveats at
-all rather than to list them once in prose. An \texttt{avg}, \texttt{min}, \texttt{max} or
-\texttt{count} rollup reduces the points Datadog stores, which are samples for a gauge and
-per-interval deltas for a counter; the emitted \texttt{*\_over\_time} is exact for the
-first and unrelated to the second, and a dashboard does not record which it is
-(Remark~\ref{rem:gauge}). At $100\%$ of translated occurrences it is the largest
-qualification here, and it was missing from this table until the soundness theorem of
-Section~\ref{sec:kernel-soundness} was written down and its hypotheses compared against
-what the emitter actually recorded. It reached $100\%$ later still: the quarter of
-translations that use \texttt{.as\_count()} or \texttt{.as\_rate()} were held to
-establish their own metric type until the modifiers were measured on a gauge and found to
-be silent no-ops (Remark~\ref{rem:gauge}). $\kappa$ did not move when it was added --- the
-expressions are the same ones --- which is exactly why it is worth having: an unrecorded
-precondition costs nothing in any number the paper reports, right up to the point where
-somebody relies on the translation.
+The rest of the table is three codes and one conclusion.
+\texttt{COUNTER\_RESET} and \texttt{PHI\_SERIES\_START} each mark the same $23.6\%$ ---
+the translations using the cumulative-difference form of
+Proposition~\ref{prop:offset} --- for two conditions that coincide in this corpus
+without being the same condition, and that the anchored form of
+Proposition~\ref{prop:anchored} separates. \texttt{METRIC\_TYPE\_UNKNOWN} marks
+$100\%$ of them, for the reason \S\ref{sec:emission} gives, and it is the one
+precondition here whose violation rate can be measured: on the $89.5\%$ of translated
+occurrences whose type the vendor's own repository declares, the front end's inference
+is wrong for $6.5\%$. So $\kappa$ counts $491$ translations that are, on that
+declaration, wrong. It is a coverage measure and never was a correctness measure, and
+this is the first number in the paper that says how far apart the two are
+(\apref{app:eval}).
 
-How often it is \emph{violated} is now measured rather than left as a worry, and it is
-the one place in this paper where a precondition turns out to fail at a rate worth
-reporting. The repository the dashboards come from declares each metric's type in a
-file the corpus fetch had passed over, which settles the question for $7{,}557$ of the
-$8{,}444$ translated occurrences --- $89.5\%$. On $491$ of those the front end's
-inference disagrees with the declaration: $6.5\%$ of the decidable set and $5.6\%$ of
-the corpus, split $242$ counters translated as gauges and $249$ gauges translated as
-counters (Remark~\ref{rem:type-measured}). So $\kappa$ counts those $491$ among its
-translations and they are, on the vendor's own declaration, wrong. $\kappa$ is a
-coverage measure and was never a correctness measure; this is the first number in the
-paper that says how far apart the two are.
+The conclusion is the one an earlier draft of this section had backwards. That draft said
+$116$ occurrences carried \texttt{ROLLUP\_ALIGNMENT} alone and so rested on nothing but
+the evaluation grid. With \texttt{METRIC\_TYPE\_UNKNOWN} recorded the true figure is
+\emph{none} --- every one of those $116$ is an \texttt{avg} rollup --- and once the
+modifiers' evidential value is withdrawn as well, no translation in this corpus is exact
+on the strength of anything the query itself contains. That is a stronger claim than the
+one it replaces, and it was invisible only because a precondition was.
 
-Adding it also falsifies something an earlier draft of this section claimed. That draft
-said $116$ occurrences carried \texttt{ROLLUP\_ALIGNMENT} alone and were the only
-translations resting on nothing but the grid. With this code in place the true
-figure is \emph{none}: every one of those $116$ is an \texttt{avg} rollup and now carries
-\texttt{METRIC\_TYPE\_UNKNOWN} too. No translation in this corpus is exact on the strength
-of the evaluation grid alone, which is a stronger claim than the one it replaces and was
-only invisible because a precondition was. The same correction then ran to its conclusion:
-with the modifiers' evidential value withdrawn, no translation in this corpus is exact on
-the strength of anything the query itself contains.
-
-\begin{table}[htbp]\centering\scriptsize
-\input{tables/translation_examples}
-\caption{Worked translations, each the shortest corpus query exercising that feature.
-Long expressions are truncated.}
-\label{tab:translation-examples}
-\end{table}
-
-\noindent
-Table~\ref{tab:translation-examples} shows what the output looks like, taken from the
-corpus rather than invented. The \texttt{M\_AS\_COUNT} row is Proposition~\ref{prop:offset}
-in use; the \texttt{GROUP\_BY} row shows the default time aggregator and the assumed
-interval together, which is the common case.
+\iffull\input{sections/moved/eval_counter_caveats}\fi
+\iffull\input{sections/moved/eval_type_caveat}\fi
+\iffull\input{sections/moved/eval_examples}\fi
 
 \iffull\input{sections/moved/eval_unparsed_unmeasured}\fi
 \subsection{Every shape, against both systems}
@@ -290,33 +230,21 @@ against Prometheus --- on the bucket grid that query's own rollup interval defin
 compares the two readings bucket by bucket
 (\texttt{scripts\slash shape\_differential.py}; cached and regression-tested).
 
-It is a smaller experiment than it looks, which is worth recording because the obvious
-estimate is badly wrong. It does not need every metric the corpus names to exist in both
-systems. What a differential test exercises is the \emph{operator structure} --- which
-rollup, which aggregation, which matcher shapes --- and two queries that differ only in
-the metric they name are one experiment, not two. The abstraction takes out the
-identifiers and nothing else --- metric names, tag keys, tag values, and the content of
-regex matchers, whose own conversion \S\ref{sec:regular} decides separately --- and what
-a query would \emph{emit} differently is kept: the rollup interval, a scale factor and a
-numeric literal all survive it. That matters, and it did not hold until the seventh
-reading of this apparatus. The interval used to collapse to whether one was stated at
-all, which put $70$ occurrences into this experiment under a window width they do not
-state and two of them under a width the rig cannot hold two buckets of; the congruence
-check below could not see it, because it masked digits along with identifiers and
-\texttt{[15s]} and \texttt{[300s]} mask alike. Abstracting that much collapses the
-$8{,}339$ translated occurrences that are
-a single query to \textbf{$332$ distinct shapes}, and they are as unevenly distributed as
-everything else in this corpus: $6$ shapes cover half the occurrences, $23$ cover $80\%$,
-$50$ cover $90\%$ and $107$ cover $95\%$. A median query has one metric slot and two tag
-keys, so at three label values apiece the whole set came to $885$ synthetic
-series --- a scale a single trial account sustains, which is why the experiment turned
-out not to need a reconstruction of somebody's production estate. The reduction is only
-sound if every query in a class translates the same way, and that is checkable rather
-than arguable: emitting all of them and masking the identifiers leaves each class with
-exactly one form, so a representative stands for its class. Establishing
-that found a wart worth fixing --- the emitter decided parenthesisation by scanning its
-own output for operators, so a hyphen inside a tag value such as \texttt{result:hit-wait}
-was read as one and wrapped the expression in parentheses that meant nothing.
+
+It is a smaller experiment than it looks, and the obvious estimate of its cost is badly
+wrong. What a differential test exercises is the \emph{operator structure} --- which
+rollup, which aggregation, which matcher shapes --- so two queries differing only in the
+metric they name are one experiment rather than two. Abstracting away the identifiers and
+nothing else, keeping everything a representative would emit differently, collapses the
+$8{,}339$ translated occurrences that are a single query to \textbf{$332$ distinct
+shapes}, instantiated as $885$ synthetic series in all --- a scale one trial account
+sustains, which is why the experiment turned out not to need a reconstruction of
+somebody's production estate. The reduction is sound only if every query in a class
+translates the same way, and that is checked rather than argued: emitting all of them and
+masking the identifiers leaves each class with exactly one form, so a representative
+stands for its class (\apref{app:eval}).
+
+\iffull\input{sections/moved/eval_shape_reduction}\fi
 
 Table~\ref{tab:differential} reports the outcome. Of the $332$ shapes, $329$ could be
 compared, and all $329$ agreed with Datadog on every one of $22{,}608$ bucket
@@ -330,27 +258,7 @@ are now translations checked against the vendor rather than merely emitted --- t
 remainder being the comma-separated lists, which the shape reduction does not cover ---
 which is a claim this paper could not previously make at all.
 
-Three preconditions of this run were wrong in the version of it reported before the
-seventh reading of the apparatus, and all three made agreement easier to obtain. The
-scrape grid began at an arbitrary whole second, and off a bucket boundary a left-closed
-Datadog bucket and a right-closed PromQL window hold the same samples --- so the
-evaluation instant could have been wrong by up to half a scrape and still agreed on every
-bucket, which makes the one convention this paper got wrong in draft the one the
-corpus-scale test was silent about. It is now floored to a multiple of $300$\,s, which is
-a multiple of every interval this corpus states below the run's window, so the samples
-land on boundaries and the instant is load-bearing. A scope requiring a tag merely to be
-\emph{present} pinned that tag to one value, so eight shapes grouping by the very key
-they test for presence were compared over a single series and their space aggregation was
-never exercised. And the rollup interval was not part of a shape, so $70$ occurrences were
-tested at a window width they do not state. All three are fixed, the shape count rose
-from $325$ to $335$ as the finer abstraction split six classes, and then to $332$ when
-the empty-value scopes of Remark~\ref{rem:empty-tag} left the translated set, and the
-agreement did not
-move: $329$ of $329$, on a grid where the closure convention is visible and where every
-occurrence is tested at its own width. The one occurrence class the fix removed rather
-than repaired is the second \texttt{window-too-short} row --- a $3600$\,s rollup, which
-the old abstraction had folded in with $300$\,s and credited as agreeing, and which this
-rig provably cannot hold two buckets of.
+\iffull\input{sections/moved/eval_differential_fixes}\fi
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/differential}
@@ -378,32 +286,16 @@ error; the two corpus occurrences now carry an explicit matching clause. None of
 is a gap in either language. All four are translator defects of the kind that a coverage
 number cannot see, because a wrong translation and a right one are both translations.
 
-Six systematic failures came out of this rig and every one was the harness rather than
-the systems: three had to be cleared before any of the four defects was visible at all,
-and three more surfaced as the run was tightened. That ratio is the honest summary of
-the exercise, and a more useful lesson about differential rigs than the agreement rate
-is. Metric names shared across runs let Datadog see two runs' points where Prometheus
-saw one, which looked like a uniform $30\%$ error. A global $60$~s bucket grid compared
-a \texttt{.rollup(sum, 300)} bucket against a PromQL window covering a fifth of its
-span, which looked like $21$ broken shapes. Reading a group's value off the query's
-scope rather than the response's tag set took the glob the query asked for instead of
-the value it matched, which looked like $32$ shapes whose groups did not line up. Tag
-keys containing dots were submitted in PromQL's normalised spelling while the Datadog
-query still asked for the dotted one, so Datadog grouped by a tag that was not there. A
-scope term requiring a tag to be non-empty was satisfied by leaving the tag off, which
-Prometheus reads as empty, so that side selected nothing. And a rate limit from the API
-was recorded as a shape that could not be compared. In every case a parameter was read
-from somewhere other than the place that stated it --- which is the same sentence as
-\S\ref{sec:caveats}'s, about a rig instead of a query.
+Six systematic failures came out of this rig, three before any of those four defects was
+visible at all and three more as the run was tightened, and every one of the six was the
+harness rather than the systems: in each case a parameter was read from somewhere other
+than the place that stated it, which is \S\ref{sec:caveats}'s sentence about a rig
+instead of a query (\apref{app:eval}). Six instrument faults to four real defects is the
+honest summary of the exercise, and a more useful lesson about differential rigs than the
+agreement rate is.
 
-The run does not cover everything, and Table~\ref{tab:differential} says so rather than
-quietly dropping what it misses. One shape states a $1800$~s rollup, which the run's
-half-hour window cannot hold two of. One asks for a tag to equal \texttt{5} and match
-\texttt{4*} at once, which no series satisfies, so both systems correctly return nothing
-and there is nothing to compare. The data is synthetic: the shapes are the corpus's, the
-series are not, so the test exercises operator structure and not the distributional
-oddities of real traffic --- which is what Section~\ref{sec:replay}'s replay of a real
-trace is for, and the two are complementary rather than redundant.
+\iffull\input{sections/moved/eval_harness_failures}\fi
+\iffull\input{sections/moved/eval_differential_limits}\fi
 
 The sharper limit is which hypotheses the run can reach, and it is the two that matter
 most. The harness submits each metric under the kind the \emph{translator inferred}

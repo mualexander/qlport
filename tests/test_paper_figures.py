@@ -269,7 +269,7 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
     120: ("of those, the single-key ones",
           {"01_introduction.tex", "07_evaluation.tex", "08_discussion.tex"}),
     116: ("translations once thought to carry ROLLUP_ALIGNMENT alone",
-          {"07_evaluation.tex"}),
+          {"07_evaluation.tex", "eval_type_caveat.tex"}),
     94.2: ("kappa before the disjunction rule",
            {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
     95.6: ("kappa after it and before the counter-average fix",
@@ -453,7 +453,7 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb03.shaped_occurrences", "07_evaluation.tex"),
     ("nb03.shapes", "07_evaluation.tex"),
     ("nb03.shapes", "09_conclusion.tex"),
-    ("nb03.shapes_for_95pct", "07_evaluation.tex"),
+    ("nb03.shapes_for_95pct", "eval_shape_reduction.tex"),
     # `top(...)`'s occurrence count decides which column the largest unimplemented entry
     # belongs in, and the two counts beside it are what the measurement covers: 134 was
     # the reach of the claim before `bottomk` was probed, and 111 is how often the corpus

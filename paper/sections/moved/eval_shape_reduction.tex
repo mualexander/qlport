@@ -1,0 +1,29 @@
+\begin{remark}[Why the differential is a smaller experiment than it looks]\label{rem:shape-reduction}
+It is a smaller experiment than it looks, which is worth recording because the obvious
+estimate is badly wrong. It does not need every metric the corpus names to exist in both
+systems. What a differential test exercises is the \emph{operator structure} --- which
+rollup, which aggregation, which matcher shapes --- and two queries that differ only in
+the metric they name are one experiment, not two. The abstraction takes out the
+identifiers and nothing else --- metric names, tag keys, tag values, and the content of
+regex matchers, whose own conversion \S\ref{sec:regular} decides separately --- and what
+a query would \emph{emit} differently is kept: the rollup interval, a scale factor and a
+numeric literal all survive it. That matters, and it did not hold until the seventh
+reading of this apparatus. The interval used to collapse to whether one was stated at
+all, which put $70$ occurrences into this experiment under a window width they do not
+state and two of them under a width the rig cannot hold two buckets of; the congruence
+check below could not see it, because it masked digits along with identifiers and
+\texttt{[15s]} and \texttt{[300s]} mask alike. Abstracting that much collapses the
+$8{,}339$ translated occurrences that are
+a single query to \textbf{$332$ distinct shapes}, and they are as unevenly distributed as
+everything else in this corpus: $6$ shapes cover half the occurrences, $23$ cover $80\%$,
+$50$ cover $90\%$ and $107$ cover $95\%$. A median query has one metric slot and two tag
+keys, so at three label values apiece the whole set came to $885$ synthetic
+series --- a scale a single trial account sustains, which is why the experiment turned
+out not to need a reconstruction of somebody's production estate. The reduction is only
+sound if every query in a class translates the same way, and that is checkable rather
+than arguable: emitting all of them and masking the identifiers leaves each class with
+exactly one form, so a representative stands for its class. Establishing
+that found a wart worth fixing --- the emitter decided parenthesisation by scanning its
+own output for operators, so a hyphen inside a tag value such as \texttt{result:hit-wait}
+was read as one and wrapped the expression in parentheses that meant nothing.
+\end{remark}

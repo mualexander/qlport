@@ -49,11 +49,12 @@ refusal we measure in that direction. Leaving costs work; returning costs expres
 % reads in place. In the 20-page build the sections omit them and they land here as
 % appendices instead. One copy of the prose either way: the two builds cannot drift,
 % which after two passes of tables outrunning the text they quote is not a theoretical
-% concern. Two exceptions, both in \S\ref{sec:translation}: where a body statement would
-% otherwise have no support at all in the short build, it carries a paragraph summarising
-% the apparatus, which in the complete build reads as a signpost to the material below it.
-% Their figures are bound in tests/test_paper_figures.py, so the summary cannot drift from
-% what it summarises even though the sentences are not the same sentences.
+% concern, with one class of exception. Where moving a block would leave a body statement
+% with no support at all in the short build, the body carries a paragraph summarising the
+% apparatus, which in the complete build reads as a signpost to the material below it.
+% Those are the only prose in the paper that exists as a summary of other prose. Their
+% figures are bound in tests/test_paper_figures.py, so a summary cannot drift from what it
+% summarises even though the sentences are not the same sentences.
 \iffull\else
 \appendix
 \input{sections/app_proofs}

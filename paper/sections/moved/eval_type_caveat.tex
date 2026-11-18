@@ -1,0 +1,39 @@
+\begin{remark}[The caveat that was missing, and what it is worth]\label{rem:type-caveat}
+\texttt{METRIC\_TYPE\_UNKNOWN} is new to this table and is the reason to report caveats at
+all rather than to list them once in prose. An \texttt{avg}, \texttt{min}, \texttt{max} or
+\texttt{count} rollup reduces the points Datadog stores, which are samples for a gauge and
+per-interval deltas for a counter; the emitted \texttt{*\_over\_time} is exact for the
+first and unrelated to the second, and a dashboard does not record which it is
+(Remark~\ref{rem:gauge}). At $100\%$ of translated occurrences it is the largest
+qualification here, and it was missing from this table until the soundness theorem of
+Section~\ref{sec:kernel-soundness} was written down and its hypotheses compared against
+what the emitter actually recorded. It reached $100\%$ later still: the quarter of
+translations that use \texttt{.as\_count()} or \texttt{.as\_rate()} were held to
+establish their own metric type until the modifiers were measured on a gauge and found to
+be silent no-ops (Remark~\ref{rem:gauge}). $\kappa$ did not move when it was added --- the
+expressions are the same ones --- which is exactly why it is worth having: an unrecorded
+precondition costs nothing in any number the paper reports, right up to the point where
+somebody relies on the translation.
+
+How often it is \emph{violated} is now measured rather than left as a worry, and it is
+the one place in this paper where a precondition turns out to fail at a rate worth
+reporting. The repository the dashboards come from declares each metric's type in a
+file the corpus fetch had passed over, which settles the question for $7{,}557$ of the
+$8{,}444$ translated occurrences --- $89.5\%$. On $491$ of those the front end's
+inference disagrees with the declaration: $6.5\%$ of the decidable set and $5.6\%$ of
+the corpus, split $242$ counters translated as gauges and $249$ gauges translated as
+counters (Remark~\ref{rem:type-measured}). So $\kappa$ counts those $491$ among its
+translations and they are, on the vendor's own declaration, wrong. $\kappa$ is a
+coverage measure and was never a correctness measure; this is the first number in the
+paper that says how far apart the two are.
+
+Adding it also falsifies something an earlier draft of this section claimed. That draft
+said $116$ occurrences carried \texttt{ROLLUP\_ALIGNMENT} alone and were the only
+translations resting on nothing but the grid. With this code in place the true
+figure is \emph{none}: every one of those $116$ is an \texttt{avg} rollup and now carries
+\texttt{METRIC\_TYPE\_UNKNOWN} too. No translation in this corpus is exact on the strength
+of the evaluation grid alone, which is a stronger claim than the one it replaces and was
+only invisible because a precondition was. The same correction then ran to its conclusion:
+with the modifiers' evidential value withdrawn, no translation in this corpus is exact on
+the strength of anything the query itself contains.
+\end{remark}
