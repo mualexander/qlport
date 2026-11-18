@@ -126,6 +126,42 @@ and the code naming that condition had been sitting unused in the catalogue whil
 rules emitted without it (Remark~\ref{rem:series-start}). An unrecorded precondition is
 free in every number a paper reports, which is exactly why they accumulate.
 
+\subsection{The lock-in surface is the dashboard layer}
+\label{sec:dashboard-layer}
+
+Three measurements in this paper point the same way, and taken together they are the
+answer to RQ4 and the most useful thing here for anyone actually porting an estate. They
+were each reported as a qualification on something else, which is how they went so long
+without being read as one result.
+
+The first is \S\ref{sec:caveats}'s: $96.9\%$ of our translations depend on a rollup
+interval the source query left to the dashboard's time range, and $100\%$ on a metric
+type no query in either language declares. The second is \S\ref{sec:corpus}'s: $88.6\%$
+of Datadog query occurrences and $82.5\%$ of PromQL ones carry at least one template
+variable, and a parse rate of $11.8\%$ on Datadog and $71.2\%$ on PromQL as shipped
+becomes $99.9\%$ and $99.1\%$ once a dashboard's own substitutions are performed. The
+third is \S\ref{sec:regular}'s, which is the one that looks least like the others and is
+the sharpest: of $8{,}587$ PromQL regex matchers, $87.9\%$ have a template variable as
+their pattern, so for those the reverse direction is not hard but \emph{statically
+undefined} --- there is no pattern to convert until somebody looks at the dashboard.
+
+What all three say is that the object a migration ports is not a query. It is a query
+schema plus a resolution layer --- time range, variable bindings, metric metadata --- that
+belongs to the dashboard tool and has no counterpart in either language's grammar. That
+relocates the switching cost rather than dissolving it, and it relocates it somewhere
+neither $\kappa$ nor a gap catalogue can see, because a schema parses and translates
+exactly like a query and is counted as covered.
+
+Two consequences follow and neither is a hedge. For a migration, the work is not where
+$\kappa$ points: the $318$ refused occurrences are $290$ distinct strings to rewrite by
+hand, while $8{,}186$ translated occurrences need an interval supplied from a dashboard
+setting and all $8{,}444$ need a metric type supplied from somewhere outside the query ---
+and on the evidence of \S\ref{sec:caveats} a tool that guesses the type gets $491$ of them
+wrong. Recovering context is the task; translating the query text is the part that is
+nearly solved. For the standardisation effort of \citet{sharma2025}, a common query
+language leaves this untouched. Agreeing on syntax and semantics for metric queries would
+not make the corpus portable, because what the corpus is missing is not in the query.
+
 \subsection{The thesis survives in the other direction}
 
 \S\ref{sec:regular} is where language design does bite, and it bites in a form that
@@ -209,20 +245,6 @@ estate, and a team that stops halfway has a tool that handles almost nothing. Th
 corollary for anyone reading \S\ref{sec:gaps} as a work plan is that the order matters
 more than the list, which is why \S\ref{sec:staircase} computes a greedy maximum-coverage
 order rather than sorting by frequency.
-
-\subsection{What is not a property of either language}
-
-The largest single finding in \S\ref{sec:regular} is not about regular languages at all.
-Of $8{,}587$ PromQL regex matchers in the corpus, $87.9\%$ have a Grafana template
-variable as their pattern, so the pattern is chosen when somebody looks at the dashboard
-and is not in the query text. No analysis of PromQL and Datadog can say anything about
-those, because the object being ported is not a query: it is a query template plus a
-variable-resolution layer that belongs to the dashboard tool.
-
-That is a limit on this paper's framing and on anyone else's. A portability claim about
-dashboards is partly a claim about Grafana, and the templating layer has no counterpart in
-either query language's grammar. It also suggests where a practical migration tool should
-actually spend its effort, which is not where $\kappa$ points.
 
 \subsection{Other languages, and what would transfer}
 

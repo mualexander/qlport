@@ -79,23 +79,35 @@ state; the repository the dashboards come from declares that type for $89.5\%$ o
 and our inference is wrong on $6.5\%$ of those --- $491$ occurrences, more than the
 whole inexpressible column (\S\ref{sec:emission}).
 
-The design artefact is elsewhere, and \S\ref{sec:discussion} argues it is the more
-interesting finding. A Datadog query has no slot for its rollup interval --- that comes
-from the dashboard's time range --- so $96.9\%$ of the translations we emit depend on an
-interval the query omits. PromQL has the slot, and $55.6\%$ of the corpus's range
-selectors fill it with a dashboard variable anyway, so the contrast is one of degree
-rather than of kind; \S\ref{sec:discussion} runs that comparison, which an earlier
-version of this paper asserted without measuring. The translations are exact, but exact
-relative to context supplied from outside the query, and that is invisible in any
-coverage number.
+The design artefact is elsewhere, and it is the finding we would now put first: a
+dashboard query does not determine its own meaning. A Datadog query's slot for the rollup
+interval is optional, and $96.9\%$ of the translations we emit are of queries that leave
+it empty, so the interval comes from the dashboard's time range instead. PromQL's slot is
+obligatory where it applies and $55.6\%$ of the corpus's range selectors fill it with a
+dashboard variable anyway --- so the contrast is one of degree, and what both languages
+share is that the value arrives from a layer outside either of them. The same holds of the
+metric's type, and more sharply: no query in either language declares it. On the Datadog
+side $88.6\%$ of query occurrences carry at least one template variable and on the PromQL
+side $82.5\%$ do, which is the measurement that stops this being a complaint about one
+vendor. The translations are exact, and exact relative to context the query omits; no
+coverage number can see that, which is why $\kappa$ is not this paper's main result
+(\S\ref{sec:caveats}).
 
 Coming back is a different matter, and here the obstructions are proved. A Datadog tag
 filter is a glob, and \S\ref{sec:regular} shows a glob's language is either a single word
 or unbounded in length --- from which it follows that no glob denotes a single arbitrary
 character, nor the non-empty values, nor a wildcard confined to part of the alphabet.
-Those three cover every refusal in that section, $37.3\%$ of the corpus's matcher
-occurrences whose pattern is concrete. Together with the directional barrier of \S\ref{sec:ingestion}, the
-picture is an asymmetry: leaving costs engineering, returning costs expressiveness.
+Together with a bound on union size that we choose and state, those three account for
+every refusal in that section --- $37.3\%$ of the corpus's matcher occurrences whose
+pattern is concrete --- and $10$ of them hold without any bound at all.
+
+Put together with the directional barrier of \S\ref{sec:ingestion}, the picture is an
+asymmetry: leaving costs engineering, returning costs expressiveness. The asymmetry binds
+differently from the way lock-in is usually described, and \S\ref{sec:discussion} is
+careful about it. What we measured cheap is the exit. What is expensive is the return, so
+the cost falls on a team that has already left and wants back, or on one keeping the
+option open --- which is a cost of \emph{irreversibility} rather than of captivity, and
+it is paid by a different decision at a different time.
 
 \paragraph{Contributions.}
 \begin{enumerate}
@@ -128,6 +140,15 @@ side of it.
 \item \textbf{Coverage on real dashboards (\S\ref{sec:evaluation}).} $\kappa$ over the
 whole corpus, by occurrence rather than by distinct string, with the implementation order
 that produced it and the features that cost the remainder.
+\item \textbf{What a dashboard query does not say (\S\ref{sec:caveats},
+\S\ref{sec:discussion}).} Every translation carries the preconditions it rests on, so
+the share depending on context the query omits can be counted rather than conceded:
+$96.9\%$ on a rollup interval, $100\%$ on a metric type. One of those is checkable
+against the vendor's own declarations and is wrong for $6.5\%$ of the cases where it
+can be checked, which is the first number here separating coverage from correctness.
+This is the answer we would now put first, and it is invisible to $\kappa$, to the gap
+catalogue and to the grammars alike, because a query that does not fix its own meaning
+parses and translates like any other.
 \end{enumerate}
 
 \paragraph{A note on method.}
@@ -151,6 +172,9 @@ warrant.
 \S\ref{sec:background} places the problem among query-translation and expressiveness
 work. \S\ref{sec:framework} fixes the formal frame and \S\ref{sec:ingestion} the
 ingestion mapping. \S\ref{sec:grammars} answers RQ1, \S\ref{sec:translation} and
-\S\ref{sec:regular} answer RQ2, and \S\ref{sec:evaluation} answers RQ3.
-\S\ref{sec:discussion} takes up what the measurements mean, and
-\S\ref{sec:conclusion} what remains.
+\S\ref{sec:regular} answer RQ2, and \S\ref{sec:evaluation} answers RQ3 and, in
+\S\ref{sec:caveats}, RQ4. \S\ref{sec:discussion} takes up what the measurements mean,
+and \S\ref{sec:conclusion} what remains. Three appendices carry the apparatus: the
+proofs and constructions, what the vendor was asked and what came back, and the corpus
+and evaluation machinery. Every proof is in the first of them, and every remark numbered
+above~3 is in one of the three.

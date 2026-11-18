@@ -26,6 +26,14 @@ obstructions, so a translator that fails must say why in a form that can be coun
 And it asks what share of \emph{practice} the fragment covers, which makes the
 corpus of \S\ref{sec:evaluation} part of the result rather than an illustration of it.
 
+A fourth feature is an assumption rather than a requirement, and it is the one this paper
+ended up contradicting. The statement says ``queries written in practice'', taking for
+granted that what a dashboard holds is a query --- a string whose meaning is fixed by the
+language and the database. It is not. A dashboard holds a query \emph{schema}, and the
+missing pieces are supplied by a layer that belongs to neither language. That is why
+RQ4 below exists: it was not posed at the outset, and the measurements that answer it are
+the ones this paper would now put first.
+
 Two conventions for the rest of the paper. Every proof is collected in
 \apref{app:proofs}, at the statement it discharges rather than at the point the
 statement is used, because a body is read for its results and a proof is read when a
@@ -214,7 +222,7 @@ a proof on a stated class is a reason. Every $\kappa$ quoted below is
 Definition~\ref{def:kappa}.
 \end{remark}
 
-\subsection{The three questions}
+\subsection{The four questions}
 
 \begin{description}
 \item[RQ1 (\S\ref{sec:grammars})] Do these languages admit deterministic parsers with
@@ -225,13 +233,24 @@ the largest exact translator we can build, and what are the obstructions outside
 Problem Statement's fragment, with the gap catalogue as the second half of the answer.
 \item[RQ3 (\S\ref{sec:evaluation})] What is $\kappa(T,Q)$ on a corpus of dashboards
 people actually publish, and how is the shortfall distributed over language features?
+\item[RQ4 (\S\ref{sec:caveats}, \S\ref{sec:emission})] Is a dashboard query
+self-contained --- does it determine its own meaning? Where it does not, what does a
+translation have to be given from outside the query text, how often, and how often is a
+translator that supplies the obvious default wrong?
 \end{description}
 
 \noindent
-The three are not independent, and the dependence runs one way: RQ1 licenses the
+The first three are not independent, and the dependence runs one way: RQ1 licenses the
 syntax-directed translation RQ2 builds, and RQ2's domain is what RQ3 measures. A negative
 answer to RQ1 would not have stopped the paper --- an ambiguous grammar can still be
 parsed --- but it would have made every later claim conditional on a disambiguation
 policy, which is why it comes first.
+
+RQ4 sits across the other three rather than after them, and it was added last. It is
+answered by the caveats a translation carries rather than by the queries a translator
+refuses, so none of $\kappa$, the gap catalogue or the grammars can see it: a query that
+does not determine its own meaning parses, translates, and is counted as covered. We
+pose it separately because it is where this paper's answer turned out to be, and because
+a reader who takes $\kappa$ as the result will have read the wrong number.
 
 \input{sections/03b_ingestion}

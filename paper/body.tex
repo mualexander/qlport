@@ -21,13 +21,18 @@ separates what the target does not hold from what it cannot say and from what we
 not built. Over the $8{,}770$ Datadog metric
 queries of a corpus of $22{,}894$ extracted from published dashboards, $96.3\%$ of
 occurrences translate; the shortfall is $1.2\%$ beyond reach against $2.4\%$ unimplemented,
-so in the direction teams travel the cost is engineering. ``Exactly'' needs one
-qualification we can now measure: every translation assumes a metric type the query
-omits, and where the vendor's own repository declares that type the assumption is wrong
-for $6.5\%$ of them. The language-design artefact
-lies elsewhere: $96.9\%$ of our translations depend on a rollup interval the query has
-no slot to state, against $55.6\%$ of the corpus's PromQL range selectors that leave
-their own slot to a dashboard variable.
+so in the direction teams travel the cost is engineering rather than expressiveness.
+That is not where the switching cost turns out to be. A dashboard query does not
+determine its own meaning: $96.9\%$ of our translations depend on a rollup interval the
+source query leaves to the dashboard's time range and $100\%$ on a metric type no query
+in either language declares, and where the vendor's own repository declares that type our
+inference is wrong for $6.5\%$ of the cases it can settle --- more occurrences than the
+whole inexpressible column. Coverage and correctness differ by a measured amount that no
+coverage number can see, because a query that does not fix its own meaning parses and
+translates like any other. Nor is this one vendor's doing: $88.6\%$ of Datadog and
+$82.5\%$ of PromQL query occurrences carry a template variable, so what a migration ports
+is a query schema plus a resolution layer belonging to the dashboard tool, which is where
+the lock-in surface actually lies and where a common query language would not reach.
 Going back is different in kind --- a Datadog tag filter is a glob, glob-expressibility
 of a regular expression is decidable, and every refusal we measure in that direction is
 a theorem about globs rather than unfinished work --- ten of them outright, and the
