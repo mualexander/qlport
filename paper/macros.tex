@@ -41,6 +41,11 @@
 \newcommand{\apphead}[2]{\iffull\subsection{#1}\else\section{#1}\fi\label{#2}}
 % \inlineonly{...} is prose that only makes sense where the material is in place.
 \newcommand{\inlineonly}[1]{\iffull#1\fi}
+% \shortonly{...} is the inverse of \inlineonly: a condensation that stands in for
+% deferred material in the build that defers it, and would merely restate it in the complete
+% one, where the material itself is a paragraph away. Its figures stay in the source
+% either way, so tests/test_paper_figures.py still holds it to the registry.
+\newcommand{\shortonly}[1]{\iffull\else#1\fi}
 % Point at apparatus wherever this build put it, so one sentence reads correctly in both.
 % The appendix wrappers are deferred-build-only and so are their labels, so the inline
 % build cannot cite a number --- there the material is a few paragraphs down the same

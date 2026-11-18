@@ -25,11 +25,13 @@ wrong. A team working through the gap catalogue would reach the $98.7\%$
 ceiling of \S\ref{sec:gaps} --- how long that takes is not something this paper
 measures, and the catalogue is a list of constructs rather than an estimate --- and
 what remains at that point is
-three constructs covering $1.2\%$ of real usage, and only two of them are about
+four constructs covering $1.2\%$ of real usage, and only two of them are about
 expressiveness: \texttt{fill} interpolation ($36$) and a wildcard over tag \emph{keys}
-rather than values ($31$). The third, the percentile aggregators ($34$), is an
-information barrier --- Prometheus does not hold what the query reads
-(Corollary~\ref{cor:quantile}) --- and no amount of work on either language removes
+rather than values ($31$). The other two are information barriers --- Prometheus does not
+hold what the query reads. They are the percentile aggregators ($34$), which read a
+sketch of the raw observations (Corollary~\ref{cor:quantile}), and the scope that
+separates an absent tag from one present with an empty value ($5$), a distinction
+Prometheus's data model \emph{defines} away. No amount of work on either language removes
 it. A language-design story cannot rest on that.
 
 It is also worth noticing how nearly this paper reported the opposite, and how often.
@@ -137,7 +139,7 @@ literature is for~\citep{felleisen1991} --- not ``our converter did not manage i
 criterion, which asks whether a construct can be eliminated by a local rewriting and
 presupposes two languages of equal power. Here one class of languages simply does not
 contain the other. Every refusal in
-Table~\ref{tab:regex-glob-reasons} --- $38.3\%$ of the matcher occurrences whose
+Table~\ref{tab:regex-glob-reasons} --- $37.3\%$ of the matcher occurrences whose
 pattern is concrete --- is an instance of one of them, though \S\ref{sec:glob-corpus}
 separates the ten occurrences no union of globs reaches from the $378$ that a union
 reaches only by spending one branch per alphabet character. Neither kind is removed by
@@ -158,7 +160,7 @@ the paragraph four above contradicts.
 
 Put the two together and the shape of the lock-in is specific. Leaving Datadog for
 Prometheus costs engineering: an enumerated list of constructs, a ceiling of $98.7\%$,
-three things left beyond it, plus the discipline of supplying the context the source
+four things left beyond it, plus the discipline of supplying the context the source
 queries omit. Coming back costs
 expressiveness and information, both provably. That is the asymmetry the switching-cost
 literature describes as the mechanism of lock-in rather than its
@@ -186,8 +188,8 @@ The two directions are also counted under different corpus policies, which cuts 
 other way. Going forward, \S\ref{sec:corpus} \emph{instantiates} a template --- a
 Datadog scope variable becomes \texttt{*} --- and the query is then translated like any
 other. Coming back, the $7{,}546$ template-valued matchers are set aside as statically
-undefined rather than instantiated, which is why the denominator is $1{,}013$ and not
-$8{,}472$. Against the larger denominator the refusals are $4.6\%$. Both policies are
+undefined rather than instantiated, which is why the denominator is $1{,}041$ and not
+$8{,}587$. Against the larger denominator the refusals are $4.5\%$. Both policies are
 defensible and they are not the same policy, so ``leaving costs work, returning costs
 expressiveness'' is a claim about two differently-drawn populations.
 
@@ -211,7 +213,7 @@ order rather than sorting by frequency.
 \subsection{What is not a property of either language}
 
 The largest single finding in \S\ref{sec:regular} is not about regular languages at all.
-Of $8{,}472$ PromQL regex matchers in the corpus, $88.0\%$ have a Grafana template
+Of $8{,}587$ PromQL regex matchers in the corpus, $87.9\%$ have a Grafana template
 variable as their pattern, so the pattern is chosen when somebody looks at the dashboard
 and is not in the query text. No analysis of PromQL and Datadog can say anything about
 those, because the object being ported is not a query: it is a query template plus a
@@ -299,8 +301,8 @@ which only $\mathsf{zero}$ predicts, and Prometheus returns the same number for 
 bucket.
 
 It is worth being plain about what that does and does not retire. It confirms the reading
-of the agent rather than overturning it, so no figure moves --- which makes it the fourth
-of seven vendor measurements to confirm rather than correct. And it is a measurement of one
+of the agent rather than overturning it, so no figure moves --- which makes it the fifth
+of eight vendor measurements to confirm rather than correct. And it is a measurement of one
 ingestion path on one account: the OpenMetrics check converting a Prometheus counter,
 which is the path this paper models and not the only one Datadog has.
 

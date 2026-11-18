@@ -56,7 +56,8 @@ queries into it and emits PromQL, refusing with a named gap code rather than gue
 proved the translations exact under stated preconditions and verified the PromQL side
 against a real Prometheus~3.15.0 rather than against our own model of it; and ran the
 whole thing over the $8{,}770$ Datadog metric queries of a corpus of $22{,}894$
-extracted from $763$ published dashboard and alerting documents, with nothing sampled
+extracted from the published dashboard and alerting documents of
+Table~\ref{tab:corpus-sources}, with nothing sampled
 and nothing hand-classified.
 
 \paragraph{What we found.}
@@ -67,7 +68,7 @@ establish and neither was the expected answer.
 
 Going from Datadog to PromQL, $96.3\%$ of query occurrences translate, and the shortfall
 is mostly unfinished work rather than impossibility: $1.2\%$ of the corpus is beyond
-reach --- two constructs PromQL cannot say and one the target system does not hold ---
+reach --- two constructs PromQL cannot say and two the target system does not hold ---
 against $2.4\%$ this translator has not implemented, with a
 ceiling of $98.7\%$ once the latter is done. On that evidence the switching cost in the
 direction people travel is \emph{engineering} (\S\ref{sec:gaps}).
@@ -92,7 +93,7 @@ Coming back is a different matter, and here the obstructions are proved. A Datad
 filter is a glob, and \S\ref{sec:regular} shows a glob's language is either a single word
 or unbounded in length --- from which it follows that no glob denotes a single arbitrary
 character, nor the non-empty values, nor a wildcard confined to part of the alphabet.
-Those three cover every refusal in that section, $38.3\%$ of the corpus's matcher
+Those three cover every refusal in that section, $37.3\%$ of the corpus's matcher
 occurrences whose pattern is concrete. Together with the directional barrier of \S\ref{sec:ingestion}, the
 picture is an asymmetry: leaving costs engineering, returning costs expressiveness.
 
@@ -101,8 +102,8 @@ picture is an asymmetry: leaving costs engineering, returning costs expressivene
 \item \textbf{Grammars (\S\ref{sec:grammars}).} LALR(1) grammars for both languages,
 including one for Datadog's metric query language, which the vendor does not publish and
 which had to be inferred from documentation and $8{,}770$ vendor-authored queries. The
-Datadog grammar is conflict-free; PromQL has exactly one shift/reduce conflict, and we
-show it is forced by the language rather than by our rules.
+Datadog grammar is conflict-free; PromQL has $2$ shift/reduce conflicts, and we
+show both are forced by the language rather than by our rules.
 \item \textbf{$\phi$-relative soundness (\S\ref{sec:ingestion}).} Soundness stated
 relative to an ingestion mapping, with the consequence that the information barrier
 between these two systems is \emph{directional} --- a result about the languages that
@@ -122,8 +123,8 @@ in both directions.
 and the catalogue separates three things most translation work runs together: what the
 target system does not \emph{hold}, what PromQL cannot \emph{say}, and what we have not
 \emph{built}. The first was the surprise: \S\ref{sec:ingestion} argues the information
-barrier runs the other way, and one Datadog construct turns out to sit on the wrong side
-of it.
+barrier runs the other way, and two Datadog constructs turn out to sit on the wrong
+side of it.
 \item \textbf{Coverage on real dashboards (\S\ref{sec:evaluation}).} $\kappa$ over the
 whole corpus, by occurrence rather than by distinct string, with the implementation order
 that produced it and the features that cost the remainder.

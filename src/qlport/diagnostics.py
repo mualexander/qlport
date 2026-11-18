@@ -1,6 +1,6 @@
 """Named semantic gaps. Every ⊥ returned by an emitter carries exactly one Gap.
 
-The codes double as the rows of the gap catalogue (paper §5) and the failure
+The codes double as the rows of the gap catalogue (paper §7) and the failure
 breakdown for κ (paper §7), so add a code rather than reusing a vague one.
 
 Thirteen of these are reachable from the Datadog → PromQL emitter; the rest name gaps

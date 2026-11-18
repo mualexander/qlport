@@ -12,7 +12,7 @@ regression-tested: the PromQL semantics the rollup rules depend on, the anchorin
 label-matcher regular expressions, and the series pairing that
 Theorem~\ref{thm:arith} rests on. Two further readings were taken from a real server
 and written down as prose rather than cached --- the parse error that decides
-\S\ref{sec:grammars}'s one conflict, and the rejection that
+\S\ref{sec:grammars}'s two conflicts, and the rejection that
 Remark~\ref{rem:anchored-flag} turns on --- so they are evidence of a weaker kind than
 the three above, and the difference is in the artefact rather than in the reading.
 Nothing is left that was read from source and not then measured: Datadog's reset policy was taken from its
@@ -30,8 +30,8 @@ of the eight confirmed what the paper had assumed. Three did not: the bucket con
 \texttt{.as\_rate()}, which turned out to divide the aggregated result rather than
 each series, and whose presence in a query turned out not to establish the metric's type
 at all, because Datadog accepts the modifier on a gauge and ignores it; and
-\texttt{.weighted()}, carried here as the largest gap in the catalogue until the account
-was asked and returned the same number with the modifier and without it. The last of the
+\texttt{.weighted()}, carried here as the largest single entry in the inexpressible
+column until the account was asked and returned the same number with the modifier and without it. The last of the
 eight decides which column $139$ corpus occurrences belong in, and is the only one
 measured on both sides: over one workload, the candidate expression against a real
 Prometheus in $20$ cases and \texttt{top()} itself against Datadog in $22$, each

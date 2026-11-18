@@ -1,4 +1,6 @@
-\subsubsection{The dual-write replay}
+% Inline this is a part of \S\ref{sec:ingestion}; deferred it sits directly under an
+% appendix with no subsection above it, where \subsubsection numbers as A.0.1.
+\iffull\subsubsection{The dual-write replay}\else\subsection{The dual-write replay}\fi
 \label{sec:replay}
 
 Everything to this point compares a PromQL candidate against our reading of Datadog's
@@ -89,4 +91,3 @@ as it does on every complete bucket of all three counters. So the restart rows o
 Table~\ref{tab:rollup-live} no longer stand alone: the anchored form tracks
 $\phi_{\mathsf{zero}}$, and Datadog agrees with it where a counter actually restarts.
 
-\iffull\input{sections/app_experiments}\fi

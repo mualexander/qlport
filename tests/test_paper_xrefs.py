@@ -25,7 +25,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "paper"
-# rglob: sections/moved/ holds the blocks the 20-page build defers to appendices.
+# rglob: sections/moved/ holds the blocks main.tex defers to appendices.
 TEX = sorted((PAPER / "sections").rglob("*.tex")) + [PAPER / "body.tex"]
 
 # `\apphead{title}{label}` is how an apparatus file declares its heading and label

@@ -29,8 +29,10 @@ lies elsewhere: $96.9\%$ of our translations depend on a rollup interval the que
 no slot to state, against $55.6\%$ of the corpus's PromQL range selectors that leave
 their own slot to a dashboard variable.
 Going back is different in kind --- a Datadog tag filter is a glob, glob-expressibility
-of a regular expression is decidable, and three impossibility results account for every
-refusal we measure in that direction. Leaving costs work; returning costs expressiveness.
+of a regular expression is decidable, and every refusal we measure in that direction is
+a theorem about globs rather than unfinished work --- ten of them outright, and the
+rest together with a bound on union size that we chose and state. Leaving costs work;
+returning costs expressiveness.
 \end{abstract}
 
 \input{sections/01_introduction}
@@ -46,7 +48,7 @@ refusal we measure in that direction. Leaving costs work; returning costs expres
 
 % --- apparatus -----------------------------------------------------------------
 % In the full build each of these is \input inline by the section it belongs to, so it
-% reads in place. In the 20-page build the sections omit them and they land here as
+% reads in place. In the deferred build the sections omit them and they land here as
 % appendices instead. One copy of the prose either way: the two builds cannot drift,
 % which after two passes of tables outrunning the text they quote is not a theoretical
 % concern, with one class of exception. Where moving a block would leave a body statement

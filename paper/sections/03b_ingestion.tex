@@ -149,12 +149,13 @@ its quantiles differ. So no PromQL expression over what Prometheus holds equals
 $\mathtt{p}NN$, for any expression whatsoever, and the refusal is informational rather
 than a shortage of operators: PromQL has \texttt{histogram\_quantile}, and what it
 computes is an interpolation within a bucket rather than the quantile itself.
+\end{corollary}
 
+\noindent
 Naming the sum and the count explicitly is the eighth review pass's correction. The
 corollary used to infer from ``the quantile is not determined by the bucket counts'', and
 Prometheus holds more than the bucket counts --- so the step did not reach the quantifier
 the sentence claims, even though the conclusion is true.
-\end{corollary}
 
 \noindent
 Two things about Corollary~\ref{cor:quantile} are worth keeping separate. It is not a
@@ -204,8 +205,9 @@ bucket rather than on its edge.
 
 \iffull\input{sections/moved/ing_closure_detail}\fi
 
-\noindent
-It changes it in a way that is easy to get wrong twice. Since a PromQL range selector
+\inlineonly{\noindent}%
+Getting the convention wrong changes where a translated query must be evaluated, and
+in a way that is easy to get wrong twice. Since a PromQL range selector
 covers $(u-\Delta,u]$ and the bucket covers $[b,b+\Delta)$, no instant makes the two
 cover the same samples when a sample lands on a boundary: at $u=b+\Delta$ the window
 takes the sample at $b+\Delta$, which Datadog has put in the next bucket, and misses the

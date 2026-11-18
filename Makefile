@@ -25,7 +25,7 @@ notebooks: install
 	  $(PY) -m jupytext --to ipynb --set-kernel $(KERNEL) --execute "$$nb" >/dev/null || exit 1; \
 	done
 
-# Two builds from one source: main.tex is the 20-page submission, main_full.tex the
+# Two builds from one source: main.tex defers its apparatus to appendices, main_full.tex the
 # complete version with every appendix inline. The prose exists once and only its
 # placement differs, so the two cannot disagree.
 PAPERS := main main_full

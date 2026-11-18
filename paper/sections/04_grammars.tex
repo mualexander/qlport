@@ -83,7 +83,7 @@ examples never show.
 Table~\ref{tab:grammar-stats} reports the constructed tables, under a strict mode the
 parser generator leaves off by default --- with it off, conflicts are resolved silently
 by preferring a shift, so a grammar that merely builds has demonstrated nothing about
-ambiguity (\apref{app:proofs}).
+ambiguity.
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/grammar_stats}
@@ -103,6 +103,7 @@ deterministic.
 \subsubsection{The PromQL conflicts, and their one cause}
 \label{sec:promql-conflict}
 
+\shortonly{%
 PromQL's table carries $2$ conflicts, both a shift/reduce on the left parenthesis, in
 the two states reached after \texttt{group\_left} and after \texttt{group\_right}. They
 have a single cause: the vector-matching modifiers take an \emph{optional} parenthesised
@@ -117,7 +118,7 @@ resolution Prometheus~3.15.0 itself makes on the same expression. What this show
 that \emph{this} grammar is not LALR(1), not that no LALR(1) grammar for PromQL exists:
 the language is not ambiguous, since the ambiguous-looking expression has one parse,
 which Prometheus produces and then rejects for want of an operand. We make no claim
-about the whole class of grammars for this language.
+about the whole class of grammars for this language.}
 
 So RQ1's answer is asymmetric --- conflict-free for the language with no published
 grammar, LALR(1) modulo one documented resolution for the language that has one --- and

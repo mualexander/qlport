@@ -184,8 +184,8 @@ its comma and on a presence branch subsuming every value (\apref{app:proofs}).
 
 What remains refused is every disjunction whose branches do not all constrain
 \emph{one} key --- across different keys, or within a branch that constrains two at
-once --- which \S\ref{sec:gaps} measures at four query occurrences in the corpus and
-sorts into its three shapes there. Those stay sayable in
+once --- which \S\ref{sec:gaps} measures at four query occurrences in the corpus, sorted into
+their three shapes in \apref{app:eval}. Those stay sayable in
 PromQL --- as a set union of selectors with the rollup distributed over the branches,
 $2^k$ selectors for $k$ disjunctions --- but not as the syntax-directed translation of a
 scope, which is what this translator is.
@@ -207,7 +207,7 @@ observed itself needing and which the IR does not record as satisfied.
 The caveats are not a disclaimer. They are the hypotheses of
 Theorem~\ref{thm:kernel} below, collected by the only component in a position to know
 which ones a given query incurred, and \S\ref{sec:caveats} reports how often each is
-incurred. Five arise:
+incurred. Six arise:
 \texttt{ROLLUP\_ALIGNMENT} on every rollup, since Datadog's buckets are epoch-aligned,
 left-closed and named by their start (Remark~\ref{rem:closure}) while a PromQL window is
 right-closed and follows the evaluation step;
@@ -215,8 +215,10 @@ right-closed and follows the evaluation step;
 \texttt{COUNTER\_RESET} on the cumulative difference, or \texttt{ANCHORED\_VERSION} on the
 form that avoids it; \texttt{PHI\_SERIES\_START} on the forms that read a counter, which
 need a sample older than the bucket and which the anchored form again avoids
-(Remark~\ref{rem:series-start}); and \texttt{METRIC\_TYPE\_UNKNOWN}, which deserves its
-own paragraph.
+(Remark~\ref{rem:series-start}); \texttt{TAG\_PRESENCE\_EMPTY} where the selector asks a
+tag merely to be present, because Datadog separates an absent tag from one present with
+an empty value and Prometheus's data model does not; and
+\texttt{METRIC\_TYPE\_UNKNOWN}, which deserves its own paragraph.
 
 Two measurements settle what \texttt{METRIC\_TYPE\_UNKNOWN} costs, and both are
 uncomfortable. The first is that the condition cannot be discharged from the query text.
@@ -238,8 +240,8 @@ so the emitted \texttt{*\_over\_time} reduces running totals where Datadog reduc
 query carries a counter modifier anyway, so the emitter chooses a counter rule for a
 series with no deltas to difference. Recording this does not move $\kappa$ --- the
 translations are unchanged --- which is the point: it changes what they are claimed to
-be. \apref{app:experiments} gives both designs, what came back, and what a disagreement
-is and is not evidence of.
+be. Both designs, what came back, and what a disagreement is and is not evidence of are
+set out \apref{app:experiments}.
 
 \iffull\input{sections/moved/tr_gauge}\fi
 \iffull\input{sections/moved/tr_type_measured}\fi
@@ -257,7 +259,7 @@ The $\mathit{per\_second}$ flag is written out because Definition~\ref{def:ir} c
 and because $258$ of the kernel's occurrences set it: an earlier version of this display
 listed three of $\mathrm{Rollup}$'s four arguments, which put every \texttt{.as\_rate()}
 rollup outside the kernel as literally defined while the counts included them. The proof
-below treats the case.
+in \apref{app:proofs} treats the case.
 
 \begin{lemma}[Scopes and selectors agree]\label{lem:scope}
 For every Datadog scope $\sigma$ that lowering does not refuse, the matchers
@@ -289,6 +291,10 @@ Let $q\in\mathcal{K}$ with $E(L(q))=(p,C)$, and let $t$ be an evaluation time. I
       \hfill (\texttt{COUNTER\_RESET}, \texttt{ANCHORED\_VERSION})
 \item where the emitted form reads a counter: every series has a sample before $t$
       \hfill (\texttt{PHI\_SERIES\_START})
+\item where the emitted selector asks a tag merely to be present: no series in $D$
+      carries that tag with an empty value, which is Lemma~\ref{lem:scope}'s last
+      proviso
+      \hfill (\texttt{TAG\_PRESENCE\_EMPTY})
 \end{enumerate}
 and the name mangling of \S\ref{sec:lowering} is injective on $D$'s metric names, on
 its label sets and on $q$'s grouping keys, and Prometheus's lookback covers the two
@@ -296,10 +302,12 @@ distances Proposition~\ref{prop:offset} requires, then
 $\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,u(t))$ ---
 exactly, not within the $\varepsilon$ of Definition~\ref{def:sound}. In the language of
 that definition the kernel is exact along $u(t)=t+\Delta-\eta$.
+\end{theorem}
 
-The five numbered hypotheses are exactly the elements
-of $C$; the last two are not, and that asymmetry is worth stating rather than hiding in
-the list. Injectivity and the lookback are conditions on the \emph{target deployment} ---
+\noindent
+The six numbered hypotheses are exactly the elements
+of $C$; the injectivity and the lookback are not, and that asymmetry is worth stating rather than hiding in
+the list. Those two are conditions on the \emph{target deployment} ---
 on which identifiers collide once mangled, and on how the server is configured --- and
 the emitter cannot observe either, so no code records them. $C$ is therefore what the
 translator can tell you about a translation, not everything the translation needs.
@@ -310,12 +318,11 @@ lookback is not a misconfiguration clause, which an earlier version of this theo
 called it: it fails on a \emph{gap in the data} --- a scrape outage, a replaced target ---
 at any server configuration, and Proposition~\ref{prop:anchored}'s proof reads an
 instance off a real server. Both are unreported either way.
-\end{theorem}
 
 \iffull\input{sections/moved/tr_kernel_pf}\fi
 \iffull\input{sections/moved/tr_type_history}\fi
 
-\noindent
+\inlineonly{\noindent}%
 The theorem is a statement about the \emph{kernel}, which is $95.4\%$ of the corpus and
 $99.0\%$ of what the translator emits, but not all of it. What the remainder does is
 arithmetic between kernel queries, and \S\ref{sec:binop-soundness} extends the theorem
@@ -392,7 +399,9 @@ $\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,u(t))$
 common $u(t)=t+\Delta-\eta$, and $C$ is
 the union of those subterms' caveats --- the extension introduces no condition of its
 own.
+\end{theorem}
 
+\noindent
 The shared $\Delta$ is a hypothesis rather than an observation, and it was missing. A
 PromQL expression is evaluated at one instant while Theorem~\ref{thm:kernel} fixes one
 per subterm, so two kernel subterms with different intervals cannot both satisfy it. For
@@ -403,11 +412,10 @@ no instant returns Datadog's reading. The theorem is vacuous there rather than f
 the corpus contains no such query --- $0$ of the $79$ occurrences carrying a binary
 operator mix intervals --- so the measured claim is unaffected and only the sentence
 below about every front-end term needed narrowing.
-\end{theorem}
 
 \iffull\input{sections/moved/tr_arith_pf}\fi
 
-\noindent
+\inlineonly{\noindent}%
 Theorem~\ref{thm:arith} reaches further than it may look. Every term the \emph{front
 end} can build lies in $\mathcal{A}$, and that is where the universal comes from ---
 not from the emitter, which would happily aggregate anything handed to it, and not from

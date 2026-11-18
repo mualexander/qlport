@@ -173,13 +173,9 @@ ALLOWED: dict[float, str] = {
     0.5: "E7: the relative difference at the start of the run",
     # --- corpus figures from notebooks 00, 01, 04, 05: unregistered -------------------
     11628: "unregistered (nb 00): Datadog formula expressions",
-    8955: "unregistered (nb 00): space-aggregator occurrences",
-    8472: "unregistered (nb 04): PromQL regex matchers",
     8096: "unregistered (nb 00): PromQL expressions",
     5389: "unregistered (test_corpus): distinct Datadog metric names",
     5227: "unregistered (nb 00): PromQL function occurrences",
-    1013: "unregistered (nb 04): concrete regex patterns",
-    763: "unregistered (nb 00): source documents",
     723: "unregistered (test_corpus): distinct grouping keys",
     388: "unregistered (nb 04): refused patterns",
     378: "of those, the two constructs that are finite unions exceeding the bound "
@@ -212,12 +208,9 @@ ALLOWED: dict[float, str] = {
     99.1: "unregistered (nb 01): PromQL instantiated parse rate",
     95: "unregistered (nb 00): share of Datadog space aggregators that are sum/avg",
     92.6: "unregistered (nb 01): Datadog instantiated parse rate, v1",
-    88: "unregistered (nb 04): share of regex matchers that are template variables",
-    82: "unregistered (nb 00): PromQL queries carrying a template variable",
     71.2: "unregistered (nb 01): PromQL raw parse rate",
     69: "unregistered (nb 00): share of PromQL functions that are rate/irate",
     56: "E9 distinct corpus forms carrying .weighted(), and the share of Datadog queries using by {...}",
-    38.3: "unregistered (nb 04): refusals as a share of concrete patterns",
     34: "unregistered: percentile-aggregator occurrences (nb 03), and the union share (nb 04)",
     27.4: "unregistered (replay): aligned-grid agreement on the bucket edge",
     23: "unregistered (nb 03): shapes covering 80% -- also an allowed small integer",
@@ -227,8 +220,11 @@ ALLOWED: dict[float, str] = {
         "observation of a broken run rather than a computed figure",
     11.8: "unregistered (nb 01): Datadog raw parse rate",
     6.6: "unregistered (nb 00): as_count to as_rate ratio",
-    4.6: "the glob refusals against every matcher rather than the concrete ones "
-         "(388 of 8,472), the denominator the forward direction would have used",
+    4.5: "the glob refusals against every matcher rather than the concrete ones: "
+         "388 of nb04.matchers = 8,587, the denominator the forward direction would "
+         "have used. Stated as a derivation because the ratio has no registry key "
+         "of its own, and the 4.6 this replaces was 388/8,472 -- the matcher count "
+         "from before the scan learnt PromQL's other two string forms",
     3.6: "unregistered (nb 03): the bottom share",
     2.7: "unregistered (nb 01): PromQL queries the first six features complete",
     1.68: "unregistered (nb 02): worst relative error under a reset",
@@ -237,7 +233,6 @@ ALLOWED: dict[float, str] = {
     0.9: "unregistered (nb 03): the 90% line on the coverage figure",
     90: "the same line quoted as a threshold in the staircase prose",
     0.3: "unregistered (nb 00): PromQL offset share",
-    323: "unregistered (nb 05): shapes compared in the differential",
 }
 
 
@@ -249,7 +244,7 @@ ALLOWED: dict[float, str] = {
 # made on magnitude alone. A share and a count are different claims; a checker that
 # cannot tell them apart launders one into the other.
 SCALAR_ONLY: set[float] = {
-    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 45, 49, 54, 103, 110, 111, 133, 139, 221, 238, 344, 388, 723, 763, 897, 1013, 1760, 5227, 5389, 8096, 8472, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 0.628, 0.667, 887, 335, 1.4,
+    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 45, 49, 54, 103, 110, 111, 133, 139, 221, 238, 344, 388, 723, 897, 1760, 5227, 5389, 8096, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 0.628, 0.667, 887, 335, 1.4,
 }
 
 
@@ -453,6 +448,15 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb03.not_implemented_pct", "body.tex"),
     ("nb03.shaped_occurrences", "07_evaluation.tex"),
     ("nb03.shapes", "07_evaluation.tex"),
+    # The ninth review pass found each of these four quoted at a superseded value,
+    # accepted because an allowlist entry called it unregistered. A registry key plus a
+    # binding is what an allowlist entry cannot be: a check.
+    # nb03.feature_slack_occurrences is not bound: 87 is too common a value to match
+    # meaningfully, which test_a_bound_figure_is_distinctive_enough_to_check enforces.
+    # It drifted anyway (quoted as 82), so test_paper_builds.py checks it by derivation.
+    ("nb04.matchers", "06_regular.tex"),
+    ("nb04.template_pct", "06_regular.tex"),
+    ("nb04.glob_exists_pct", "06_regular.tex"),
     ("nb03.shapes", "concl_evidence.tex"),
     ("nb03.shapes_for_95pct", "eval_shape_reduction.tex"),
     # `top(...)`'s occurrence count decides which column the largest unimplemented entry

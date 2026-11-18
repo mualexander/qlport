@@ -23,7 +23,7 @@ queries and a community's queries on the same footing
 \input{tables/corpus_sources}
 \caption{Corpus sources. Queries are extracted from dashboard and alerting definitions,
 not written for this paper. The Datadog figure counts metric queries; the same documents
-also contribute $11{,}628$ formula expressions, held aside below.}
+also contribute $11{,}628$ formula expressions, held aside in \apref{app:eval}.}
 \label{tab:corpus-sources}
 \end{table}
 
@@ -101,7 +101,7 @@ is a correction rather than a calculation. The translator's own feature set is t
 use: it supports $S^\star$, the $25$ features that appear in some query it translates, and
 every query using a feature outside $S^\star$ is refused by construction, so the share of
 occurrences whose features all lie inside it --- $97.3\%$ --- bounds $\kappa$ from above.
-$\kappa$ is $96.3\%$, and the gap is $82$ occurrences that use nothing outside $S^\star$
+$\kappa$ is $96.3\%$, and the gap is $87$ occurrences that use nothing outside $S^\star$
 and are refused anyway. Those are not unattempted easy queries. They are queries the
 feature vocabulary cannot tell apart from ones that translate: \texttt{.fill(0)} and
 \texttt{.fill(null)} are both \texttt{M\_FILL}, and a conjunctive and a disjunctive
@@ -190,12 +190,16 @@ query is not self-contained, so a translated query cannot be either.
 
 \iffull\input{sections/moved/eval_rollup_default}\fi
 
-The rest of the table is three codes and one conclusion.
+The rest of the table is four codes and one conclusion.
 \texttt{COUNTER\_RESET} and \texttt{PHI\_SERIES\_START} each mark the same $23.6\%$ ---
 the translations using the cumulative-difference form of
 Proposition~\ref{prop:offset} --- for two conditions that coincide in this corpus
 without being the same condition, and that the anchored form of
-Proposition~\ref{prop:anchored} separates. \texttt{METRIC\_TYPE\_UNKNOWN} marks
+Proposition~\ref{prop:anchored} separates. \texttt{TAG\_PRESENCE\_EMPTY} marks the
+$1.4\%$ whose selector asks a tag merely to be present, where the three tag states
+Datadog distinguishes collapse to two in Prometheus's data model --- the same barrier
+that refuses \texttt{SCOPE\_EMPTY\_VALUE} outright, appearing here as a condition on the
+target database rather than as a refusal. \texttt{METRIC\_TYPE\_UNKNOWN} marks
 $100\%$ of them, for the reason \S\ref{sec:emission} gives, and it is the one
 precondition here whose violation rate can be measured: on the $89.5\%$ of translated
 occurrences whose type the vendor's own repository declares, the front end's inference
@@ -255,7 +259,8 @@ deviation over all $329$ is $1.4\times10^{-13}$ and $136$ of them are bit-identi
 Weighted by the corpus queries those shapes stand for, that is $8{,}334$ of the $8{,}339$
 translated single-query occurrences. So all but about a hundred of $\kappa$'s occurrences
 are now translations checked against the vendor rather than merely emitted --- the
-remainder being the comma-separated lists, which the shape reduction does not cover ---
+remainder being the comma-separated lists the shape reduction does not cover, plus the
+five occurrences in the three shapes it could not compare ---
 which is a claim this paper could not previously make at all.
 
 \iffull\input{sections/moved/eval_differential_fixes}\fi
@@ -297,12 +302,13 @@ agreement rate is.
 \iffull\input{sections/moved/eval_harness_failures}\fi
 \iffull\input{sections/moved/eval_differential_limits}\fi
 
-The sharper limit is which hypotheses the run can reach, and it is the two that matter
-most. The harness submits each metric under the kind the \emph{translator inferred}
+The run leaves three of the $332$ shapes uncompared and its series are synthetic, both
+of which \apref{app:eval} sets out. The sharper limit is which hypotheses the run can
+reach, and it is the two that matter most. The harness submits each metric under the kind the \emph{translator inferred}
 from the query text, and fixes a four-hour query range precisely because E4 measured
 four hours as the $60$\,s the emitter assumes. So hypotheses (2) and (3) of
 Theorem~\ref{thm:kernel} --- the interval and the metric type, carried by $96.9\%$ and
-$100\%$ of translations --- hold by construction in all $323$ compared shapes. That is
+$100\%$ of translations --- hold by construction in all $329$ compared shapes. That is
 the right design for testing the rules, since a run in which the assumptions were
 already wrong would measure the assumptions rather than the arithmetic. But it means
 the agreement reported here is agreement \emph{given} the two conditions
