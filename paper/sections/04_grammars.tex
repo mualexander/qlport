@@ -10,7 +10,7 @@ and parsing is linear, so the corpus of \S\ref{sec:evaluation} can be processed 
 
 The answer differs by language, and the difference is a finding rather than an artefact
 of how we wrote the rules. The inferred Datadog grammar is conflict-free. PromQL is not,
-and its single conflict is forced by the language as specified.
+and the conflicts it has are forced by the language as specified.
 
 \subsection{Core productions}
 
@@ -103,14 +103,19 @@ and not a reproduction: the grammar of Figure~\ref{fig:productions} is, as far a
 aware, the first published grammar for Datadog's metrics query language, and it is
 deterministic.
 
-\subsubsection{The one PromQL conflict}
+\subsubsection{The PromQL conflicts, and their one cause}
 \label{sec:promql-conflict}
 
-PromQL's table carries exactly one conflict, a shift/reduce on the left parenthesis, and
-it is not an accident of our encoding. The vector-matching modifier
-\texttt{group\_left} takes an \emph{optional} parenthesised label list, so after
-\texttt{group\_left} an opening parenthesis may begin either that list or a
-parenthesised right operand:
+PromQL's table carries $2$ conflicts, both a shift/reduce on the left parenthesis, and
+neither is an accident of our encoding. They sit in two states --- one reached after
+\texttt{group\_left} and one after \texttt{group\_right} --- and have a single cause, so
+an earlier version of this subsection reported one conflict rather than two. That was not
+a reading of the table: Lark raises at the \emph{first} conflict in strict mode, so the
+message the measurement returned said one however many there were, and the count is now
+read off the resolution log instead (\texttt{parse.py}'s
+\texttt{lalr\_conflict\_report}). The cause is that the vector-matching modifiers take an
+\emph{optional} parenthesised label list, so after either of them an opening parenthesis
+may begin that list or a parenthesised right operand:
 \begin{center}\footnotesize
 \texttt{a * on(x) group\_left (y) b}\qquad vs.\qquad\texttt{a * on(x) group\_left (b)}
 \end{center}
@@ -137,11 +142,11 @@ five is pinned by test; Prometheus's own is not, which makes this the least repl
 of the server readings in this paper.
 
 So RQ1's answer for PromQL is ``LALR(1) modulo one documented resolution'', not
-``conflict-free'' --- and the resolution is the one the reference implementation already
-makes. We draw nothing further from it. A tie-break on an optional parenthesised label
-list in the \emph{target} language costs a migration nothing, no corpus query is
-affected, and an earlier version of this section offered it as evidence for the paper's
-thesis, which it is not.
+``conflict-free'' --- one resolution, applied in both states, and the one the reference
+implementation already makes. We draw nothing further from it. A tie-break on an optional
+parenthesised label list in the \emph{target} language costs a migration nothing, no
+corpus query is affected, and an earlier version of this section offered it as evidence
+for the paper's thesis, which it is not.
 
 \subsection{Lexical decisions}
 
@@ -149,14 +154,22 @@ Keyword-rich query languages put most of the difficulty in the lexer rather than
 parser, and both grammars needed terminals shaped by word boundaries, lookaheads and
 priorities. Table~\ref{tab:grammar-decisions} records them the same way
 \S\ref{sec:datadog-inference} records the missing productions: each decision is
-perturbed back to the form it would naively take, and a query from the corpus is
-re-parsed to show what breaks. A row that still parsed would mean the decision was dead
-weight; none is.
+perturbed back to the form it would naively take, and a witness is re-parsed to show
+what breaks. A row that still parsed would mean the decision was dead weight; none is.
+The witnesses are minimal queries written for the table rather than corpus queries, which
+an earlier version of this paragraph claimed they were; what the corpus supplies is the
+count beside each one, of distinct corpus queries the real grammar parses and the naive
+form does not. Every decision is load-bearing against the corpus as well as against its
+witness, and the Datadog colon lookahead is the row where the two differ in kind: no
+corpus query names a metric beginning with an aggregator word, and what the corpus
+exhibits instead is a \emph{function} whose name does, \texttt{count\_not\_null(...)}.
 
-\begin{table}[htbp]\centering\footnotesize
+\begin{table}[htbp]\centering\scriptsize
 \input{tables/grammar_decisions}
 \caption{Load-bearing lexical decisions. Each row perturbs one terminal to its naive
-form and re-parses the witness, which the real grammar accepts.}
+form and re-parses the witness, which the real grammar accepts. The witnesses are
+minimal queries written for this table; the last column is how many distinct corpus
+queries the naive form stops parsing.}
 \label{tab:grammar-decisions}
 \end{table}
 
@@ -219,10 +232,14 @@ a string or does not, so counting the same string forty times would measure the
 dashboards rather than the language, while a migration that must rewrite forty panels
 by hand is counting panels. Both denominators appear in this paper and each claim says
 which it uses. The reason
-is that dashboard queries are not queries but \emph{templates} --- $87\%$ of Datadog and
-$82\%$ of PromQL query \emph{occurrences} contain at least one variable such as
+is that dashboard queries are not queries but \emph{templates} --- $88.6\%$ of Datadog and
+$82.5\%$ of PromQL query \emph{occurrences} contain at least one variable such as
 \texttt{\$host} or \texttt{\$\_\_rate\_interval}, so these two shares are counted the
-other way from the parse rates beside them. A translator for dashboards therefore takes a query
+other way from the parse rates beside them. Both halves are now the same quantity. The
+Datadog figure used to read $87\%$, which is the share with a variable \emph{inside a
+scope} and not the share with a variable, while the PromQL figure beside it was the
+latter --- two definitions in one comparison, and the narrower one on the side the
+sentence was about. A translator for dashboards therefore takes a query
 schema, not a query, and \S\ref{sec:evaluation} measures coverage on the instantiated
 form for that reason.
 

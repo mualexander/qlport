@@ -171,8 +171,8 @@ text.}
 \label{tab:regex-glob}
 \end{table}
 
-The first result is not about regular languages. Of $8{,}472$ regex matchers,
-$7{,}459$ --- $88.0\%$ --- have a Grafana template variable as their pattern, as in
+The first result is not about regular languages. Of $8{,}587$ regex matchers,
+$7{,}546$ --- $87.9\%$ --- have a Grafana template variable as their pattern, as in
 \texttt{\{pod=\textasciitilde{}"\$pod"\}}. The value is chosen when somebody looks at the
 dashboard, so there is no pattern to convert; the normalisation of
 Section~\ref{sec:corpus} deliberately leaves these alone, because the matcher already
@@ -180,11 +180,15 @@ parses with the variable in place. For these the reverse direction is not hard b
 \emph{statically undefined}, and that is a property of how dashboards are written rather
 than of either language.
 
-Among the $1{,}013$ occurrences whose pattern is concrete, Table~\ref{tab:regex-glob}
+Among the $1{,}041$ occurrences whose pattern is concrete, Table~\ref{tab:regex-glob}
 gives the three-way split and Table~\ref{tab:regex-glob-examples} what each outcome
-looks like. A glob exists for $625$ of them ($61.7\%$), but for more than
-half of those only as a union: one glob covers $281$ occurrences ($27.7\%$) and a bounded
-union covers $344$ ($34.0\%$). Treating a single glob as the target --- the obvious
+looks like. A glob exists for $653$ of them ($62.7\%$), but for more than
+half of those only as a union: one glob covers $309$ occurrences ($29.7\%$) and a bounded
+union covers $344$ ($33.0\%$). Those counts rose in the seventh reading of the apparatus,
+and the caption of Table~\ref{tab:regex-glob} is why: it says ``every \texttt{=\textasciitilde{}}
+and \texttt{!\textasciitilde{}} matcher'', and the scanner behind it accepted only
+double-quoted patterns. PromQL writes a string three ways, its own grammar in
+Section~\ref{sec:grammars} says so, and $114$ matcher occurrences sat in the other two. Treating a single glob as the target --- the obvious
 reading of ``does this regex have a glob'' --- would therefore have understated the
 reverse direction by $34$ points of occurrence coverage, and the construction that
 recovers them is the one Section~\ref{sec:translation} already proved for the other
@@ -225,16 +229,29 @@ $378$ of the $388$ occurrences are refused by a theorem about single globs plus 
 this paper chose, and $10$ by a theorem about globs outright. For
 the single-glob question we can also say it the other way round, by measurement rather
 than by proof: re-deciding every concrete regular expression with the complete procedure
-of Proposition~\ref{prop:decidable} reaches $168$ of the $183$ distinct patterns within
-its time budget --- the counts in this paragraph are of patterns rather than of the
-occurrences above --- and disagrees with the syntax-directed proposer on \emph{none} of
-them --- it recovers the
-same glob for all $60$ of the single-glob cases, and finds no glob for all $45$ refusals
-and all $63$ unions it reached. The remaining $15$ are the ones whose shortest word is
-long enough to make the search expensive, and they are recorded as not reached rather
-than as agreeing. The run is cached
+of Proposition~\ref{prop:decidable} reaches \emph{all} $184$ distinct patterns --- the
+counts in this paragraph are of patterns rather than of the occurrences above --- and
+disagrees with the syntax-directed proposer on \emph{none} of them. It recovers the
+same glob for all $61$ of the single-glob cases, and finds no glob for all $50$ refusals
+and all $73$ unions. Nothing is left undecided: no pattern exceeds the search's own
+candidate bound, so the agreement is over the whole population rather than over a
+reachable part of it.
+
+An earlier version of this paragraph reported $168$ of $183$ and recorded the remainder
+as not reached, which was a statement about a clock rather than about the procedure. The
+script takes a time budget, that run was given $2{,}400$\,s, and four patterns of one
+family --- a parenthesised alternation inside a long literal, as in
+\texttt{cnpg\_pg\_stat\_(bgwriter|checkpointer)\_checkpoints\_timed} --- cost $91$ to
+$176$ seconds each when timed on an idle machine, so the budget expired partway through
+them. Run without one the cross-check takes $4{,}725$\,s and finishes. What makes those
+patterns expensive is worth naming, because it is the procedure working rather than
+struggling: the shortest word of such a pattern is forty-odd characters, so the pruned
+space of star insertions is large, and the search has to \emph{exhaust} it to conclude
+that no single glob exists. The costly cases are the negative ones, and they are exactly
+the cases a structural proposer's refusal would otherwise have to be taken on trust. The run is cached
 (\texttt{scripts\slash crosscheck\_globs.py}), and \texttt{tests\slash test\_regular.py}
-fails if a disagreement ever appears.
+fails if a disagreement ever appears, if any pattern goes unreached, or if the two sides
+stop sharing a population.
 
 \begin{remark}[The largest refusal turned on an undocumented detail]%
 \label{rem:star-empty}

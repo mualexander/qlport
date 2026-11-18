@@ -31,6 +31,7 @@
 
 # %%
 import collections
+import json
 import re
 from pathlib import Path
 
@@ -94,12 +95,16 @@ def tabular(spec: str, header: list[str], rows: list[list[str]], path: Path) -> 
 
 # %%
 queries = c.read_queries(CORPUS / "queries.jsonl")
-promql = [q for q in queries if q.lang == "promql"]
-MATCHER = re.compile(r'(\w+)\s*(=~|!~)\s*"((?:[^"\\]|\\.)*)"')
-
+# The same population §7 reports: the LogQL panels carry stream selectors, not PromQL
+# label matchers, and counting them put three of their patterns in §6's table.
+promql = [q for q in queries if q.lang == "promql" and c.is_promql(q.text)]
+# `corpus.promql_matcher_values` reads all three PromQL string forms. Scanning only
+# `"..."` here hid 114 matcher occurrences -- `fstype!~'rootfs'` and a backtick raw
+# string among them -- from a table whose caption says "every `=~` and `!~` matcher",
+# and `scripts/crosscheck_globs.py` carried a second copy of the same narrow pattern.
 occurrences = collections.Counter()
 for q in promql:
-    for _label, _op, rx in MATCHER.findall(q.text):
+    for rx in c.promql_matcher_values(q.text):
         occurrences[rx] += 1
 
 template = {r: n for r, n in occurrences.items() if "$" in r}
@@ -198,16 +203,44 @@ tabular("llr", ["PromQL regex", "Datadog scope value", "Occurrences"], ex_rows,
         TABLES / "regex_glob_examples.tex")
 
 # %% [markdown]
-# ## Assertions
-# The paper quotes these; a change that moves them should fail here, not in the PDF.
+# ### Figures §6 quotes that the tables do not hold
+# The three-way split is in `regex_glob.tex`; these are the roll-ups §6 states in prose.
 
 # %%
-assert len(promql) == 8_107, len(promql)
-assert (len(template), sum(template.values())) == (175, 7_459), (len(template), sum(template.values()))
-assert (len(concrete), sum(concrete.values())) == (183, 1_013), (len(concrete), sum(concrete.values()))
-assert share("single") == (60, 281), share("single")
-assert share("union") == (73, 344), share("union")
-assert share("none") == (50, 388), share("none")
+_QF = ROOT / "paper" / "quoted_figures.json"
+_existing = json.loads(_QF.read_text()) if _QF.exists() else {}
+_glob_exists_d = share("single")[0] + share("union")[0]
+_glob_exists_o = share("single")[1] + share("union")[1]
+_existing.update({
+    "nb04.matchers": int(sum(occurrences.values())),
+    "nb04.template_pct": round(sum(template.values()) / sum(occurrences.values()) * 100, 1),
+    "nb04.concrete_occurrences": int(sum(concrete.values())),
+    "nb04.glob_exists_occurrences": int(_glob_exists_o),
+    "nb04.glob_exists_pct": round(_glob_exists_o / sum(concrete.values()) * 100, 1),
+})
+_QF.write_text(json.dumps(_existing, indent=1, sort_keys=True) + "\n")
+print(f"wrote {_QF.relative_to(ROOT)}")
+for _k in sorted(k for k in _existing if k.startswith("nb04.")):
+    print(f"  {_k:34s} {_existing[_k]}")
+
+# %% [markdown]
+# ## Assertions
+# Structural invariants, not copies of the figures. The duplicated constants that used to
+# sit here went stale without failing anything: they were written against a matcher scan
+# that saw only double-quoted values and a PromQL population that still held the LogQL
+# panels, so they pinned the wrong numbers rather than catching the wrong numbers. What
+# checks the figures against the prose is `paper/quoted_figures.json` and the bindings in
+# `tests/test_paper_figures.py`; what belongs here is that the parts add up.
+
+# %%
+assert len(promql) == sum(1 for q in queries
+                          if q.lang == "promql" and c.is_promql(q.text)), len(promql)
+assert len(template) + len(concrete) == len(occurrences)
+assert sum(template.values()) + sum(concrete.values()) == sum(occurrences.values())
+# The three kinds partition the concrete regexes exactly once.
+assert sum(share(k)[0] for k in ("single", "union", "none")) == len(concrete)
+assert sum(share(k)[1] for k in ("single", "union", "none")) == sum(concrete.values())
+assert set(df.kind) <= {"single", "union", "none"}, set(df.kind)
 assert set(refused.reason) == {
     "single-character-wildcard", "nonempty-wildcard", "unbounded-character-class",
 }, set(refused.reason)
@@ -219,11 +252,11 @@ print("all assertions hold")
 # %% [markdown]
 # ## What this says
 #
-# * **Most regex matchers are not regexes we know.** 7,459 of 8,472 occurrences (88.0%)
+# * **Most regex matchers are not regexes we know.** 7,546 of 8,587 occurrences (87.9%)
 #   are template variables resolved when a dashboard is viewed. The reverse direction
 #   cannot be decided statically for them at all — not because of either language, but
 #   because the query text does not contain the pattern.
-# * **Of the concrete ones, a glob exists for 61.7% of occurrences**, and in more than
+# * **Of the concrete ones, a glob exists for 62.7% of occurrences**, and in more than
 #   half of those only as a *union* of globs. The union is not a workaround: a Datadog
 #   scope disjoins over one tag key with `IN (...)`, which is exactly the construction
 #   §5's single-key disjunction proposition reads in the other direction: one fact, used

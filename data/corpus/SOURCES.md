@@ -24,7 +24,7 @@ API snapshot the queries in `queries.jsonl` were extracted from.
 - fetched: `2026-11-14`
 - dashboards: `200`
 - dashboards_with_promql: `200`
-- queries_promql: `7291`
+- queries_promql: `7295`
 
 ## integrations-core
 
@@ -35,5 +35,5 @@ API snapshot the queries in `queries.jsonl` were extracted from.
 - fetched: `2026-11-14`
 - dashboards: `525`
 - unreadable: `9`
-- queries_datadog: `8766`
-- queries_datadog_formula: `11628`
+- queries_datadog: `8770`
+- queries_datadog_formula: `6022`

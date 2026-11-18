@@ -50,8 +50,17 @@ def test_whether_the_interval_was_stated_survives_abstraction():
     assert shape(q(interval=60.0)) != shape(q(interval=None))
 
 
-def test_the_intervals_value_does_not_survive():
-    assert shape(q(interval=60.0)) == shape(q(interval=300.0))
+def test_the_intervals_value_survives_because_it_is_emitted():
+    """The interval becomes the range-selector width, so it is not an identifier.
+
+    This test asserted the opposite until the seventh review pass, and the behaviour it
+    pinned put 70 corpus occurrences through the differential of §7 at a window width
+    they do not state -- two of them a width the rig cannot test at all. A shape exists
+    so that one member can stand for the class; a member that emits a different
+    expression is not represented by it.
+    """
+    assert shape(q(interval=60.0)) != shape(q(interval=300.0))
+    assert shape(q(interval=60.0)) == shape(q(interval=60.0))
 
 
 def test_grouping_keys_count_but_are_not_named():

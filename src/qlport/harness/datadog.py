@@ -315,15 +315,29 @@ def interpret_default_aggregator(interval: int | None, points, values, defined: 
         return {"conclusive": False, "interval": interval,
                 "why": f"the four samples do not share one {interval}s bucket "
                        f"(buckets={sorted(buckets)}, on_edge={on_edge})"}
-    got = [v for v in defined.values() if v]
-    if len(got) != 1:
+    nonzero = [(t, v) for t, v in defined.items() if v]
+    if len(nonzero) != 1:
         return {"conclusive": False, "interval": interval,
-                "why": f"expected one non-zero bucket, got {len(got)}"}
-    value, total = got[0], sum(values)
+                "why": f"expected one non-zero bucket, got {len(nonzero)}"}
+    # And it must be *this* probe's bucket. Checking only that the submitted points share
+    # one bucket let a reading of an earlier run's points -- same metric, no run tag, 900 s
+    # earlier -- pass as though it were the probe's own, which is how E3's first cached
+    # record came to hold three responses that predate its submission.
+    reported_at, value = nonzero[0]
+    want = bucket_of(points[0][0], delta, closure="left", label="start")
+    if not math.isclose(float(reported_at), want, abs_tol=1e-6):
+        return {"conclusive": False, "interval": interval,
+                "why": f"the non-zero bucket is at {float(reported_at):.0f}, not the "
+                       f"{want:.0f} the submitted points fall in"}
+    total = sum(values)
     predictions = {
         "avg": statistics.fmean(values),
         "sum (as if .as_count())": total,
         "sum/interval (as if .as_rate())": total / delta,
+        # `count` is a rollup aggregator too, and the first version of this probe used
+        # deltas 1, 2, 3, 10 whose mean is 4 and whose count is also 4 -- so it named
+        # `avg` conclusively on a reading that `count` explained just as well.
+        "count (as if .rollup(count))": float(len(values)),
     }
     matches = [k for k, p in predictions.items() if math.isclose(value, p, rel_tol=1e-6)]
     return {"conclusive": len(matches) == 1, "interval": interval, "value": value,

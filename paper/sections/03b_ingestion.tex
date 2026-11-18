@@ -364,7 +364,7 @@ invariance class holds --- no reset inside the window --- and the anchored form,
 reset handling \emph{is} $\delta_{\mathsf{zero}}$, is exact everywhere. Both are
 confirmed in Table~\ref{tab:rollup-live}: over four synthetic workloads at two rollup
 intervals, the cumulative difference agrees with the modelled rollup on every bucket of
-the reset-free workloads and falls to between $91.5\%$ and $98.3\%$ once counters
+the reset-free workloads and falls to between $91.4\%$ and $98.3\%$ once counters
 restart, with relative
 error as large as $1.68$, while the anchored form is exact on every bucket of every
 workload. ``Modelled'' is the right word there and is not a hedge: that table reads
@@ -386,10 +386,16 @@ Propositions~\ref{prop:offset} and~\ref{prop:anchored} are claims about PromQL, 
 checking them against our own evaluator would be circular. Each workload is therefore
 backfilled into a real Prometheus TSDB, and every candidate is read back from that server
 on the same epoch-aligned grid. Table~\ref{tab:model-verification} compares the two: across
-$1{,}688$ buckets the reference evaluators and the server agree to floating-point
+$1{,}680$ buckets the reference evaluators and the server agree to floating-point
 precision, and there is no bucket where one produced a value and the other declined ---
 an empty result is as much a semantic claim as a number. The modelled and measured
-versions of Table~\ref{tab:rollup-live} agree on every summary statistic.
+versions of Table~\ref{tab:rollup-live} agree on every summary statistic, which the
+notebook now asserts cell for cell rather than inviting the reader to compare two
+printouts. It did not hold when it was only a sentence: the modelled table took the
+warm-up as its first bucket's \emph{start} and the live grid took it as the first
+evaluation \emph{instant}, so the two summarised bucket sets one bucket apart --- for
+$\Delta=300$ a bucket wholly inside the warm-up --- and six of the twenty-four rows
+differed in a printed cell.
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/model_verification}
@@ -475,9 +481,13 @@ of Remark~\ref{rem:closure}. $84$ comparisons per row.}
 Table~\ref{tab:replay} is the result, and two things in it are worth separating.
 
 The first is that both exact forms are exact --- against Datadog, not against a model of
-it, on traffic nobody generated for the purpose. \texttt{rate} is not, at $19$--$20\%$ of
-buckets, which is what \S\ref{sec:ingestion} has said throughout and what the steady
-synthetic workload conceals by being steady.
+it, on traffic nobody generated for the purpose. \texttt{rate} is not, at $20.2\%$ of
+buckets on both grids, which is what \S\ref{sec:ingestion} has said throughout and what
+the steady synthetic workload conceals by being steady. That figure used to read
+$19$--$20\%$, a spread between the two grids that was not a property of either: the
+replay script scored this one table by bit-identity where every other exactness column in
+this paper uses a $10^{-12}$ relative bound, and one aligned bucket reading $236.0$
+against $235.999\ldots$ counted as a disagreement.
 
 The second is about the convention of Remark~\ref{rem:closure}, and it explains how that
 convention came to be assumed wrongly for so long. On the unaligned grid --- a scrape

@@ -11,56 +11,58 @@
   "conclusive": true,
   "interval": 20,
   "predictions": {
-   "avg": 4.0,
-   "sum (as if .as_count())": 16.0,
-   "sum/interval (as if .as_rate())": 0.8
+   "avg": 5.0,
+   "count (as if .rollup(count))": 4.0,
+   "sum (as if .as_count())": 20.0,
+   "sum/interval (as if .as_rate())": 1.0
   },
-  "value": 4.0
+  "value": 5.0
  },
  "provenance": {
   "api": {
    "query": "/api/v1/query",
    "submit": "/api/v2/series"
   },
-  "collected_at": "2026-11-16T17:29:35+00:00",
+  "collected_at": "2026-11-17T23:28:56+00:00",
   "experiment": "e3",
-  "mean_of_values": 4.0,
+  "mean_of_values": 5.0,
   "metric_type": 1,
   "points": [
    [
-    1794849871.0,
+    1794957811.0,
     1.0
    ],
    [
-    1794849872.0,
+    1794957812.0,
+    14.0
+   ],
+   [
+    1794957813.0,
     2.0
    ],
    [
-    1794849873.0,
+    1794957814.0,
     3.0
-   ],
-   [
-    1794849874.0,
-    10.0
    ]
   ],
+  "run": "r1794957780",
   "site": "datadoghq.com",
-  "sum_of_values": 16.0,
-  "t_star": 1794849840.0
+  "sum_of_values": 20.0,
+  "t_star": 1794957780.0
  },
  "responses": {
   "as_count": {
    "defined": {
-    "1794848960.0": 16.0
+    "1794957800.0": 20.0
    },
-   "from": 1794848040.0,
+   "from": 1794955980.0,
    "interval": 20,
-   "query": "sum:qlport.e3.deltas{*}.as_count()",
+   "query": "sum:qlport.e3.deltas{run:r1794957780}.as_count()",
    "raw": {
-    "from_date": 1794848040000,
+    "from_date": 1794955980000,
     "group_by": [],
     "message": "",
-    "query": "sum:qlport.e3.deltas{*}.as_count()",
+    "query": "sum:qlport.e3.deltas{run:r1794957780}.as_count()",
     "res_type": "time_series",
     "resp_version": 1,
     "series": [
@@ -68,43 +70,43 @@
       "aggr": "sum",
       "attributes": {},
       "display_name": "qlport.e3.deltas",
-      "end": 1794848979000,
-      "expression": "sum:qlport.e3.deltas{*}.as_count()",
+      "end": 1794957819000,
+      "expression": "sum:qlport.e3.deltas{run:r1794957780}.as_count()",
       "interval": 20,
       "length": 1,
       "metric": "qlport.e3.deltas",
       "pointlist": [
        [
-        1794848960000.0,
-        16.0
+        1794957800000.0,
+        20.0
        ]
       ],
       "query_index": 0,
-      "scope": "*",
-      "start": 1794848960000,
+      "scope": "run:r1794957780",
+      "start": 1794957800000,
       "tag_set": [],
       "unit": null
      }
     ],
     "status": "ok",
     "times": [],
-    "to_date": 1794851640000,
+    "to_date": 1794959580000,
     "values": []
    },
-   "to": 1794851640.0
+   "to": 1794959580.0
   },
   "as_rate": {
    "defined": {
-    "1794848960.0": 0.8
+    "1794957800.0": 1.0
    },
-   "from": 1794848040.0,
+   "from": 1794955980.0,
    "interval": 20,
-   "query": "sum:qlport.e3.deltas{*}.as_rate()",
+   "query": "sum:qlport.e3.deltas{run:r1794957780}.as_rate()",
    "raw": {
-    "from_date": 1794848040000,
+    "from_date": 1794955980000,
     "group_by": [],
     "message": "",
-    "query": "sum:qlport.e3.deltas{*}.as_rate()",
+    "query": "sum:qlport.e3.deltas{run:r1794957780}.as_rate()",
     "res_type": "time_series",
     "resp_version": 1,
     "series": [
@@ -112,20 +114,20 @@
       "aggr": "sum",
       "attributes": {},
       "display_name": "qlport.e3.deltas",
-      "end": 1794848979000,
-      "expression": "sum:qlport.e3.deltas{*}.as_rate()",
+      "end": 1794957819000,
+      "expression": "sum:qlport.e3.deltas{run:r1794957780}.as_rate()",
       "interval": 20,
       "length": 1,
       "metric": "qlport.e3.deltas",
       "pointlist": [
        [
-        1794848960000.0,
-        0.8
+        1794957800000.0,
+        1.0
        ]
       ],
       "query_index": 0,
-      "scope": "*",
-      "start": 1794848960000,
+      "scope": "run:r1794957780",
+      "start": 1794957800000,
       "tag_set": [],
       "unit": [
        null,
@@ -142,23 +144,23 @@
     ],
     "status": "ok",
     "times": [],
-    "to_date": 1794851640000,
+    "to_date": 1794959580000,
     "values": []
    },
-   "to": 1794851640.0
+   "to": 1794959580.0
   },
   "bare": {
    "defined": {
-    "1794848960.0": 4.0
+    "1794957800.0": 5.0
    },
-   "from": 1794848040.0,
+   "from": 1794955980.0,
    "interval": 20,
-   "query": "sum:qlport.e3.deltas{*}",
+   "query": "sum:qlport.e3.deltas{run:r1794957780}",
    "raw": {
-    "from_date": 1794848040000,
+    "from_date": 1794955980000,
     "group_by": [],
     "message": "",
-    "query": "sum:qlport.e3.deltas{*}",
+    "query": "sum:qlport.e3.deltas{run:r1794957780}",
     "res_type": "time_series",
     "resp_version": 1,
     "series": [
@@ -166,30 +168,30 @@
       "aggr": "sum",
       "attributes": {},
       "display_name": "qlport.e3.deltas",
-      "end": 1794848979000,
-      "expression": "sum:qlport.e3.deltas{*}",
+      "end": 1794957819000,
+      "expression": "sum:qlport.e3.deltas{run:r1794957780}",
       "interval": 20,
       "length": 1,
       "metric": "qlport.e3.deltas",
       "pointlist": [
        [
-        1794848960000.0,
-        4.0
+        1794957800000.0,
+        5.0
        ]
       ],
       "query_index": 0,
-      "scope": "*",
-      "start": 1794848960000,
+      "scope": "run:r1794957780",
+      "start": 1794957800000,
       "tag_set": [],
       "unit": null
      }
     ],
     "status": "ok",
     "times": [],
-    "to_date": 1794851640000,
+    "to_date": 1794959580000,
     "values": []
    },
-   "to": 1794851640.0
+   "to": 1794959580.0
   }
  },
  "submitted": [
@@ -199,24 +201,25 @@
      "metric": "qlport.e3.deltas",
      "points": [
       {
-       "timestamp": 1794849871,
+       "timestamp": 1794957811,
        "value": 1.0
       },
       {
-       "timestamp": 1794849872,
+       "timestamp": 1794957812,
+       "value": 14.0
+      },
+      {
+       "timestamp": 1794957813,
        "value": 2.0
       },
       {
-       "timestamp": 1794849873,
+       "timestamp": 1794957814,
        "value": 3.0
-      },
-      {
-       "timestamp": 1794849874,
-       "value": 10.0
       }
      ],
      "tags": [
-      "rig:b"
+      "rig:b",
+      "run:r1794957780"
      ],
      "type": 1
     }

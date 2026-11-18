@@ -289,10 +289,16 @@ because a rule \emph{can} be chosen here; for a $\mathsf{sum}$ rollup none can, 
 same code is a refusal there instead.
 
 The condition is not a precaution. Asked of a real account, a bare query on a
-\texttt{COUNT} metric returns the \emph{mean} of four stored deltas and not their sum,
+\texttt{COUNT} metric returns the \emph{mean} of four stored deltas,
 so Datadog applies its enforced \texttt{avg} default rather than the \texttt{.as\_count()}
 its user interface appends --- averaging deltas where \texttt{avg\_over\_time} averages
-running totals (\texttt{scripts\slash trial\_checks.py e3}).
+running totals (\texttt{scripts\slash trial\_checks.py e3}). The deltas are $1$, $14$,
+$2$ and $3$, chosen so that each candidate predicts a different reading: $\mathsf{avg}$
+gives $5$, $\mathsf{sum}$ gives $20$, a $\mathsf{count}$ rollup gives $4$ and
+$\mathsf{sum}$ over the reported interval gives $1$. The account returns $5$. The first
+version of this probe used $1$, $2$, $3$ and $10$, whose mean is $4$ and whose count is
+also $4$, and named $\mathsf{avg}$ against a rival set that did not include
+$\mathsf{count}$ --- so the reading it took could not have told the two apart.
 
 The condition was also silent until now, and it is not rare. At an earlier stage of this
 work it appeared to hold of $6{,}381$ translated occurrences --- $76.2\%$ of the
@@ -318,7 +324,7 @@ summing a gauge over a window is an ordinary thing to want --- and the translati
 front end chooses for it, the cumulative difference, computes something else entirely.
 Of the three pieces of evidence the query can carry, the one that is hardest to dismiss
 as author error is the one whose misreading is least benign. With that premise withdrawn the
-caveat holds of all $8{,}445$ translated occurrences, $100\%$ of them
+caveat holds of all $8{,}449$ translated occurrences, $100\%$ of them
 (Table~\ref{tab:translation-caveats}).
 
 Recording it does not move $\kappa$ --- the translations are unchanged --- which is the
@@ -343,7 +349,7 @@ the queries. At that commit those files declare $37{,}070$ metric names: $23{,}5
 integrations declare incompatibly.
 
 Joining the two settles the hypothesis for most of the corpus
-(\texttt{scripts\slash type\_declared.py}). Of the $8{,}445$ translated occurrences,
+(\texttt{scripts\slash type\_declared.py}). Of the $8{,}449$ translated occurrences,
 $7{,}562$ --- $89.5\%$ --- name a metric the repository declares as a gauge or a count,
 and the front end's inference disagrees with the declaration on $496$ of them: $6.6\%$
 of the decidable set, $5.7\%$ of the corpus. The two directions of error are both
@@ -361,7 +367,7 @@ integration submits, so a disagreement says the inference is wrong, not that it 
 be: a dashboard can query a metric the integration does not ship, and an operator can
 submit the same name as something else. That is the same standard \S\ref{sec:emission}
 applies to the modifier evidence this replaces, and it is a sharper instrument than the
-one it replaces rather than a proof. The remaining $732$ occurrences name metrics the
+one it replaces rather than a proof. The remaining $736$ occurrences name metrics the
 repository does not declare and $134$ name \texttt{rate} metrics, which is a third
 submission type Definition~\ref{def:phi} does not model at all.
 \end{remark}
@@ -531,7 +537,7 @@ a translator \emph{limited to the kernel's features} would complete, which is a
 statement about a feature set. $\mathcal{K}$ is a statement about IR shape, and the two
 differ: a query using a glob or a boolean scope is outside the first and inside the
 second, since Lemma~\ref{lem:scope} covers every scope lowering admits. Computed from
-the lowered IR rather than from the feature list, the kernel carries $8{,}364$
+the lowered IR rather than from the feature list, the kernel carries $8{,}368$
 occurrences.
 
 
@@ -655,7 +661,7 @@ $\mathrm{Rollup}$ of a $\mathrm{Select}$, which is $\mathcal{K}$; its only other
 constructors are $\mathrm{Number}$, $\mathrm{Scale}$ and $\mathrm{BinOp}$ over terms it
 has already lowered, which is the closure. $\mathrm{Window}$ and $\mathrm{RangeFn}$ are
 reachable from neither, and the emitter refuses them in any case. The corpus then checks
-what the construction establishes: $\mathcal{A}$ covers $8{,}445$ occurrences, $96.3\%$
+what the construction establishes: $\mathcal{A}$ covers $8{,}449$ occurrences, $96.3\%$
 of the corpus and $100\%$ of what was emitted. So the gap between what is claimed and
 what is shipped is empty rather than small. That is the statement \S\ref{sec:framework}'s
 Remark~\ref{rem:two-kappas} wanted and could not previously make: $\kappa$ counts

@@ -105,7 +105,10 @@ def shape(e: Expr) -> tuple:
     `mem{env:staging}` re-runs an experiment already done.
 
     Regex matcher values collapse to a single placeholder rather than being numbered,
-    because the regular expression's own content is tested in §6 and not here.
+    because the regular expression's own content is tested in §6 and not here. Everything
+    a representative would *emit differently* is kept: the rollup interval, a scale
+    factor and a numeric literal all survive the abstraction, because a representative
+    that emits a different expression than its class members does not stand for them.
 
     Placeholders are allocated in traversal order and are per-call, so the form is
     canonical for one expression and comparable across expressions.
@@ -129,8 +132,12 @@ def shape(e: Expr) -> tuple:
         if isinstance(x, RangeFn):
             return ("RangeFn", x.fn, go(x.arg))
         if isinstance(x, Rollup):
-            # Whether the interval was *stated* is structural; its value is not.
-            return ("Rollup", x.op, x.interval is not None, x.per_second, go(x.expr))
+            # The interval's *value* is structural, not only whether it was stated: it
+            # becomes the range-selector width, so two members of a class that differ in
+            # it emit different PromQL and need different bucket grids. Collapsing it to a
+            # boolean put 70 corpus occurrences into the differential of §7 under a window
+            # width they do not state, two of them a width the rig cannot test at all.
+            return ("Rollup", x.op, x.interval, x.per_second, go(x.expr))
         if isinstance(x, Agg):
             return ("Agg", x.op, tuple(label(keys, k, "k") for k in x.keys),
                     x.mode, go(x.expr))
@@ -140,7 +147,9 @@ def shape(e: Expr) -> tuple:
         if isinstance(x, Scale):
             return ("Scale", x.factor, go(x.expr))
         if isinstance(x, Number):
-            return ("Number",)
+            # Also structural: the literal is emitted verbatim, so `q + 100` and
+            # `q + 1000` are not one experiment. (`Scale` already keeps its factor.)
+            return ("Number", x.value)
         raise TypeError(f"unknown IR node {type(x).__name__}")
 
     return go(e)

@@ -55,7 +55,7 @@ intermediate representation with a denotation; built a translator that lowers Da
 queries into it and emits PromQL, refusing with a named gap code rather than guessing;
 proved the translations exact under stated preconditions and verified the PromQL side
 against a real Prometheus~3.15.0 rather than against our own model of it; and ran the
-whole thing over the $8{,}766$ Datadog metric queries of a corpus of $28{,}490$
+whole thing over the $8{,}770$ Datadog metric queries of a corpus of $28{,}490$
 extracted from $763$ published dashboard and alerting documents, with nothing sampled
 and nothing hand-classified.
 
@@ -81,7 +81,7 @@ whole inexpressible column (\S\ref{sec:emission}).
 The design artefact is elsewhere, and \S\ref{sec:discussion} argues it is the more
 interesting finding. A Datadog query has no slot for its rollup interval --- that comes
 from the dashboard's time range --- so $96.9\%$ of the translations we emit depend on an
-interval the query omits. PromQL has the slot, and $55.4\%$ of the corpus's range
+interval the query omits. PromQL has the slot, and $55.6\%$ of the corpus's range
 selectors fill it with a dashboard variable anyway, so the contrast is one of degree
 rather than of kind; \S\ref{sec:discussion} runs that comparison, which an earlier
 version of this paper asserted without measuring. The translations are exact, but exact
@@ -100,7 +100,7 @@ picture is an asymmetry: leaving costs engineering, returning costs expressivene
 \begin{enumerate}
 \item \textbf{Grammars (\S\ref{sec:grammars}).} LALR(1) grammars for both languages,
 including one for Datadog's metric query language, which the vendor does not publish and
-which had to be inferred from documentation and $8{,}766$ vendor-authored queries. The
+which had to be inferred from documentation and $8{,}770$ vendor-authored queries. The
 Datadog grammar is conflict-free; PromQL has exactly one shift/reduce conflict, and we
 show it is forced by the language rather than by our rules.
 \item \textbf{$\phi$-relative soundness (\S\ref{sec:ingestion}).} Soundness stated

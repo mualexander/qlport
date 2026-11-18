@@ -241,6 +241,22 @@ lines += [r"\bottomrule", r"\end{tabular}"]
 (TABLES / "rollup_translation_live.tex").write_text("\n".join(lines) + "\n")
 print(live_summary.to_string(index=False))
 
+# §3 claims the modelled and measured versions of this table agree on every summary
+# statistic. That was a sentence rather than a check, and it was false: `compare()` reads
+# 600 s as the first bucket *start* while `verify_anchored.bucket_grid` read it as the
+# first evaluation *instant*, so the live grid began one bucket earlier -- for Δ=300 a
+# bucket wholly inside the declared warm-up -- and six of the twenty-four rows differed in
+# a printed cell. The grid is fixed; the claim is now asserted here.
+_fmt = lambda r: (f"{r.exact:.1%}", f"{r['median']:.3f}", f"{r['max']:.3f}")
+_model = {(r.workload, int(r.interval), r.candidate): _fmt(r)
+          for _, r in summary.iterrows()}
+_live = {(r.workload, int(r.interval), r.candidate): _fmt(r)
+         for _, r in live_summary.iterrows()}
+assert set(_model) == set(_live), (set(_model) ^ set(_live))
+_differ = {k: (_model[k], _live[k]) for k in _model if _model[k] != _live[k]}
+assert not _differ, _differ
+print(f"\nmodelled and measured agree on all {len(_live)} rows, cell for cell")
+
 
 # %% [markdown]
 # ## Findings (to carry into §3 and §5)
@@ -290,14 +306,29 @@ replay_runs = {name: json.loads((REPLAY / f"dualwrite_{name}.json").read_text())
                for name in ("unaligned", "aligned")
                if (REPLAY / f"dualwrite_{name}.json").exists()}
 
+# Exactness is re-derived from the recorded readings rather than read out of the run's
+# own `summary`, because the two were not computed to the same standard: the script
+# scored bit-identity while every other exactness column in this paper -- the
+# model-versus-server check above, notebook 05's differential -- uses a 1e-12 relative
+# bound. One bucket reading 236.0 against 235.99999999999997 counted as a disagreement
+# and moved a published cell by 1.2 points. `replay_dualwrite.py` now records both.
+EXACT_TOL = 1e-12
+
 if replay_runs:
     rows = []
     for name, run in replay_runs.items():
-        for key, s in sorted(run["summary"].items()):
-            instant, candidate = [x.strip() for x in key.split("|")]
+        per_key: dict[tuple[str, str], list[float]] = {}
+        for r in run["rows"]:
+            if r.get("datadog") is None or r.get("promql") is None:
+                continue
+            key = (str(r["instant"]).strip(), str(r["candidate"]).strip())
+            per_key.setdefault(key, []).append(reldiff(r["promql"], r["datadog"]))
+        for (instant, candidate), ds in sorted(per_key.items()):
             rows.append(dict(grid=name, instant=instant, candidate=candidate,
-                             buckets=s["buckets"], exact=s["exact"],
-                             median_d=s["median_d"], max_d=s["max_d"]))
+                             buckets=len(ds),
+                             exact=sum(1 for d in ds if d <= EXACT_TOL) / len(ds),
+                             bit_identical=sum(1 for d in ds if d == 0) / len(ds),
+                             median_d=float(np.median(ds)), max_d=max(ds)))
     replay = pd.DataFrame(rows)
     print(replay.to_string(index=False))
 

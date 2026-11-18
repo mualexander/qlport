@@ -69,9 +69,15 @@ def _dd_requests(defn: dict) -> list[dict]:
 def datadog_dashboard_queries(doc: Any, *, source: str, origin: str) -> list[Query]:
     """Metric queries and formulas of one Datadog dashboard JSON.
 
-    Two request shapes exist: the legacy `q` string and the formulas-and-functions
-    `queries` list. Only `data_source == "metrics"` queries are metric queries;
-    log, event and security-signal queries are a different language and are skipped.
+    Three request shapes exist: the legacy `q` string, the formulas-and-functions
+    `queries` list, and a singular `query` *object*, which distribution widgets use.
+    The third was missed until the seventh review pass and costs four queries.
+
+    Only `data_source == "metrics"` queries are metric queries; log, event and
+    security-signal queries are a different language and are skipped. That filter applies
+    to the `formulas` list too: a formula over a log request is no more a metric
+    expression than the log query under it, and counting it inflated the formula-layer
+    shares of §7 by diluting them with a population that is 90% bare references.
     """
     out: list[Query] = []
     dash = str(doc.get("title") or "") if isinstance(doc, dict) else ""
@@ -81,12 +87,23 @@ def datadog_dashboard_queries(doc: Any, *, source: str, origin: str) -> list[Que
             q = req.get("q")
             if isinstance(q, str) and q.strip():
                 out.append(Query("datadog", q.strip(), source, origin, unit, "widget"))
-            for sub in req.get("queries") or []:
+            subs = list(req.get("queries") or [])
+            # A distribution widget carries one query as an object rather than a list.
+            single = req.get("query")
+            if isinstance(single, dict):
+                subs.append(single)
+            metric_sub = False
+            for sub in subs:
                 if not isinstance(sub, dict) or sub.get("data_source") != "metrics":
                     continue
+                metric_sub = True
                 text = sub.get("query")
                 if isinstance(text, str) and text.strip():
                     out.append(Query("datadog", text.strip(), source, origin, unit, "widget"))
+            # A formula is an expression over this request's queries, so it belongs to the
+            # metrics language only when they do.
+            if not metric_sub:
+                continue
             for f in req.get("formulas") or []:
                 if not isinstance(f, dict):
                     continue
@@ -96,17 +113,63 @@ def datadog_dashboard_queries(doc: Any, *, source: str, origin: str) -> list[Que
     return out
 
 
-def _grafana_panels(doc: Any) -> Iterator[dict]:
-    """Every panel, through collapsed rows (`panels`) and schema-v5 `rows`."""
+def non_metric_formulas(tree: Path) -> list[str]:
+    """Formula expressions over requests whose queries are *not* metric queries.
+
+    These are not corpus queries -- a formula over a log search belongs to the log
+    language -- and they are counted only so §7 can say what the formula-layer shares
+    it used to quote were diluted with. Walked from the source tree for that reason:
+    the corpus deliberately no longer contains them.
+    """
+    out: list[str] = []
+    for path in sorted(tree.glob("*/assets/dashboards/*.json")):
+        try:
+            doc = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        for defn in _dd_definitions(doc):
+            for req in _dd_requests(defn):
+                subs = list(req.get("queries") or [])
+                single = req.get("query")
+                if isinstance(single, dict):
+                    subs.append(single)
+                if any(isinstance(x, dict) and x.get("data_source") == "metrics"
+                       for x in subs):
+                    continue
+                for f in req.get("formulas") or []:
+                    text = f.get("formula") if isinstance(f, dict) else None
+                    if isinstance(text, str) and text.strip():
+                        out.append(text.strip())
+    return out
+
+
+def _grafana_panels(doc: Any, *, root: bool = True) -> Iterator[dict]:
+    """Every panel, through collapsed rows (`panels`), schema-v5 `rows`, and `__elements`.
+
+    A library panel's `panels[]` entry is a `libraryPanel` reference carrying no targets;
+    the model lives in the dashboard's top-level `__elements` map. Walking only `panels`
+    renders the dashboard's own queries invisible -- four of them in this corpus.
+    """
     if not isinstance(doc, dict):
         return
     for p in doc.get("panels") or []:
         if isinstance(p, dict):
             yield p
-            yield from _grafana_panels(p)
+            yield from _grafana_panels(p, root=False)
     for r in doc.get("rows") or []:
         if isinstance(r, dict):
-            yield from _grafana_panels(r)
+            yield from _grafana_panels(r, root=False)
+    if root:
+        # Grafana writes `__elements` as a UID-keyed map in newer exports and as a list
+        # in older ones; this corpus contains the list form.
+        elements = doc.get("__elements")
+        if isinstance(elements, dict):
+            elements = list(elements.values())
+        for el in elements or []:
+            model = el.get("model") if isinstance(el, dict) else None
+            if isinstance(model, dict):
+                yield model
+                yield from _grafana_panels(model, root=False)
 
 
 def grafana_dashboard_queries(doc: Any, *, source: str, origin: str) -> list[Query]:
@@ -496,14 +559,29 @@ FEATURE_DOC: dict[str, str] = {
 }
 
 
+# `count(v: v>=0):metric{...}` is Datadog's undocumented *conditional aggregator*, which
+# §4 names as an aggregator and the operator-frequency table was listing as a function.
+# The trailing colon is what distinguishes it from a function call.
+_DD_COND_AGG = re.compile(r"(?<![\w.$])([a-z_][a-z0-9_]*)\s*\([^()]*\)\s*:")
+
+
 def function_names(lang: str, text: str) -> Counter:
     """Applied function names. Datadog methods are keyed with a leading dot
-    (`.as_count`) so that they do not collide with wrapping functions (`top`)."""
+    (`.as_count`) so that they do not collide with wrapping functions (`top`).
+
+    A conditional aggregator is not a function: `count(v: v>=0):data_streams.latency{...}`
+    aggregates across space the way `sum:` does, and counting its `count` among the
+    functions put it in the paper's ten most frequent Datadog functions beside `top`.
+    """
     c: Counter = Counter()
     if lang in ("datadog", "datadog_formula"):
+        aggregators = Counter(_DD_COND_AGG.findall(text))
         for name in _DD_METHOD.findall(text):
             c[f".{name}"] += 1
         for name in _DD_FUNC.findall(text):
+            if aggregators.get(name):
+                aggregators[name] -= 1          # this occurrence is the aggregator
+                continue
             c[name] += 1
     elif lang == "promql":
         for name in _PROM_CALL.findall(text):
@@ -601,8 +679,11 @@ _PROM_KEYWORDS_UPPER = (
     "BY WITHOUT ON IGNORING GROUP_LEFT GROUP_RIGHT OFFSET BOOL AND OR UNLESS "
     "SUM AVG MIN MAX COUNT TOPK BOTTOMK QUANTILE STDDEV STDVAR GROUP").split()
 _PROM_KW_RE = re.compile(r"(?<![\w:])(" + "|".join(_PROM_KEYWORDS_UPPER) + r")(?![\w])")
+# `!~` before a backtick is a LogQL line filter only where no label name precedes it:
+# PromQL permits a backtick raw string in a matcher (`integration!~`.*``), and reading
+# that as LogQL dropped two kube-prometheus alerting rules from the corpus.
 _LOGQL = re.compile(r"\|\s*(?:logfmt|json|pattern|line_format|unwrap|label_format|regexp)\b"
-                    r"|\|=|\|~|!~\s*`"
+                    r"|\|=|\|~|(?<![\w])!~\s*`"
                     # a bare line filter: `{...} != "x"`. Comparing a selector to a
                     # string is a type error in PromQL, so this can only be LogQL.
                     r"|\}\s*(?:!=|=~|!~|=)\s*[\"\'`]")
@@ -627,6 +708,21 @@ def _prom_unquote_labels(text: str) -> str:
     return _PROM_LABEL_LIST.sub(
         lambda m: m.group(0).replace(m.group(1), _STRING.sub(
             lambda s: _prom_legal_label(s.group(0)[1:-1]), m.group(1))), text)
+
+
+# Every PromQL string form, as `grammars/promql.lark` defines STRING. A scanner that
+# accepted only `"..."` hid 114 matcher occurrences from §6 -- `fstype!~'rootfs'` and
+# a backtick raw string among them -- so the one definition lives here and both
+# notebook 04 and `scripts/crosscheck_globs.py` import it.
+PROMQL_MATCHER = re.compile(r'(\w+)\s*(=~|!~)\s*(?:"((?:[^"\\]|\\.)*)"'
+                            r"|'((?:[^'\\]|\\.)*)'"
+                            r'|`([^`]*)`)')
+
+
+def promql_matcher_values(text: str) -> list[str]:
+    """The pattern of every `=~`/`!~` label matcher in one PromQL query."""
+    return [next(g for g in m.groups()[2:] if g is not None)
+            for m in PROMQL_MATCHER.finditer(text)]
 
 
 def is_promql(text: str) -> bool:

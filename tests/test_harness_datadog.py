@@ -184,41 +184,73 @@ def test_bucket_of_rejects_an_unknown_convention():
 
 # --- E3's inference: which time aggregator did a bare query apply? ------------
 
-E3_POINTS = [(T + 31, 1.0), (T + 32, 2.0), (T + 33, 3.0), (T + 34, 10.0)]
-E3_VALUES = [1.0, 2.0, 3.0, 10.0]
+# The values are the discriminating set: avg 5, sum 20, count 4, sum/60 0.333. The
+# first version of this probe used 1, 2, 3, 10, whose mean and count are both 4.
+E3_POINTS = [(T + 31, 1.0), (T + 32, 14.0), (T + 33, 2.0), (T + 34, 3.0)]
+E3_VALUES = [1.0, 14.0, 2.0, 3.0]
+E3_BUCKET = str(float(T))          # the bucket the four points fall in at 60 s
 
 
 @pytest.mark.parametrize("value,expected", [
-    (4.0, "avg"),
-    (16.0, "sum (as if .as_count())"),
-    (16.0 / 60.0, "sum/interval (as if .as_rate())"),
+    (5.0, "avg"),
+    (20.0, "sum (as if .as_count())"),
+    (20.0 / 60.0, "sum/interval (as if .as_rate())"),
+    (4.0, "count (as if .rollup(count))"),
 ])
 def test_the_bare_query_aggregator_is_named_from_the_value(value, expected):
-    got = interpret_default_aggregator(60, E3_POINTS, E3_VALUES, {"x": value})
-    assert got["conclusive"]
+    got = interpret_default_aggregator(60, E3_POINTS, E3_VALUES, {E3_BUCKET: value})
+    assert got["conclusive"], got
     assert got["behaved_as"] == [expected]
 
 
+def test_count_is_among_the_hypotheses():
+    """The gap that let E3 name `avg` on a reading `count` explained as well.
+
+    With four deltas whose mean is 4, `avg` and `count` predict the same number, and the
+    helper enumerated only `avg`, `sum` and `sum/interval` -- so it reported one match
+    and called it conclusive. A probe is only as good as the rivals it is scored against.
+    """
+    got = interpret_default_aggregator(60, [(T + 31, 1.0), (T + 32, 2.0),
+                                            (T + 33, 3.0), (T + 34, 10.0)],
+                                       [1.0, 2.0, 3.0, 10.0], {E3_BUCKET: 4.0})
+    assert set(got["behaved_as"]) == {"avg", "count (as if .rollup(count))"}
+    assert not got["conclusive"], got
+
+
+def test_a_reading_from_another_bucket_is_refused():
+    """What the first cached E3 run did: read an earlier run's bucket and interpret it.
+
+    The guard checked that the *submitted* points share one bucket and never that the
+    bucket reported back was theirs, so three responses that predate the submission
+    passed as though they were of it.
+    """
+    stale = str(float(T - 900))
+    got = interpret_default_aggregator(60, E3_POINTS, E3_VALUES, {stale: 5.0})
+    assert not got["conclusive"]
+    assert "not the" in got["why"] and str(int(T)) in got["why"]
+
+
 def test_no_reported_interval_is_inconclusive():
-    got = interpret_default_aggregator(None, E3_POINTS, E3_VALUES, {"x": 16.0})
+    got = interpret_default_aggregator(None, E3_POINTS, E3_VALUES, {E3_BUCKET: 20.0})
     assert not got["conclusive"] and "no interval" in got["why"]
 
 
 def test_samples_straddling_two_buckets_are_inconclusive():
     # At a 2 s interval the four samples are spread over several buckets, so the value
     # is a partial sum and naming an aggregator from it would be a confident error.
-    got = interpret_default_aggregator(2, E3_POINTS, E3_VALUES, {"x": 3.0})
+    got = interpret_default_aggregator(2, E3_POINTS, E3_VALUES, {E3_BUCKET: 3.0})
     assert not got["conclusive"] and "share one" in got["why"]
 
 
 def test_a_sample_on_a_bucket_edge_is_inconclusive():
     points = [(T, 1.0), (T + 1, 2.0)]
-    got = interpret_default_aggregator(60, points, [1.0, 2.0], {"x": 3.0})
+    got = interpret_default_aggregator(60, points, [1.0, 2.0], {E3_BUCKET: 3.0})
     assert not got["conclusive"] and "on_edge" in got["why"]
 
 
 def test_more_than_one_non_zero_bucket_is_inconclusive():
-    got = interpret_default_aggregator(60, E3_POINTS, E3_VALUES, {"a": 4.0, "b": 4.0})
+    got = interpret_default_aggregator(60, E3_POINTS, E3_VALUES,
+                                       {E3_BUCKET: 5.0, str(float(T + 60)): 5.0})
     assert not got["conclusive"] and "one non-zero bucket" in got["why"]
 
 
@@ -288,15 +320,48 @@ def test_a_bare_api_query_on_a_count_averages_the_deltas():
 
     The documentation says `avg` is the enforced default but that COUNT metrics get
     `.as_count()` appended *in the UI*. If the API did the same, the emitter's caveat
-    would narrow to genuinely ambiguous gauges. It does not: four deltas of 1, 2, 3, 10
-    come back as 4, their mean, not 16. So Datadog averages the stored deltas while
+    would narrow to genuinely ambiguous gauges. It does not: four deltas of 1, 14, 2, 3
+    come back as 5, their mean -- not 20 (their sum), not 4 (their count) and not 1.0
+    (sum over the reported 20 s interval). So Datadog averages the stored deltas while
     `avg_over_time` averages the cumulative series, and the preconditions §5 reports on
     three quarters of the output are load-bearing.
+
+    Re-derived from the recorded readings rather than read off the stored verdict, which
+    is how the first version of this experiment went unnoticed for a pass: its deltas
+    were 1, 2, 3, 10, whose mean and count are both 4, and its three responses were of
+    an earlier run's submission 900 s before the probe.
     """
-    got = _cached("e3")["interpretation"]
-    assert got["conclusive"], got
-    assert got["behaved_as"] == ["avg"], got
-    assert got["value"] == pytest.approx(4.0)
+    rec = _cached("e3")
+    prov = rec["provenance"]
+    again = interpret_default_aggregator(
+        rec["responses"]["bare"]["interval"],
+        [(p[0], p[1]) for p in prov["points"]],
+        [p[1] for p in prov["points"]],
+        rec["responses"]["bare"]["defined"])
+    assert again == rec["interpretation"], (again, rec["interpretation"])
+    assert again["conclusive"], again
+    assert again["behaved_as"] == ["avg"], again
+    assert again["value"] == pytest.approx(5.0)
+    # Four rivals, four distinct predictions: the reading names one of them.
+    assert len(set(again["predictions"].values())) == len(again["predictions"]), again
+
+
+def test_the_e3_run_read_its_own_bucket():
+    """Isolation, the lesson E2 learned and E3 had not: a per-run tag in the query.
+
+    Without one, the 3600 s window picked up whatever the same metric held from an
+    earlier run, and `_await_points` returned on the first query because a stale bucket
+    was already non-null -- so the run never waited for its own data.
+    """
+    rec = _cached("e3")
+    run = rec["provenance"]["run"]
+    assert run, rec["provenance"]
+    for name, r in rec["responses"].items():
+        assert f"run:{run}" in r["query"], (name, r["query"])
+    first = rec["provenance"]["points"][0][0]
+    (reported,) = [float(t) for t, v in rec["responses"]["bare"]["defined"].items() if v]
+    assert reported == bucket_of(first, float(rec["responses"]["bare"]["interval"]),
+                                 closure="left", label="start")
 
 
 def test_a_glob_star_matches_the_empty_string():

@@ -346,11 +346,15 @@ for lang, o in order.items():
 order["datadog"].head(14)
 
 # %% [markdown]
-# §7 checks $\kappa$ against this curve: a translator supporting $n$ features cannot
-# exceed the ceiling at $n$, so a $\kappa$ above one tells you the feature set is
-# larger than that. The two ceilings it quotes are recorded rather than read off the
-# truncated table above, because the table stops at twenty rows and the bracket moved
-# when `.weighted()` was implemented.
+# These values are recorded rather than read off the truncated table above, because the
+# table stops at twenty rows. What they are *not* is a bound on $\kappa$: greedy gives an
+# attainable set at each size and not an optimal one, so the curve is a lower bound on
+# the best coverage a fragment of that size could reach, and a translator with $n$
+# features may sit above it. This corpus shows that happening --- the translator's own
+# 25-feature set covers 97.3% where the greedy value at 25 is 96.2% --- so the bound
+# §7 states against $\kappa$ is computed in notebook 03 from the feature set the
+# translator actually uses. An earlier draft of this cell claimed the opposite direction
+# and §7 drew the wrong conclusion from it.
 
 # %%
 _dd = order["datadog"]
@@ -371,10 +375,15 @@ _existing["nb00.datadog_features"] = len(_dd) - 1
 
 # %%
 _RANGE = re.compile(r"\[([^\]]+)\]")
+# A regex character class inside a quoted matcher is not a range selector:
+# `device=~"^/dev/[sv]d[a-z][1-9]$"` was counting as three, which inflated the
+# denominator of §8's comparison by twelve queries. String literals are blanked first.
+_LIT = re.compile(r'"(?:[^"\\]|\\.)*"' + r"|'(?:[^'\\]|\\.)*'" + r"|`[^`]*`")
 _pq = df[df.lang == "promql"]
 _ranged = _var = 0
 for _text in _pq.text:
-    _spans = [s for s in _RANGE.findall(_text) if not s.startswith("{")]
+    _bare = _LIT.sub(lambda m: '""', _text)
+    _spans = _RANGE.findall(_bare)
     if not _spans:
         continue
     _ranged += 1
@@ -420,6 +429,70 @@ for _by, _n in _rank.items():
 print(f"top() occurrences: {_top_occ:,}; ranking functions: "
       + ", ".join(f"{k} {v}" for k, v in _rank.most_common()))
 print(f"  ascending: {_asc_occ}  descending: {_dir['desc']}")
+
+# %% [markdown]
+# ### The formula layer §7 holds aside
+# A formula sits over a request's queries, so it belongs to the metrics language only
+# when they do -- the extractor applied that filter to the queries and not to the
+# formulas, and the shares §7 quotes were computed over a population that was 48%
+# log, event and security-signal formulas, which are 90% bare references.
+
+# %%
+_fml = df[df.lang == "datadog_formula"]
+_ffeat = Counter(f for t in _fml.text for f in c.features("datadog_formula", t))
+_existing["nb00.formulas"] = len(_fml)
+_existing["nb00.formulas_distinct"] = int(_fml.text.nunique())
+for _k, _n in _ffeat.items():
+    _existing[f"nb00.formula_{_k.removeprefix('FORMULA_').lower()}_pct"] = round(
+        _n / len(_fml) * 100, 1)
+# The population the filter removes, which §7 reports to say what the old shares were
+# diluted with. Recomputed from the source trees rather than from the corpus, since the
+# corpus no longer contains them.
+_nonmetric = c.non_metric_formulas(CORPUS / "sources" / "integrations-core")
+_existing["nb00.non_metric_formulas"] = len(_nonmetric)
+_existing["nb00.non_metric_formula_bare_ref_pct"] = round(
+    sum("FORMULA_BARE_REF" in c.features("datadog_formula", t) for t in _nonmetric)
+    / len(_nonmetric) * 100, 1) if _nonmetric else None
+print(f"{len(_fml):,} metric formulas ({_fml.text.nunique():,} distinct); "
+      f"{len(_nonmetric):,} non-metric formulas excluded, "
+      f"{_existing['nb00.non_metric_formula_bare_ref_pct']}% bare references")
+for _k, _n in _ffeat.most_common():
+    print(f"   {_k:20} {_n:6,} {_n / len(_fml) * 100:5.1f}%")
+
+# %% [markdown]
+# ### What each half of instantiation is worth
+# §7 describes instantiation as two substitutions -- a PromQL range variable becomes a
+# duration, a Datadog scope variable becomes `*` -- and used to say everything else was
+# left alone. `normalise` also rewrites a variable outside a string literal into an
+# identifier, and on the PromQL side that third step is worth three points of parse rate,
+# so the description mattered to how the table is read.
+
+# %%
+_pqd = sorted({t for t in df.loc[df.lang == "promql", "text"]})
+def _rate(f):
+    return round(sum(1 for t in _pqd if c.parse_outcome("promql", f(t)).ok)
+                 / len(_pqd) * 100, 1)
+_existing["nb00.promql_parse_range_vars_only_pct"] = _rate(
+    lambda t: c._outside_strings(
+        t, lambda s: c._PROM_RANGE_TMPL.sub(c._prom_range_sub, s)))
+print("promql distinct parse rate, range variables substituted only: "
+      f"{_existing['nb00.promql_parse_range_vars_only_pct']}%")
+
+# %% [markdown]
+# ### How many queries carry a template variable?
+# §4 and §7 compare "$87\%$ of Datadog and $82\%$ of PromQL occurrences contain at least
+# one variable". The PromQL half was the any-variable share and the Datadog half was the
+# share with a variable *inside the scope braces* --- two definitions in one comparison.
+# Both are counted here, under the definition the sentence states.
+
+# %%
+for _lang in ("datadog", "promql"):
+    _sub = df[df.lang == _lang]
+    _anyvar = int(sum("$" in t for t in _sub.text))
+    _existing[f"nb00.{_lang}_with_variable"] = _anyvar
+    _existing[f"nb00.{_lang}_with_variable_pct"] = round(_anyvar / len(_sub) * 100, 1)
+    print(f"{_lang}: {_anyvar:,} of {len(_sub):,} occurrences carry a variable "
+          f"({_anyvar / len(_sub) * 100:.1f}%)")
 
 # %%
 _QF.write_text(json.dumps(_existing, indent=1, sort_keys=True) + "\n")

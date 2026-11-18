@@ -259,15 +259,46 @@ def test_the_proposer_and_the_complete_procedure_never_disagreed(crosscheck):
     assert crosscheck["tally"].get("disagree", 0) == 0
 
 
-def test_the_cross_check_actually_reached_most_of_the_corpus(crosscheck):
+def test_the_cross_check_reached_every_pattern(crosscheck):
     """The per-outcome tally is quoted in the paper, so it is pinned figure by figure.
 
     A floor of 150 with a positive count per outcome would have passed while the
     cross-check silently degraded by eighteen patterns.
+
+    It now reaches all of them. The earlier run stopped at 168 of 183 because it was
+    given a 2,400 s budget; three patterns of one family cost 100-170 s each and the
+    clock ran out in the middle of them. Unbudgeted it takes 4,725 s and nothing is
+    left unreached -- and nothing exceeds the search's own candidate bound either, so
+    there is no undecided residue to disclose.
     """
     assert crosscheck["tally"] == {
-        "agree:single": 60, "agree:union": 63, "agree:none": 45, "not-reached": 15,
+        "agree:single": 61, "agree:union": 73, "agree:none": 50,
     }, crosscheck["tally"]
+    assert crosscheck["tally"].get("not-reached", 0) == 0
+    assert crosscheck["tally"].get("search-too-large", 0) == 0
+    n = crosscheck["provenance"]["n_concrete_regexes"]
+    assert sum(crosscheck["tally"].values()) == n == len(crosscheck["per_regex"]) == 184
+
+
+def test_the_cross_check_covers_the_same_patterns_the_paper_tabulates(crosscheck):
+    """The complete procedure and the structural proposer must share a population.
+
+    Both now read it from `corpus.promql_matcher_values` over the same filtered PromQL
+    set; each used to carry its own double-quoted-only scanner, and this one also counted
+    the LogQL panels, so §6's "168 of the 183" was over a different 183 than the table
+    beside it.
+    """
+    from qlport import corpus as c
+
+    root = Path(__file__).resolve().parent.parent
+    occ: dict[str, int] = {}
+    for q in c.read_queries(root / "data" / "corpus" / "queries.jsonl"):
+        if q.lang == "promql" and c.is_promql(q.text):
+            for rx in c.promql_matcher_values(q.text):
+                occ[rx] = occ.get(rx, 0) + 1
+    concrete = {r for r in occ if "$" not in r}
+    assert set(crosscheck["per_regex"]) == concrete, (
+        len(crosscheck["per_regex"]), len(concrete))
 
 
 def test_the_cross_check_was_run_under_the_reading_the_paper_states(crosscheck):

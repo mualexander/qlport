@@ -332,8 +332,8 @@ print(f"closure A: {closure_occ:,} = {closure_occ / _tot:.1%} of corpus, "
 # the fragment §5 proves exact. That is what makes thm:arith worth stating separately
 # from thm:kernel rather than as a footnote to it.
 assert closure_occ == _tr, (closure_occ, _tr)
-assert kernel_occ == 8364, kernel_occ
-assert closure_occ == 8445, closure_occ
+assert kernel_occ == 8368, kernel_occ
+assert closure_occ == 8449, closure_occ
 
 # %% [markdown]
 # ### Caveats on the translations we do claim
@@ -484,10 +484,10 @@ for k in (50, len(shapes)):
     print(f"  top {k:3} shapes -> ~{series:,} synthetic series")
 
 # §7 and §9 quote these, so a re-run has to reproduce them.
-assert len(shapes) == 325, len(shapes)
-assert total_shaped == 8340, total_shaped
+assert len(shapes) == 335, len(shapes)
+assert total_shaped == 8344, total_shaped
 assert milestones[0.5] == 6 and milestones[0.8] == 23, milestones
-assert milestones[0.9] == 50 and milestones[0.95] == 104, milestones
+assert milestones[0.9] == 51 and milestones[0.95] == 108, milestones
 print("shape-reduction assertions hold")
 
 
@@ -594,6 +594,51 @@ _q["type_undeclared_occurrences"] = int(_td["occurrences"]["undeclared"])
 _q["type_rate_occurrences"] = int(_td["occurrences"]["rate"])
 _q["type_wrong_pct_of_corpus"] = round(
     _td["wrong_occurrences"] / int(total_n) * 100, 1)
+
+# `rem:weighted` states how many distinct corpus forms carry the modifier, and the figure
+# it used to state came from matching the substring `weighted`, which also catches four
+# queries whose metric *name* contains it. Counted on the modifier itself.
+
+# %%
+import re as _re
+_WEIGHTED = _re.compile(r"\.weighted\s*\(\s*\)")
+_w = {t: int(n) for t, n in occurrences.items() if _WEIGHTED.search(t)}
+_q["weighted_distinct"] = len(_w)
+_q["weighted_occurrences"] = sum(_w.values())
+_q["weighted_on_sum_distinct"] = sum(1 for t in _w if t.startswith("sum:"))
+print(f".weighted(): {sum(_w.values())} occurrences, {len(_w)} distinct, "
+      f"{_q['weighted_on_sum_distinct']} of them on sum:")
+
+# %% [markdown]
+# ### What the feature vocabulary bounds
+# §7 checks $\kappa$ against a bound from the feature set. The greedy curve of notebook 00
+# is the wrong instrument for it: greedy picks an attainable set at each size rather than
+# an optimal one, so its value is a lower bound on the best a fragment of that size could
+# reach and a real translator can sit above it. The right bound is the translator's own
+# feature set. Every query using a feature it never translates is refused by construction,
+# so the share of occurrences whose features all lie inside that set is an upper bound on
+# $\kappa$ --- and the slack is the interesting part, because it is queries the vocabulary
+# cannot tell apart from ones that translate.
+
+# %%
+_raw = {}
+for _query in queries:                      # not `_q`: that name holds the registry
+    _raw.setdefault(c.normalise("datadog", _query.text), []).append(_query.text)
+_feat = {norm: frozenset().union(*[frozenset(c.features("datadog", t)) for t in texts])
+         for norm, texts in _raw.items()}
+_S = frozenset().union(*[_feat[n] for n in translated.norm])
+_all_features = frozenset().union(*_feat.values())
+_inside = tr[tr.norm.map(lambda n: _feat[n] <= _S)]
+_slack = _inside[_inside.outcome != "translated"]
+_q["feature_set_size"] = len(_S)
+_q["feature_ceiling_pct"] = round(_inside.n.sum() / int(total_n) * 100, 1)
+_q["feature_slack_occurrences"] = int(_slack.n.sum())
+print(f"the translator's feature set: {len(_S)} of {len(_all_features)} features "
+      f"(absent: {sorted(_all_features - _S)})")
+print(f"  upper bound on kappa from the vocabulary: {_inside.n.sum() / int(total_n):.2%}")
+print(f"  kappa: {translated.n.sum() / int(total_n):.2%}")
+print(f"  slack: {int(_slack.n.sum())} occurrences refused inside it")
+print("  by gap:", dict(_slack.groupby("gap").n.sum()))
 
 # `top(...)` is the largest single entry in the unimplemented column, and whether it
 # belongs there turns on an expressibility claim that §7 now reads off both systems

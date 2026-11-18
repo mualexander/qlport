@@ -153,3 +153,20 @@ def test_every_entry_is_cited():
     entries = set(_BIBITEM.findall((PAPER / "references.tex").read_text()))
     orphans = sorted(entries - _cited())
     assert not orphans, f"in the bibliography, cited nowhere: {orphans}"
+
+
+_PLACEHOLDER = re.compile(r"(?<![\\\w])(?:NUM|TODO|FIXME|XXX|TBD)[A-Z_\\]*")
+
+
+def test_the_paper_has_no_placeholders_left():
+    """A staged number that never got filled in reads as prose, not as an error.
+
+    `test_paper_figures.py` looks for digits, so a token like `NUM\\_SHAPES` standing in
+    for a figure passes every other check in this repository and renders in the PDF. It
+    happened while the seventh pass was re-running an experiment the prose quotes.
+    """
+    left: dict[str, list[str]] = {}
+    for path in TEX:
+        for match in _PLACEHOLDER.finditer(_strip(path.read_text())):
+            left.setdefault(match.group(0), []).append(path.name)
+    assert not left, f"placeholder left in the paper: {left}"

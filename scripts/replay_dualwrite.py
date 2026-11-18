@@ -66,6 +66,7 @@ DD_METRIC = "qlport.replay.requests"
 PM_METRIC = "qlport_replay_requests"
 SETTLE = 180.0                    # land the last sample this far before now
 INGEST_WAIT = 600.0               # a brand-new custom metric takes minutes to appear
+EXACT_TOL = 1e-12                 # the float64 bound the rest of the paper uses
 
 
 def run(*cmd: str, **kw) -> subprocess.CompletedProcess:
@@ -281,7 +282,12 @@ def main(argv=None) -> int:
     for r in rows:
         by[(r["instant"], r["candidate"])].append(r["d"])
     summary = {f"{inst} | {cand}": {"buckets": len(v),
-                                    "exact": sum(1 for x in v if x == 0) / len(v),
+                                    # The same float64 bound every other exactness column in this paper uses
+            # (notebook 02's model-versus-server check, notebook 05's differential).
+            # Bit-identity counted one bucket reading 236.0 against 235.99999999999997
+            # as a disagreement, which moved a published cell by 1.2 points.
+            "exact": sum(1 for x in v if x <= EXACT_TOL) / len(v),
+            "bit_identical": sum(1 for x in v if x == 0) / len(v),
                                     "median_d": float(np.median(v)),
                                     "max_d": float(np.max(v))}
                for (inst, cand), v in by.items() if v}

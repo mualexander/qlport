@@ -4,12 +4,12 @@
 translations checked against Datadog rather than merely emitted. Every other vendor
 cache in this project is regression-tested; this one was not, and it is the largest.
 
-Two things could rot silently without it. The figures the paper quotes -- 325 shapes,
-323 compared, 21,962 bucket comparisons, 8,337 occurrences -- could drift from the
+Two things could rot silently without it. The figures the paper quotes -- 335 shapes,
+332 compared, 22,860 bucket comparisons, 8,339 occurrences -- could drift from the
 table that reports them. And, worse, a change to the lowering or the emitter could
 alter what those shapes translate to, which would detach the cached verification from
 the code it verified while leaving every other test green: the cache would still say
-"323 shapes agreed with Datadog" about expressions the translator no longer produces.
+"332 shapes agreed with Datadog" about expressions the translator no longer produces.
 """
 from __future__ import annotations
 
@@ -31,12 +31,12 @@ ROLLUP = 60.0
 def _with_queries(run: dict) -> list[dict]:
     """The rows that record a representative query.
 
-    Two of the 325 do not: the shape whose 1800 s rollup the run window cannot hold
+    Three of the 335 do not: two whose rollup interval the run window cannot hold
     twice, and the one whose filters no synthetic series satisfies. Both record only
     why they could not be compared, so there is nothing to re-translate.
     """
     rows = [r for r in run["rows"] if "datadog" in r]
-    assert len(rows) == 323, len(rows)
+    assert len(rows) == 332, len(rows)
     return rows
 
 
@@ -49,11 +49,11 @@ def run() -> dict:
 
 def test_the_run_matches_the_figures_the_paper_reports(run):
     """These are the numbers in tab:differential and in §7's prose."""
-    assert len(run["rows"]) == 325
-    assert run["status_counts"] == {"compared": 323, "no-data": 1, "window-too-short": 1}
-    assert run["shapes_compared"] == 323 and run["shapes_exact"] == 323
-    assert run["occurrences_compared"] == 8337 and run["occurrences_exact"] == 8337
-    assert sum(r.get("buckets", 0) for r in run["rows"]) == 21962
+    assert len(run["rows"]) == 335
+    assert run["status_counts"] == {"compared": 332, "no-data": 1, "window-too-short": 2}
+    assert run["shapes_compared"] == 332 and run["shapes_exact"] == 332
+    assert run["occurrences_compared"] == 8339 and run["occurrences_exact"] == 8339
+    assert sum(r.get("buckets", 0) for r in run["rows"]) == 22860
 
 
 def test_every_compared_shape_agreed(run):
@@ -92,8 +92,8 @@ def test_the_rows_are_still_one_per_shape(run):
         lowered = lower_all(parse("datadog", r["datadog"], "v2"))
         if len(lowered) == 1 and not isinstance(lowered[0], Bottom):
             shapes.append(shape(lowered[0]))
-    assert len(shapes) == 323, len(shapes)
-    assert len(set(shapes)) == 323, f"{len(shapes) - len(set(shapes))} collisions"
+    assert len(shapes) == 332, len(shapes)
+    assert len(set(shapes)) == 332, f"{len(shapes) - len(set(shapes))} collisions"
 
 
 # --- the declared-metric-type join --------------------------------------------------
@@ -116,7 +116,7 @@ def types() -> dict:
 
 def test_the_type_join_is_internally_consistent(types):
     occ = types["occurrences"]
-    assert sum(occ.values()) == types["translated_occurrences"] == 8445
+    assert sum(occ.values()) == types["translated_occurrences"] == 8449
     decidable = occ["agree"] + occ["wrong-gauge"] + occ["wrong-counter"]
     assert decidable == types["decidable_occurrences"] == 7562
     assert occ["wrong-gauge"] + occ["wrong-counter"] == types["wrong_occurrences"] == 496

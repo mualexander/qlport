@@ -206,13 +206,22 @@ def e3(creds: Credentials, *, dry: bool) -> dict:
     assumed 60.
     """
     t_star = _grid(_now() - SETTLE)
-    offsets, values = (31, 32, 33, 34), (1.0, 2.0, 3.0, 10.0)
+    # Deltas chosen so that every candidate aggregator predicts a different reading. The
+    # first version used 1, 2, 3, 10, whose mean is 4 and whose *count* is also 4, so the
+    # run named `avg` conclusively on a reading `count` explained equally well. With
+    # 1, 14, 2, 3: avg 5, sum 20, count 4, sum/20s 1.0, min 1, max 14, last 3, median 2.5.
+    offsets, values = (31, 32, 33, 34), (1.0, 14.0, 2.0, 3.0)
+    # And a per-run tag, for the reason E2 above gives: without one this experiment read
+    # an earlier run's bucket back through its own 3600 s window and interpreted it.
+    run = f"r{int(t_star)}"
+    tags = TAGS + [f"run:{run}"]
     metric = "qlport.e3.deltas"
     points = [(t_star + o, v) for o, v in zip(offsets, values)]
-    payloads = [count_payload(metric, points, tags=TAGS)]
+    payloads = [count_payload(metric, points, tags=tags)]
     acks = _submit_all(creds, payloads, dry=dry)
 
     variants = {"bare": "", "as_count": ".as_count()", "as_rate": ".as_rate()"}
+    scope = f"{{run:{run}}}"
     # The automatic interval is a function of the query range (E4's subject), and a
     # narrow range buys a *finer* one: a 240 s window returned a 1 s rollup, which put
     # each of the four samples in its own bucket and made the comparison meaningless.
@@ -220,16 +229,16 @@ def e3(creds: Credentials, *, dry: bool) -> dict:
     start, end = t_star - 1800, t_star + 1800
     if dry:
         for name, suffix in variants.items():
-            print(f"# then query  sum:{metric}{{*}}{suffix}"
+            print(f"# then query  sum:{metric}{scope}{suffix}"
                   f"  from {start:.0f} to {end:.0f}  ({name})")
         return {}
 
-    out: dict = {"provenance": _provenance(creds, experiment="e3", t_star=t_star,
+    out: dict = {"provenance": _provenance(creds, experiment="e3", t_star=t_star, run=run,
                                            points=points, sum_of_values=sum(values),
                                            mean_of_values=statistics.fmean(values)),
                  "submitted": payloads, "acks": acks, "responses": {}}
     for name, suffix in variants.items():
-        q = f"sum:{metric}{{*}}{suffix}"
+        q = f"sum:{metric}{scope}{suffix}"
         raw = _await_points(creds, q, start, end)
         interval = reported_interval(raw)
         out["responses"][name] = {

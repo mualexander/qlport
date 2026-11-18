@@ -37,7 +37,9 @@ from pathlib import Path
 import pandas as pd
 from lark import Lark
 
-from qlport.parse import LANGS, VERSIONS, get_parser, lalr_conflicts
+from qlport import corpus as c
+from qlport.parse import (LANGS, VERSIONS, get_parser, lalr_conflict_report,
+                          lalr_conflicts)
 
 ROOT = Path.cwd() if (Path.cwd() / "paper").exists() else Path.cwd().parent
 TABLES = ROOT / "paper" / "tables"
@@ -85,11 +87,24 @@ for lang in LANGS:
         p = get_parser(lang, version)
         states = len(p.parser.parser._parse_table.states)
         conflict = lalr_conflicts(lang, version)
+        # Counted rather than asserted. `lalr_conflicts` raises at the first conflict and
+        # so reports one however many there are; the cell used to hard-code the singular
+        # "Shift/Reduce on LPAR" for any non-None answer, and PromQL's table has two.
+        report = lalr_conflict_report(lang, version)
+        kinds = sorted({(c["kind"], c["terminal"]) for c in report})
+        assert (conflict is None) == (not report), (lang, version, conflict, report)
         stats.append(dict(lang=lang, version=version, terminals=len(p.terminals),
-                          rules=len(p.rules), states=states, conflict=conflict))
+                          rules=len(p.rules), states=states, conflict=conflict,
+                          conflicts=len(report),
+                          conflict_rules=tuple(c["rule"] for c in report)))
+        if not report:
+            cell = "none"
+        else:
+            kind, term = kinds[0]
+            assert len(kinds) == 1, kinds
+            cell = f"{len(report)}" + r"$\times$ " + code(f"{kind} on {term}")
         rows.append([tex(lang), version, f"{len(p.terminals)}", f"{len(p.rules)}",
-                     f"{states}",
-                     "none" if conflict is None else code("Shift/Reduce on LPAR")])
+                     f"{states}", cell])
 stats = pd.DataFrame(stats)
 tabular("llrrrl",
         ["Language", "Grammar", "Terminals", "Rules", "LALR states", "Conflicts"],
@@ -133,7 +148,11 @@ for q in ("a * on(x) group_left(y) b", "a * on(x) group_left b",
 # %% [markdown]
 # ## Which lexical decisions are load-bearing
 # Each row perturbs one terminal back to the form it would naively take and re-parses a
-# query from the corpus. A row that still parsed would mean the decision is dead weight.
+# witness. A row that still parsed would mean the decision is dead weight. The witnesses
+# are minimal queries written for the table -- §4 used to call them corpus queries and
+# none of them is one, not even as a substring -- so the corpus evidence is the count
+# beside each: distinct corpus queries the real grammar parses and the naive form does
+# not. The two are different claims and both are worth making.
 
 # %%
 DECISIONS = [
@@ -161,20 +180,36 @@ DECISIONS = [
      "avg:x{*-zone}"),
 ]
 
+_corpus = {}
+for _lang in ("datadog", "promql"):
+    _texts = {c.normalise(_lang, q.text)
+              for q in c.read_queries(ROOT / "data" / "corpus" / "queries.jsonl")
+              if q.lang == _lang and (_lang != "promql" or c.is_promql(q.text))}
+    _corpus[_lang] = sorted(t for t in _texts if c.parse_outcome(_lang, t).ok)
+
 rows = []
 for lang, decision, why, mutate, witness in DECISIONS:
     naive = mutate(grammar_text(lang, "v2"))
     assert naive != grammar_text(lang, "v2"), decision
+    naive_parser = Lark(naive, parser="lalr", lexer="contextual",
+                        propagate_positions=True, maybe_placeholders=True)
     try:
-        Lark(naive, parser="lalr", lexer="contextual",
-             propagate_positions=True, maybe_placeholders=True).parse(witness)
+        naive_parser.parse(witness)
         outcome = "parses (decision is dead weight!)"
     except Exception as e:
         outcome = f"{type(e).__name__}"
     get_parser(lang).parse(witness)          # the real grammar must accept it
-    rows.append([tex(lang), decision, code(witness, 26), tex(outcome)])
-    print(f"{lang:8s} {decision:42s} {outcome}  ({why})")
-tabular("llll", ["Language", "Decision", "Witness", "Naive form"],
+    # How much of the corpus the decision is worth, which the witness does not say.
+    broken = 0
+    for _t in _corpus[lang]:
+        try:
+            naive_parser.parse(_t)
+        except Exception:
+            broken += 1
+    rows.append([tex(lang), decision, code(witness, 26), tex(outcome), f"{broken:,}"])
+    print(f"{lang:8s} {decision:42s} {outcome}  breaks {broken:,} corpus queries  ({why})")
+tabular("llllr",
+        ["Language", "Decision", "Witness", "Naive form", "Queries lost"],
         rows, TABLES / "grammar_decisions.tex")
 
 # %% [markdown]
@@ -182,8 +217,10 @@ tabular("llll", ["Language", "Decision", "Witness", "Naive form"],
 # * The Datadog grammar is conflict-free LALR(1) with no terminal collisions, in both
 #   the documentation-derived v1 and the corpus-informed v2. Since no reference grammar
 #   is published, that is a result rather than a reproduction.
-# * PromQL is **not** conflict-free, and the one conflict is the language's rather than
-#   ours: an optional parenthesised label list after `group_left` cannot be told from a
+# * PromQL is **not** conflict-free. Its table carries two conflicts, measured from the
+#   resolution log rather than from the first exception, and both are the language's
+#   rather than ours: an optional parenthesised label list after `group_left` or
+#   `group_right` cannot be told from a
 #   parenthesised operand with one token of lookahead. Both our parser and Prometheus
 #   3.15.0 resolve it by taking the label list, and both therefore reject
 #   `a * on(x) group_left (b)`. RQ1's answer is "LALR(1) modulo one documented

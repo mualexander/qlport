@@ -244,9 +244,12 @@ are not conflated by a special case at 0.
 
 ## E2 — are buckets right- or left-closed? (Rig B) — **done: left-closed**
 
-**Answer: buckets are left-closed `[b, b+Δ)` and reported under their start.** Two runs at
-two rollup intervals agree; each of the other three conventions is ruled out by at least
-one reading. Cached in `data/raw/datadog/e2.json`, regression-tested in
+**Answer: buckets are left-closed `[b, b+Δ)` and reported under their start.** One run,
+two probes: together they leave exactly one convention standing, and each of the other
+three is ruled out by at least one of the two readings. It is one run at one rollup
+interval — the script fixes Δ at 60 s — so what is pinned is the convention at that width,
+not its independence of the width. §7.9 claimed two runs at two intervals for a while;
+§3.1 always said otherwise and was right. Cached in `data/raw/datadog/e2.json`, regression-tested in
 `tests/test_harness_datadog.py`, and now stated as paper §3.1's closure remark.
 
 This was the opposite of the assumption, and three things followed:
@@ -297,11 +300,29 @@ rounded to the nearest guess.
 
 ## E3 — the default time aggregator for a COUNT over the API (Rig B) — **done: avg**
 
-**Answer: `avg`.** Four deltas of 1, 2, 3, 10 come back as 4, their mean, not 16. So the
-enforced `avg` default applies and the `.as_count()` the UI appends does *not* extend to
-the API. This **confirms** `METRIC_TYPE_UNKNOWN` rather than narrowing it: Datadog
-averages stored deltas, `avg_over_time` averages running totals, and the precondition on
-76.3% of translations is load-bearing.
+**Answer: `avg`**, and on the second attempt for the right reasons. Four deltas of
+1, 14, 2, 3 come back as **5**, their mean — not 20 (sum), not 4 (count), not 1.0 (sum
+over the reported 20 s interval). So the enforced `avg` default applies and the
+`.as_count()` the UI appends does *not* extend to the API. This **confirms**
+`METRIC_TYPE_UNKNOWN` rather than narrowing it: Datadog averages stored deltas,
+`avg_over_time` averages running totals, and the precondition on 76.3% of translations is
+load-bearing.
+
+**The first run of this experiment measured less than it claimed**, and the seventh review
+pass found both halves of it:
+
+- The deltas were 1, 2, 3, 10, whose mean is 4 — and whose *count* is also 4. A `count`
+  rollup explained the reading exactly as well, and `interpret_default_aggregator`
+  enumerated only `avg`, `sum` and `sum/interval`, so it reported one match and called it
+  conclusive. `count` is now among the hypotheses, and the deltas are chosen so all four
+  predictions differ.
+- It was the one experiment with no per-run tag. It submitted to a fixed metric name and
+  queried a ±1800 s window, so it read an earlier run's bucket back — 911 s before its own
+  submission, with the returned series ending before the first point it had just sent.
+  `_await_points` returned on its first query because the stale bucket was already
+  non-null, so the run never waited for its own data. The guard checked that the
+  *submitted* points share one bucket and never that the bucket reported back was theirs;
+  it now checks both, and the query filters on `run:`.
 
 One fix was needed first. A 240 s query window made Datadog choose a **1 s** rollup,
 which put each of the four samples in its own bucket; the window is now an hour, which is

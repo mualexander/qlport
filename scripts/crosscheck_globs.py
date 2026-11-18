@@ -41,15 +41,18 @@ from qlport.regular import (                                         # noqa: E40
 )
 
 OUT = ROOT / "data" / "raw" / "globs" / "crosscheck.json"
-MATCHER = re.compile(r'(\w+)\s*(=~|!~)\s*"((?:[^"\\]|\\.)*)"')
-
-
 def concrete_regexes() -> dict[str, int]:
-    """Every concrete `=~`/`!~` pattern in the PromQL corpus, by occurrence count."""
+    """Every concrete `=~`/`!~` pattern in the PromQL corpus, by occurrence count.
+
+    The scanner and the population are `corpus`'s, so this is the same set notebook 04
+    tabulates. Both used to carry their own double-quoted-only pattern and this one also
+    counted the LogQL panels, so §6's "168 of the 183 distinct patterns" was over a
+    different 183 than the table beside it.
+    """
     occ: collections.Counter[str] = collections.Counter()
     for q in c.read_queries(ROOT / "data" / "corpus" / "queries.jsonl"):
-        if q.lang == "promql":
-            for _label, _op, rx in MATCHER.findall(q.text):
+        if q.lang == "promql" and c.is_promql(q.text):
+            for rx in c.promql_matcher_values(q.text):
                 occ[rx] += 1
     return {r: n for r, n in occ.items() if "$" not in r}
 
@@ -67,18 +70,28 @@ def main(argv: list[str] | None = None) -> int:
     started = time.time()
 
     # Shortest regexes first: the cheap ones are done even on a small budget.
-    for rx in sorted(regexes, key=len):
+    ordered = sorted(regexes, key=len)
+    for i, rx in enumerate(ordered, 1):
         proposed = regex_to_globs(rx)
         structural = proposed.globs[0] if proposed.kind == "single" else None
         if time.time() - started > args.budget:
             tally["not-reached"] += 1
             continue
+        # Progress, per pattern: this loop can run for an hour on one corpus and used to
+        # print nothing until it was over, so a slow pattern was indistinguishable from a
+        # wedged one. The elapsed time is per pattern, which is what identifies the
+        # expensive ones rather than just confirming the script is alive.
+        t0 = time.time()
         try:
             found = single_glob_by_search(rx)
         except SearchTooLarge as exc:
             tally["search-too-large"] += 1
             reached[rx] = {"outcome": "search-too-large", "detail": str(exc)}
+            print(f"  [{i:>3}/{len(ordered)}] {time.time() - t0:7.1f}s "
+                  f"search-too-large  {rx[:54]}", flush=True)
             continue
+        print(f"  [{i:>3}/{len(ordered)}] {time.time() - t0:7.1f}s "
+              f"{proposed.kind:<8}  {rx[:54]}", flush=True)
         reached[rx] = {"outcome": proposed.kind, "structural": structural,
                        "search": found}
         if found == structural:

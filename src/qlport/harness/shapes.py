@@ -90,7 +90,12 @@ def _selects(node: ir.Select) -> tuple[dict[str, str], set[str], str]:
             labels[m.label] = m.value
         elif m.op == "=~":
             if m.value == ".+":                 # the tag merely has to be present
+                # Presence is not a pinned value: the key must still vary, or a query
+                # grouping by the very tag it tests for presence is instantiated as one
+                # series and its space aggregation is never exercised. That is what the
+                # comment in `instantiate` says this avoids, and for 8 shapes it did not.
                 labels[m.label] = FILL
+                soft.add(m.label)
             else:
                 value = _value_matching(m.value)
                 if value is None:

@@ -376,7 +376,13 @@ def main(argv=None) -> int:
         return 2
     creds = credentials()
 
-    t0 = float(int(time.time() - SETTLE - WINDOW))
+    # Floor to a multiple of 300 s, which is a multiple of every rollup interval this
+    # corpus states below 1800 s (15, 20, 60, 300). An arbitrary whole second leaves the
+    # scrape grid off every bucket boundary, and off a boundary the left-closed Datadog
+    # bucket and a right-closed PromQL window hold the same samples -- so the evaluation
+    # instant could be wrong by up to half a scrape and still agree on every bucket. The
+    # convention this rig is built on was wrong once; an aligned grid is what tests it.
+    t0 = float(int(time.time() - SETTLE - WINDOW) // 300 * 300)
     run_tag = f"r{int(t0)}"
     print("building representatives ...")
     reps = representatives(run_tag)

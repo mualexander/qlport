@@ -4896,7 +4896,7 @@
   "agree": 6344,
   "ambiguous": 11,
   "rate": 121,
-  "undeclared": 518,
+  "undeclared": 520,
   "wrong-counter": 186,
   "wrong-gauge": 216
  },
@@ -4948,19 +4948,19 @@
   "agree": 7066,
   "ambiguous": 17,
   "rate": 134,
-  "undeclared": 732,
+  "undeclared": 736,
   "wrong-counter": 254,
   "wrong-gauge": 242
  },
  "provenance": {
-  "collected_at": "2026-11-17T20:34:00+00:00",
+  "collected_at": "2026-11-17T23:40:15+00:00",
   "commit": "452093828d8d91fae1a7be29b62d9197a20b1aa0",
   "declarations_in_population": 37070,
   "declarations_recorded_here": 4883,
   "declared_from": "data/corpus/sources/integrations-core-metadata/declared.json",
   "default_rollup_s": 60.0
  },
- "translated_occurrences": 8445,
+ "translated_occurrences": 8449,
  "wrong_occurrences": 496,
  "wrong_share_of_decidable_pct": 6.6
 }

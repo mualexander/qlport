@@ -10,6 +10,8 @@ conflict that has to be resolved the way the reference implementation resolves i
 """
 from __future__ import annotations
 
+import re
+
 from functools import lru_cache
 from importlib.resources import files
 
@@ -52,6 +54,64 @@ def lalr_conflicts(lang: str, version: str = "v2") -> str | None:
         return None
     except (GrammarError, LexError) as e:
         return str(e).splitlines()[0]
+
+
+def lalr_conflict_report(lang: str, version: str = "v2") -> list[dict[str, str]]:
+    """Every conflict in the table, one entry per (state, lookahead) pair.
+
+    `lalr_conflicts` cannot count: strict mode raises at the *first* conflict, so it
+    returns one message however many there are. Paper §4 said "exactly one" on the
+    strength of that message and the table carries two -- both shift/reduce on `LPAR`,
+    one after `group_left` and one after `group_right`, from the one optional label list.
+    So the count is read off Lark's own resolution log instead, with the grammar built
+    non-strict (which is how the parser the corpus is processed with is built).
+
+    Each entry is `{"terminal": ..., "resolution": ..., "rule": ...}`.
+    """
+    import io
+    import logging
+
+    buf = io.StringIO()
+    handler = logging.StreamHandler(buf)
+    handler.setLevel(logging.DEBUG)
+    logger = logging.getLogger("lark")
+    previous, propagated = logger.level, logger.propagate
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    logger.propagate = False          # the resolutions are the return value, not output
+    try:
+        # Built directly rather than through `get_parser`: the table has to be
+        # constructed afresh with `debug=True` for Lark to log its resolutions, and
+        # `get_parser` is cached, so a second call would emit nothing.
+        if lang not in LANGS:
+            raise ValueError(f"unknown language {lang!r}")
+        if version not in VERSIONS:
+            raise ValueError(f"unknown grammar version {version!r}")
+        name = _FILES[version].format(lang=lang)
+        Lark(files("qlport.grammars").joinpath(name).read_text(),
+             parser="lalr", lexer="contextual", strict=False, debug=True,
+             propagate_positions=True, maybe_placeholders=True)
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(previous)
+        logger.propagate = propagated
+
+    out: list[dict[str, str]] = []
+    pending: dict[str, str] | None = None
+    for line in buf.getvalue().splitlines():
+        text = line.strip()
+        m = re.match(r"(Shift/Reduce|Reduce/Reduce) conflict for terminal (\w+):\s*"
+                     r"\(resolving as (\w+)\)", text)
+        if m:
+            if pending is not None:
+                out.append(pending)
+            pending = {"kind": m.group(1), "terminal": m.group(2),
+                       "resolution": m.group(3), "rule": ""}
+        elif pending is not None and text.startswith("*"):
+            pending["rule"] = text.lstrip("* ").strip()
+    if pending is not None:
+        out.append(pending)
+    return out
 
 
 def parse(lang: str, query: str, version: str = "v2") -> Tree:

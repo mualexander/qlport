@@ -11,7 +11,7 @@
 This paper set out to ask whether vendor lock-in in observability is a language-design
 artefact. For the direction it measures, the honest answer is mostly no, and the
 measurement that says so is the one the whole apparatus was built to produce. Of
-$8{,}766$ Datadog query occurrences, $96.3\%$ translate; of the $3.6\%$ that do not,
+$8{,}770$ Datadog query occurrences, $96.3\%$ translate; of the $3.6\%$ that do not,
 \S\ref{sec:gaps} splits the shortfall into $1.2\%$ that PromQL genuinely cannot express
 and $2.4\%$ that is unimplemented work in this translator. The second number is larger
 than the first.
@@ -62,13 +62,13 @@ time range and no care by the query's author puts it in the text. PromQL does ha
 slot --- a range selector is part of the expression --- which is the contrast this
 section used to draw categorically.
 
-It should not be drawn categorically, and the corpus says so. Of the $3{,}620$ PromQL
-occurrences that carry a range selector at all, $2{,}006$ --- $55.4\%$ --- fill it with
+It should not be drawn categorically, and the corpus says so. Of the $3{,}610$ PromQL
+occurrences that carry a range selector at all, $2{,}006$ --- $55.6\%$ --- fill it with
 a dashboard template variable rather than a duration, overwhelmingly
 \texttt{\$\_\_rate\_interval} or \texttt{\$\_\_interval}. Those panels take their window
 from the dashboard's time range too, by a different mechanism and with the same
 consequence for anyone translating them. The comparison is therefore $96.9\%$ against
-$55.4\%$: a real difference, and a difference of degree. The categorical version was
+$55.6\%$: a real difference, and a difference of degree. The categorical version was
 available to be checked against this corpus from the beginning and was not, which makes
 it the one claim in this paper that went longest without the control it needed.
 
@@ -170,18 +170,18 @@ sub-problem of the reverse direction --- tag filtering --- and not a $\kappa$ fo
 And \S\ref{sec:regular} measures only what \emph{this} corpus writes, which is a corpus
 of PromQL written by people who were not thinking about globs.
 
-The units differ on the two sides of the comparison. The $38.3\%$ is a share of concrete
-regex \emph{matcher occurrences} --- by distinct pattern the same refusals are $27.3\%$
+The units differ on the two sides of the comparison. The $37.3\%$ is a share of concrete
+regex \emph{matcher occurrences} --- by distinct pattern the same refusals are $27.2\%$
 (Table~\ref{tab:regex-glob}) --- while $\kappa$'s $3.6\%$ is a share of whole queries. A
 query carries several matchers and fails if any one of them does, so the per-query
-reverse refusal rate is not $38.3\%$ and is not measured here; the conjunctive structure
+reverse refusal rate is not $37.3\%$ and is not measured here; the conjunctive structure
 that makes \S\ref{sec:staircase}'s staircase would push it up, and nothing in this
 paper says by how much.
 
 The two directions are also counted under different corpus policies, which cuts the
 other way. Going forward, \S\ref{sec:corpus} \emph{instantiates} a template --- a
 Datadog scope variable becomes \texttt{*} --- and the query is then translated like any
-other. Coming back, the $7{,}459$ template-valued matchers are set aside as statically
+other. Coming back, the $7{,}546$ template-valued matchers are set aside as statically
 undefined rather than instantiated, which is why the denominator is $1{,}013$ and not
 $8{,}472$. Against the larger denominator the refusals are $4.6\%$. Both policies are
 defensible and they are not the same policy, so ``leaving costs work, returning costs

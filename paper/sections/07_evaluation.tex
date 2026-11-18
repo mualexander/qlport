@@ -36,20 +36,33 @@ Datadog queries written by Datadog, which matters because no reference grammar f
 language is published (Section~\ref{sec:datadog-inference}) and vendor-authored queries
 are the closest thing to a specification by example.
 
-Extraction yields $28{,}501$ query strings. Eleven turn out to be LogQL --- Loki panels
+Extraction yields $22{,}903$ query strings. Nine turn out to be LogQL --- Loki panels
 in dashboards registered under a Prometheus datasource --- and are dropped rather than
-counted as PromQL the grammar fails on, leaving $28{,}490$ in three populations:
-$8{,}766$ Datadog metric queries, $8{,}096$ PromQL expressions ($7{,}863$ panels, $137$
-alerting rules, $96$ recording rules), and $11{,}628$ Datadog formula expressions.
+counted as PromQL the grammar fails on, leaving $22{,}894$ in three populations:
+$8{,}770$ Datadog metric queries, $8{,}102$ PromQL expressions ($7{,}867$ panels, $139$
+alerting rules, $96$ recording rules), and $6{,}022$ Datadog formula expressions.
+Three of those counts moved in the seventh reading of the extractor, and in the direction
+that costs an excuse rather than buying one: a request may carry its query as a singular
+object rather than in a list, which distribution widgets do and which hid four Datadog
+queries; a Grafana library panel keeps its model in the dashboard's \texttt{\_\_elements}
+map rather than in \texttt{panels}, which hid four more; and \emph{two} of what had been
+eleven LogQL panels were PromQL alerting rules whose only offence was a backtick raw
+string in a matcher, which PromQL permits and a LogQL line-filter pattern matched.
+The formula population fell by nearly half for a different reason, given below.
 
 \paragraph{Instantiation.}
 Dashboard queries are not queries. A panel ships \texttt{\$pod},
 \texttt{\$\_\_rate\_interval} or \texttt{\$host} where a value belongs, and
 Table~\ref{tab:parse-coverage} already showed what that costs: $11.8\%$ of distinct
 Datadog and $71.2\%$ of distinct PromQL queries parse as shipped, against $99.9\%$ and
-$99.1\%$ once instantiated. \texttt{corpus.normalise} performs the substitution a dashboard performs
+$99.1\%$ once instantiated. The third of those substitutions is not a detail on the
+PromQL side: an earlier version of this paragraph described only the first two and said
+everything else was left alone, and the two it described reach $95.8\%$ rather than
+$99.1\%$. \texttt{corpus.normalise} performs the substitution a dashboard performs
 --- a PromQL range variable becomes a duration, a Datadog scope variable becomes
-\texttt{*}, everything else is left alone --- and every measurement below is made on the
+\texttt{*}, a variable anywhere else outside a string literal becomes an identifier, and
+a variable \emph{inside} one is left alone, because \texttt{\{pod=\~{}"\$pod"\}} already
+parses --- and every measurement below is made on the
 instantiated form. The consequence for RQ2 is not cosmetic: the object a dashboard
 migration translates is a query \emph{schema}, and a translator that takes query strings
 is solving a different problem from the one its users have.
@@ -57,10 +70,20 @@ is solving a different problem from the one its users have.
 \paragraph{What is held aside.}
 A Datadog widget is a list of named queries plus a formula over them, and this paper is
 about the metrics query language rather than the formula layer. Scoping it out is cheap
-and the corpus says so: of $11{,}628$ formulas ($481$ distinct strings), $82.6\%$ are a
-bare reference to a single named query, $11.5\%$ apply one function, $7.5\%$ contain
-arithmetic and $4.8\%$ a numeric constant. The semantics sit in the queries, not above
+and the corpus says so: of $6{,}022$ formulas ($444$ distinct strings), $75.6\%$ are a
+bare reference to a single named query, $13.8\%$ apply one function, $13.2\%$ contain
+arithmetic and $8.2\%$ a numeric constant. The semantics sit in the queries, not above
 them.
+
+The population is the metric formula layer and not the whole of it, which is the
+correction the sentence above needed. A formula sits over a request's queries, so it
+belongs to the metrics language only when they do, and the extractor applied that filter
+to the queries and not to the formulas. The $11{,}628$ formulas an earlier version of
+this paragraph reported were $6{,}022$ metric ones and $5{,}606$ over log, event,
+security-signal and other requests --- and the second group is $90.1\%$ bare references,
+so it diluted every share here towards the answer the paragraph wanted. Arithmetic in the
+formula layer is nearly twice what was claimed. The conclusion survives: three quarters of
+the metric formula layer is a name, and nothing in it computes what a query cannot.
 
 \paragraph{What the corpus is not.}
 It is a census of \emph{published} dashboards, not of production estates. Vendor
@@ -149,7 +172,7 @@ seventeen of PromQL's twenty-four.}
 
 The shape is the finding. The first six Datadog features complete $45$ queries between
 them --- $0.5\%$ of the corpus, on top of the $1.1\%$ that use no feature at all --- and
-then template-variable scopes and \texttt{sum:} take two steps to $49.3\%$. Half the corpus
+then template-variable scopes and \texttt{sum:} take two steps to $49.2\%$. Half the corpus
 needs nine features; $90\%$ needs sixteen of the twenty-eight. PromQL behaves the same way
 and slightly worse: its first six features complete $221$ of $8{,}096$ queries
 ($2.7\%$), half the corpus needs fourteen features and $90\%$ needs seventeen of
@@ -165,8 +188,8 @@ incremental migration cannot show incremental progress.
 \subsection{Coverage \texorpdfstring{$\kappa$}{kappa}}
 
 Table~\ref{tab:translation-coverage} reports the outcome of lowering and emitting every
-instantiated Datadog query in the corpus: $8{,}766$ occurrences, $7{,}688$ distinct after
-instantiation. (Table~\ref{tab:parse-coverage} counts $7{,}796$ distinct, because it
+instantiated Datadog query in the corpus: $8{,}770$ occurrences, $7{,}690$ distinct after
+instantiation. (Table~\ref{tab:parse-coverage} counts $7{,}799$ distinct, because it
 counts distinct \emph{shipped} strings, before two templates collapse onto one query.)
 
 \begin{table}[htbp]\centering\footnotesize
@@ -186,17 +209,32 @@ dashboards than the ones it handles. There is no cheap win hiding in the popular
 consolation that the failures are all one-offs.
 
 Two sanity conditions hold on the translated set. Every emitted expression parses under
-the PromQL grammar of Section~\ref{sec:grammars} --- all $7{,}550$ of them, since $89$
-of the $7{,}396$ translated \emph{distinct} queries are comma-separated lists that emit
+the PromQL grammar of Section~\ref{sec:grammars} --- all $7{,}552$ of them, since $89$
+of the $7{,}398$ translated \emph{distinct} queries are comma-separated lists that emit
 one expression per series. Those two counts are by distinct query rather than by
 occurrence, because what is being checked is a property of each emitted string. That is checked as an assertion rather than reported as a rate, since the
-only acceptable number of syntactically invalid outputs is zero. And $\kappa$ sits between the ceilings that the
-greedy order of \S\ref{sec:staircase} places on a twenty-six- and a
-twenty-seven-feature fragment ($96.2\%$ and $99.3\%$), so the translator is at the
-frontier its feature set allows rather than leaving easy queries unattempted. That
-bracket moved when \texttt{.weighted()} was implemented (Remark~\ref{rem:weighted}),
-which is the staircase of \S\ref{sec:staircase} seen from the other side: one feature
-carried $\kappa$ past two ceilings at once.
+only acceptable number of syntactically invalid outputs is zero.
+
+The feature bound of \S\ref{sec:staircase} applies to $\kappa$, and applying it correctly
+is a correction rather than a calculation. The translator's own feature set is the one to
+use: it supports $S^\star$, the $25$ features that appear in some query it translates, and
+every query using a feature outside $S^\star$ is refused by construction, so the share of
+occurrences whose features all lie inside it --- $97.3\%$ --- bounds $\kappa$ from above.
+$\kappa$ is $96.3\%$, and the gap is $82$ occurrences that use nothing outside $S^\star$
+and are refused anyway. Those are not unattempted easy queries. They are queries the
+feature vocabulary cannot tell apart from ones that translate: \texttt{.fill(0)} and
+\texttt{.fill(null)} are both \texttt{M\_FILL}, and a conjunctive and a disjunctive
+boolean scope are both \texttt{SCOPE\_BOOL}, so the bound's slack measures the resolution
+of the instrument rather than idleness in the translator.
+
+An earlier version of this paragraph read the bound off the greedy curve instead, placing
+$\kappa$ between the values at twenty-six and twenty-seven features and concluding that
+the translator sat at its frontier. Both halves were wrong. Greedy gives an attainable set
+at each size rather than an optimal one, so its value is a \emph{lower} bound on the best
+a fragment of that size could reach and a real translator may sit above it --- as this one
+does, covering $97.3\%$ with $25$ features where the greedy value at $25$ is $96.2\%$. The
+curve of \S\ref{sec:staircase} answers a different question, which is what to implement
+next, and it answers that one well.
 
 \subsection{The gap catalogue}
 \label{sec:gaps}
@@ -215,14 +253,17 @@ corpus.}
 \texttt{UNSUPPORTED\_FUNCTION} is the largest and the least interesting: it is mostly a
 bundle of Datadog functions the translator does not implement. \texttt{top(...)} leads
 it at $139$ occurrences, and \texttt{per\_second(...)} follows at $22$.
-Mostly, and not wholly: $10$ of its $208$ are not functions at all. Nine are a negated match-all,
+Mostly, and not wholly: $11$ of its $208$ are not functions at all. Nine are a negated match-all,
 \texttt{\{*,!*\}}, which is a scope and which the catalogue's own shortest example for
 this row happens to be; one is a \texttt{.rollup(max)} over a known counter, which the
 proof of Theorem~\ref{thm:kernel} classifies as a case where no rule exists rather than
-as unwritten code. Both stay in the unimplemented column: PromQL can denote an empty
-selection with a contradictory matcher pair, and the individual deltas a
+as unwritten code; and one is a rollup whose \emph{width} is not numeric,
+\texttt{.rollup(count, daily)}, refused where the interval is parsed rather than where a
+function is looked up. All three stay in the unimplemented column: PromQL can denote an empty
+selection with a contradictory matcher pair, the individual deltas a
 \texttt{max} rollup needs are reachable through a subquery over a sample grid the
-query does not state --- the same omission as everywhere else in this section. Everything in it is now unimplemented
+query does not state --- the same omission as everywhere else in this section --- and a
+named calendar width is a unit the front end does not yet convert. Everything in it is now unimplemented
 work and nothing else, which it was not when this section was first written: the
 percentile aggregators sat in it as a genuine gap and \texttt{.weighted()} as a
 supposed one, so the row was a mixture and the split at the end of this subsection had
@@ -243,8 +284,12 @@ Until recently this row was led by \texttt{.weighted()} at $70$ occurrences, des
 here as ``a time-weighted space average that PromQL has no operator for''. That sentence
 was the entire warrant, and it was wrong in both halves.
 
-It is not an average: $54$ of the $56$ distinct corpus forms attach the modifier to
-\texttt{sum:}. And it is not a gap, because it does not compute anything. A series
+It is not an average: all $52$ distinct corpus forms attach the modifier to
+\texttt{sum:}. An earlier version of this remark said $54$ of $56$ and conceded two
+\texttt{avg:} uses; there are none. The count came from matching the substring
+\texttt{weighted}, which also catches four queries whose \emph{metric name} contains it
+and which carry no modifier at all --- two of them \texttt{avg:}, which is exactly the
+concession. And it is not a gap, because it does not compute anything. A series
 reporting at $0$, $50$ and $55$ seconds into each $60$\,s bucket has a plain mean of
 $66.7$ and a mean weighted by the interval each point covers of $16.7$, so a rig built
 on it can tell the two apart. Datadog returns $66.7$ with the modifier and without it,
@@ -507,7 +552,7 @@ How often it is \emph{violated} is now measured rather than left as a worry, and
 the one place in this paper where a precondition turns out to fail at a rate worth
 reporting. The repository the dashboards come from declares each metric's type in a
 file the corpus fetch had passed over, which settles the question for $7{,}562$ of the
-$8{,}445$ translated occurrences --- $89.5\%$. On $496$ of those the front end's
+$8{,}449$ translated occurrences --- $89.5\%$. On $496$ of those the front end's
 inference disagrees with the declaration: $6.6\%$ of the decidable set and $5.7\%$ of
 the corpus, split $242$ counters translated as gauges and $254$ gauges translated as
 counters (Remark~\ref{rem:type-measured}). So $\kappa$ counts those $496$ among its
@@ -582,8 +627,11 @@ Table~\ref{tab:rollup-live} therefore no longer stand on the model alone.
 convention, and the one it presumed was wrong. Submitting a point on an exact bucket
 boundary and another strictly inside one, then reading back which bucket each is reported
 under, shows the buckets are left-closed and named by their \emph{start}
-(Remark~\ref{rem:closure}); two runs at two rollup intervals agree and each rival
-convention is ruled out by at least one reading. Epoch alignment itself \emph{is}
+(Remark~\ref{rem:closure}); the two probes together leave one convention standing, and
+each rival is ruled out by at least one of the two readings. It is one run at one rollup
+interval, as \S\ref{sec:ingestion} says and this subsection used to deny by claiming two
+runs at two intervals --- so what is pinned is the convention at $60$\,s rather than its
+independence of the width. Epoch alignment itself \emph{is}
 documented~\citep{ddrollup}; which edge the timestamp names was not.
 
 No figure in this paper moved. A model and a candidate evaluated under the same
@@ -620,35 +668,61 @@ It is a smaller experiment than it looks, which is worth recording because the o
 estimate is badly wrong. It does not need every metric the corpus names to exist in both
 systems. What a differential test exercises is the \emph{operator structure} --- which
 rollup, which aggregation, which matcher shapes --- and two queries that differ only in
-the metric they name are one experiment, not two. Abstracting metric names, tag keys and
-tag values out of the lowered IR collapses the $8{,}340$ translated occurrences that are
-a single query to \textbf{$325$ distinct shapes}, and they are as unevenly distributed as
+the metric they name are one experiment, not two. The abstraction takes out the
+identifiers and nothing else --- metric names, tag keys, tag values, and the content of
+regex matchers, whose own conversion \S\ref{sec:regular} decides separately --- and what
+a query would \emph{emit} differently is kept: the rollup interval, a scale factor and a
+numeric literal all survive it. That matters, and it did not hold until the seventh
+reading of this apparatus. The interval used to collapse to whether one was stated at
+all, which put $70$ occurrences into this experiment under a window width they do not
+state and two of them under a width the rig cannot hold two buckets of; the congruence
+check below could not see it, because it masked digits along with identifiers and
+\texttt{[15s]} and \texttt{[300s]} mask alike. Abstracting that much collapses the
+$8{,}344$ translated occurrences that are
+a single query to \textbf{$335$ distinct shapes}, and they are as unevenly distributed as
 everything else in this corpus: $6$ shapes cover half the occurrences, $23$ cover $80\%$,
-$50$ cover $90\%$ and $104$ cover $95\%$. A median query has one metric slot and two tag
-keys, so at three label values apiece all $325$ shapes need under a thousand synthetic
+$51$ cover $90\%$ and $108$ cover $95\%$. A median query has one metric slot and two tag
+keys, so at three label values apiece the whole set came to $894$ synthetic
 series --- a scale a single trial account sustains, which is why the experiment turned
 out not to need a reconstruction of somebody's production estate. The reduction is only
 sound if every query in a class translates the same way, and that is checkable rather
-than arguable: emitting all of them and masking the identifiers leaves each of the $325$
-classes with exactly one form, so a representative stands for its class. Establishing
+than arguable: emitting all of them and masking the identifiers leaves each class with
+exactly one form, so a representative stands for its class. Establishing
 that found a wart worth fixing --- the emitter decided parenthesisation by scanning its
 own output for operators, so a hyphen inside a tag value such as \texttt{result:hit-wait}
 was read as one and wrapped the expression in parentheses that meant nothing.
 
-Table~\ref{tab:differential} reports the outcome. Of the $325$ shapes, $323$ could be
-compared, and all $323$ agreed with Datadog on every one of $21{,}962$ bucket
+Table~\ref{tab:differential} reports the outcome. Of the $335$ shapes, $332$ could be
+compared, and all $332$ agreed with Datadog on every one of $22{,}860$ bucket
 comparisons --- to float64 precision rather than bit-identity, since two engines summing
 the same values in a different order differ in the last bit, and the bound is the one the
-model-versus-server check of Section~\ref{sec:ingestion} already uses. Weighted by the
-corpus queries those shapes stand for, that is $8{,}337$ of the $8{,}340$ translated
-single-query occurrences. Three of those shapes are new since
-Remark~\ref{rem:weighted}, and their agreeing is a second and independent check on it:
-the modifier was dropped on the strength of a probe built to detect a weighting, and
-the corpus's own \texttt{.weighted()} queries then agreed with Datadog bucket for
-bucket. So all but about a hundred of $\kappa$'s occurrences are now translations
-checked against the vendor rather than merely emitted --- the remainder being the
-comma-separated lists, which the shape reduction does not cover --- which is a claim
-this paper could not previously make at all.
+model-versus-server check of Section~\ref{sec:ingestion} already uses; the largest
+deviation over all $332$ is $2.5\times10^{-14}$ and $139$ of them are bit-identical.
+Weighted by the corpus queries those shapes stand for, that is $8{,}339$ of the $8{,}344$
+translated single-query occurrences. So all but about a hundred of $\kappa$'s occurrences
+are now translations checked against the vendor rather than merely emitted --- the
+remainder being the comma-separated lists, which the shape reduction does not cover ---
+which is a claim this paper could not previously make at all.
+
+Three preconditions of this run were wrong in the version of it reported before the
+seventh reading of the apparatus, and all three made agreement easier to obtain. The
+scrape grid began at an arbitrary whole second, and off a bucket boundary a left-closed
+Datadog bucket and a right-closed PromQL window hold the same samples --- so the
+evaluation instant could have been wrong by up to half a scrape and still agreed on every
+bucket, which makes the one convention this paper got wrong in draft the one the
+corpus-scale test was silent about. It is now floored to a multiple of $300$\,s, which is
+a multiple of every interval this corpus states below the run's window, so the samples
+land on boundaries and the instant is load-bearing. A scope requiring a tag merely to be
+\emph{present} pinned that tag to one value, so eight shapes grouping by the very key
+they test for presence were compared over a single series and their space aggregation was
+never exercised. And the rollup interval was not part of a shape, so $70$ occurrences were
+tested at a window width they do not state. All three are fixed, the shape count rose
+from $325$ to $335$ as the finer abstraction split six classes, and the agreement did not
+move: $332$ of $332$, on a grid where the closure convention is visible and where every
+occurrence is tested at its own width. The one occurrence class the fix removed rather
+than repaired is the second \texttt{window-too-short} row --- a $3600$\,s rollup, which
+the old abstraction had folded in with $300$\,s and credited as agreeing, and which this
+rig provably cannot hold two buckets of.
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/differential}
@@ -721,7 +795,7 @@ measures as unbounded.
 
 \paragraph{The corpus is published dashboards.}
 Vendor and community dashboards may be tidier and more heavily templated than
-in-house ones. The template-variable share ($87\%$ of Datadog, $82\%$ of PromQL occurrences)
+in-house ones. The template-variable share ($88.6\%$ of Datadog, $82.5\%$ of PromQL occurrences)
 is the figure most likely to be inflated this way; $\kappa$ is less exposed, since the
 gaps it reports are structural constructs rather than stylistic ones. A corpus of
 private dashboards would be the better test and is not obtainable.

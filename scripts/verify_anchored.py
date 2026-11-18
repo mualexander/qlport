@@ -142,14 +142,22 @@ def bucket_grid(t0: float, first: float, last: float, interval: float) -> tuple[
     sitting exactly on the boundary that Datadog assigns to the next bucket, which on an
     aligned scrape is every bucket. `EVAL_EPSILON` is 1 ms, and Prometheus timestamps are
     whole milliseconds, so the shifted grid stays representable.
+
+    `first` and `last` bound the bucket *starts*, matching notebook 02's modelled table
+    (`dd.bucket_starts(WARMUP, ts[-1] - interval, interval)`). Reading them as evaluation
+    instants instead put the first bucket at `[first - interval, first)` -- one bucket
+    earlier than the model, and for a 300 s rollup wholly inside the declared warm-up --
+    so the two tables were summarising different bucket sets while the comment below
+    claimed they matched.
     """
-    start = np.ceil((t0 + first) / interval) * interval
-    end = np.floor((t0 + last) / interval) * interval
-    return float(start - EVAL_EPSILON), float(end - EVAL_EPSILON)
+    first_bucket = np.ceil((t0 + first) / interval) * interval
+    last_bucket = np.floor((t0 + last) / interval) * interval
+    return (float(first_bucket + interval - EVAL_EPSILON),
+            float(last_bucket + interval - EVAL_EPSILON))
 
 
 def collect(name: str, interval: float, base_url: str, t0: float, s, meta: dict) -> Path:
-    start, end = bucket_grid(t0, WARMUP, float(s.ts[-1]), interval)
+    start, end = bucket_grid(t0, WARMUP, float(s.ts[-1]) - interval, interval)
     payload = {
         "workload": name, "interval": interval, "t0": t0, "metric": METRIC,
         "grid": {"start": start, "end": end, "step": interval,

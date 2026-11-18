@@ -137,3 +137,24 @@ for r in sorted(mismatch, key=lambda r: -r["occurrences"]):
     print("  pq:", r["promql"])
 if not mismatch:
     print("no shape disagreed on any bucket")
+
+# %% [markdown]
+# ## Figures §7 quotes
+# The table holds the shape and occurrence counts; these are the run's scale and its
+# agreement bound, which §7 states in prose.
+
+# %%
+ROOT = Path.cwd() if (Path.cwd() / "paper").exists() else Path.cwd().parent
+_QF = ROOT / "paper" / "quoted_figures.json"
+_existing = json.loads(_QF.read_text()) if _QF.exists() else {}
+_existing.update({
+    "nb05.bucket_comparisons": int(sum(r["buckets"] for r in cmp_rows)),
+    "nb05.synthetic_series": int(prov["series"]),
+    "nb05.shapes": int(prov["shapes"]),
+    "nb05.bit_identical_shapes": int(sum(1 for r in cmp_rows
+                                         if r.get("bit_identical") in (1.0, True))),
+})
+_QF.write_text(json.dumps(_existing, indent=1, sort_keys=True) + "\n")
+print(f"wrote {_QF.relative_to(ROOT)}")
+for _k in sorted(k for k in _existing if k.startswith("nb05.")):
+    print(f"  {_k:32s} {_existing[_k]}")

@@ -406,3 +406,105 @@ def test_a_hyphen_in_a_label_name_cannot_be_mangled_around():
     from qlport.lower.datadog import label_name
 
     assert label_name("cluster-name") == label_name("cluster_name") == "cluster_name"
+
+
+# ---- the three ways a shipped query went missing (seventh review pass) --------
+
+
+def test_a_request_carrying_its_query_as_an_object_is_extracted():
+    """Distribution widgets use a singular `query` object, not `q` or a `queries` list.
+
+    The extractor's docstring said there were two request shapes. The third cost four
+    Datadog queries, which is 0.05% of the corpus and was invisible to every figure in
+    the paper, because nothing counts what was never read.
+    """
+    doc = {
+        "title": "d",
+        "widgets": [{"definition": {"widgets": [{"definition": {
+            "title": "Distribution of message size",
+            "requests": [{"query": {"data_source": "metrics",
+                                    "query": "avg:data_streams.payload_size{type:kafka}"}}],
+        }}]}}],
+    }
+    got = c.datadog_dashboard_queries(doc, source="s", origin="o")
+    assert [q.text for q in got] == ["avg:data_streams.payload_size{type:kafka}"]
+
+
+def test_a_singular_query_object_of_another_language_is_still_skipped():
+    doc = {"widgets": [{"definition": {"requests": [
+        {"query": {"data_source": "logs", "query": "service:web"}}]}}]}
+    assert c.datadog_dashboard_queries(doc, source="s", origin="o") == []
+
+
+def test_a_formula_over_a_non_metric_request_is_not_a_metric_formula():
+    """A formula belongs to the metrics language only when its queries do.
+
+    The filter was applied to the queries and not to the formulas, so the formula layer
+    §7 characterises was 48% log, event and security-signal formulas -- a population
+    that is 90% bare references, which flattered every share in that sentence.
+    """
+    logs = {"widgets": [{"definition": {"requests": [{
+        "queries": [{"data_source": "logs", "query": "service:web"}],
+        "formulas": [{"formula": "a / b"}],
+    }]}}]}
+    assert c.datadog_dashboard_queries(logs, source="s", origin="o") == []
+
+    metrics = {"widgets": [{"definition": {"requests": [{
+        "queries": [{"data_source": "metrics", "query": "avg:x{*}"}],
+        "formulas": [{"formula": "a / b"}],
+    }]}}]}
+    got = c.datadog_dashboard_queries(metrics, source="s", origin="o")
+    assert [(q.lang, q.text) for q in got] == [
+        ("datadog", "avg:x{*}"), ("datadog_formula", "a / b")]
+
+
+def test_a_grafana_library_panel_is_visited():
+    """A library panel's model lives in `__elements`; `panels` holds only a reference.
+
+    Grafana writes that map as a list in older exports and as a UID-keyed dict in newer
+    ones, and this corpus contains the list form -- so handling only the dict form fixed
+    nothing, which is how the first attempt at this went.
+    """
+    model = {"targets": [{"expr": "idrac_cpu_count{instance=~\"$instance\"}"}],
+             "title": "CPU Count"}
+    for elements in ([{"model": model}], {"uid-1": {"model": model}}):
+        doc = {"panels": [{"libraryPanel": {"uid": "uid-1"}, "title": "CPU Count"}],
+               "__elements": elements}
+        got = c.grafana_dashboard_queries(doc, source="s", origin="o")
+        assert [q.text for q in got] == ["idrac_cpu_count{instance=~\"$instance\"}"], elements
+
+
+def test_a_backtick_matcher_is_promql_not_logql():
+    """PromQL permits a backtick raw string in a matcher; LogQL's line filter looks alike.
+
+    Reading `!~` + backtick as a line filter wherever it appeared dropped two
+    kube-prometheus alerting rules from the corpus as though they were Loki panels.
+    """
+    assert c.is_promql(
+        'rate(alertmanager_notifications_failed_total{integration!~`.*`}[15m])')
+    # A real line filter still is one: nothing precedes the `!~` but the selector.
+    assert not c.is_promql('{app="loki"} !~ `error`')
+    assert not c.is_promql('{app="loki"} | logfmt | level="warn"')
+
+
+def test_a_conditional_aggregator_is_not_counted_as_a_function():
+    """`count(v: v>=0):metric{...}` aggregates across space; §4 names it an aggregator.
+
+    Counting its `count` among the function names put it in the paper's ten most frequent
+    Datadog functions, beside `top` and `per_second`.
+    """
+    text = "count(v: v>=0):data_streams.latency{type:kafka}"
+    assert c.function_names("datadog", text)["count"] == 0
+    # A genuine call of the same name is still a function.
+    assert c.function_names("datadog", "count_not_null(avg:x{*})")["count_not_null"] == 1
+
+
+def test_every_promql_string_form_yields_its_matcher():
+    """§6 tabulates "every `=~` and `!~` matcher", and a double-quoted-only scan did not.
+
+    114 matcher occurrences sat in single-quoted and backtick literals, which the PromQL
+    grammar accepts and two separate copies of the scanner did not.
+    """
+    q = ('node_filesystem_avail_bytes{instance="$node",fstype!~\'rootfs\','
+         'mountpoint=~`/run/.*`,device=~"sd[a-z]"}')
+    assert c.promql_matcher_values(q) == ["rootfs", "/run/.*", "sd[a-z]"]

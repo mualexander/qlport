@@ -1,6 +1,16 @@
 {
  "disagreements": [],
  "per_regex": {
+  "": {
+   "outcome": "single",
+   "search": "",
+   "structural": ""
+  },
+  "(/dev/)?(mmcblk.p.+|nvme.+|rbd.+|sd.+|vd.+|xvd.+|dm-.+|md.+|dasd.+)": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
   "(1|2).*": {
    "outcome": "union",
    "search": null,
@@ -56,11 +66,6 @@
    "search": null,
    "structural": null
   },
-  "(warn|error)": {
-   "outcome": "union",
-   "search": null,
-   "structural": null
-  },
   ".*": {
    "outcome": "single",
    "search": "*",
@@ -68,6 +73,11 @@
   },
   ".*(serviceaccount|proc|sys).*": {
    "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  ".*.dashboard.*|.*.dns.*|kube.*|.*.calico.*|.*.flannel.*|.*.etcd.*": {
+   "outcome": "none",
    "search": null,
    "structural": null
   },
@@ -176,6 +186,11 @@
    "search": null,
    "structural": null
   },
+  "/kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-.*": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
   "/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-.*": {
    "outcome": "none",
    "search": null,
@@ -187,6 +202,11 @@
    "structural": "01-Inlet Ambient"
   },
   "02-CPU 1|03-CPU 2": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "04-P1 DIMM 1-6|05-P1 DIMM 7-12|06-P2 DIMM 1-6|07-P2 DIMM 7-12|08-P1 Mem Zone|09-P1 Mem Zone|10-P2 Mem Zone|11-P2 Mem Zone": {
    "outcome": "union",
    "search": null,
    "structural": null
@@ -236,6 +256,11 @@
    "search": "200",
    "structural": "200"
   },
+  "21-VR P1|22-VR P2|23-VR P1 Mem|25-VR P2 Mem|42-SuperCap Max|31-HD Controller|32-HD Cntlr Zone": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
   "3.*": {
    "outcome": "single",
    "search": "3*",
@@ -260,6 +285,16 @@
    "outcome": "single",
    "search": "33-PCI 1 Zone",
    "structural": "33-PCI 1 Zone"
+  },
+  "33-PCI 1 Zone|36-PCI 2 Zone|23-VR P1 Mem|24-VR P1 Mem|34-PCI 1 Zone": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "37-System Board|38-System Board|39-Sys Exhaust|40-Sys Exhaust|41-Sys Exhaust": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
   },
   "4.*": {
    "outcome": "single",
@@ -411,6 +446,11 @@
    "search": null,
    "structural": null
   },
+  "ToBeDeletedByClusterAutoscaler|cloud.google.com/impending-node-termination|aws-node-termination-handler/spot-itn": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
   "UP|DOWN": {
    "outcome": "union",
    "search": null,
@@ -456,15 +496,15 @@
    "search": null,
    "structural": null
   },
-  "app-.*": {
-   "outcome": "single",
-   "search": "app-*",
-   "structural": "app-*"
-  },
   "app_.*": {
    "outcome": "single",
    "search": "app_*",
    "structural": "app_*"
+  },
+  "aws-node|kube-proxy|kube-prometheus-stack-prometheus-node-exporter": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
   },
   "canceled": {
    "outcome": "single",
@@ -561,6 +601,26 @@
    "search": null,
    "structural": null
   },
+  "grafanacloud_org_logs_bill_fraction|grafanacloud_org_logs_process_bill_fraction|grafanacloud_org_logs_query_bill_fraction": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "grafanacloud_org_logs_overage|grafanacloud_org_logs_process_overage|grafanacloud_org_logs_query_overage": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "grafanacloud_org_metrics_bill_fraction|grafanacloud_org_metrics_query_bill_fraction": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "grafanacloud_org_metrics_overage|grafanacloud_org_metrics_query_overage": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
   "guest.*|idle|iowait": {
    "outcome": "union",
    "search": null,
@@ -646,6 +706,11 @@
    "search": null,
    "structural": null
   },
+  "kube_deployment_metadata_generation|kube_daemonset_metadata_generation|kube_statefulset_metadata_generation": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
   "limits.cpu": {
    "outcome": "none",
    "search": null,
@@ -706,6 +771,11 @@
    "search": null,
    "structural": null
   },
+  "org:apache:cassandra:metrics:threadpools:.+:totalblockedtasks:count": {
+   "outcome": "none",
+   "search": null,
+   "structural": null
+  },
   "otelcol_process_uptime.*": {
    "outcome": "single",
    "search": "otelcol_process_uptime*",
@@ -757,6 +827,16 @@
    "structural": null
   },
   "resource|": {
+   "outcome": "union",
+   "search": null,
+   "structural": null
+  },
+  "rootfs": {
+   "outcome": "single",
+   "search": "rootfs",
+   "structural": "rootfs"
+  },
+  "rootfs|tmpfs": {
    "outcome": "union",
    "search": null,
    "structural": null
@@ -843,17 +923,16 @@
   }
  },
  "provenance": {
-  "budget_seconds": 2400.0,
-  "collected_at": "2026-11-16T06:29:53+00:00",
-  "elapsed_seconds": 2621.4,
+  "budget_seconds": Infinity,
+  "collected_at": "2026-11-18T01:27:08+00:00",
+  "elapsed_seconds": 4725.2,
   "max_union": 64,
-  "n_concrete_regexes": 183,
+  "n_concrete_regexes": 184,
   "star_matches_empty": true
  },
  "tally": {
-  "agree:none": 45,
-  "agree:single": 60,
-  "agree:union": 63,
-  "not-reached": 15
+  "agree:none": 50,
+  "agree:single": 61,
+  "agree:union": 73
  }
 }
