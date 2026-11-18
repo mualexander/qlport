@@ -62,42 +62,49 @@ Table~\ref{tab:corpus-sources}, with nothing sampled
 and nothing hand-classified.
 
 \paragraph{What we found.}
-The thesis survives, but not in the form it was posed. There is a language-design
-artefact in the direction teams travel, and it is not an expressiveness gap; the
-expressiveness gap is in the direction they do not. Both halves took measurement to
-establish and neither was the expected answer.
+The thesis survives, but not in the form it was posed, and the finding that matters is
+not the one the questions above were built to get.
+
+A dashboard query does not determine its own meaning. A Datadog query's slot for the
+rollup interval is optional, and $96.9\%$ of the translations we emit are of queries
+that leave it empty, so the interval arrives from the dashboard's time range instead.
+PromQL's slot is obligatory where it applies, and $55.6\%$ of the corpus's range
+selectors fill it with a dashboard variable anyway --- so the contrast between the two
+languages is one of degree, and what they share is that the value comes from a layer
+outside either of them. On the Datadog side $88.6\%$ of query occurrences carry at least
+one template variable and on the PromQL side $82.5\%$ do, which is the measurement that
+stops this being a complaint about one vendor. The metric's type is a second thing no
+query states and is not a second instance of the same property:
+\S\ref{sec:dashboard-layer} is careful that what makes it bite here is the ingestion
+mapping branching on it rather than anything either language can or cannot say. The
+object a migration ports is therefore a query schema plus a resolution layer belonging
+to the dashboard tool, which is where the switching cost we measured actually sits, and
+where a common query language would not reach.
+
+Every instrument in this paper is blind to that. A query that does not fix its own
+meaning parses like any other, translates like any other, and is counted as covered like
+any other, so neither the grammars nor the gap catalogue nor $\kappa$ can see it. That
+is why it took all of them to find it, and why the coverage result comes second here
+although it came first in the work.
 
 Going from Datadog to PromQL, $96.3\%$ of query occurrences translate, and the shortfall
 is mostly unfinished work rather than impossibility: $0.8\%$ of the corpus is beyond
 reach --- two constructs the target system does not hold and one PromQL cannot say ---
-against $2.8\%$ this translator has not implemented, with a
-ceiling of $99.1\%$ once the latter is done --- with a condition the number usually
-travels without: $139$ of those $248$ are \texttt{top(...)}, whose PromQL form needs the
-dashboard's time range twice over, so the ceiling is reachable only by a translator that
-is told what the query does not say. On that evidence the switching cost in the
-direction people travel is \emph{engineering} (\S\ref{sec:gaps}).
+against $2.8\%$ this translator has not implemented, with a ceiling of $99.1\%$ once the
+latter is done. That ceiling carries a condition it usually travels without: $139$ of
+those $248$ occurrences are \texttt{top(...)}, whose PromQL form needs the dashboard's
+time range twice over, so the ceiling is reachable only by a translator that is told
+what the query does not say --- the first finding reappearing as a term in the second.
+On that evidence the switching cost in the direction people travel is
+\emph{engineering} (\S\ref{sec:gaps}).
 
 Translating is not the same as translating correctly, and the distance between them is
 measurable here. Every expression we emit assumes a metric type the query does not
 state; the repository the dashboards come from declares that type for $89.5\%$ of them,
-and our inference is wrong on $6.5\%$ of those --- $491$ occurrences, more than the
-whole inexpressible column (\S\ref{sec:emission}).
-
-The design artefact is elsewhere, and it is the finding we would now put first: a
-dashboard query does not determine its own meaning. A Datadog query's slot for the rollup
-interval is optional, and $96.9\%$ of the translations we emit are of queries that leave
-it empty, so the interval comes from the dashboard's time range instead. PromQL's slot is
-obligatory where it applies and $55.6\%$ of the corpus's range selectors fill it with a
-dashboard variable anyway --- so the contrast is one of degree, and what both languages
-share is that the value arrives from a layer outside either of them. The metric's type is a second thing no query states, and \S\ref{sec:discussion} is
-careful that it is not a second instance of the same property: neither language declares
-it, and what makes it bite here is the ingestion mapping branching on it rather than
-anything either language can or cannot say. On the Datadog
-side $88.6\%$ of query occurrences carry at least one template variable and on the PromQL
-side $82.5\%$ do, which is the measurement that stops this being a complaint about one
-vendor. The translations are exact, and exact relative to context the query omits; no
-coverage number can see that, which is why $\kappa$ is not this paper's main result
-(\S\ref{sec:caveats}).
+and our inference is wrong on $6.5\%$ of those --- $491$ occurrences, several times the
+whole inexpressible column. The translations are exact, and exact relative to context
+the query omits; no coverage number can see that, which is why $\kappa$ is not this
+paper's main result (\S\ref{sec:emission}, \S\ref{sec:caveats}).
 
 Coming back is a different matter, and here the obstructions are proved. A Datadog tag
 filter is a glob, and \S\ref{sec:regular} shows a glob's language is either a single word
@@ -120,6 +127,16 @@ it is paid by a different decision at a different time.
 
 \paragraph{Contributions.}
 \begin{enumerate}
+\item \textbf{What a dashboard query does not say (\S\ref{sec:caveats},
+\S\ref{sec:dashboard-layer}).} The paper's main result, and the one the other six were
+built to reach without knowing it. Every translation carries the preconditions it rests
+on, so the share depending on context the query omits is counted rather than conceded:
+$96.9\%$ on a rollup interval, $100\%$ on a metric type, against $55.6\%$ of PromQL
+range selectors taking their window from a dashboard variable --- which makes the
+contrast between the languages one of degree and locates the cost in neither of them.
+One of the two assumptions is checkable against the vendor's own declarations and is
+wrong for $6.5\%$ of the cases where it can be checked, the first number here that
+separates coverage from correctness.
 \item \textbf{Grammars (\S\ref{sec:grammars}).} Deterministic one-token-lookahead
 grammars for both languages, including one for Datadog's metric query language, which
 the vendor does not publish and which had to be inferred from documentation and
@@ -137,8 +154,8 @@ the languages and not about our engineering.
 \item \textbf{Exact rollup translations (\S\ref{sec:ingestion}, \S\ref{sec:translation}).}
 Datadog's \texttt{.as\_count()} and \texttt{.as\_rate()} translated exactly, not merely
 to within $\varepsilon$, with the preconditions named; and soundness theorems whose
-hypotheses are the preconditions the emitter reports, plus two it cannot see and the
-paper therefore states instead, covering first the kernel
+hypotheses are the preconditions the emitter reports, plus three it does not record
+and the paper therefore states instead, covering first the kernel
 ($95.4\%$ of the corpus) and then its arithmetic closure --- which is every expression
 this translator emits.
 \item \textbf{The regular sub-problem (\S\ref{sec:regular}).} Glob-expressibility of a
@@ -154,15 +171,6 @@ side of it.
 \item \textbf{Coverage on real dashboards (\S\ref{sec:evaluation}).} $\kappa$ over the
 whole corpus, by occurrence rather than by distinct string, with the implementation order
 that produced it and the features that cost the remainder.
-\item \textbf{What a dashboard query does not say (\S\ref{sec:caveats},
-\S\ref{sec:discussion}).} Every translation carries the preconditions it rests on, so
-the share depending on context the query omits can be counted rather than conceded:
-$96.9\%$ on a rollup interval, $100\%$ on a metric type. One of those is checkable
-against the vendor's own declarations and is wrong for $6.5\%$ of the cases where it
-can be checked, which is the first number here separating coverage from correctness.
-This is the answer we would now put first, and it is invisible to $\kappa$, to the gap
-catalogue and to the grammars alike, because a query that does not fix its own meaning
-parses and translates like any other.
 \item \textbf{A measured baseline (\S\ref{sec:baseline}).} Another vendor's
 Datadog-to-PromQL translator, run over this same corpus --- the first such comparison we
 know of, and possible only because its translation turns out to run in the browser. It

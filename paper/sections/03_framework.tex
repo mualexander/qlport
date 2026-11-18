@@ -31,8 +31,9 @@ ended up contradicting. The statement says ``queries written in practice'', taki
 granted that what a dashboard holds is a query --- a string whose meaning is fixed by the
 language and the database. It is not. A dashboard holds a query \emph{schema}, and the
 missing pieces are supplied by a layer that belongs to neither language. That is why
-RQ4 below exists: it was not posed at the outset, and the measurements that answer it are
-the ones this paper would now put first.
+RQ4 below exists. It was not posed at the outset, and it is the question this paper
+ends up answering; it keeps the number it was given rather than being renumbered to the
+front, because when a question was asked is part of what its answer is worth.
 
 Two conventions for the rest of the paper. Every proof is collected
 \apin{app:proofs}, each named for the statement it discharges, because a body is read
@@ -225,11 +226,13 @@ answer to RQ1 would not have stopped the paper --- an ambiguous grammar can stil
 parsed --- but it would have made every later claim conditional on a disambiguation
 policy, which is why it comes first.
 
-RQ4 sits across the other three rather than after them, and it was added last. It is
-answered by the caveats a translation carries rather than by the queries a translator
-refuses, so none of $\kappa$, the gap catalogue or the grammars can see it: a query that
-does not determine its own meaning parses, translates, and is counted as covered. We
-pose it separately because it is where this paper's answer turned out to be, and because
-a reader who takes $\kappa$ as the result will have read the wrong number.
+RQ4 sits across the other three rather than after them. It is answered by the caveats a
+translation carries rather than by the queries a translator refuses, so none of
+$\kappa$, the gap catalogue or the grammars can see it: a query that does not determine
+its own meaning parses, translates, and is counted as covered. That blindness is the
+reason it needs a question of its own, and the reason it was found late --- the three
+instruments this paper built were each working correctly and each reporting nothing. It
+is the answer \S\ref{sec:intro} states first and \S\ref{sec:dashboard-layer} assembles,
+and a reader who takes $\kappa$ as the result will have read the wrong number.
 
 \input{sections/03b_ingestion}
