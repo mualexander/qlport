@@ -1,0 +1,26 @@
+\paragraph{What is held aside.}
+A Datadog widget is a list of named queries plus a formula over them, and this paper is
+about the metrics query language rather than the formula layer. Scoping it out is cheap
+and the corpus says so: of $6{,}022$ formulas ($444$ distinct strings), $75.6\%$ are a
+bare reference to a single named query, $13.8\%$ apply one function, $13.2\%$ contain
+arithmetic and $8.2\%$ a numeric constant. The semantics sit in the queries, not above
+them.
+
+The population is the metric formula layer and not the whole of it, which is the
+correction the sentence above needed. A formula sits over a request's queries, so it
+belongs to the metrics language only when they do, and the extractor applied that filter
+to the queries and not to the formulas. The $11{,}628$ formulas an earlier version of
+this paragraph reported were $6{,}022$ metric ones and $5{,}606$ over log, event,
+security-signal and other requests --- and the second group is $90.1\%$ bare references,
+so it diluted every share here towards the answer the paragraph wanted. Arithmetic in the
+formula layer is nearly twice what was claimed. The conclusion survives: three quarters of
+the metric formula layer is a name, and nothing in it computes what a query cannot.
+
+\paragraph{What the corpus is not.}
+It is a census of \emph{published} dashboards, not of production estates. Vendor
+integration dashboards are written to demonstrate an integration, and community
+dashboards are written to be shared, so both are plausibly tidier and more
+template-driven than a dashboard grown inside one company. The direction of that bias is
+not obvious --- a tidier corpus is easier to parse but no easier to translate --- and
+Section~\ref{sec:threats} returns to it.
+

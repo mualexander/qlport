@@ -67,124 +67,9 @@ instantiated form. The consequence for RQ2 is not cosmetic: the object a dashboa
 migration translates is a query \emph{schema}, and a translator that takes query strings
 is solving a different problem from the one its users have.
 
-\paragraph{What is held aside.}
-A Datadog widget is a list of named queries plus a formula over them, and this paper is
-about the metrics query language rather than the formula layer. Scoping it out is cheap
-and the corpus says so: of $6{,}022$ formulas ($444$ distinct strings), $75.6\%$ are a
-bare reference to a single named query, $13.8\%$ apply one function, $13.2\%$ contain
-arithmetic and $8.2\%$ a numeric constant. The semantics sit in the queries, not above
-them.
-
-The population is the metric formula layer and not the whole of it, which is the
-correction the sentence above needed. A formula sits over a request's queries, so it
-belongs to the metrics language only when they do, and the extractor applied that filter
-to the queries and not to the formulas. The $11{,}628$ formulas an earlier version of
-this paragraph reported were $6{,}022$ metric ones and $5{,}606$ over log, event,
-security-signal and other requests --- and the second group is $90.1\%$ bare references,
-so it diluted every share here towards the answer the paragraph wanted. Arithmetic in the
-formula layer is nearly twice what was claimed. The conclusion survives: three quarters of
-the metric formula layer is a name, and nothing in it computes what a query cannot.
-
-\paragraph{What the corpus is not.}
-It is a census of \emph{published} dashboards, not of production estates. Vendor
-integration dashboards are written to demonstrate an integration, and community
-dashboards are written to be shared, so both are plausibly tidier and more
-template-driven than a dashboard grown inside one company. The direction of that bias is
-not obvious --- a tidier corpus is easier to parse but no easier to translate --- and
-Section~\ref{sec:threats} returns to it.
-
-\subsection{What the two languages are used for}
-
-A grammar says what is sayable. The corpus says what is said, and the distributions are
-lopsided enough to change what a translator should be built out of.
-Figure~\ref{fig:feature-frequency} gives the structural features and
-Table~\ref{tab:operator-frequency} the operators.
-
-\begin{figure}[htbp]\centering
-\includegraphics[width=\linewidth]{figures/feature_frequency}
-\caption{The twenty most frequent structural features per language, as a share of
-queries. Feature codes are those of \texttt{corpus.FEATURE\_DOC}; a query contributes to
-every feature it uses.}
-\label{fig:feature-frequency}
-\end{figure}
-
-\begin{table}[htbp]\centering\footnotesize
-\input{tables/operator_frequency}
-\caption{The six most frequent space aggregators and ten most frequent functions per
-language, by occurrence. Datadog's \texttt{p}$NN$ percentile aggregators are five
-distinct operators totalling $34$ occurrences, of which only \texttt{p95} reaches this
-table.}
-\label{tab:operator-frequency}
-\end{table}
-
-\noindent
-Four things in these distributions are load-bearing for the rest of the paper.
-
-\emph{Datadog's head is very short.} \texttt{sum:} and \texttt{avg:} are $95\%$ of all
-$8{,}955$ space-aggregator occurrences, and \texttt{by \{...\}} appears in $56\%$ of
-queries. A translator that handles two aggregators and grouping already speaks most of
-what the corpus says.
-
-\emph{The counter rule that matters is the undivided one.} \texttt{.as\_count()} outnumbers
-\texttt{.as\_rate()} by $6.6$ to one ($1{,}766$ against $266$). Both reduce to the same
-cumulative difference by Proposition~\ref{prop:offset}, which is why that proposition,
-rather than anything about \texttt{rate}, is the one that carries a migration.
-
-\emph{PromQL's head is a rate.} \texttt{rate} and \texttt{irate} together are $69\%$ of
-all $5{,}227$ function occurrences. Meanwhile subqueries appear in $1.1\%$ of PromQL
-queries, \texttt{offset} in $0.3\%$, and the \texttt{@} modifier in none at all --- a
-construct the language has and $8{,}096$ shipped expressions never reach for. The gap
-between what a query language contains and what its users employ is itself part of the
-switching-cost story: the hard parts of a language can be rare.
-
-\emph{Nothing is used alone.} A real Datadog query combines a space aggregator, a scope
-of several terms, a grouping and at least one method. That is why marginal frequency is
-the wrong order to build a translator in, and why the next subsection reports a different
-order.
-
-\subsection{Coverage is a staircase, not a curve}
-\label{sec:staircase}
-
-A query is translatable only when \emph{every} feature it uses is supported, so for a
-translator supporting exactly the feature set $S$, the share of queries all of whose
-features lie in $S$ is an upper bound on $\kappa$. Choosing $S$ greedily --- at each step
-the feature that completes the most queries outright --- gives an attainable set at each
-size, hence a lower bound on the best ceiling a fragment of that size could reach.
-Table~\ref{tab:implementation-order} is that order for Datadog and
-Figure~\ref{fig:cumulative-coverage} both curves.
-
-\begin{table}[htbp]\centering\scriptsize
-\input{tables/implementation_order}
-\caption{Greedy implementation order for Datadog. ``Pending uses'' is how many queries
-still need the feature when it is chosen; ``queries completed'' how many it finishes on
-its own. The cumulative column bounds $\kappa$ for a translator limited to those
-features.}
-\label{tab:implementation-order}
-\end{table}
-
-\begin{figure}[htbp]\centering
-\includegraphics[width=0.62\linewidth]{figures/cumulative_coverage}
-\caption{Queries fully covered against features implemented, in greedy order. The line
-at $0.9$ marks the level reached after sixteen of Datadog's twenty-eight features and
-seventeen of PromQL's twenty-four.}
-\label{fig:cumulative-coverage}
-\end{figure}
-
-The shape is the finding. The first six Datadog features complete $45$ queries between
-them --- $0.5\%$ of the corpus, on top of the $1.1\%$ that use no feature at all --- and
-then template-variable scopes and \texttt{sum:} take two steps to $49.2\%$. Half the corpus
-needs nine features; $90\%$ needs sixteen of the twenty-eight. PromQL behaves the same way
-and slightly worse: its first six features complete $221$ of $8{,}096$ queries
-($2.7\%$), half the corpus needs fourteen features and $90\%$ needs seventeen of
-twenty-four.
-
-For anyone building one of these translators this is the practical result of the paper. A
-partial translator is worth almost nothing: there is no prefix of the feature list that
-buys proportional coverage, because coverage is conjunctive over features while
-popularity is marginal. The ``$80\%$ of queries with $20\%$ of the work'' intuition is
-simply false here, and that asymmetry is a switching cost in its own right --- an
-incremental migration cannot show incremental progress.
-
+\iffull\input{sections/moved/eval_held_aside}\fi
+\iffull\input{sections/moved/eval_language_use}\fi
+\iffull\input{sections/moved/eval_staircase}\fi
 \subsection{Coverage \texorpdfstring{$\kappa$}{kappa}}
 
 Table~\ref{tab:translation-coverage} reports the outcome of lowering and emitting every
@@ -250,271 +135,38 @@ corpus.}
 \label{tab:gap-catalogue}
 \end{table}
 
-\texttt{UNSUPPORTED\_FUNCTION} is the largest and the least interesting: it is mostly a
-bundle of Datadog functions the translator does not implement. \texttt{top(...)} leads
-it at $139$ occurrences, and \texttt{per\_second(...)} follows at $22$.
-Mostly, and not wholly: $11$ of its $208$ are not functions at all. Nine are a negated match-all,
-\texttt{\{*,!*\}}, which is a scope and which the catalogue's own shortest example for
-this row happens to be; one is a \texttt{.rollup(max)} over a known counter, which the
-proof of Theorem~\ref{thm:kernel} classifies as a case where no rule exists rather than
-as unwritten code; and one is a rollup whose \emph{width} is not numeric,
-\texttt{.rollup(count, daily)}, refused where the interval is parsed rather than where a
-function is looked up. All three stay in the unimplemented column: PromQL can denote an empty
-selection with a contradictory matcher pair, the individual deltas a
-\texttt{max} rollup needs are reachable through a subquery over a sample grid the
-query does not state --- the same omission as everywhere else in this section --- and a
-named calendar width is a unit the front end does not yet convert. Everything in it is now unimplemented
-work and nothing else, which it was not when this section was first written: the
-percentile aggregators sat in it as a genuine gap and \texttt{.weighted()} as a
-supposed one, so the row was a mixture and the split at the end of this subsection had
-to be computed by reading detail strings rather than codes. Both have moved ---
-\texttt{.weighted()} out of the catalogue entirely (Remark~\ref{rem:weighted}) and the
-percentiles into a code that names their obstruction.
+The division the catalogue is for is between what the target cannot \emph{hold}, what it
+cannot \emph{say}, and what we have not \emph{built}. Two rows are the first kind, and
+both are proved rather than asserted: \texttt{PHI\_QUANTILE} ($34$), because a Datadog
+distribution metric answers $\mathtt{p}NN$ from a sketch of the raw observations while
+Prometheus keeps a bucketing of them with their sum and count, and no function of those
+is the quantile (Corollary~\ref{cor:quantile}); and \texttt{SCOPE\_EMPTY\_VALUE} ($5$),
+because Datadog separates an absent tag from one present with an empty value and
+Prometheus's data model \emph{defines} the two to be the same
+(\apref{app:eval}). Two more are the second kind and are the clean expressiveness cases:
+\texttt{FILL\_INTERPOLATION} ($36$), since no PromQL term introduces a sample where the
+database holds none, and \texttt{LABEL\_NAME\_GLOB} ($31$), since label names are not
+queryable in PromQL at all. Together they are the $106$ occurrences --- $1.2\%$ --- that
+no amount of engineering on a Datadog back end reaches.
 
-The converse does not hold, and the comparison this subsection ends with depends on
-noticing it: this row is not the whole of the unimplemented column. The four surviving
-disjunctions below are unfinished work too and carry \texttt{SCOPE\_DISJUNCTION}, so
-the $212$ of that column is this row's $208$ plus those four. One code has stopped being
-a mixture; the column still spans two, and it is the column rather than the code that
-the comparison is about.
+The remaining $212$ --- $2.4\%$ --- are the third kind, and the honest statement about
+them is that they are unwritten code rather than a language result. \texttt{UNSUPPORTED\_FUNCTION} is
+almost all of it, led by \texttt{top(...)} at $139$ occurrences, which \apref{app:eval}
+settles as expressible: PromQL denotes Datadog's ranking with an \texttt{@}-pinned
+\texttt{topk}, read off a real server, and the vendor's own \texttt{top()} was then
+measured to behave as its documentation says. Three constructs this paper once counted as
+language gaps have moved into this column on being measured --- \texttt{.weighted()},
+which does nothing at all, and the single-key scope disjunctions, which
+Proposition~\ref{prop:disjunction} translates --- and \apref{app:eval} records each,
+because a refusal that looks like evidence about a language and turns out to be evidence
+about a translator is the mistake this method is most exposed to.
 
-\begin{remark}[\texttt{.weighted()} was the largest claimed gap and is not one]%
-\label{rem:weighted}
-Until recently this row was led by \texttt{.weighted()} at $70$ occurrences, described
-here as ``a time-weighted space average that PromQL has no operator for''. That sentence
-was the entire warrant, and it was wrong in both halves.
-
-It is not an average: all $52$ distinct corpus forms attach the modifier to
-\texttt{sum:}. An earlier version of this remark said $54$ of $56$ and conceded two
-\texttt{avg:} uses; there are none. The count came from matching the substring
-\texttt{weighted}, which also catches four queries whose \emph{metric name} contains it
-and which carry no modifier at all --- two of them \texttt{avg:}, which is exactly the
-concession. And it is not a gap, because it does not compute anything. A series
-reporting at $0$, $50$ and $55$ seconds into each $60$\,s bucket has a plain mean of
-$66.7$ and a mean weighted by the interval each point covers of $16.7$, so a rig built
-on it can tell the two apart. Datadog returns $66.7$ with the modifier and without it,
-on \texttt{GAUGE}, \texttt{COUNT} and \texttt{RATE} alike
-(\texttt{scripts\slash weighted\_semantics.py}). The probe is narrower than that list
-makes it sound, and the gap is worth naming: the grouped forms and the \texttt{sum} and
-\texttt{avg} rollups were run on the gauge only, the counter types were probed
-ungrouped under \texttt{avg}, and the modifier was never paired with a \texttt{count}
-rollup at all. What closes that is not the probe but the corpus: three
-\texttt{.weighted()} shapes went through the differential of \S\ref{sec:differential}
-and agreed with Datadog bucket for bucket. On everything this corpus does with it,
-\texttt{.weighted()} is the identity.
-
-So the translation of a query carrying it is the translation of the query without it,
-the front end drops the modifier as it already dropped \texttt{.fill(null)}, and $70$
-occurrences move from the inexpressible column to $\kappa$. That is the third claimed
-language gap in this paper to turn out not to be one, and the first to turn out not to
-be work either: the other two were implemented, and this one needed deleting. The residue is a caution rather than a result: a modifier that does nothing
-everywhere we can look may still do something somewhere we cannot, and what is measured
-is every metric type and query shape the rig can build, not every configuration Datadog
-has.
-\end{remark}
-
-\texttt{top(...)} decides where that split falls, so it is worth settling rather than
-asserting. An earlier draft of this paragraph called it ``close to PromQL's
-\texttt{topk}'', and that is false: Datadog ranks series by an aggregation over
-\emph{all} values in the queried range and returns those series' whole trajectories,
-while \texttt{topk} ranks independently at each evaluation instant, so a series can be in
-one and not the other. They are different operators, and $139$ occurrences moving into
-the inexpressible column would invert the comparison this section ends with.
-
-They do not move, and the reason is instructive. PromQL \emph{can} denote the ranking,
-using the \texttt{@} modifier to pin it to a single evaluation so that it does not drift
-across the graph:
-\begin{center}\footnotesize
-\texttt{q and on($\overline{k}$) topk($n$, max\_over\_time(q[$R$] @ $T$))}
-\end{center}
-Read off a real Prometheus~3.15.0, this reproduces the selection that Datadog's
-documented rule predicts --- aggregate each series over the whole range, take the top
-$n$ --- and holds it constant across the range, while the naive \texttt{topk($n$, q)}
-changes membership within the same workload at $n=2$
-(\texttt{scripts\slash verify\_topk.py}; cached and regression-tested).
-All $20$ cases agree: five ranking
-functions, at $n=2$ and $n=3$, in both directions. The directions were the omission worth
-finding. This corpus ranks ascending in $5$ of its $139$
-occurrences, \texttt{topk} is the descending half of \texttt{top()}, and until
-\texttt{bottomk} was asked for as well the measurement covered $134$ occurrences while
-the sentence reporting it claimed $139$. The functions run the other way: the probe
-covers five and the corpus uses four --- \texttt{mean} in $111$ of the calls,
-\texttt{last} in $34$, \texttt{max} in $15$ and \texttt{sum} in $3$ --- so \texttt{min}
-is probed because the candidate has to hold for it, not because a dashboard asks.
-
-The Prometheus reading is one side of a comparison, and the other side of it was a
-reading of Datadog's documentation --- the weaker kind of evidence, and the kind this
-paper has twice found wrong, since the aggregation order and the bucket closure were both
-read off the documentation and both wrong. So the vendor was asked the same question. The five series
-go to a real Datadog as a gauge and \texttt{top()} itself is asked for its selection
-(\texttt{scripts\slash datadog\_top.py}; cached and regression-tested), over the one
-workload definition both scripts import so that the two halves cannot drift apart. All
-$22$ selections are the ones the documented rule predicts, and two things the
-documentation asserts rather than demonstrates are now readings as well. The selected
-series come back over the \emph{whole} window and not only where they are winning: the
-series that spikes once and then sits at $1$ returns all $20$ buckets, which is precisely
-what a \texttt{topk}-shaped operator would not do. And the selection is relative to the
-queried range --- over all twenty buckets the top two by \texttt{max} are the riser and
-the spike, over the last ten the spike is outside the window and the answer is the riser
-and the flat high series, while \texttt{mean}'s selection does not move under the same
-narrowing. So \texttt{top(...)} is unimplemented work, and the catalogue's split stands.
-
-What the expression costs is the interesting part, and that last reading is what prices
-it. $R$ is the dashboard's time range and $T$ its end, and a Datadog query carries
-neither --- the same omission as the rollup interval of \S\ref{sec:caveats}. That would
-be a detail if the vendor's answer were insensitive to the range, and it is not: a
-translator told the wrong range does not draw a slightly wrong graph, it selects
-different series. An implementation of \texttt{top(...)} would therefore
-reach the ceiling below only for a translator that is told the time range, and would
-carry two more preconditions of exactly the kind \S\ref{sec:discussion} argues are the
-real switching cost.
-
-\texttt{PHI\_QUANTILE} ($34$) is one of the two information barriers this corpus raises
-in the main direction, and \S\ref{sec:ingestion} proves it rather than asserting it: a
-Datadog distribution metric answers $\mathtt{p}NN$ from a sketch of the raw observations,
-Prometheus keeps those observations bucketed with their sum and count, and no function of
-those is the quantile (Corollary~\ref{cor:quantile}). The point is not that one system is
-more precise --- a sketch is lossy too --- but that the two keep different lossy summaries
-of one stream and neither recovers the other. PromQL's \texttt{histogram\_quantile} is not
-the missing operator; it is a different approximation.
-
-\begin{remark}[The second information barrier is in the label space]\label{rem:empty-tag}
-\texttt{SCOPE\_EMPTY\_VALUE} ($5$) is the other, and it was found by reading
-Lemma~\ref{lem:scope}'s proof rather than by any measurement this paper had taken. Datadog
-separates three states of a tag: absent, present with an empty value, present with a
-value. Prometheus's data model has two, because it \emph{defines} a label with an empty
-value to be an absent label. Put to a real account on three series carrying
-\texttt{k:v}, no \texttt{k} at all and \texttt{k:} respectively
-(\texttt{scripts\slash scope\_empty\_tag.py}), all five scope forms behaved as that model
-predicts:
-\begin{center}\footnotesize
-\begin{tabular}{@{}llll@{}}
-\toprule
-Scope & Datadog selects & Emitted matcher & which selects \\
-\midrule
-\texttt{!k:}  & \texttt{k:v}, no \texttt{k} & \texttt{k!=""}                      & \texttt{k:v} \\
-\texttt{k:}   & \texttt{k:}                 & \texttt{k=""}                       & \texttt{k:}, no \texttt{k} \\
-\texttt{k:*}  & \texttt{k:}, \texttt{k:v}   & \texttt{k=\textasciitilde{}".+"}    & \texttt{k:v} \\
-\texttt{!k:*} & no \texttt{k}               & \texttt{k!\textasciitilde{}".+"}    & \texttt{k:}, no \texttt{k} \\
-\bottomrule
-\end{tabular}
-\end{center}
-Every row differs, and no PromQL selector closes any of them, because the distinction is
-absent from what the target stores. The two bare forms are therefore refused: $5$
-occurrences, all of \texttt{!k:}, which until this reading were translated as
-\texttt{k!=""} and so dropped every series carrying no such tag --- the ordinary case, not
-a corner one. The two glob forms are \emph{not} refused, because a rule does exist for
-them: they are exact wherever no series carries that tag with an empty value, which is a
-precondition the query cannot state and the translator therefore records, as
-\texttt{TAG\_PRESENCE\_EMPTY} on $120$ occurrences ($1.4\%$ of the translated set) in
-Table~\ref{tab:translation-caveats}. Refusing those $120$ would have been the
-overcautious reading; an empty-valued tag is an odd thing for a real estate to carry, and
-the honest report is the precondition rather than a $\bot$.
-
-What this costs the paper is one point of the ceiling, $98.8\%$ to $98.7\%$, and what it
-buys is the better half of the trade: a second construct that is inexpressible rather
-than unbuilt, measured against the vendor, in a direction \S\ref{sec:ingestion} argues is
-nearly free of information loss. ``Nearly'' is now carrying two exceptions instead of one.
-\end{remark}
-
-\texttt{FILL\_INTERPOLATION} ($36$) and \texttt{LABEL\_NAME\_GLOB} ($31$) are the two
-clean expressiveness cases, and both are genuine --- and with \texttt{.weighted()}
-withdrawn and the disjunctions reclassified, they and the percentiles are all that is
-left. The code's name is a poor fit for what it mostly catches, which is worth saying
-because the name is what an earlier draft of this paragraph argued from. Datadog's
-interpolating modes are \texttt{.fill(linear)} and \texttt{.fill(last)}, and this corpus
-contains one \texttt{last} and no \texttt{linear} at all: the other $35$ occurrences
-are \emph{constant} fills, \texttt{.fill(zero)} and its numeric spellings. Both kinds
-are refused and for the same underlying reason, but it is not interpolation. A fill
-substitutes a value at a timestamp where the series has no sample, and a PromQL
-expression cannot: it has no term that introduces a sample where the database holds
-none, and the staleness rule that governs absence is the evaluator's rather than the
-query's. \texttt{or vector(0)} is the nearest thing and is not it --- it supplies one
-unlabelled series for the whole expression rather than a value per missing series, so
-it cannot fill a gap in a grouped result at all. A wildcard in a tag \emph{key} rather than a value, as in
-\texttt{\{*-location\}}, asks for a match over label \emph{names}, which a PromQL
-selector cannot do at all, because label names are not queryable there.
-
-\texttt{SCOPE\_DISJUNCTION} is the interesting row, and it is interesting for having
-almost emptied. A Datadog scope is a boolean query over tags
-(Figure~\ref{fig:productions}) and a PromQL selector is a \emph{conjunction} of matchers,
-so disjunction is the one scope operator with no selector-level form --- unless every
-branch constrains the same tag key, in which case Proposition~\ref{prop:disjunction}
-makes it a single regex matcher. An earlier version of this translator refused all of
-it, at $124$ occurrences, and reported that as a gap in the language. It was not: $120$
-of those occurrences are single-key disjunctions, and implementing
-Proposition~\ref{prop:disjunction} translates them, taking $\kappa$ from $94.2\%$ to
-$95.6\%$ at the time, and $96.3\%$ as it now stands.
-
-What survives is four occurrences: disjunction across
-different keys (\texttt{\{(status:400 OR s)\}}), a branch that constrains two keys at
-once (\texttt{\{(a:1 AND b:1) OR (a:2 AND b:2)\}}), and one De~Morgan case that becomes
-the same thing. Those remain sayable in PromQL as a union of selectors, but not as the
-syntax-directed translation of a scope --- which is why the split below counts them as
-unfinished work rather than as a language gap. That expressibility claim is held to a
-weaker standard than the one \texttt{top(...)} is held to four paragraphs above, and
-the asymmetry should be visible rather than quietly enjoyed: the union there was
-written out and read off a real server, while this one is sketched and never built, so
-what moves these four occurrences into the engineering column is an argument rather
-than a reading. Four occurrences do not move the split, but the standard is the point
-of the split. An earlier version of this section put
-them in the inexpressible column, where they contradicted the sentence above that says
-PromQL expresses them; a property of this translator's architecture is not a property
-of the target language.
-
-The episode is worth recording rather than quietly fixing, because the mistake is the
-one this paper is most at risk of making throughout. A translator's refusal looks like
-evidence about the languages, and it is only evidence about the translator until
-something separates the two. Here what separated them was re-parsing the refused queries
-and asking which case each was --- a question the gap code alone could not answer, since
-one code covered both.
-
-\begin{table}[htbp]\centering\footnotesize
-\input{tables/gap_by_feature}
-\caption{The twelve features with the lowest translated share, among those appearing in
-at least $50$ query occurrences. Rows read ``queries using this feature'', not ``this
-feature''.}
-\label{tab:gap-by-feature}
-\end{table}
-
-Table~\ref{tab:gap-by-feature} attributes the refusals to the Datadog features the
-refused queries use, and the caveat in its caption is load-bearing. A feature at $0.0\%$
-is not necessarily one the translator cannot handle; it can be one that in this corpus
-only ever appears beside something else that fails. \texttt{SCOPE\_BARE} demonstrated
-this and then stopped: \texttt{avg:x\{host\}} alone translates to
-\texttt{x\{host=\textasciitilde{}".+"\}}, yet before
-Proposition~\ref{prop:disjunction} the feature stood at $0.0\%$, because in these
-dashboards a bare tag key occurs only inside a boolean scope or next to a
-\texttt{*-location} key glob. Translating the scopes moved it to $55.4\%$ without anyone
-touching bare tag keys. Reading such a row as a statement about its own feature would
-have overstated the gaps, which is why the gap catalogue and not this table is the
-claim.
-
-\paragraph{How much of the $3.6\%$ is beyond reach.}
-Separating the kinds of refusal is the point of having codes at all, and on this
-corpus the split is lopsided. Three kinds arise and the catalogue keeps them apart:
-what Prometheus does not \emph{hold} (the percentile aggregators), what PromQL cannot
-\emph{say} (two constructs), and what this translator has not \emph{built}
-(everything else). A fourth is possible and empty here --- a query Datadog itself
-rejects, which Remark~\ref{rem:third-refusal} describes. The refusals that are not unfinished work are
-the percentile aggregators ($34$, blocked by information rather than by expressiveness
---- Corollary~\ref{cor:quantile}), \texttt{.fill} interpolation ($36$), tag-key
-globs ($31$) and the scopes that separate an absent tag from a present empty one
-($5$, blocked by information again --- Remark~\ref{rem:empty-tag}): $106$ occurrences,
-$1.2\%$ of the corpus. The other
-$212$ --- $2.4\%$ --- are constructs this translator has not implemented,
-\texttt{top(...)} chief among them. Because a query is abandoned at its first obstruction (Remark~\ref{rem:one-gap}),
-$98.7\%$ is an upper bound on what implementing the unimplemented set would reach: a
-refused query could carry a second, inexpressible construct behind the first. Re-reading
-the $212$ for the other three codes' constructs finds exactly one --- a
-\texttt{.fill(60)} nested inside a \texttt{top(...)} --- so the bound is tight and the
-ceiling is $98.7\%$ to the decimal it is quoted at. So the ceiling for this direction is
-$98.7\%$ against the $96.3\%$ measured here, and the distance between the two is
-engineering rather than language design --- as the disjunction rule demonstrated by closing $1.4$
-points of it and \texttt{.weighted()} by closing $0.8$ more. That is the finding to carry into \S\ref{sec:discussion}:
-going this way, almost all of the apparent incompatibility is work, and what is left is
-small enough to enumerate query by query.
-
+\iffull\input{sections/moved/eval_unsupported}\fi
+\iffull\input{sections/moved/eval_weighted}\fi
+\iffull\input{sections/moved/eval_top}\fi
+\iffull\input{sections/moved/eval_empty_tag}\fi
+\iffull\input{sections/moved/eval_rows_fill_glob}\fi
+\iffull\input{sections/moved/eval_beyond_reach}\fi
 \subsection{Exact relative to what}
 \label{sec:caveats}
 
@@ -624,74 +276,7 @@ corpus rather than invented. The \texttt{M\_AS\_COUNT} row is Proposition~\ref{p
 in use; the \texttt{GROUP\_BY} row shows the default time aggregator and the assumed
 interval together, which is the common case.
 
-\subsection{What the unparsed queries are}
-
-Six distinct queries ($8$ occurrences) are outside the grammar of
-Section~\ref{sec:grammars}, and all six are the same construct: a conditional aggregator,
-\texttt{count(v: v>=0):data\_streams.latency\{...\}}, which appears in Datadog's own
-shipped dashboards and in none of its documentation. Writing a production for it would
-mean guessing its semantics, so it is reported instead. It is the whole of the Datadog
-residual in Table~\ref{tab:parse-coverage}.
-
-\subsection{What is not measured}
-\label{sec:not-measured}
-
-Two of the facts this paper's rollup translations rest on are facts about Datadog's
-implementation rather than about either language, and Datadog's documentation settles
-neither. They are stated as assumptions in Section~\ref{sec:ingestion} and carried as
-diagnostics in Table~\ref{tab:translation-caveats}. Both have since been settled, one of
-them first from a source other than an experiment and then by one, and the difference
-between the two kinds of evidence is worth keeping visible.
-
-\emph{The reset policy $\rho$, settled by reading and then by measurement.} Datadog's
-agent is open source, so what it does with a counter decrease is readable even though it
-is undocumented: Remark~\ref{rem:rho} establishes $\rho=\mathsf{zero}$ for the
-OpenMetrics ingestion path, which is what Proposition~\ref{prop:anchored} assumes. This
-was not the expected answer. The prediction recorded in advance was
-$\rho=\mathsf{drop}$, on which \emph{neither} candidate would have been exact across a
-reset; the policy that the agent does implement alongside $\mathsf{zero}$ turns out to be
-$\mathsf{clamp}$, and $\mathsf{drop}$ is not a reset policy at all.
-
-Reading the agent does not establish that the backend stores what the agent sends, and
-that step stood open longer than any other in this paper --- not for want of a design,
-but because the experiment needs a counter that resets, and the replay of
-Section~\ref{sec:replay} cannot supply one: a real request counter does not restart
-inside half an hour. E1 supplies one on purpose. A scripted counter climbs to $1000$ and
-drops to $100$ inside a single bucket while a real agent and a real Prometheus scrape the
-same endpoint. Datadog stores $103$ over that bucket, which is $\delta_{\mathsf{zero}}$
-and is distinct from what each of the three rivals predicts; and
-\texttt{increase(x[$\Delta$] anchored)} over Prometheus returns $103$ for the same
-bucket, on every complete bucket of all three counters. The restart rows of
-Table~\ref{tab:rollup-live} therefore no longer stand on the model alone.
-
-\emph{Bucket closure, settled by measurement.} $\Sigma_\Delta$ presumes a bucket
-convention, and the one it presumed was wrong. Submitting a point on an exact bucket
-boundary and another strictly inside one, then reading back which bucket each is reported
-under, shows the buckets are left-closed and named by their \emph{start}
-(Remark~\ref{rem:closure}); the two probes together leave one convention standing, and
-each rival is ruled out by at least one of the two readings. It is one run at one rollup
-interval, as \S\ref{sec:ingestion} says and this subsection used to deny by claiming two
-runs at two intervals --- so what is pinned is the convention at $60$\,s rather than its
-independence of the width. Epoch alignment itself \emph{is}
-documented~\citep{ddrollup}; which edge the timestamp names was not.
-
-No figure in this paper moved. A model and a candidate evaluated under the same
-convention agree with each other, so what was wrong was a claim about Datadog rather than
-any arithmetic --- Table~\ref{tab:rollup-live}, recomputed against a freshly re-verified
-Prometheus on the corrected grid, is identical to the version computed under the wrong
-one. What did change is where a translated query must be evaluated, and that is not a
-detail: since a PromQL window is right-closed, no instant reads a left-closed bucket
-exactly when a scrape lands on a boundary, and the translation must be evaluated strictly
-inside the bucket. Evaluating on its right edge --- the obvious repair once the closure is
-known --- is wrong on almost every bucket of an aligned scrape.
-
-\emph{The corpus-scale differential test, no longer outstanding.} One further item
-belonged in this subsection until recently, and it was the largest of them: the
-construction of Section~\ref{sec:replay} applied to the whole corpus rather than to one
-replayed trace. Until it ran, $\kappa$ measured what the translator was willing to
-translate rather than what it translated correctly. It has since been run, and the next
-subsection reports it.
-
+\iffull\input{sections/moved/eval_unparsed_unmeasured}\fi
 \subsection{Every shape, against both systems}
 \label{sec:differential}
 

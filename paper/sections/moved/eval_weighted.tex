@@ -1,0 +1,34 @@
+\begin{remark}[\texttt{.weighted()} was the largest claimed gap and is not one]%
+\label{rem:weighted}
+Until recently this row was led by \texttt{.weighted()} at $70$ occurrences, described
+here as ``a time-weighted space average that PromQL has no operator for''. That sentence
+was the entire warrant, and it was wrong in both halves.
+
+It is not an average: all $52$ distinct corpus forms attach the modifier to
+\texttt{sum:}. An earlier version of this remark said $54$ of $56$ and conceded two
+\texttt{avg:} uses; there are none. The count came from matching the substring
+\texttt{weighted}, which also catches four queries whose \emph{metric name} contains it
+and which carry no modifier at all --- two of them \texttt{avg:}, which is exactly the
+concession. And it is not a gap, because it does not compute anything. A series
+reporting at $0$, $50$ and $55$ seconds into each $60$\,s bucket has a plain mean of
+$66.7$ and a mean weighted by the interval each point covers of $16.7$, so a rig built
+on it can tell the two apart. Datadog returns $66.7$ with the modifier and without it,
+on \texttt{GAUGE}, \texttt{COUNT} and \texttt{RATE} alike
+(\texttt{scripts\slash weighted\_semantics.py}). The probe is narrower than that list
+makes it sound, and the gap is worth naming: the grouped forms and the \texttt{sum} and
+\texttt{avg} rollups were run on the gauge only, the counter types were probed
+ungrouped under \texttt{avg}, and the modifier was never paired with a \texttt{count}
+rollup at all. What closes that is not the probe but the corpus: three
+\texttt{.weighted()} shapes went through the differential of \S\ref{sec:differential}
+and agreed with Datadog bucket for bucket. On everything this corpus does with it,
+\texttt{.weighted()} is the identity.
+
+So the translation of a query carrying it is the translation of the query without it,
+the front end drops the modifier as it already dropped \texttt{.fill(null)}, and $70$
+occurrences move from the inexpressible column to $\kappa$. That is the third claimed
+language gap in this paper to turn out not to be one, and the first to turn out not to
+be work either: the other two were implemented, and this one needed deleting. The residue is a caution rather than a result: a modifier that does nothing
+everywhere we can look may still do something somewhere we cannot, and what is measured
+is every metric type and query shape the rig can build, not every configuration Datadog
+has.
+\end{remark}

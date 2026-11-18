@@ -34,6 +34,18 @@ ROOT = Path(__file__).resolve().parent.parent
 # appendix and the full build keeps inline. They are the same prose either way, so
 # every check here has to see them.
 SECTIONS = sorted((ROOT / "paper" / "sections").rglob("*.tex"))
+
+
+def _section_path(name: str) -> Path:
+    """A bound figure names its file, which may be a section or an apparatus file.
+
+    Apparatus lives in sections/moved/ so that one copy of the prose serves both the
+    20-page build and the full one, and a binding has to follow it there.
+    """
+    for candidate in SECTIONS:
+        if candidate.name == name:
+            return candidate
+    raise AssertionError(f"{name} is bound but no such file exists")
 # The abstract moved into body.tex when the paper gained a 20-page and a full
 # build; it is the most-read part of the document and the one place a stale figure
 # survived two passes, so it is scanned like any section.
@@ -252,13 +264,15 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
           {"01_introduction.tex", "05_translation.tex", "08_discussion.tex"}),
     124: ("disjunctive scopes before prop:disjunction",
           {"01_introduction.tex", "06_regular.tex", "07_evaluation.tex",
-           "08_discussion.tex"}),
+           "08_discussion.tex", "eval_rows_fill_glob.tex"}),
     120: ("of those, the single-key ones",
           {"01_introduction.tex", "07_evaluation.tex", "08_discussion.tex"}),
     116: ("translations once thought to carry ROLLUP_ALIGNMENT alone",
           {"07_evaluation.tex"}),
-    94.2: ("kappa before the disjunction rule", {"07_evaluation.tex"}),
-    95.6: ("kappa after it and before the counter-average fix", {"07_evaluation.tex"}),
+    94.2: ("kappa before the disjunction rule",
+           {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
+    95.6: ("kappa after it and before the counter-average fix",
+           {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
     76.2: ("METRIC_TYPE_UNKNOWN before E6", {"05_translation.tex"}),
     6381: ("the occurrences that share carried", {"05_translation.tex"}),
     87: ("the implementation-order figure, contrasted with the kernel's reach",
@@ -388,7 +402,7 @@ def test_the_registry_agrees_with_the_tables_on_kappa():
 # should arrive; the list is a statement about which of the paper's numbers are tied to
 # their source by name rather than by luck.
 BOUND: tuple[tuple[str, str], ...] = (
-    ("nb00.ceiling_8_features_pct", "07_evaluation.tex"),
+    ("nb00.ceiling_8_features_pct", "eval_staircase.tex"),
     ("nb03.caveat_counter_reset_pct", "07_evaluation.tex"),
     ("nb03.caveat_metric_type_unknown_occurrences", "05_translation.tex"),
     ("nb03.caveat_metric_type_unknown_pct", "05_translation.tex"),
@@ -399,7 +413,7 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb03.caveat_rollup_default_pct", "08_discussion.tex"),
     ("nb03.caveat_rollup_default_pct", "body.tex"),
     ("nb03.ceiling_pct", "01_introduction.tex"),
-    ("nb03.ceiling_pct", "07_evaluation.tex"),
+    ("nb03.ceiling_pct", "eval_beyond_reach.tex"),
     ("nb03.ceiling_pct", "08_discussion.tex"),
     ("nb03.ceiling_pct", "09_conclusion.tex"),
     ("nb03.closure_occurrences", "05_translation.tex"),
@@ -445,8 +459,8 @@ BOUND: tuple[tuple[str, str], ...] = (
     # asks for the ranking function the probe leads with.
     ("nb00.top_occurrences", "07_evaluation.tex"),
     ("nb00.top_occurrences", "09_conclusion.tex"),
-    ("nb00.top_desc_occurrences", "07_evaluation.tex"),
-    ("nb00.top_rank_mean_calls", "07_evaluation.tex"),
+    ("nb00.top_desc_occurrences", "eval_top.tex"),
+    ("nb00.top_rank_mean_calls", "eval_top.tex"),
 )
 
 
@@ -474,7 +488,8 @@ def test_a_bound_figure_still_matches_its_source():
     stale = []
     for key, section in BOUND:
         assert key in reg, f"{key} is bound but no longer in the registry"
-        path = MAIN if section == "body.tex" else ROOT / "paper" / "sections" / section
+        # A section file, body.tex, or an apparatus file under sections/moved/.
+        path = MAIN if section == "body.tex" else _section_path(section)
         text = _math_text(path)
         if not any(s in text for s in _spellings(reg[key])):
             stale.append(f"  {section} should state {key} = {reg[key]}")

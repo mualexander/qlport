@@ -1,0 +1,74 @@
+
+\texttt{FILL\_INTERPOLATION} ($36$) and \texttt{LABEL\_NAME\_GLOB} ($31$) are the two
+clean expressiveness cases, and both are genuine --- and with \texttt{.weighted()}
+withdrawn and the disjunctions reclassified, they and the percentiles are all that is
+left. The code's name is a poor fit for what it mostly catches, which is worth saying
+because the name is what an earlier draft of this paragraph argued from. Datadog's
+interpolating modes are \texttt{.fill(linear)} and \texttt{.fill(last)}, and this corpus
+contains one \texttt{last} and no \texttt{linear} at all: the other $35$ occurrences
+are \emph{constant} fills, \texttt{.fill(zero)} and its numeric spellings. Both kinds
+are refused and for the same underlying reason, but it is not interpolation. A fill
+substitutes a value at a timestamp where the series has no sample, and a PromQL
+expression cannot: it has no term that introduces a sample where the database holds
+none, and the staleness rule that governs absence is the evaluator's rather than the
+query's. \texttt{or vector(0)} is the nearest thing and is not it --- it supplies one
+unlabelled series for the whole expression rather than a value per missing series, so
+it cannot fill a gap in a grouped result at all. A wildcard in a tag \emph{key} rather than a value, as in
+\texttt{\{*-location\}}, asks for a match over label \emph{names}, which a PromQL
+selector cannot do at all, because label names are not queryable there.
+
+\texttt{SCOPE\_DISJUNCTION} is the interesting row, and it is interesting for having
+almost emptied. A Datadog scope is a boolean query over tags
+(Figure~\ref{fig:productions}) and a PromQL selector is a \emph{conjunction} of matchers,
+so disjunction is the one scope operator with no selector-level form --- unless every
+branch constrains the same tag key, in which case Proposition~\ref{prop:disjunction}
+makes it a single regex matcher. An earlier version of this translator refused all of
+it, at $124$ occurrences, and reported that as a gap in the language. It was not: $120$
+of those occurrences are single-key disjunctions, and implementing
+Proposition~\ref{prop:disjunction} translates them, taking $\kappa$ from $94.2\%$ to
+$95.6\%$ at the time, and $96.3\%$ as it now stands.
+
+What survives is four occurrences: disjunction across
+different keys (\texttt{\{(status:400 OR s)\}}), a branch that constrains two keys at
+once (\texttt{\{(a:1 AND b:1) OR (a:2 AND b:2)\}}), and one De~Morgan case that becomes
+the same thing. Those remain sayable in PromQL as a union of selectors, but not as the
+syntax-directed translation of a scope --- which is why the split below counts them as
+unfinished work rather than as a language gap. That expressibility claim is held to a
+weaker standard than the one \texttt{top(...)} is held to four paragraphs above, and
+the asymmetry should be visible rather than quietly enjoyed: the union there was
+written out and read off a real server, while this one is sketched and never built, so
+what moves these four occurrences into the engineering column is an argument rather
+than a reading. Four occurrences do not move the split, but the standard is the point
+of the split. An earlier version of this section put
+them in the inexpressible column, where they contradicted the sentence above that says
+PromQL expresses them; a property of this translator's architecture is not a property
+of the target language.
+
+The episode is worth recording rather than quietly fixing, because the mistake is the
+one this paper is most at risk of making throughout. A translator's refusal looks like
+evidence about the languages, and it is only evidence about the translator until
+something separates the two. Here what separated them was re-parsing the refused queries
+and asking which case each was --- a question the gap code alone could not answer, since
+one code covered both.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/gap_by_feature}
+\caption{The twelve features with the lowest translated share, among those appearing in
+at least $50$ query occurrences. Rows read ``queries using this feature'', not ``this
+feature''.}
+\label{tab:gap-by-feature}
+\end{table}
+
+Table~\ref{tab:gap-by-feature} attributes the refusals to the Datadog features the
+refused queries use, and the caveat in its caption is load-bearing. A feature at $0.0\%$
+is not necessarily one the translator cannot handle; it can be one that in this corpus
+only ever appears beside something else that fails. \texttt{SCOPE\_BARE} demonstrated
+this and then stopped: \texttt{avg:x\{host\}} alone translates to
+\texttt{x\{host=\textasciitilde{}".+"\}}, yet before
+Proposition~\ref{prop:disjunction} the feature stood at $0.0\%$, because in these
+dashboards a bare tag key occurs only inside a boolean scope or next to a
+\texttt{*-location} key glob. Translating the scopes moved it to $55.4\%$ without anyone
+touching bare tag keys. Reading such a row as a statement about its own feature would
+have overstated the gaps, which is why the gap catalogue and not this table is the
+claim.
+

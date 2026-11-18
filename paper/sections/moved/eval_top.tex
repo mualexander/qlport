@@ -1,0 +1,66 @@
+
+\texttt{top(...)} decides where that split falls, so it is worth settling rather than
+asserting. An earlier draft of this paragraph called it ``close to PromQL's
+\texttt{topk}'', and that is false: Datadog ranks series by an aggregation over
+\emph{all} values in the queried range and returns those series' whole trajectories,
+while \texttt{topk} ranks independently at each evaluation instant, so a series can be in
+one and not the other. They are different operators, and $139$ occurrences moving into
+the inexpressible column would invert the comparison this section ends with.
+
+They do not move, and the reason is instructive. PromQL \emph{can} denote the ranking,
+using the \texttt{@} modifier to pin it to a single evaluation so that it does not drift
+across the graph:
+\begin{center}\footnotesize
+\texttt{q and on($\overline{k}$) topk($n$, max\_over\_time(q[$R$] @ $T$))}
+\end{center}
+Read off a real Prometheus~3.15.0, this reproduces the selection that Datadog's
+documented rule predicts --- aggregate each series over the whole range, take the top
+$n$ --- and holds it constant across the range, while the naive \texttt{topk($n$, q)}
+changes membership within the same workload at $n=2$
+(\texttt{scripts\slash verify\_topk.py}; cached and regression-tested).
+All $20$ cases agree: five ranking
+functions, at $n=2$ and $n=3$, in both directions. The directions were the omission worth
+finding. This corpus ranks ascending in $5$ of its $139$
+occurrences, \texttt{topk} is the descending half of \texttt{top()}, and until
+\texttt{bottomk} was asked for as well the measurement covered $134$ occurrences while
+the sentence reporting it claimed $139$. The functions run the other way: the probe
+covers five and the corpus uses four --- \texttt{mean} in $111$ of the calls,
+\texttt{last} in $34$, \texttt{max} in $15$ and \texttt{sum} in $3$ --- so \texttt{min}
+is probed because the candidate has to hold for it, not because a dashboard asks.
+
+The Prometheus reading is one side of a comparison, and the other side of it was a
+reading of Datadog's documentation --- the weaker kind of evidence, and the kind this
+paper has twice found wrong, since the aggregation order and the bucket closure were both
+read off the documentation and both wrong. So the vendor was asked the same question. The five series
+go to a real Datadog as a gauge and \texttt{top()} itself is asked for its selection
+(\texttt{scripts\slash datadog\_top.py}; cached and regression-tested), over the one
+workload definition both scripts import so that the two halves cannot drift apart. All
+$22$ selections are the ones the documented rule predicts, and two things the
+documentation asserts rather than demonstrates are now readings as well. The selected
+series come back over the \emph{whole} window and not only where they are winning: the
+series that spikes once and then sits at $1$ returns all $20$ buckets, which is precisely
+what a \texttt{topk}-shaped operator would not do. And the selection is relative to the
+queried range --- over all twenty buckets the top two by \texttt{max} are the riser and
+the spike, over the last ten the spike is outside the window and the answer is the riser
+and the flat high series, while \texttt{mean}'s selection does not move under the same
+narrowing. So \texttt{top(...)} is unimplemented work, and the catalogue's split stands.
+
+What the expression costs is the interesting part, and that last reading is what prices
+it. $R$ is the dashboard's time range and $T$ its end, and a Datadog query carries
+neither --- the same omission as the rollup interval of \S\ref{sec:caveats}. That would
+be a detail if the vendor's answer were insensitive to the range, and it is not: a
+translator told the wrong range does not draw a slightly wrong graph, it selects
+different series. An implementation of \texttt{top(...)} would therefore
+reach the ceiling below only for a translator that is told the time range, and would
+carry two more preconditions of exactly the kind \S\ref{sec:discussion} argues are the
+real switching cost.
+
+\texttt{PHI\_QUANTILE} ($34$) is one of the two information barriers this corpus raises
+in the main direction, and \S\ref{sec:ingestion} proves it rather than asserting it: a
+Datadog distribution metric answers $\mathtt{p}NN$ from a sketch of the raw observations,
+Prometheus keeps those observations bucketed with their sum and count, and no function of
+those is the quantile (Corollary~\ref{cor:quantile}). The point is not that one system is
+more precise --- a sketch is lossy too --- but that the two keep different lossy summaries
+of one stream and neither recovers the other. PromQL's \texttt{histogram\_quantile} is not
+the missing operator; it is a different approximation.
+

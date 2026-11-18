@@ -1,0 +1,29 @@
+
+\texttt{UNSUPPORTED\_FUNCTION} is the largest and the least interesting: it is mostly a
+bundle of Datadog functions the translator does not implement. \texttt{top(...)} leads
+it at $139$ occurrences, and \texttt{per\_second(...)} follows at $22$.
+Mostly, and not wholly: $11$ of its $208$ are not functions at all. Nine are a negated match-all,
+\texttt{\{*,!*\}}, which is a scope and which the catalogue's own shortest example for
+this row happens to be; one is a \texttt{.rollup(max)} over a known counter, which the
+proof of Theorem~\ref{thm:kernel} classifies as a case where no rule exists rather than
+as unwritten code; and one is a rollup whose \emph{width} is not numeric,
+\texttt{.rollup(count, daily)}, refused where the interval is parsed rather than where a
+function is looked up. All three stay in the unimplemented column: PromQL can denote an empty
+selection with a contradictory matcher pair, the individual deltas a
+\texttt{max} rollup needs are reachable through a subquery over a sample grid the
+query does not state --- the same omission as everywhere else in this section --- and a
+named calendar width is a unit the front end does not yet convert. Everything in it is now unimplemented
+work and nothing else, which it was not when this section was first written: the
+percentile aggregators sat in it as a genuine gap and \texttt{.weighted()} as a
+supposed one, so the row was a mixture and the split at the end of this subsection had
+to be computed by reading detail strings rather than codes. Both have moved ---
+\texttt{.weighted()} out of the catalogue entirely (Remark~\ref{rem:weighted}) and the
+percentiles into a code that names their obstruction.
+
+The converse does not hold, and the comparison this subsection ends with depends on
+noticing it: this row is not the whole of the unimplemented column. The four surviving
+disjunctions below are unfinished work too and carry \texttt{SCOPE\_DISJUNCTION}, so
+the $212$ of that column is this row's $208$ plus those four. One code has stopped being
+a mixture; the column still spans two, and it is the column rather than the code that
+the comparison is about.
+
