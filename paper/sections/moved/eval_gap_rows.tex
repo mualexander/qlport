@@ -1,0 +1,94 @@
+\begin{remark}[E10: what PromQL does with a series that stops]\label{rem:fill}
+Two rows of the beyond-reach column carried a proof and two carried a sentence, and the
+two sentences covered more occurrences than the two proofs. This is the first of the two
+readings that fixed that, and it did not go the way the sentence predicted.
+
+The claim was that no PromQL term introduces a sample where the database holds none. The
+setup that tests it is a gauge with two series, \texttt{svc="a"} throughout and
+\texttt{svc="b"} stopping halfway, backfilled into Prometheus~3.15.0 and read back across
+the whole span. Prometheus carries a stopped series forward for five minutes, so the
+question is asked ten minutes past the stop, where anything present is the expression's
+doing and not the staleness lookback's.
+
+\begin{center}\footnotesize
+\begin{tabular}{@{}llc@{}}
+\toprule
+Candidate & Expression & \texttt{svc="b"} past the lookback \\
+\midrule
+bare selector & \texttt{m} & absent \\
+the one the argument considered & \texttt{m or vector(0)} & absent; a bare \texttt{\{\}} appears \\
+matched union & \texttt{m or on() vector(0)} & absent \\
+absence as a value & \texttt{m or (absent(m) * 0)} & absent \\
+held alive & \texttt{last\_over\_time(m[W])} & present, last value \\
+held alive and zeroed & \texttt{m or (last\_over\_time(m[W]) * 0)} & present, $0$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+So the argument was right about \texttt{or vector(0)} --- it supplies one unlabelled
+series for the whole expression, which is why that candidate was rejected --- and wrong
+to generalise from it. The last two rows do per-series what \texttt{.fill(last)} and
+\texttt{.fill(zero)} do, with the series' own labels, which is the thing the row was
+said to be impossible.
+
+Three qualifications, none of which rescues the original claim. The fill lasts exactly
+as long as $W$ covers the stopped series' last sample and no longer, so $W$ is doing the
+work the dashboard's time range does in Datadog --- the row is translatable only
+relative to context the query does not carry, which is \S\ref{sec:caveats}'s subject
+arriving from a direction this paper did not expect. Multiplying by zero drops
+\texttt{\_\_name\_\_}, so the filled series is not label-identical to the one it stands
+in for; whether that matters depends on what the panel groups by. And this is a reading
+of what the server does, not a soundness proof: it moves the row out of
+\emph{inexpressible}, which is a claim about the language, and into \emph{unbuilt},
+which is a claim about us.
+
+The corpus makes the correction cheap to state and awkward to have needed. All $36$
+occurrences are zero-fills but one --- $26$ \texttt{.fill(zero)}, $9$ \texttt{.fill(0)},
+$1$ \texttt{.fill(last)} --- so there is no interpolating case among them at all, and
+the row's name has been a poor fit for its contents since it was written
+(\S\ref{sec:gaps} says so about a different row for the same reason). Linear
+interpolation, the construct the name describes, is not in this corpus and this
+experiment says nothing about it.
+
+That makes five refusals this paper has read as a property of the languages and had to
+return as a property of its own translator, and like the other four it moved the number
+in the direction that made the paper's thesis sound stronger.
+\end{remark}
+
+\begin{remark}[E11: a pattern where a label name goes]\label{rem:label-name}
+The other argued row, and this one survives. A Datadog scope term with no key ---
+\texttt{\{*-location,*-name,*-uid,*\}}, which is $24$ of the $28$ distinct cases, and
+\texttt{*-zone}, which is the other $4$ --- globs over the whole \texttt{key:value}
+string rather than over a value, so expressing it in PromQL needs a pattern in a
+matcher's \emph{name} position.
+
+This is a claim about syntax, so our own grammar settles most of it: in
+\S\ref{sec:grammars}'s PromQL rules a matcher's name is a terminal, never an expression,
+which is why \texttt{regular.py} is never asked the question. But the grammar is
+inferred, and the worry that makes a server worth asking is specific: 3.x added quoted
+UTF-8 label names, and a quoted name looks syntactically like a place a pattern could
+go. Five queries, sent to the same 3.15.0 server:
+
+\begin{center}\footnotesize
+\begin{tabular}{@{}lll@{}}
+\toprule
+Attempt & Query & Server \\
+\midrule
+pattern in name position & \texttt{\{=\~{}".*-zone"\}} & parse error \\
+pattern as a name, with a value & \texttt{\{\~{}".*-zone"="aws"\}} & parse error \\
+quoted pattern as a name & \texttt{\{".*-zone"="aws"\}} & accepted, $0$ series \\
+control: quoted literal name & \texttt{\{"svc"="a"\}} & accepted, $1$ series \\
+control: regex in value position & \texttt{\{svc=\~{}"a.*"\}} & accepted, $1$ series \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The third row is the informative one and the reason the experiment was worth running:
+the quoted form is accepted and returns nothing, because it asks for a label whose name
+is literally \texttt{.*-zone}. The extension opened the name position to more
+\emph{characters}, not to patterns. With the controls showing that quoted names and
+value-position regexes both work on this server, what is left is that the name position
+takes a literal and only a literal, which is what the row claimed.
+\end{remark}

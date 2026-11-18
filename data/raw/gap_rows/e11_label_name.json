@@ -1,0 +1,105 @@
+{
+ "meta": {
+  "image": "prom/prometheus:v3.15.0",
+  "image_digest": "prom/prometheus@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e",
+  "build": {
+   "version": "3.15.0",
+   "revision": "5241a27fe3c6983549fccc32f6e65917408c63cd",
+   "branch": "HEAD",
+   "buildUser": "root@4635dd007a60",
+   "buildDate": "20260925-07:33:45",
+   "goVersion": "go1.27.1"
+  },
+  "metric": "qlport_fill",
+  "t0": 1700000000,
+  "step_s": 60,
+  "span_min": 60,
+  "stop_min": 30,
+  "exposition": "# TYPE qlport_fill gauge\nqlport_fill{svc=\"a\"} 10 1700000000.000\nqlport_fill{svc=\"b\"} 100 1700000000.000\nqlport_fill{svc=\"a\"} 11 1700000060.000\nqlport_fill{svc=\"b\"} 101 1700000060.000\nqlport_fill{svc=\"a\"} 12 1700000120.000\nqlport_fill{svc=\"b\"} 102 1700000120.000\nqlport_fill{svc=\"a\"} 13 1700000180.000\nqlport_fill{svc=\"b\"} 103 1700000180.000\nqlport_fill{svc=\"a\"} 14 1700000240.000\nqlport_fill{svc=\"b\"} 104 1700000240.000\nqlport_fill{svc=\"a\"} 15 1700000300.000\nqlport_fill{svc=\"b\"} 105 1700000300.000\nqlport_fill{svc=\"a\"} 16 1700000360.000\nqlport_fill{svc=\"b\"} 106 1700000360.000\nqlport_fill{svc=\"a\"} 17 1700000420.000\nqlport_fill{svc=\"b\"} 107 1700000420.000\nqlport_fill{svc=\"a\"} 18 1700000480.000\nqlport_fill{svc=\"b\"} 108 1700000480.000\nqlport_fill{svc=\"a\"} 19 1700000540.000\nqlport_fill{svc=\"b\"} 109 1700000540.000\nqlport_fill{svc=\"a\"} 20 1700000600.000\nqlport_fill{svc=\"b\"} 110 1700000600.000\nqlport_fill{svc=\"a\"} 21 1700000660.000\nqlport_fill{svc=\"b\"} 111 1700000660.000\nqlport_fill{svc=\"a\"} 22 1700000720.000\nqlport_fill{svc=\"b\"} 112 1700000720.000\nqlport_fill{svc=\"a\"} 23 1700000780.000\nqlport_fill{svc=\"b\"} 113 1700000780.000\nqlport_fill{svc=\"a\"} 24 1700000840.000\nqlport_fill{svc=\"b\"} 114 1700000840.000\nqlport_fill{svc=\"a\"} 25 1700000900.000\nqlport_fill{svc=\"b\"} 115 1700000900.000\nqlport_fill{svc=\"a\"} 26 1700000960.000\nqlport_fill{svc=\"b\"} 116 1700000960.000\nqlport_fill{svc=\"a\"} 27 1700001020.000\nqlport_fill{svc=\"b\"} 117 1700001020.000\nqlport_fill{svc=\"a\"} 28 1700001080.000\nqlport_fill{svc=\"b\"} 118 1700001080.000\nqlport_fill{svc=\"a\"} 29 1700001140.000\nqlport_fill{svc=\"b\"} 119 1700001140.000\nqlport_fill{svc=\"a\"} 30 1700001200.000\nqlport_fill{svc=\"b\"} 120 1700001200.000\nqlport_fill{svc=\"a\"} 31 1700001260.000\nqlport_fill{svc=\"b\"} 121 1700001260.000\nqlport_fill{svc=\"a\"} 32 1700001320.000\nqlport_fill{svc=\"b\"} 122 1700001320.000\nqlport_fill{svc=\"a\"} 33 1700001380.000\nqlport_fill{svc=\"b\"} 123 1700001380.000\nqlport_fill{svc=\"a\"} 34 1700001440.000\nqlport_fill{svc=\"b\"} 124 1700001440.000\nqlport_fill{svc=\"a\"} 35 1700001500.000\nqlport_fill{svc=\"b\"} 125 1700001500.000\nqlport_fill{svc=\"a\"} 36 1700001560.000\nqlport_fill{svc=\"b\"} 126 1700001560.000\nqlport_fill{svc=\"a\"} 37 1700001620.000\nqlport_fill{svc=\"b\"} 127 1700001620.000\nqlport_fill{svc=\"a\"} 38 1700001680.000\nqlport_fill{svc=\"b\"} 128 1700001680.000\nqlport_fill{svc=\"a\"} 39 1700001740.000\nqlport_fill{svc=\"b\"} 129 1700001740.000\nqlport_fill{svc=\"a\"} 40 1700001800.000\nqlport_fill{svc=\"b\"} 130 1700001800.000\nqlport_fill{svc=\"a\"} 41 1700001860.000\nqlport_fill{svc=\"a\"} 42 1700001920.000\nqlport_fill{svc=\"a\"} 43 1700001980.000\nqlport_fill{svc=\"a\"} 44 1700002040.000\nqlport_fill{svc=\"a\"} 45 1700002100.000\nqlport_fill{svc=\"a\"} 46 1700002160.000\nqlport_fill{svc=\"a\"} 47 1700002220.000\nqlport_fill{svc=\"a\"} 48 1700002280.000\nqlport_fill{svc=\"a\"} 49 1700002340.000\nqlport_fill{svc=\"a\"} 50 1700002400.000\nqlport_fill{svc=\"a\"} 51 1700002460.000\nqlport_fill{svc=\"a\"} 52 1700002520.000\nqlport_fill{svc=\"a\"} 53 1700002580.000\nqlport_fill{svc=\"a\"} 54 1700002640.000\nqlport_fill{svc=\"a\"} 55 1700002700.000\nqlport_fill{svc=\"a\"} 56 1700002760.000\nqlport_fill{svc=\"a\"} 57 1700002820.000\nqlport_fill{svc=\"a\"} 58 1700002880.000\nqlport_fill{svc=\"a\"} 59 1700002940.000\nqlport_fill{svc=\"a\"} 60 1700003000.000\nqlport_fill{svc=\"a\"} 61 1700003060.000\nqlport_fill{svc=\"a\"} 62 1700003120.000\nqlport_fill{svc=\"a\"} 63 1700003180.000\nqlport_fill{svc=\"a\"} 64 1700003240.000\nqlport_fill{svc=\"a\"} 65 1700003300.000\nqlport_fill{svc=\"a\"} 66 1700003360.000\nqlport_fill{svc=\"a\"} 67 1700003420.000\nqlport_fill{svc=\"a\"} 68 1700003480.000\nqlport_fill{svc=\"a\"} 69 1700003540.000\nqlport_fill{svc=\"a\"} 70 1700003600.000\n# EOF\n"
+ },
+ "attempts": {
+  "bare pattern in name position": {
+   "expr": "{=~\".*-zone\"}",
+   "status_code": 400,
+   "error": "invalid parameter \"query\": 1:2: parse error: unexpected <op:=~> in label matching, expected identifier or \"}\"",
+   "series_returned": 0,
+   "response": {
+    "status": "error",
+    "errorType": "bad_data",
+    "error": "invalid parameter \"query\": 1:2: parse error: unexpected <op:=~> in label matching, expected identifier or \"}\""
+   }
+  },
+  "pattern as a name, with a value": {
+   "expr": "{~\".*-zone\"=\"aws\"}",
+   "status_code": 400,
+   "error": "invalid parameter \"query\": 1:2: parse error: unexpected character inside braces: '~'",
+   "series_returned": 0,
+   "response": {
+    "status": "error",
+    "errorType": "bad_data",
+    "error": "invalid parameter \"query\": 1:2: parse error: unexpected character inside braces: '~'"
+   }
+  },
+  "quoted pattern as a name": {
+   "expr": "{\".*-zone\"=\"aws\"}",
+   "status_code": 200,
+   "error": null,
+   "series_returned": 0,
+   "response": {
+    "status": "success",
+    "data": {
+     "resultType": "vector",
+     "result": []
+    }
+   }
+  },
+  "control: quoted literal name": {
+   "expr": "{\"svc\"=\"a\"}",
+   "status_code": 200,
+   "error": null,
+   "series_returned": 1,
+   "response": {
+    "status": "success",
+    "data": {
+     "resultType": "vector",
+     "result": [
+      {
+       "metric": {
+        "__name__": "qlport_fill",
+        "svc": "a"
+       },
+       "value": [
+        1700000600,
+        "20"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  "control: regex in value position": {
+   "expr": "{svc=~\"a.*\"}",
+   "status_code": 200,
+   "error": null,
+   "series_returned": 1,
+   "response": {
+    "status": "success",
+    "data": {
+     "resultType": "vector",
+     "result": [
+      {
+       "metric": {
+        "__name__": "qlport_fill",
+        "svc": "a"
+       },
+       "value": [
+        1700000600,
+        "20"
+       ]
+      }
+     ]
+    }
+   }
+  }
+ }
+}

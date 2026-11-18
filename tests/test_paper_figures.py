@@ -133,8 +133,6 @@ ALLOWED: dict[float, str] = {
     8587: "regex matchers in the PromQL corpus; the table beside it reports the split",
     0.628: "cor:rate: what rate() reads on one of two databases with equal phi images",
     887: "rem:type-measured: translated occurrences whose declared type is not decidable",
-    98.8: "superseded: the ceiling before the empty-value scopes were refused, named in "
-          "rem:empty-tag as the figure this correction moves",
     0.667: "and on the other, which is why rate is inadmissible on C_warm too",
     325: "shapes the differential had before the abstraction kept rollup intervals",
     335: "and after that, before the empty-value scopes left the translated set",
@@ -252,7 +250,9 @@ SCALAR_ONLY: set[float] = {
 # entry would license the stale value *anywhere* -- and a stale kappa in the abstract is
 # exactly the bug this file exists to catch. The value and the place are both the claim.
 ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
-    542: ("the four misclassified episodes, less the overlap between two of them",
+    578: ("the five misclassified episodes, less the overlap between two of them:\n"
+          "348 + 124 + 70 + 36, where the four disjunctions are a residue of the 124.\n"
+          "Was 542 until Remark rem:fill returned the zero-fills as well",
           {"08_discussion.tex"}),
     348: ("refusals under the commutation argument",
           {"01_introduction.tex", "05_translation.tex", "07_evaluation.tex",
@@ -452,7 +452,6 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb03.kernel_pct_corpus", "01_introduction.tex"),
     ("nb03.kernel_pct_corpus", "05_translation.tex"),
     ("nb03.kernel_pct_translated", "05_translation.tex"),
-    ("nb03.language_gap_occurrences", "07_evaluation.tex"),
     ("nb03.language_gap_pct", "01_introduction.tex"),
     ("nb03.language_gap_pct", "03b_ingestion.tex"),
     ("nb03.language_gap_pct", "07_evaluation.tex"),

@@ -139,13 +139,28 @@ Prometheus keeps a bucketing of them with their sum and count, and no function o
 is the quantile (Corollary~\ref{cor:quantile}); and \texttt{SCOPE\_EMPTY\_VALUE} ($5$),
 because Datadog separates an absent tag from one present with an empty value and
 Prometheus's data model \emph{defines} the two to be the same
-(\apref{app:eval}). Two more are the second kind and are the clean expressiveness cases:
-\texttt{FILL\_INTERPOLATION} ($36$), since no PromQL term introduces a sample where the
-database holds none, and \texttt{LABEL\_NAME\_GLOB} ($31$), since label names are not
-queryable in PromQL at all. Those four rows together --- $34$, $5$, $36$ and $31$ --- are the $106$ occurrences
---- $1.2\%$ --- that no amount of engineering on a Datadog back end reaches.
+(\apref{app:eval}). One row is the second kind: \texttt{LABEL\_NAME\_GLOB} ($31$),
+because a Datadog scope term with no key globs over the whole \texttt{key:value} string,
+so saying it in PromQL needs a pattern where a matcher's label name goes, and
+Remark~\ref{rem:label-name} reads a real server refusing exactly that --- including in
+the quoted-name syntax 3.x added, which accepts the quotes and then matches the pattern
+as a literal name. Those three rows --- $34$, $5$ and $31$ --- are the $70$
+occurrences, $0.8\%$, that no amount of engineering on a Datadog back end reaches.
 
-The remaining $212$ --- $2.4\%$ --- are the third kind, and the honest statement about
+A fourth row used to be here, and moving it is the fifth time this paper has had to
+give a refusal back. \texttt{FILL\_INTERPOLATION} ($36$) was called inexpressible
+because no PromQL term
+supplies a value for a series with no data --- which is true of \texttt{or vector(0)},
+the candidate the argument considered, and false of the claim.
+\texttt{m or (last\_over\_time(m[W]) * 0)} keeps a stopped series alive through the
+window and reports zero for it, per series and with its labels, which is what
+\texttt{.fill(zero)} does; \texttt{last\_over\_time(m[W])} alone is
+\texttt{.fill(last)}. Remark~\ref{rem:fill} reads both off a real server. The row is
+unfinished work, and work of a particular kind: $W$ is a window the query does not
+state, so implementing it would add a translation that is exact only relative to context
+from the dashboard --- \S\ref{sec:caveats}'s subject, reached from the other side.
+
+The remaining $248$ --- $2.8\%$ --- are the third kind, and the honest statement about
 them is that they are unwritten code rather than a language result. \texttt{UNSUPPORTED\_FUNCTION} is
 almost all of it, led by \texttt{top(...)} at $139$ occurrences, which is expressible
 after all (\apref{app:eval}): PromQL denotes Datadog's ranking with an \texttt{@}-pinned
@@ -159,6 +174,7 @@ and each is recorded there
 (\apref{app:eval}), because a refusal that looks like evidence about a language and turns out to be evidence
 about a translator is the mistake this method is most exposed to.
 
+\iffull\input{sections/moved/eval_gap_rows}\fi
 \iffull\input{sections/moved/eval_unsupported}\fi
 \iffull\input{sections/moved/eval_weighted}\fi
 \iffull\input{sections/moved/eval_top}\fi

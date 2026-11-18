@@ -19,10 +19,10 @@ cost lives, which is itself worth knowing.
 \textbf{RQ2.} The largest exactly-translating fragment we could build covers $96.3\%$ of
 Datadog query occurrences, and the soundness theorems of \S\ref{sec:kernel-soundness} and
 \S\ref{sec:binop-soundness} between them cover every expression the translator emits, so
-nothing is shipped that is not proved. Outside the fragment, $1.2\%$ of the corpus is
-beyond reach --- four constructs, two of them information barriers rather than
-expressiveness gaps --- against $2.4\%$ that is work this translator has not done, a
-ceiling of $98.7\%$ --- reachable, since $139$ of those occurrences are
+nothing is shipped that is not proved. Outside the fragment, $0.8\%$ of the corpus is
+beyond reach --- three constructs, two of them information barriers rather than
+expressiveness gaps --- against $2.8\%$ that is work this translator has not done, a
+ceiling of $99.1\%$ --- reachable, since $139$ of those occurrences are
 \texttt{top(...)}, only by a translator supplied with the dashboard's time range. In the reverse direction, on the sub-problem of tag filtering, the
 obstructions are theorems: a glob's language is a single word or unbounded in length,
 and with what a glob star admits three impossibility results follow, with a fourth
@@ -80,10 +80,11 @@ outside it.
 
 \paragraph{The answer.}
 Is the switching cost a language-design artefact? Partly, and not where we expected. In
-the direction teams travel it is mostly engineering --- a finding this paper four times
+the direction teams travel it is mostly engineering --- a finding this paper five times
 nearly got wrong in the more quotable direction, through a structural error in the
-translator, a rule it had not implemented, a modifier it never asked the vendor about,
-and a classification that contradicted its own text. The artefact in that direction is
+translator, a rule it had not implemented, a modifier it never asked the vendor about, a
+classification that contradicted its own text, and an impossibility claim that rested on
+having tried a single candidate expression. The artefact in that direction is
 subtler than an expressiveness gap and is not a property of either language on its own: a
 dashboard query does not say what it means, so every translation we emit is exact only
 relative to context that arrives from the layer above both languages. The expressiveness

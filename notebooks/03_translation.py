@@ -225,10 +225,19 @@ print(gaps[["gap", "occurrences", "distinct"]].to_string(index=False))
 # entirely when E9 measured the modifier as the identity.
 EXPRESSIVENESS = {
     ("PHI_QUANTILE", None),                           # a quantile is not a bucketing
-    ("FILL_INTERPOLATION", None),                     # interpolation inside the query
     ("LABEL_NAME_GLOB", None),                        # label names are not queryable
     ("SCOPE_EMPTY_VALUE", None),                      # an empty label *is* an absent one
 }
+# FILL_INTERPOLATION left this set when E10 asked a real server. The paper's argument
+# was that no PromQL term supplies a value for a series with no data, having considered
+# `or vector(0)` -- which is right about that candidate and wrong about the claim:
+# `m or (last_over_time(m[W]) * 0)` holds a stopped series alive through the lookback
+# and reports zero for it, per series and with its labels, which is what `.fill(zero)`
+# does. `last_over_time(m[W])` alone is `.fill(last)`. Both need a window W the query
+# does not state, so the row is unfinished work that also wants the context of §7.4 --
+# which is a different claim from inexpressible, and the weaker one. Same correction as
+# SCOPE_DISJUNCTION below, and the fifth time a refusal has been read as a property of
+# the language when it was a property of this translator.
 # SCOPE_DISJUNCTION is deliberately *not* here. §5 shows the four surviving cases are
 # sayable in PromQL -- a union of selectors with the rollup distributed over the
 # branches -- just not as the syntax-directed translation of a scope, which is what
@@ -263,8 +272,8 @@ for f in ("SCOPE_BOOL", "SCOPE_IN", "SCOPE_PAREN"):
     print(f"{f:12s} {int(sub.n.sum()):5d} occurrences, {share:.1%} translated")
 
 # §7 and §8 quote these, so re-running the notebook has to reproduce them.
-assert int(kinds.occurrences["language gap"]) == 106, kinds
-assert int(kinds.occurrences["not implemented"]) == 212, kinds
+assert int(kinds.occurrences["language gap"]) == 70, kinds
+assert int(kinds.occurrences["not implemented"]) == 248, kinds
 
 # §8 names the five constructs the language-gap share is made of, with counts, so the
 # breakdown is asserted and not just its total.
@@ -277,10 +286,10 @@ breakdown = {"percentiles": pctile,
              "SCOPE_EMPTY_VALUE": int(by_gap.get("SCOPE_EMPTY_VALUE", 0)),
              "SCOPE_DISJUNCTION": int(by_gap.get("SCOPE_DISJUNCTION", 0))}
 print("language-gap breakdown:", breakdown)
-assert breakdown == {"percentiles": 34, "FILL_INTERPOLATION": 36,
+assert breakdown == {"percentiles": 34, "FILL_INTERPOLATION": 0,
                      "LABEL_NAME_GLOB": 31, "SCOPE_EMPTY_VALUE": 5,
                      "SCOPE_DISJUNCTION": 0}, breakdown
-assert sum(breakdown.values()) == 106, breakdown
+assert sum(breakdown.values()) == 70, breakdown
 
 
 # %% [markdown]

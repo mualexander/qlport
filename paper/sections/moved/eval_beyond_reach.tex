@@ -7,18 +7,19 @@ separate an absent tag from a present empty one), what PromQL cannot
 (everything else). A fourth is possible and empty here --- a query Datadog itself
 rejects, which Remark~\ref{rem:third-refusal} describes. The refusals that are not unfinished work are
 the percentile aggregators ($34$, blocked by information rather than by expressiveness
---- Corollary~\ref{cor:quantile}), \texttt{.fill} interpolation ($36$), tag-key
-globs ($31$) and the scopes that separate an absent tag from a present empty one
-($5$, blocked by information again --- Remark~\ref{rem:empty-tag}): $106$ occurrences,
-$1.2\%$ of the corpus. The other
-$212$ --- $2.4\%$ --- are constructs this translator has not implemented,
+--- Corollary~\ref{cor:quantile}), tag-key globs ($31$) and the scopes that separate an
+absent tag from a present empty one ($5$, blocked by information again ---
+Remark~\ref{rem:empty-tag}): $70$ occurrences, $0.8\%$ of the corpus. The other
+$248$ --- $2.8\%$ --- are constructs this translator has not implemented,
 \texttt{top(...)} chief among them. Because a query is abandoned at its first obstruction (Remark~\ref{rem:one-gap}),
-$98.7\%$ is an upper bound on what implementing the unimplemented set would reach: a
+$99.1\%$ is an upper bound on what implementing the unimplemented set would reach: a
 refused query could carry a second, inexpressible construct behind the first. Re-reading
-the $212$ for the other three codes' constructs finds exactly one --- a
-\texttt{.fill(60)} nested inside a \texttt{top(...)} --- so the bound is tight and the
-ceiling is $98.7\%$ to the decimal it is quoted at. So the ceiling for this direction is
-$98.7\%$ against the $96.3\%$ measured here, and the distance between the two is
+the $248$ for the other codes' constructs finds none. It found one before
+Remark~\ref{rem:fill} --- a \texttt{.fill(60)} nested inside a \texttt{top(...)},
+which was the single case keeping the bound from being exact and stopped being one when
+\texttt{.fill} stopped being inexpressible. So the bound is now tight with nothing left
+over, and the ceiling is $99.1\%$ to the decimal it is quoted at --- against the
+$96.3\%$ measured here, and the distance between the two is
 engineering rather than language design --- as the disjunction rule demonstrated by closing $1.4$
 points of it and \texttt{.weighted()} by closing $0.8$ more. That is the finding to carry into \S\ref{sec:discussion}:
 going this way, almost all of the apparent incompatibility is work, and what is left is
