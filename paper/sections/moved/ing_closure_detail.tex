@@ -1,0 +1,17 @@
+\begin{remark}[Which interval a bucket covers, measured]\label{rem:closure}
+That the bucket is \emph{left}-closed and named by its \emph{start} is measured rather
+than assumed, and it is not what we first assumed. Submitting one point at an exact
+multiple of $\Delta$ and one strictly inside a bucket, and reading back which bucket each
+is reported under, separates the four conventions: a point on a boundary is reported
+under the bucket \emph{starting} there. Each of the other three conventions is ruled out
+by at least one of the two readings (\texttt{scripts\slash trial\_checks.py e2}; the
+responses are cached and regression-tested). It is one run at one rollup interval ---
+the script fixes $\Delta$ at $60$\,s --- so what is pinned is the convention at that
+width, not its independence of the width.
+
+The convention PromQL uses for its own range selectors is the opposite one, $(u-w,u]$,
+which is why it was the natural guess. Getting it wrong cost nothing numerically --- a
+model and a candidate evaluated under the same convention agree with each other, so every
+figure in Table~\ref{tab:rollup-live} is what it was --- but it was a claim about Datadog
+that happened not to be true, and it changes where a translated query must be evaluated.
+\end{remark}

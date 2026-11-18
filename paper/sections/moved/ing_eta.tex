@@ -1,0 +1,19 @@
+\begin{remark}[Why the bound is not the scrape interval]\label{rem:eta}
+An earlier version of this proposition set $0<\varepsilon\le\sigma$ for $\sigma$ the
+least gap between consecutive samples, and argued that the next sample after $t_m$ is at
+least $\sigma$ beyond it and at or after $b+\Delta$, hence $t_m\le b+\Delta-\sigma$. That
+does not follow: the next sample may exceed $b+\Delta$ by any amount, which bounds
+nothing. The inference holds only when the sample grid's phase divides $\Delta$, and the
+replay of \S\ref{sec:replay} reports the jittered grid as the ordinary deployment case.
+On a series scraped every $15$\,s whose last sample inside the bucket sits $14$\,s
+before its right edge, the least gap is $15$ while $b+\Delta-t_m$ is $14$, so $\eta=15$
+is admitted by the old bound and excluded by the correct one ---
+and at $\eta=15$ both exact forms miss the bucket's largest delta entirely, returning a
+$d$ close to $1$ where the correct bound returns $0$.
+No measurement in this paper is affected, because every script evaluates at
+$\eta=10^{-3}$ (\texttt{datadog\_eval.EVAL\_EPSILON}), well inside
+$\min(b+\Delta-t_m,\,b-t_k)$ on every grid it uses; the implementation's own docstring
+states the correct condition, and the proposition had not caught up with it. The offset
+$\eta$ is also renamed here: it was written $\varepsilon$, which is Definition~\ref{def:sound}'s
+tolerance, and the two appeared in one sentence of Theorem~\ref{thm:kernel}.
+\end{remark}

@@ -1,0 +1,26 @@
+\begin{proof}
+The \texttt{anchored} modifier pins the left window boundary to the last
+sample at or before $u-\Delta$ and performs no extrapolation, both of which the
+proposal states~\citep{prom0052}. What the proposal does not say, and what an earlier
+version of this proposition therefore missed, is that the anchor is itself subject to the
+lookback: read off a real Prometheus~3.15.0, a series whose only samples are one at
+time zero and three more arriving after a gap of over ten minutes returns $2$ for this
+expression over the bucket holding those three, where Datadog returns $12$ --- and
+returns $12$ once the server is started with a lookback wide enough to see the first
+sample. Hence the hypothesis above, and hence the withdrawal of the claim that
+this form is exact on \emph{all} of $\mathcal{D}$: a scrape outage wider than the
+lookback defeats it, at any server configuration, which is not the misconfiguration an
+earlier draft of Theorem~\ref{thm:kernel} called it. On a decrease $v_i<v_{i-1}$ it contributes $v_i$
+rather than $v_i-v_{i-1}$; the proposal says only that the modifier ``deals with
+counter resets'', so that clause is taken from the readings of
+Table~\ref{tab:model-verification} and Remark~\ref{rem:rho} rather than from the text. Term by term this is exactly
+$\delta_{\mathsf{zero}}$, and by the index argument of
+Proposition~\ref{prop:offset} the terms it sums are those with
+$t_i\in[b,b+\Delta)$, so the total is $\Sigma_{\mathsf{zero},\Delta}(b)$, a function of
+$\phi_{\mathsf{zero}}(s)$ alone. The hypothesis that the bucket contains a sample is
+needed for the same reason Definition~\ref{def:d}'s first case is: with no sample in
+$[b,b+\Delta)$ the range selector returns nothing while $\Sigma_\Delta(b)$ is an empty
+sum, and a number is not an absent result. \texttt{datadog\_eval} reports the empty
+bucket as absent on both sides, which is what Datadog does and what this proposition now
+says.
+\end{proof}

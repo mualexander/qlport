@@ -1,0 +1,23 @@
+\paragraph{Verifying the instruments.}
+Propositions~\ref{prop:offset} and~\ref{prop:anchored} are claims about PromQL, so
+checking them against our own evaluator would be circular. Each workload is therefore
+backfilled into a real Prometheus TSDB, and every candidate is read back from that server
+on the same epoch-aligned grid. Table~\ref{tab:model-verification} compares the two: across
+$1{,}680$ buckets the reference evaluators and the server agree to floating-point
+precision, and there is no bucket where one produced a value and the other declined ---
+an empty result is as much a semantic claim as a number. The modelled and measured
+versions of Table~\ref{tab:rollup-live} agree on every summary statistic, which the
+notebook now asserts cell for cell rather than inviting the reader to compare two
+printouts. It did not hold when it was only a sentence: the modelled table took the
+warm-up as its first bucket's \emph{start} and the live grid took it as the first
+evaluation \emph{instant}, so the two summarised bucket sets one bucket apart --- for
+$\Delta=300$ a bucket wholly inside the warm-up --- and six of the twenty-four rows
+differed in a printed cell.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/model_verification}
+\caption{The reference evaluators of \texttt{semantics/promql\_eval.py} against
+Prometheus~3.15.0 on identical samples. ``NaN mismatch'' counts buckets where exactly one
+of the two returned a value.}
+\label{tab:model-verification}
+\end{table}

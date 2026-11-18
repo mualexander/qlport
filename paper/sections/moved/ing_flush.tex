@@ -1,0 +1,28 @@
+\begin{remark}[$\phi_\rho$ and the flush interval]\label{rem:flush}
+$\phi_\rho$ differences consecutive \emph{samples}, and the agent aggregates samples
+into the interval it flushes. An earlier version of this remark inferred from the source
+that the two part company as soon as a flush holds more than one sample: a decrease
+appeared to \emph{overwrite} what the interval had accumulated rather than adding to it,
+so a flush holding an increase and then a reset should report the post-reset value alone,
+where $\phi_{\mathsf{zero}}$ keeps both. The agent's default scrape and flush intervals
+are both $15$\,s, which would make the question moot in the default configuration and
+was the reason it went untested.
+
+Put to a running agent, it does not happen --- though not quite for the reason the run
+was designed to test, and the difference is worth keeping. Driving the OpenMetrics
+check at a $5$\,s collection interval against the unchanged $15$\,s flush, the bucket
+holding the reset reports $111$: eleven increments of one and the reset's own value,
+which is $\phi_{\mathsf{zero}}$ term for term. Losing the increment that shares a flush
+with the reset would give $110$ (\texttt{scripts\slash reset\_policy.py -{}-step 5}).
+
+What the stored data then shows is that no flush combined anything. Every complete
+$60$\,s bucket holds twelve points, one per collection, where three samples to a flush
+would have left four. So the agent forwarded each sample rather than aggregating within
+the flush, and the overwrite this remark used to posit had no opportunity to occur. The
+hypothesis is therefore unexercised rather than refuted, and what the run does
+establish is the end-to-end fact the exactness claims actually use: at this ratio
+Datadog stores $\phi_{\mathsf{zero}}$ term for term, so those claims do not depend on
+the scrape and flush intervals agreeing. The ratio itself was configured and not
+observed --- the record computes it from the two interval settings --- and no run here
+drives it to a point where a flush must combine samples.
+\end{remark}

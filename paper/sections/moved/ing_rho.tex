@@ -1,0 +1,39 @@
+\begin{remark}[Which $\rho$, and how we know]\label{rem:rho}
+Datadog's documentation does not say what becomes of a counter decrease. Its agent is
+open source, so the question can be answered by reading it~\citep{ddagent}, and then put
+to a running one; both were done and they agree. The reading first.
+
+The conversion carries a per-sample flag. With the flag set, a
+sample below its predecessor contributes its own value, on the agent's stated assumption
+that the counter restarted from zero --- this is $\delta_{\mathsf{zero}}$ term for term.
+With the flag clear, the decrease contributes nothing and the point is still emitted,
+which is $\delta_{\mathsf{clamp}}$. The OpenMetrics check sets the flag after every
+successful scrape, so the ingestion path this paper models is $\phi_{\mathsf{zero}}$ from
+its second scrape onward: the policy PromQL's own reset handling assumes.
+
+Both branches above are thus implemented, and a third that an earlier draft of this
+section offered --- discarding the interval outright --- is not, at least not as a reset
+policy. Discarding is instead what happens at the \emph{start} of a series, where there is
+no predecessor to difference against. A failed scrape is the interesting case: it clears
+the flag, so the next interval is converted under $\mathsf{clamp}$ rather than
+$\mathsf{zero}$, and is dropped altogether if the aggregator's stored predecessor has
+expired in the meantime. Either way a transient failure perturbs $\phi(D)$ in a way
+nothing applied to $D$ reproduces, and Proposition~\ref{prop:admissible} gives no warning,
+because the discrepancy is between the two stored databases rather than between two
+queries. No refusal can flag it and no translation can repair it.
+
+Reading the agent establishes what it intends to send, not what the backend stores, and
+the two are different claims. E1 closes the gap by putting a real agent in the loop. A
+local endpoint exposes a counter that climbs by one per scrape to $1000$ and then, inside
+one rollup bucket, drops to $100$; a Datadog Agent runs an OpenMetrics check against it
+and a Prometheus scrapes the same endpoint. Over the bucket holding the reset Datadog
+stores $\mathbf{103}$ across four points --- the increment before the reset, the new
+value reported as the reset interval's own count, and the two increments after it. That
+is $\delta_{\mathsf{zero}}$ and nothing else: $\mathsf{clamp}$ predicts $3$ over four
+points, discarding the interval predicts $3$ over three, and a backend keeping the signed
+difference predicts $-897$. The four predictions were recorded before the run and are
+regression-tested in \texttt{tests\slash test\_reset.py}. A second counter resetting to
+exactly $0$ rather than $100$ reads $3$, which is what $\mathsf{zero}$ requires and rules
+out a special case at zero; a third that never resets reads four increments of one in
+every bucket, which is what shows the run is reading the bucket it means to.
+\end{remark}

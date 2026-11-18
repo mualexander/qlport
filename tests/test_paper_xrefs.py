@@ -25,9 +25,12 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "paper"
-TEX = sorted((PAPER / "sections").glob("*.tex")) + [PAPER / "main.tex"]
+# rglob: sections/moved/ holds the blocks the 20-page build defers to appendices.
+TEX = sorted((PAPER / "sections").rglob("*.tex")) + [PAPER / "body.tex"]
 
-_LABEL = re.compile(r"\\label\{([^}]*)\}")
+# `\apphead{title}{label}` is how an apparatus file declares its heading and label
+# at once, so it carries a label the plain `\label` pattern cannot see.
+_LABEL = re.compile(r"\\label\{([^}]*)\}|\\apphead\{[^}]*\}\{([^}]*)\}")
 _REF = re.compile(r"\\(?:c|C|auto)?ref\{([^}]*)\}")
 _INPUT = re.compile(r"\\input\{([^}]*)\}")
 _GRAPHIC = re.compile(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]*)\}")
@@ -44,7 +47,8 @@ def _scan(pattern: re.Pattern[str]) -> dict[str, set[str]]:
     found: dict[str, set[str]] = {}
     for path in TEX:
         for match in pattern.finditer(_strip(path.read_text())):
-            for item in match.group(1).split(","):
+            captured = next((g for g in match.groups() if g is not None), "")
+            for item in captured.split(","):
                 found.setdefault(item.strip(), set()).add(path.name)
     return found
 

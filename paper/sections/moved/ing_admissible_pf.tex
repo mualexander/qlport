@@ -1,0 +1,13 @@
+\begin{proof}
+Since $\phi_\rho(D)=\phi_\rho(D')$, the source query receives the same input in both
+cases:
+\[
+r:=\sem{q}_{\mathrm{DD}}(\phi_\rho(D),t)=\sem{q}_{\mathrm{DD}}(\phi_\rho(D'),t).
+\]
+Soundness would give $d(r,\sem{p}_{\mathrm{PQ}}(D,t))\le\varepsilon$ and
+$d(r,\sem{p}_{\mathrm{PQ}}(D',t))\le\varepsilon$. Because $d$ is a metric on results with
+matching label sets (and $\infty$ otherwise), the triangle inequality yields
+\[
+d\big(\sem{p}_{\mathrm{PQ}}(D,t),\sem{p}_{\mathrm{PQ}}(D',t)\big)\le 2\varepsilon . \qedhere
+\]
+\end{proof}

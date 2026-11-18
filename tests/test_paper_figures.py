@@ -30,8 +30,14 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-SECTIONS = sorted((ROOT / "paper" / "sections").glob("*.tex"))
-MAIN = ROOT / "paper" / "main.tex"
+# rglob, not glob: sections/moved/ holds the blocks the 20-page build defers to an
+# appendix and the full build keeps inline. They are the same prose either way, so
+# every check here has to see them.
+SECTIONS = sorted((ROOT / "paper" / "sections").rglob("*.tex"))
+# The abstract moved into body.tex when the paper gained a 20-page and a full
+# build; it is the most-read part of the document and the one place a stale figure
+# survived two passes, so it is scanned like any section.
+MAIN = ROOT / "paper" / "body.tex"
 TABLES = sorted((ROOT / "paper" / "tables").glob("*.tex"))
 REGISTRY = ROOT / "paper" / "quoted_figures.json"
 
@@ -154,7 +160,6 @@ ALLOWED: dict[float, str] = {
     0.994: "E7: the relative difference after half an hour",
     0.5: "E7: the relative difference at the start of the run",
     # --- corpus figures from notebooks 00, 01, 04, 05: unregistered -------------------
-    28490: "unregistered (nb 00): corpus size",
     11628: "unregistered (nb 00): Datadog formula expressions",
     8955: "unregistered (nb 00): space-aggregator occurrences",
     8472: "unregistered (nb 04): PromQL regex matchers",
@@ -232,7 +237,7 @@ ALLOWED: dict[float, str] = {
 # made on magnitude alone. A share and a count are different claims; a checker that
 # cannot tell them apart launders one into the other.
 SCALAR_ONLY: set[float] = {
-    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 45, 49, 54, 103, 110, 111, 133, 139, 221, 238, 344, 388, 723, 763, 897, 1013, 1760, 5227, 5389, 8096, 8472, 28490, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 0.628, 0.667, 887, 335, 1.4,
+    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 45, 49, 54, 103, 110, 111, 133, 139, 221, 238, 344, 388, 723, 763, 897, 1013, 1760, 5227, 5389, 8096, 8472, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 0.628, 0.667, 887, 335, 1.4,
 }
 
 
@@ -392,7 +397,7 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb03.caveat_rollup_default_pct", "01_introduction.tex"),
     ("nb03.caveat_rollup_default_pct", "07_evaluation.tex"),
     ("nb03.caveat_rollup_default_pct", "08_discussion.tex"),
-    ("nb03.caveat_rollup_default_pct", "main.tex"),
+    ("nb03.caveat_rollup_default_pct", "body.tex"),
     ("nb03.ceiling_pct", "01_introduction.tex"),
     ("nb03.ceiling_pct", "07_evaluation.tex"),
     ("nb03.ceiling_pct", "08_discussion.tex"),
@@ -402,7 +407,7 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb03.corpus_occurrences", "01_introduction.tex"),
     ("nb03.corpus_occurrences", "07_evaluation.tex"),
     ("nb03.corpus_occurrences", "08_discussion.tex"),
-    ("nb03.corpus_occurrences", "main.tex"),
+    ("nb03.corpus_occurrences", "body.tex"),
     ("nb03.emitted_expressions", "07_evaluation.tex"),
     ("nb03.kappa_distinct", "07_evaluation.tex"),
     ("nb03.kappa_occurrences", "05_translation.tex"),
@@ -411,7 +416,7 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb03.kappa_pct", "07_evaluation.tex"),
     ("nb03.kappa_pct", "08_discussion.tex"),
     ("nb03.kappa_pct", "09_conclusion.tex"),
-    ("nb03.kappa_pct", "main.tex"),
+    ("nb03.kappa_pct", "body.tex"),
     ("nb03.kernel_occurrences", "05_translation.tex"),
     ("nb03.kernel_pct_corpus", "01_introduction.tex"),
     ("nb03.kernel_pct_corpus", "05_translation.tex"),
@@ -422,14 +427,14 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb03.language_gap_pct", "07_evaluation.tex"),
     ("nb03.language_gap_pct", "08_discussion.tex"),
     ("nb03.language_gap_pct", "09_conclusion.tex"),
-    ("nb03.language_gap_pct", "main.tex"),
+    ("nb03.language_gap_pct", "body.tex"),
     ("nb03.not_implemented_occurrences", "07_evaluation.tex"),
     ("nb03.not_implemented_pct", "01_introduction.tex"),
     ("nb03.not_implemented_pct", "03b_ingestion.tex"),
     ("nb03.not_implemented_pct", "07_evaluation.tex"),
     ("nb03.not_implemented_pct", "08_discussion.tex"),
     ("nb03.not_implemented_pct", "09_conclusion.tex"),
-    ("nb03.not_implemented_pct", "main.tex"),
+    ("nb03.not_implemented_pct", "body.tex"),
     ("nb03.shaped_occurrences", "07_evaluation.tex"),
     ("nb03.shapes", "07_evaluation.tex"),
     ("nb03.shapes", "09_conclusion.tex"),
@@ -469,7 +474,7 @@ def test_a_bound_figure_still_matches_its_source():
     stale = []
     for key, section in BOUND:
         assert key in reg, f"{key} is bound but no longer in the registry"
-        path = MAIN if section == "main.tex" else ROOT / "paper" / "sections" / section
+        path = MAIN if section == "body.tex" else ROOT / "paper" / "sections" / section
         text = _math_text(path)
         if not any(s in text for s in _spellings(reg[key])):
             stale.append(f"  {section} should state {key} = {reg[key]}")

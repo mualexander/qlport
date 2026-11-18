@@ -1,0 +1,14 @@
+\begin{proof}
+Let $[a,c)$ be a bucket of $B$ of positive width, which exists whenever $|B|\ge2$; for
+$|B|\le1$ take the unbounded bucket and any two distinct positive observations. Put
+$m=(a+c)/2$ and let $X=\{m-r,\,m+r\}$ for any $0<r<(c-a)/2$, and $Y=\{m,m\}$. Both put
+$2$ in $[a,c)$ and nothing elsewhere, so their bucket counts agree; and both have sum
+$2m$ and count $2$. Their medians are $m-r$ and $m$ under any convention that returns an
+observed value, so $q_p$ differs.
+
+The witness is chosen to survive more than the bucket counts, which is what the
+corollary below needs and what an earlier version of this proof did not supply. It took
+$X$ to be $n$ copies of $a$ against $n$ copies of $(a+c)/2$: those agree on bucket counts
+and differ in their \emph{sum}, so \texttt{histogram\_sum} separates them and they
+witness nothing about expressions over everything Prometheus stores.
+\end{proof}

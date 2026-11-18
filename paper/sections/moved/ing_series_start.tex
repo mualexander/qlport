@@ -1,0 +1,23 @@
+\begin{remark}[The second hypothesis, and the second advantage]\label{rem:series-start}
+The series-start hypothesis was missing from an earlier statement of
+Proposition~\ref{prop:offset}, whose proof names ``the last sample before $b$'' without
+requiring one to exist. When none does, \texttt{x offset $\Delta$} selects nothing and
+the difference returns \emph{no result} where Datadog returns the sum of the deltas it
+holds --- a disagreement that $d$ scores as $\infty$ rather than as a large number,
+since the two results have different domains. Read off a real server on a bucket holding
+two series, one beginning before it and one inside it: the difference returns $25$ for
+the first and nothing for the second, where $\phi_{\mathsf{zero}}$ sums the second's
+deltas to $20$.
+
+The same reading gives the anchored form more than Proposition~\ref{prop:anchored} was
+stated to claim. \texttt{increase(x[$\Delta$] anchored)} returns $25$ and $20$ --- both
+of Datadog's figures, the new series included. So the anchored form's advantage over the
+cumulative difference is not only that it survives a reset; it is also the only one of
+the two that is right about a series younger than the window. For a migration that is
+the more common case of the two, since every series is new on the day the dual-write
+starts, and it is the reason the emitter now records \texttt{PHI\_SERIES\_START}
+alongside \texttt{COUNTER\_RESET} on the plain form. The mean-of-deltas rule of
+\S\ref{sec:emission} carries it for a second reason: its denominator counts samples
+where Datadog counts deltas, and a series beginning inside the bucket has one fewer
+delta than it has samples.
+\end{remark}

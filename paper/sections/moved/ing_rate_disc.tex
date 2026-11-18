@@ -1,0 +1,26 @@
+
+\noindent
+That positive half is weaker than an earlier version of this corollary claimed, and the
+reason is worth recording because it is a fact about Prometheus rather than about
+$\phi$. The claim was that on $\mathcal{C}_{\mathrm{warm}}$ ``the remaining inputs to the
+extrapolation --- the increase over the window and the sample spacing --- all survive
+$\phi_\rho$''. They do not exhaust the inputs: when the computed increase is positive,
+\texttt{rate} derives a \texttt{durationToZero} from the \emph{absolute value} of the
+first sample inside the window, and $\phi_\rho$ erases absolute values exactly as it
+erases $v_1$. Two databases differing by a constant offset therefore have equal
+$\phi_\rho$ images and different \texttt{rate} readings --- $0.628$ against $0.667$ on an
+ordinary counter --- and the dependence is confirmed against a real Prometheus~3.15.0
+rather than against this paper's model of it. So \texttt{rate} is inadmissible on
+$\mathcal{C}_{\mathrm{warm}}$ too, and the class on which it is admissible is smaller
+than the one named here. Nothing downstream rests on it: §\ref{sec:translation} cites
+Corollary~\ref{cor:raw}, not this one, and \texttt{rate} is never emitted.
+
+\noindent
+Corollary~\ref{cor:rate} is worth stating carefully, because it marks the limit of what
+invariance buys. Invariance is \emph{necessary} for a sound translation and not
+sufficient, and \texttt{rate} fails both: it is inadmissible wherever the extrapolation
+reads an absolute value, and even where it is admissible it is not exact, since
+extrapolating to the window edges computes a different quantity from the bucket sum
+Datadog reports. Admissibility rules candidates out; exactness has to be established
+separately.
+

@@ -1,0 +1,61 @@
+\title{\textbf{Switching Costs as a Language-Design Artifact:}\\
+\Large Are Observability Query Languages Inter-Translatable?}
+\author{Marshall Uy Alexander\\ \small CS 681 Applications of Computability --- Research Paper}
+\date{\small \today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}\noindent
+Teams stay on a proprietary observability vendor less because of their data than because
+of their dashboards: thousands of saved queries that a migration must rewrite by hand,
+with no way to tell whether a rewrite preserved what the original meant. We ask whether
+that switching cost follows from how the query languages are designed, and answer by
+building the translator and measuring it. We infer an LALR(1) grammar for each language
+--- including one for Datadog's metric language, which the vendor does not publish ---
+define an intermediate representation with a denotation, and state soundness relative to
+an \emph{ingestion mapping}, because the two systems do not store the same thing: a
+Prometheus counter is a running total and a Datadog counter is a sequence of
+per-interval deltas. Every refusal carries a typed gap code, and the resulting catalogue
+separates what the target does not hold from what it cannot say and from what we have
+not built. Over the $8{,}770$ Datadog metric
+queries of a corpus of $22{,}894$ extracted from published dashboards, $96.3\%$ of
+occurrences translate; the shortfall is $1.2\%$ beyond reach against $2.4\%$ unimplemented,
+so in the direction teams travel the cost is engineering. ``Exactly'' needs one
+qualification we can now measure: every translation assumes a metric type the query
+omits, and where the vendor's own repository declares that type the assumption is wrong
+for $6.5\%$ of them. The language-design artefact
+lies elsewhere: $96.9\%$ of our translations depend on a rollup interval the query has
+no slot to state, against $55.6\%$ of the corpus's PromQL range selectors that leave
+their own slot to a dashboard variable.
+Going back is different in kind --- a Datadog tag filter is a glob, glob-expressibility
+of a regular expression is decidable, and three impossibility results account for every
+refusal we measure in that direction. Leaving costs work; returning costs expressiveness.
+\end{abstract}
+
+\input{sections/01_introduction}
+\input{sections/02_background}
+\input{sections/03_framework}
+\input{sections/04_grammars}
+\input{sections/05_translation}
+\input{sections/06_regular}
+\input{sections/07_evaluation}
+\input{sections/08_discussion}
+\input{sections/09_conclusion}
+
+
+% --- apparatus -----------------------------------------------------------------
+% In the full build each of these is \input inline by the section it belongs to, so it
+% reads in place. In the 20-page build the sections omit them and they land here as
+% appendices instead. One copy of the prose either way: the two builds cannot drift,
+% which after two passes of tables outrunning the text they quote is not a theoretical
+% concern.
+\iffull\else
+\appendix
+\input{sections/app_proofs}
+\input{sections/app_experiments}
+\fi
+
+\small
+\input{references}
+

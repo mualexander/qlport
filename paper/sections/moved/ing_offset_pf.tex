@@ -1,0 +1,11 @@
+\begin{proof}
+An instant selector at $u$ returns $v_{\ell(u)}$ for $\ell(u)=\max\{i:t_i\le u\}$,
+provided the lookback reaches $t_{\ell(u)}$; the hypothesis grants that at both $u$ and
+$u-\Delta$. Since $\eta\le b+\Delta-t_m$ we have $t_m\le u<b+\Delta$, and the next sample
+is at or after $b+\Delta>u$, so $\ell(u)=m$; since $\eta\le b-t_k$ we have
+$t_k\le u-\Delta<b$, so $\ell(u-\Delta)=k$. With no reset in the bucket,
+$\delta_\rho(v_{i-1},v_i)=v_i-v_{i-1}$ for every $t_i\in[b,b+\Delta)$, so the sum
+telescopes: $\Sigma_\Delta(b)=v_m-v_k$, which is the value of the expression. It is
+$\phi_\rho$-invariant on $\mathcal{C}_\Delta$ because it has been shown equal to a
+function of $\phi_\rho(s)$ alone.
+\end{proof}

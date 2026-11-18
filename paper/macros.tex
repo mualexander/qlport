@@ -33,3 +33,13 @@
 
 \lstdefinestyle{q}{basicstyle=\ttfamily\footnotesize,columns=fullflexible,keepspaces=true,breaklines=true}
 \lstset{style=q}
+
+% --- build variants -------------------------------------------------------------
+% `\iffull` is set by the top-level file: true in main_full.tex, false in main.tex.
+% An apparatus file begins with \apphead so that it is a subsection of the section it
+% belongs to when inline, and an appendix section when deferred.
+\newcommand{\apphead}[2]{\iffull\subsection{#1}\else\section{#1}\fi\label{#2}}
+% \inlineonly{...} is prose that only makes sense where the material is in place.
+\newcommand{\inlineonly}[1]{\iffull#1\fi}
+% Point at apparatus wherever this build put it, so one sentence reads correctly in both.
+\newcommand{\apref}[1]{\iffull\S\ref{#1}\else Appendix~\ref{#1}\fi}
