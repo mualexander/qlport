@@ -1,0 +1,24 @@
+\begin{proof}[Proof of Proposition~\ref{prop:reverse}]
+Suppose some Datadog query $q$ were such a translation, along some $u$. The witnesses
+satisfy $\phi_\rho(D)=\phi_\rho(D')$ --- that is what failing invariance means --- so $q$
+receives literally the same database on both, and
+$\sem{q}_{\mathrm{DD}}(\phi_\rho(D),u(t))=\sem{q}_{\mathrm{DD}}(\phi_\rho(D'),u(t))$.
+Call that common value $y$. Soundness applied at $D$ and at $D'$ gives
+$d(\sem{p}_{\mathrm{PQ}}(D,t),y)\le\varepsilon$ and
+$d(\sem{p}_{\mathrm{PQ}}(D',t),y)\le\varepsilon$, so by the triangle inequality of
+Lemma~\ref{lem:metric},
+\[
+d\big(\sem{p}_{\mathrm{PQ}}(D,t),\sem{p}_{\mathrm{PQ}}(D',t)\big)\le 2\varepsilon ,
+\]
+contradicting the hypothesis on $\varepsilon$. No choice of $u$ enters the argument:
+whatever instant $q$ is read at, it is read at the same instant on both databases, which
+is all the step above uses.
+\end{proof}
+
+\noindent
+The mirror of Proposition~\ref{prop:admissible}, and deliberately so --- it is the same
+triangle inequality, applied with the roles of the two systems exchanged. What changes is
+which side the conclusion binds. There the constraint fell on the candidate target
+expression, and a translator could satisfy it by choosing a different one. Here it falls
+on the \emph{source}, and there is nothing to choose: the query is untranslatable, by
+anyone, for as long as Datadog stores $\phi_\rho(D)$ rather than $D$.

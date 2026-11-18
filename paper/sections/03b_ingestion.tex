@@ -95,7 +95,8 @@ In the \emph{reverse} direction the source is PromQL, reading $D$, and the targe
 Datadog, reading $\phi_\rho(D)$. The constraint then falls on the \emph{source}: a PromQL
 query that is not $\phi_\rho$-invariant has no sound Datadog translation at all, for any
 target query whatsoever, because every candidate receives the same input on two
-databases the source query separates. That is an information barrier in the strict
+databases the source query separates --- which is Proposition~\ref{prop:reverse} below,
+where ``at all'' is given the bound it needs. That is an information barrier in the strict
 sense, and it is independent of syntax: such a query is untranslatable because of what
 the target system stores, not because of how its language is written. This is the formal
 sense in which part of the lock-in is semantic.
@@ -118,6 +119,35 @@ remark elided by saying that no refusal in this direction is an informational on
 not hold, what PromQL cannot say, and what this translator has not built --- and the
 first two together account for $1.2\%$ of the corpus against the third's $2.4\%$.
 \end{remark}
+
+\noindent
+The reverse claim in that remark is the one this paper's Contribution~2 rests on, so it
+is stated rather than argued in prose. Reverse soundness needs its own form of
+Definition~\ref{def:phi-sound}, because the two sides swap which database they read: say
+a Datadog query $q$ is an \emph{$\varepsilon$-sound reverse translation} of a PromQL
+expression $p$ on $\mathcal{C}$ along $u$ if
+$d\big(\sem{p}_{\mathrm{PQ}}(D,t),\ \sem{q}_{\mathrm{DD}}(\phi_\rho(D),u(t))\big)\le\varepsilon$
+for every $D\in\mathcal{C}$ and every $t$.
+
+\begin{proposition}[The reverse barrier]\label{prop:reverse}
+Let $p$ be a PromQL expression that is not $\phi_\rho$-invariant on $\mathcal{C}$,
+witnessed by $D,D'\in\mathcal{C}$ and $t$. Then \emph{no} Datadog query is an
+$\varepsilon$-sound reverse translation of $p$ on $\mathcal{C}$ along any $u$, for any
+\[
+\varepsilon<\tfrac12\,d\big(\sem{p}_{\mathrm{PQ}}(D,t),\ \sem{p}_{\mathrm{PQ}}(D',t)\big).
+\]
+\end{proposition}
+\iffull\input{sections/moved/ing_reverse_pf}\fi
+
+\noindent
+Two things about the shape of this. It quantifies over \emph{every} Datadog query rather
+than over the output of some particular translator, which is what distinguishes it from
+Proposition~\ref{prop:admissible} and is why it bears on the languages rather than on our
+engineering: no amount of work on a Datadog back end produces a term that is not there to
+produce. And the bound is relative, not absolute --- ``no sound translation at all''
+is shorthand for ``none below half the separation the witnesses exhibit'', which is the
+same hedge Proposition~\ref{prop:admissible} carries and which an earlier version of
+Remark~\ref{rem:directional} dropped.
 
 \begin{corollary}[Raw selectors are inadmissible]\label{cor:raw}
 Let $\mathcal{C}_{\mathrm{flat}}$ be the databases with no counter reset. On

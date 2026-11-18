@@ -129,8 +129,11 @@ the vector-matching label list rather than from how we layered the rules --- not
 LALR(1) grammar for PromQL exists, a claim \S\ref{sec:grammars} declines to make.
 \item \textbf{$\phi$-relative soundness (\S\ref{sec:ingestion}).} Soundness stated
 relative to an ingestion mapping, with the consequence that the information barrier
-between these two systems is \emph{directional} --- a result about the languages that
-holds for every possible translator, not just ours.
+between these two systems is \emph{directional}. The reverse half is
+Proposition~\ref{prop:reverse}: a PromQL query that distinguishes two databases Datadog
+stores identically has no sound Datadog translation, quantified over \emph{every}
+Datadog query rather than over the output of any one translator, so it is a result about
+the languages and not about our engineering.
 \item \textbf{Exact rollup translations (\S\ref{sec:ingestion}, \S\ref{sec:translation}).}
 Datadog's \texttt{.as\_count()} and \texttt{.as\_rate()} translated exactly, not merely
 to within $\varepsilon$, with the preconditions named; and soundness theorems whose
