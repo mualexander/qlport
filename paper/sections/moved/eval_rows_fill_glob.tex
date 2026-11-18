@@ -1,21 +1,24 @@
 
-\texttt{FILL\_INTERPOLATION} ($36$) and \texttt{LABEL\_NAME\_GLOB} ($31$) are the two
-clean expressiveness cases, and both are genuine --- and with \texttt{.weighted()}
-withdrawn and the disjunctions reclassified, they and the percentiles are all that is
-left. The code's name is a poor fit for what it mostly catches, which is worth saying
-because the name is what an earlier draft of this paragraph argued from. Datadog's
-interpolating modes are \texttt{.fill(linear)} and \texttt{.fill(last)}, and this corpus
-contains one \texttt{last} and no \texttt{linear} at all: the other $35$ occurrences
-are \emph{constant} fills, \texttt{.fill(zero)} and its numeric spellings. Both kinds
-are refused and for the same underlying reason, but it is not interpolation. A fill
-substitutes a value at a timestamp where the series has no sample, and a PromQL
-expression cannot: it has no term that introduces a sample where the database holds
-none, and the staleness rule that governs absence is the evaluator's rather than the
-query's. \texttt{or vector(0)} is the nearest thing and is not it --- it supplies one
-unlabelled series for the whole expression rather than a value per missing series, so
-it cannot fill a gap in a grouped result at all. A wildcard in a tag \emph{key} rather than a value, as in
-\texttt{\{*-location\}}, asks for a match over label \emph{names}, which a PromQL
-selector cannot do at all, because label names are not queryable there.
+\texttt{LABEL\_NAME\_GLOB} ($31$) is the one clean expressiveness case left, and with
+\texttt{.weighted()} withdrawn, the disjunctions reclassified and
+\texttt{FILL\_INTERPOLATION} returned by Remark~\ref{rem:fill}, it and the percentiles
+and the empty-valued scopes are all that remains. A wildcard in a tag \emph{key} rather
+than a value, as in \texttt{\{*-location\}}, asks for a match over label \emph{names},
+which a PromQL selector cannot do, because label names are not queryable there ---
+Remark~\ref{rem:label-name} puts that to a real server, including the quoted-name
+syntax 3.x added, which looks like somewhere a pattern could go and is not.
+
+This paragraph used to argue the fill row as well, and the argument it used is the one
+Remark~\ref{rem:fill} broke: that a PromQL expression has no term introducing a sample
+where the database holds none, with \texttt{or vector(0)} offered as the nearest thing
+and correctly rejected for supplying one unlabelled series rather than a value per
+series. The rejection was right and the generalisation was not. What survives of the
+paragraph is the observation it made in passing, which turns out to have been the more
+useful one: the code's name never fitted its contents. Datadog's interpolating modes
+are \texttt{.fill(linear)} and \texttt{.fill(last)}, and this corpus holds one
+\texttt{last} and no \texttt{linear} at all --- the other $35$ are constant fills. The
+row was named for a construct the corpus does not contain, and a name is a poor thing
+to argue from.
 
 \texttt{SCOPE\_DISJUNCTION} is the interesting row, and it is interesting for having
 almost emptied. A Datadog scope is a boolean query over tags

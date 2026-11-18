@@ -1,0 +1,197 @@
+{
+ "acks": [
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  }
+ ],
+ "interpretation": {
+  "alternation": "rejected by the query parser",
+  "character-class": "rejected by the query parser",
+  "question-mark": "rejected by the query parser"
+ },
+ "provenance": {
+  "api": {
+   "query": "/api/v1/query",
+   "submit": "/api/v2/series"
+  },
+  "collected_at": "2026-11-18T21:13:14+00:00",
+  "experiment": "e12",
+  "metric_type": 1,
+  "probes": {
+   "one-digit": "web-1",
+   "one-letter": "web-a",
+   "two-digit": "web-12"
+  },
+  "run": "r1795036080",
+  "site": "datadoghq.com",
+  "t_star": 1795036080.0
+ },
+ "rejected": {
+  "alternation": "query failed: Error parsing query: unable to parse sum:qlport.e6.wild{probe:web-1|web-a,run:r1795036080} by {probe}: Rule 'or_op' didn't match at '|web-a,run:r17950360' (line 1, column 31).",
+  "character-class": "query failed: Error parsing query: unable to parse sum:qlport.e6.wild{probe:web-[0-9],run:r1795036080} by {probe}: Rule 'or_op' didn't match at '[0-9],run:r179503608' (line 1, column 30).",
+  "question-mark": "query failed: Error parsing query: unable to parse sum:qlport.e6.wild{probe:web-?,run:r1795036080} by {probe}: Rule 'or_op' didn't match at '?,run:r1795036080} b' (line 1, column 30)."
+ },
+ "responses": {
+  "control": {
+   "from": 1795035180.0,
+   "query": "sum:qlport.e6.wild{run:r1795036080} by {probe}",
+   "raw": {
+    "from_date": 1795035180000,
+    "group_by": [
+     "probe"
+    ],
+    "message": "",
+    "query": "sum:qlport.e6.wild{run:r1795036080} by {probe}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e6.wild",
+      "end": 1795036089000,
+      "expression": "sum:qlport.e6.wild{probe:web-1,run:r1795036080}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e6.wild",
+      "pointlist": [
+       [
+        1795036080000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:web-1,run:r1795036080",
+      "start": 1795036080000,
+      "tag_set": [
+       "probe:web-1"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e6.wild",
+      "end": 1795036089000,
+      "expression": "sum:qlport.e6.wild{probe:web-12,run:r1795036080}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e6.wild",
+      "pointlist": [
+       [
+        1795036080000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:web-12,run:r1795036080",
+      "start": 1795036080000,
+      "tag_set": [
+       "probe:web-12"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e6.wild",
+      "end": 1795036089000,
+      "expression": "sum:qlport.e6.wild{probe:web-a,run:r1795036080}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e6.wild",
+      "pointlist": [
+       [
+        1795036080000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:web-a,run:r1795036080",
+      "start": 1795036080000,
+      "tag_set": [
+       "probe:web-a"
+      ],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1795036980000,
+    "values": []
+   },
+   "to": 1795036980.0
+  }
+ },
+ "selected": {},
+ "stored": {
+  "probe:web-1,run:r1795036080": 1.0,
+  "probe:web-12,run:r1795036080": 1.0,
+  "probe:web-a,run:r1795036080": 1.0
+ },
+ "submitted": [
+  {
+   "series": [
+    {
+     "metric": "qlport.e6.wild",
+     "points": [
+      {
+       "timestamp": 1795036080,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795036080",
+      "probe:web-1"
+     ],
+     "type": 1
+    }
+   ]
+  },
+  {
+   "series": [
+    {
+     "metric": "qlport.e6.wild",
+     "points": [
+      {
+       "timestamp": 1795036080,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795036080",
+      "probe:web-12"
+     ],
+     "type": 1
+    }
+   ]
+  },
+  {
+   "series": [
+    {
+     "metric": "qlport.e6.wild",
+     "points": [
+      {
+       "timestamp": 1795036080,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795036080",
+      "probe:web-a"
+     ],
+     "type": 1
+    }
+   ]
+  }
+ ]
+}

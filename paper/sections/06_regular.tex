@@ -25,8 +25,12 @@ L(g)=\{\,s_0w_1s_1w_2\cdots w_ns_n \;:\; w_i\in\Sigma^{*}\,\}.
 \]
 Datadog documents prefix, suffix and substring wildcards and no other
 construct~\citep{ddfilter}: there is no single-character wildcard, no alternation inside
-a value, no character class, and no escape that would make a literal
-\texttt{*}. Write $m(g)=\sum_i|s_i|$ for the total literal length.
+a value, no character class, and no escape that would make a literal \texttt{*}. That
+sentence is the whole premise of this section's negative results and was read from the
+documentation until the eleventh pass, when it was put to the account instead ---
+Remark~\ref{rem:glob-constructs} asks for all three and the query parser rejects all
+three, which is a stronger answer than selecting nothing. Write $m(g)=\sum_i|s_i|$ for
+the total literal length.
 \end{definition}
 
 The main direction needs only the easy half, and gets it by construction.
@@ -50,6 +54,8 @@ For every glob $g$: if $n=0$ then $L(g)=\{s_0\}$ is a single word; and if $n\ge 
 $L(g)$ contains a word of every length $\ell\ge m(g)$, and every word of $L(g)$ contains
 each $s_i$ as a factor, in order.
 \end{lemma}
+
+\iffull\input{sections/moved/reg_glob_constructs}\fi
 
 \iffull\input{sections/moved/reg_dichotomy_pf}\fi
 
@@ -213,8 +219,14 @@ target here is a union of at most $B$ globs, and the first two constructs \emph{
 finite unions: $\Sigma^{+}$ is $\bigcup_{c\in\Sigma}L(c*)$ and $\Sigma$ is the union of
 its one-character words, so each needs one branch per alphabet character, or
 $|\Sigma|^{2}$ of them for \texttt{5..}. Those refusals therefore rest on the bound as
-well as on the corollary, and on an alphabet larger than $B$, which this paper does not
-pin down --- the proposer refuses them structurally rather than by counting branches.
+well as on the corollary, and on $|\Sigma|>B$ --- which is false.
+
+% TO FINISH: this subsection is mid-revision. Sigma is now pinned at 41 in
+% regular.py (TAG_ALPHABET) and `.` is a finite union, so the figures below and in
+% Table 5 are stale pending the cross-check re-run. The argument to write here is
+% that Definition 14 never said what Sigma was, that the two readings differ by 218
+% occurrences, and that the finite one is correct because a string that is not a
+% legal tag value cannot appear on either side of the equivalence.
 Only part~(3) is unconditional: an infinite language needs a star, a glob's star admits
 every character, and no union of finitely many such globs confines it to the digits. So
 $378$ of the $388$ occurrences are refused by a theorem about single globs plus a bound

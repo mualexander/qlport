@@ -1,0 +1,203 @@
+{
+ "acks": [
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  }
+ ],
+ "interpretation": {
+  "glob-with-value": "rejected by the query parser",
+  "keyless-glob": "rejected by the query parser"
+ },
+ "provenance": {
+  "api": {
+   "query": "/api/v1/query",
+   "submit": "/api/v2/series"
+  },
+  "collected_at": "2026-11-18T21:54:00+00:00",
+  "experiment": "e16",
+  "metric_type": 1,
+  "run": "r1795038180",
+  "series": {
+   "cluster-location": "eu",
+   "region": "ap",
+   "site-location": "us"
+  },
+  "site": "datadoghq.com",
+  "t_star": 1795038180.0
+ },
+ "rejected": {
+  "glob-with-value": "query failed: Error parsing query: unable to parse sum:qlport.e16.keyglob{*-location:*,run:r1795038180}: Rule 'or_op' didn't match at '-location:*,run:r179' (line 1, column 25).",
+  "keyless-glob": "query failed: Error parsing query: unable to parse sum:qlport.e16.keyglob{*-location,run:r1795038180}: Rule 'or_op' didn't match at '-location,run:r17950' (line 1, column 25)."
+ },
+ "responses": {
+  "control": {
+   "from": 1795037280.0,
+   "query": "sum:qlport.e16.keyglob{run:r1795038180} by {cluster-location,site-location,region}",
+   "raw": {
+    "from_date": 1795037280000,
+    "group_by": [
+     "cluster-location",
+     "region",
+     "site-location"
+    ],
+    "message": "",
+    "query": "sum:qlport.e16.keyglob{run:r1795038180} by {cluster-location,site-location,region}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e16.keyglob",
+      "end": 1795038189000,
+      "expression": "sum:qlport.e16.keyglob{cluster-location:eu,region:N/A,site-location:N/A,run:r1795038180}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e16.keyglob",
+      "pointlist": [
+       [
+        1795038180000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "cluster-location:eu,region:N/A,run:r1795038180,site-location:N/A",
+      "start": 1795038180000,
+      "tag_set": [
+       "cluster-location:eu",
+       "region:N/A",
+       "site-location:N/A"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e16.keyglob",
+      "end": 1795038189000,
+      "expression": "sum:qlport.e16.keyglob{cluster-location:N/A,region:N/A,site-location:us,run:r1795038180}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e16.keyglob",
+      "pointlist": [
+       [
+        1795038180000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "cluster-location:N/A,region:N/A,run:r1795038180,site-location:us",
+      "start": 1795038180000,
+      "tag_set": [
+       "cluster-location:N/A",
+       "region:N/A",
+       "site-location:us"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e16.keyglob",
+      "end": 1795038189000,
+      "expression": "sum:qlport.e16.keyglob{cluster-location:N/A,region:ap,site-location:N/A,run:r1795038180}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e16.keyglob",
+      "pointlist": [
+       [
+        1795038180000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "cluster-location:N/A,region:ap,run:r1795038180,site-location:N/A",
+      "start": 1795038180000,
+      "tag_set": [
+       "cluster-location:N/A",
+       "region:ap",
+       "site-location:N/A"
+      ],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1795039080000,
+    "values": []
+   },
+   "to": 1795039080.0
+  }
+ },
+ "selected_points": {},
+ "stored": {
+  "cluster-location:N/A,region:N/A,run:r1795038180,site-location:us": 1.0,
+  "cluster-location:N/A,region:ap,run:r1795038180,site-location:N/A": 1.0,
+  "cluster-location:eu,region:N/A,run:r1795038180,site-location:N/A": 1.0
+ },
+ "submitted": [
+  {
+   "series": [
+    {
+     "metric": "qlport.e16.keyglob",
+     "points": [
+      {
+       "timestamp": 1795038180,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795038180",
+      "cluster-location:eu"
+     ],
+     "type": 1
+    }
+   ]
+  },
+  {
+   "series": [
+    {
+     "metric": "qlport.e16.keyglob",
+     "points": [
+      {
+       "timestamp": 1795038180,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795038180",
+      "site-location:us"
+     ],
+     "type": 1
+    }
+   ]
+  },
+  {
+   "series": [
+    {
+     "metric": "qlport.e16.keyglob",
+     "points": [
+      {
+       "timestamp": 1795038180,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795038180",
+      "region:ap"
+     ],
+     "type": 1
+    }
+   ]
+  }
+ ]
+}

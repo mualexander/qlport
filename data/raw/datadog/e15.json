@@ -1,0 +1,298 @@
+{
+ "acks": [
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  }
+ ],
+ "interpretation": {
+  "note": "compare rate-avg against the submitted value and rate-sum against 5 times it; the count series is the control",
+  "points": 5,
+  "submitted_value": 7.0
+ },
+ "provenance": {
+  "api": {
+   "query": "/api/v1/query",
+   "submit": "/api/v2/series"
+  },
+  "collected_at": "2026-11-18T21:41:22+00:00",
+  "experiment": "e15",
+  "interval": 60,
+  "metric_type": 1,
+  "points": 5,
+  "run": "r1795037160",
+  "site": "datadoghq.com",
+  "submitted_value": 7.0,
+  "t_star": 1795037160.0
+ },
+ "responses": {
+  "count-avg": {
+   "from": 1795036260.0,
+   "query": "avg:qlport.e15.count{run:r1795037160}.rollup(avg, 300)",
+   "raw": {
+    "from_date": 1795036260000,
+    "group_by": [],
+    "message": "",
+    "query": "avg:qlport.e15.count{run:r1795037160}.rollup(avg, 300)",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "avg",
+      "attributes": {},
+      "display_name": "qlport.e15.count",
+      "end": 1795037699000,
+      "expression": "avg:qlport.e15.count{run:r1795037160}.rollup(avg, 300)",
+      "interval": 300,
+      "length": 2,
+      "metric": "qlport.e15.count",
+      "pointlist": [
+       [
+        1795037100000.0,
+        7.0
+       ],
+       [
+        1795037400000.0,
+        7.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "run:r1795037160",
+      "start": 1795037100000,
+      "tag_set": [],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1795038360000,
+    "values": []
+   },
+   "to": 1795038360.0
+  },
+  "count-sum": {
+   "from": 1795036260.0,
+   "query": "sum:qlport.e15.count{run:r1795037160}.rollup(sum, 300)",
+   "raw": {
+    "from_date": 1795036260000,
+    "group_by": [],
+    "message": "",
+    "query": "sum:qlport.e15.count{run:r1795037160}.rollup(sum, 300)",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e15.count",
+      "end": 1795037699000,
+      "expression": "sum:qlport.e15.count{run:r1795037160}.rollup(sum, 300)",
+      "interval": 300,
+      "length": 2,
+      "metric": "qlport.e15.count",
+      "pointlist": [
+       [
+        1795037100000.0,
+        28.0
+       ],
+       [
+        1795037400000.0,
+        7.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "run:r1795037160",
+      "start": 1795037100000,
+      "tag_set": [],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1795038360000,
+    "values": []
+   },
+   "to": 1795038360.0
+  },
+  "rate-avg": {
+   "from": 1795036260.0,
+   "query": "avg:qlport.e15.rate{run:r1795037160}.rollup(avg, 300)",
+   "raw": {
+    "from_date": 1795036260000,
+    "group_by": [],
+    "message": "",
+    "query": "avg:qlport.e15.rate{run:r1795037160}.rollup(avg, 300)",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "avg",
+      "attributes": {},
+      "display_name": "qlport.e15.rate",
+      "end": 1795037699000,
+      "expression": "avg:qlport.e15.rate{run:r1795037160}.rollup(avg, 300)",
+      "interval": 300,
+      "length": 2,
+      "metric": "qlport.e15.rate",
+      "pointlist": [
+       [
+        1795037100000.0,
+        7.0
+       ],
+       [
+        1795037400000.0,
+        7.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "run:r1795037160",
+      "start": 1795037100000,
+      "tag_set": [],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1795038360000,
+    "values": []
+   },
+   "to": 1795038360.0
+  },
+  "rate-sum": {
+   "from": 1795036260.0,
+   "query": "sum:qlport.e15.rate{run:r1795037160}.rollup(sum, 300)",
+   "raw": {
+    "from_date": 1795036260000,
+    "group_by": [],
+    "message": "",
+    "query": "sum:qlport.e15.rate{run:r1795037160}.rollup(sum, 300)",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e15.rate",
+      "end": 1795037699000,
+      "expression": "sum:qlport.e15.rate{run:r1795037160}.rollup(sum, 300)",
+      "interval": 300,
+      "length": 2,
+      "metric": "qlport.e15.rate",
+      "pointlist": [
+       [
+        1795037100000.0,
+        28.0
+       ],
+       [
+        1795037400000.0,
+        7.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "run:r1795037160",
+      "start": 1795037100000,
+      "tag_set": [],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1795038360000,
+    "values": []
+   },
+   "to": 1795038360.0
+  }
+ },
+ "submitted": [
+  {
+   "series": [
+    {
+     "interval": 60,
+     "metric": "qlport.e15.rate",
+     "points": [
+      {
+       "timestamp": 1795037160,
+       "value": 7.0
+      },
+      {
+       "timestamp": 1795037220,
+       "value": 7.0
+      },
+      {
+       "timestamp": 1795037280,
+       "value": 7.0
+      },
+      {
+       "timestamp": 1795037340,
+       "value": 7.0
+      },
+      {
+       "timestamp": 1795037400,
+       "value": 7.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795037160"
+     ],
+     "type": 2
+    }
+   ]
+  },
+  {
+   "series": [
+    {
+     "interval": 60,
+     "metric": "qlport.e15.count",
+     "points": [
+      {
+       "timestamp": 1795037160,
+       "value": 7.0
+      },
+      {
+       "timestamp": 1795037220,
+       "value": 7.0
+      },
+      {
+       "timestamp": 1795037280,
+       "value": 7.0
+      },
+      {
+       "timestamp": 1795037340,
+       "value": 7.0
+      },
+      {
+       "timestamp": 1795037400,
+       "value": 7.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795037160"
+     ],
+     "type": 1
+    }
+   ]
+  }
+ ],
+ "values": {
+  "count-avg": [
+   7.0,
+   7.0
+  ],
+  "count-sum": [
+   7.0,
+   28.0
+  ],
+  "rate-avg": [
+   7.0,
+   7.0
+  ],
+  "rate-sum": [
+   7.0,
+   28.0
+  ]
+ }
+}

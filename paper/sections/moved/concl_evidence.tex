@@ -7,11 +7,16 @@ Three things in this paper are proved: the directional information barrier, whos
 reverse half is Proposition~\ref{prop:reverse} and holds for every possible translator
 and not only ours; the exactness of the rollup translations on a
 stated class, with the preconditions enumerated as the hypotheses of a theorem; and the
-non-expressibility results of \S\ref{sec:regular}. Three things are verified against a
+non-expressibility results of \S\ref{sec:regular}. Five things are verified against a
 real Prometheus~3.15.0 rather than a model, with the responses cached and
 regression-tested: the PromQL semantics the rollup rules depend on, the anchoring of
-label-matcher regular expressions, and the series pairing that
-Theorem~\ref{thm:arith} rests on. Two further readings were taken from a real server
+label-matcher regular expressions, the series pairing that
+Theorem~\ref{thm:arith} rests on, and --- added last, when a reviewer asked why two rows
+of the gap catalogue carried proofs and two carried sentences --- what the language does
+with a series that stops (Remark~\ref{rem:fill}) and what it does with a pattern in a
+matcher's name position (Remark~\ref{rem:label-name}). The first of those two cost the
+paper a row of its inexpressible column and the second did not, which is the ratio this
+inventory exists to make visible. Two further readings were taken from a real server
 and written down as prose rather than cached --- the parse error that decides
 \S\ref{sec:grammars}'s two conflicts, and the rejection that
 Remark~\ref{rem:anchored-flag} turns on --- so they are evidence of a weaker kind than
@@ -19,21 +24,27 @@ the three above, and the difference is in the artefact rather than in the readin
 Nothing is left that was read from source and not then measured: Datadog's reset policy was taken from its
 open-source agent at a pinned commit and afterwards put to a running one.
 
-Eight things are measured against the vendor itself rather than assumed: the bucket
+One thing is measured against a third party: another vendor's Datadog-to-PromQL
+translator, run over this same corpus from a cached copy of its own client-side code
+(\S\ref{sec:baseline}). It is the only figure here that compares this work with
+somebody else's, and the only one whose artefact can change without notice, which is why
+the bundle is cached with its hash and the measurement is dated.
+
+Nine things are measured against the vendor itself rather than assumed: the bucket
 convention (left-closed and named by its start, the opposite of what this work assumed
 until it asked), the automatic rollup interval as a function of the query range, the
 default time aggregator of a bare query on a counter, whether a glob's \texttt{*} matches
 the empty string, where \texttt{.as\_rate()} sits relative to the rollup and to the space
 aggregation, what \texttt{.weighted()} computes, what \texttt{top(...)} ranks by and over
-which window, and the reset policy --- read first from
-the agent's source and then put to a running agent, which agreed with the reading. Five
-of the eight confirmed what the paper had assumed. Three did not: the bucket convention;
+which window, the reset policy --- read first from
+the agent's source and then put to a running agent, which agreed with the reading ---
+and, last and latest, whether a tag-value filter has any wildcard but \texttt{*}. Six
+of the nine confirmed what the paper had assumed. Three did not: the bucket convention;
 \texttt{.as\_rate()}, which turned out to divide the aggregated result rather than
 each series, and whose presence in a query turned out not to establish the metric's type
 at all, because Datadog accepts the modifier on a gauge and ignores it; and
 \texttt{.weighted()}, carried here as the largest single entry in the inexpressible
-column until the account was asked and returned the same number with the modifier and without it. The last of the
-eight decides which column $139$ corpus occurrences belong in, and is the only one
+column until the account was asked and returned the same number with the modifier and without it. One of the nine decides which column $139$ corpus occurrences belong in, and is the only one
 measured on both sides: over one workload, the candidate expression against a real
 Prometheus in $20$ cases and \texttt{top()} itself against Datadog in $22$, each
 agreeing with the documented rule throughout.

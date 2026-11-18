@@ -36,7 +36,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from qlport.harness.datadog import (  # noqa: E402
-    COUNT, Credentials, count_payload, credentials, interpret_closure,
+    COUNT, RATE, Credentials, count_payload, credentials, interpret_closure,
     interpret_default_aggregator, pointlist, query, reported_interval, submit,
     write_raw,
 )
@@ -451,7 +451,360 @@ def e1(creds: Credentials, *, dry: bool) -> dict:
     )
 
 
-EXPERIMENTS = {"e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5}
+def e12(creds: Credentials, *, dry: bool) -> dict:
+    """Does a Datadog glob have anything other than `*`?
+
+    Definition 14 of the paper says it does not --- "prefix, suffix and substring
+    wildcards and no other construct" --- and that sentence is read from the
+    documentation and has never been asked of the system. It is load-bearing in the
+    reverse direction: Table 5 refuses 140 matcher occurrences because no glob denotes a
+    single arbitrary character, and the paper's own method note says a rule taken from a
+    manual and not put to the system is the error it keeps making.
+
+    Three constructs, one submission. Three series distinguished by a `probe` tag ---
+    `web-1`, `web-12`, `web-a` --- and a control with no glob to establish all three
+    were stored, which is the discipline E5 added after E2's first run could not tell a
+    glob that selects nothing from a point that never arrived.
+
+      `probe:web-?`       a single-character wildcard selects web-1 and web-a and not
+                          web-12; a literal `?` selects nothing
+      `probe:web-[0-9]`   a character class selects web-1; a literal selects nothing
+      `probe:web-1|web-a` an alternation selects two; a literal selects nothing
+
+    A negative on all three confirms Definition 14 and the 140 refusals that rest on it.
+    A positive on the first costs the paper that row.
+    """
+    t_star = _grid(_now() - SETTLE)
+    run = f"r{int(t_star)}"
+    metric = "qlport.e12.wild"
+    probes = {"one-digit": "web-1", "two-digit": "web-12", "one-letter": "web-a"}
+    payloads = [count_payload(metric, [(t_star, 1.0)],
+                              tags=TAGS + [f"run:{run}", f"probe:{v}"])
+                for v in probes.values()]
+    acks = _submit_all(creds, payloads, dry=dry)
+
+    control = f"sum:{metric}{{run:{run}}} by {{probe}}"
+    asked = {
+        "question-mark": f"sum:{metric}{{probe:web-?,run:{run}}} by {{probe}}",
+        "character-class": f"sum:{metric}{{probe:web-[0-9],run:{run}}} by {{probe}}",
+        "alternation": f"sum:{metric}{{probe:web-1|web-a,run:{run}}} by {{probe}}",
+    }
+    start, end = t_star - 900, t_star + 900
+    if dry:
+        print(f"# then query  {control}   from {start:.0f} to {end:.0f}  (control)")
+        for name, q in asked.items():
+            print(f"# then query  {q}   ({name})")
+        return {}
+
+    deadline = _now() + POLL_TIMEOUT
+    raws = {"control": query(creds, control, start, end)}
+    while len(_series_by_scope(raws["control"])) < len(probes) and _now() < deadline:
+        time.sleep(POLL_EVERY)
+        raws["control"] = query(creds, control, start, end)
+    # A refusal is an answer here, and the most informative one: if the construct is
+    # not in Datadog's query grammar at all, the request fails to parse rather than
+    # selecting nothing. `query` raises on that, so it is caught and recorded.
+    rejected: dict[str, str] = {}
+    for name, q in asked.items():
+        try:
+            raws[name] = query(creds, q, start, end)
+        except ValueError as exc:
+            rejected[name] = str(exc)
+
+    stored = _series_by_scope(raws["control"])
+    selected = {name: _series_by_scope(raws[name])
+                for name in asked if name in raws}
+    out: dict = {
+        "provenance": _provenance(creds, experiment="e12", t_star=t_star, run=run,
+                                  probes=probes),
+        "submitted": payloads, "acks": acks,
+        "responses": {k: {"query": control if k == "control" else asked[k],
+                          "from": start, "to": end, "raw": v}
+                      for k, v in raws.items()},
+        "stored": stored, "selected": selected,
+    }
+    out["rejected"] = rejected
+    if len(stored) != len(probes):
+        out["interpretation"] = {"all": "inconclusive: not every probe was stored"}
+    else:
+        out["interpretation"] = {
+            **{name: "rejected by the query parser" for name in rejected},
+            **{name: ("construct is live" if sel else "accepted, selects nothing")
+               for name, sel in selected.items()},
+        }
+    return out
+
+
+def e13(creds: Credentials, *, dry: bool) -> dict:
+    """Does Datadog's `or` bind more loosely than its comma?
+
+    Remark~8 asserts that it does, so `{a:x or a:y,*}` parses with the comma inside the
+    right branch. The justification given is an analogy with the Lucene-style filter
+    syntax Datadog's editor accepts, which is not evidence about this grammar. The
+    claim decides how 160 SCOPE_BOOL occurrences are *translated* rather than whether
+    they are, and no corpus query discriminates: the only shape mixing the two
+    operators has match-all terms on the other side, so both readings agree on it.
+
+    Three series over two tag keys:
+
+        s1  aa:x bb:2      s2  aa:y bb:1      s3  aa:x bb:1
+
+    and one question, `{aa:x or aa:y, bb:1}`. Under the looser-`or` reading this parses
+    as `aa:x OR (aa:y AND bb:1)` and selects s1, because s1 satisfies `aa:x` whatever
+    its `bb`. Under the tighter reading it is `(aa:x OR aa:y) AND bb:1` and s1 is
+    excluded. So the presence of s1 in the answer is the whole experiment.
+    """
+    t_star = _grid(_now() - SETTLE)
+    run = f"r{int(t_star)}"
+    metric = "qlport.e13.prec"
+    series = {"s1": ("x", "2"), "s2": ("y", "1"), "s3": ("x", "1")}
+    payloads = [count_payload(metric, [(t_star, 1.0)],
+                              tags=TAGS + [f"run:{run}", f"aa:{a}", f"bb:{b}"])
+                for a, b in series.values()]
+    acks = _submit_all(creds, payloads, dry=dry)
+
+    control = f"sum:{metric}{{run:{run}}} by {{aa,bb}}"
+    asked = f"sum:{metric}{{aa:x or aa:y,bb:1,run:{run}}} by {{aa,bb}}"
+    start, end = t_star - 900, t_star + 900
+    if dry:
+        print(f"# then query  {control}  (control)")
+        print(f"# then query  {asked}  (the question)")
+        return {}
+
+    deadline = _now() + POLL_TIMEOUT
+    raws = {"control": query(creds, control, start, end)}
+    while len(_series_by_scope(raws["control"])) < len(series) and _now() < deadline:
+        time.sleep(POLL_EVERY)
+        raws["control"] = query(creds, control, start, end)
+    rejected = {}
+    try:
+        raws["asked"] = query(creds, asked, start, end)
+    except ValueError as exc:
+        rejected["asked"] = str(exc)
+
+    stored = _series_by_scope(raws["control"])
+    selected = _series_by_scope(raws["asked"]) if "asked" in raws else {}
+    s1_present = any("aa:x" in s and "bb:2" in s for s in selected)
+    if len(stored) != len(series):
+        verdict = "inconclusive: not every probe was stored"
+    elif rejected:
+        verdict = "inconclusive: the query was rejected"
+    else:
+        verdict = ("or binds more loosely than the comma"
+                   if s1_present else "the comma binds more loosely than or")
+    return {
+        "provenance": _provenance(creds, experiment="e13", t_star=t_star, run=run,
+                                  series=series),
+        "submitted": payloads, "acks": acks,
+        "responses": {k: {"query": control if k == "control" else asked,
+                          "from": start, "to": end, "raw": v}
+                      for k, v in raws.items()},
+        "stored": stored, "selected": selected, "rejected": rejected,
+        "interpretation": {"verdict": verdict, "s1_selected": s1_present},
+    }
+
+
+def e14(creds: Credentials, *, dry: bool) -> dict:
+    """What does Datadog do with `{*,!*}`?
+
+    Nine corpus occurrences carry it and the paper puts them in the unimplemented
+    column on the strength of a sentence: that PromQL can denote an empty selection, and
+    that `{*,!*}` means empty. The second half was never asked. It matters beyond nine
+    occurrences because §C.3 now calls the 99.1% ceiling tight, and tightness needs
+    every unimplemented occurrence to be genuinely reachable. If Datadog *rejects* the
+    scope rather than returning nothing, these belong in the fourth refusal kind that
+    Remark~11 calls possible and empty here.
+    """
+    t_star = _grid(_now() - SETTLE)
+    run = f"r{int(t_star)}"
+    metric = "qlport.e14.negall"
+    payloads = [count_payload(metric, [(t_star, 1.0)], tags=TAGS + [f"run:{run}"])]
+    acks = _submit_all(creds, payloads, dry=dry)
+
+    control = f"sum:{metric}{{run:{run}}}"
+    asked = {
+        "match-all-and-negated": f"sum:{metric}{{*,!*,run:{run}}}",
+        "negated-alone": f"sum:{metric}{{!*,run:{run}}}",
+    }
+    start, end = t_star - 900, t_star + 900
+    if dry:
+        print(f"# then query  {control}  (control)")
+        for name, q in asked.items():
+            print(f"# then query  {q}  ({name})")
+        return {}
+
+    deadline = _now() + POLL_TIMEOUT
+    raws = {"control": query(creds, control, start, end)}
+    while not _defined(raws["control"]) and _now() < deadline:
+        time.sleep(POLL_EVERY)
+        raws["control"] = query(creds, control, start, end)
+    rejected, points = {}, {}
+    for name, q in asked.items():
+        try:
+            raws[name] = query(creds, q, start, end)
+            points[name] = len(_defined(raws[name]))
+        except ValueError as exc:
+            rejected[name] = str(exc)
+
+    stored = len(_defined(raws["control"]))
+    return {
+        "provenance": _provenance(creds, experiment="e14", t_star=t_star, run=run),
+        "submitted": payloads, "acks": acks,
+        "responses": {k: {"query": control if k == "control" else asked.get(k),
+                          "from": start, "to": end, "raw": v}
+                      for k, v in raws.items()},
+        "stored_points": stored, "selected_points": points, "rejected": rejected,
+        "interpretation": (
+            {"all": "inconclusive: the control stored nothing"} if not stored else
+            {**{n: "rejected by the query parser" for n in rejected},
+             **{n: ("selects the series" if k else "accepted, selects nothing")
+                for n, k in points.items()}}),
+    }
+
+
+def e15(creds: Credentials, *, dry: bool) -> dict:
+    """Is a Datadog RATE metric mapped by the identity, as Definition 7 says?
+
+    Definition 7 sends every non-counter series through phi unchanged, and Remark 27
+    counts 134 corpus occurrences naming metrics the vendor declares as `rate`. Those
+    occurrences are inside kappa and their exactness rests on the identity mapping,
+    which is asserted rather than measured: a RATE is submitted as a per-second value
+    over a declared interval, and whether what Datadog stores and reduces is that value
+    or the count it implies is exactly the question phi exists to ask.
+
+    One RATE series, interval 60, five points of a known constant, and two rollups: a
+    `sum` and an `avg` over a window containing all five. If storage is the identity,
+    `avg` returns the submitted value and `sum` returns five times it. If the intake
+    rescales by the interval, both are off by a factor of 60 in a direction this tells
+    us. A COUNT series carrying the same numbers is submitted alongside as the control,
+    because the question is what RATE does *differently*.
+    """
+    t_star = _grid(_now() - SETTLE) - 300
+    run = f"r{int(t_star)}"
+    value, n = 7.0, 5
+    points = [(t_star + i * DELTA, value) for i in range(n)]
+    rate_m, count_m = "qlport.e15.rate", "qlport.e15.count"
+    payloads = [
+        count_payload(rate_m, points, tags=TAGS + [f"run:{run}"],
+                      interval=int(DELTA), metric_type=RATE),
+        count_payload(count_m, points, tags=TAGS + [f"run:{run}"],
+                      interval=int(DELTA), metric_type=COUNT),
+    ]
+    acks = _submit_all(creds, payloads, dry=dry)
+
+    span = int(n * DELTA)
+    asked = {
+        f"{kind}-{op}": f"{op}:{m}{{run:{run}}}.rollup({op}, {span})"
+        for kind, m in (("rate", rate_m), ("count", count_m))
+        for op in ("avg", "sum")
+    }
+    start, end = t_star - 900, t_star + span + 900
+    if dry:
+        for name, q in asked.items():
+            print(f"# then query  {q}  ({name})")
+        return {}
+
+    deadline = _now() + POLL_TIMEOUT
+    raws: dict = {}
+    for name, q in asked.items():
+        while True:
+            raws[name] = query(creds, q, start, end)
+            if _defined(raws[name]) or _now() > deadline:
+                break
+            time.sleep(POLL_EVERY)
+
+    values = {name: sorted(_defined(raw).values()) for name, raw in raws.items()}
+    return {
+        "provenance": _provenance(creds, experiment="e15", t_star=t_star, run=run,
+                                  submitted_value=value, points=n,
+                                  interval=int(DELTA)),
+        "submitted": payloads, "acks": acks,
+        "responses": {k: {"query": asked[k], "from": start, "to": end, "raw": v}
+                      for k, v in raws.items()},
+        "values": values,
+        "interpretation": {
+            "note": ("compare rate-avg against the submitted value and rate-sum against "
+                     f"{n} times it; the count series is the control"),
+            "submitted_value": value, "points": n,
+        },
+    }
+
+
+def e16(creds: Credentials, *, dry: bool) -> dict:
+    """What does a keyless scope term like `*-location` glob over?
+
+    §6 and §7.3 read it as a glob over the whole `key:value` string, which is why
+    LABEL_NAME_GLOB is called an expressiveness gap: a pattern over names is something
+    no PromQL matcher takes. The reading has never been measured, and it has an odd
+    consequence --- `cluster-location:us-east1` does not end in `-location`, so under
+    that reading the velero panels carrying `{*-location,*-name,*-uid,*}` select
+    nothing, which is a strange thing for a shipped dashboard to do. The alternative
+    reading, that the glob is over the key, makes those panels select what their
+    `by {cluster-location,...}` clause groups by.
+
+    Three series, one per tag key, so the two readings disagree on the answer:
+
+        cluster-location:eu      site-location:us      region:ap
+
+    A key glob selects the first two. A glob over `key:value` selects none, since no
+    tag string ends in `-location`. A third possibility the control will expose is that
+    the term is rejected outright.
+    """
+    t_star = _grid(_now() - SETTLE)
+    run = f"r{int(t_star)}"
+    metric = "qlport.e16.keyglob"
+    series = {"cluster-location": "eu", "site-location": "us", "region": "ap"}
+    payloads = [count_payload(metric, [(t_star, 1.0)],
+                              tags=TAGS + [f"run:{run}", f"{k}:{v}"])
+                for k, v in series.items()]
+    acks = _submit_all(creds, payloads, dry=dry)
+
+    control = f"sum:{metric}{{run:{run}}} by {{cluster-location,site-location,region}}"
+    asked = {
+        "keyless-glob": f"sum:{metric}{{*-location,run:{run}}}",
+        "glob-with-value": f"sum:{metric}{{*-location:*,run:{run}}}",
+    }
+    start, end = t_star - 900, t_star + 900
+    if dry:
+        print(f"# then query  {control}  (control)")
+        for name, q in asked.items():
+            print(f"# then query  {q}  ({name})")
+        return {}
+
+    deadline = _now() + POLL_TIMEOUT
+    raws = {"control": query(creds, control, start, end)}
+    while len(_series_by_scope(raws["control"])) < len(series) and _now() < deadline:
+        time.sleep(POLL_EVERY)
+        raws["control"] = query(creds, control, start, end)
+    rejected, picked = {}, {}
+    for name, q in asked.items():
+        try:
+            raws[name] = query(creds, q, start, end)
+            picked[name] = len(_defined(raws[name]))
+        except ValueError as exc:
+            rejected[name] = str(exc)
+
+    stored = _series_by_scope(raws["control"])
+    return {
+        "provenance": _provenance(creds, experiment="e16", t_star=t_star, run=run,
+                                  series=series),
+        "submitted": payloads, "acks": acks,
+        "responses": {k: {"query": control if k == "control" else asked.get(k),
+                          "from": start, "to": end, "raw": v}
+                      for k, v in raws.items()},
+        "stored": stored, "selected_points": picked, "rejected": rejected,
+        "interpretation": (
+            {"all": "inconclusive: not every probe was stored"}
+            if len(stored) < len(series) else
+            {**{n: "rejected by the query parser" for n in rejected},
+             **{n: ("selects something --- the glob is over the key"
+                    if k else "selects nothing --- consistent with a glob over key:value")
+                for n, k in picked.items()}}),
+    }
+
+
+EXPERIMENTS = {"e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5, "e12": e12,
+               "e13": e13, "e14": e14, "e15": e15, "e16": e16}
 
 
 def main(argv: list[str] | None = None) -> int:

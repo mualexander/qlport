@@ -50,6 +50,28 @@ STAR_MATCHES_EMPTY = True
 MAX_UNION = 64
 MAX_PRODUCT = 4096
 
+# The alphabet a Datadog tag value is drawn from, which is the universe every
+# equivalence in this module is decided over.
+#
+# §6 asked whether a PromQL matcher and a Datadog scope denote the same set, and left
+# "the same set of what?" unstated for eleven passes. The two readings are not close.
+# Over all strings, `.+` is no finite union of globs and 218 corpus occurrences are
+# inexpressible; over the strings a Datadog tag value may contain, `.+` is the union of
+# `c*` for the 41 characters below and those occurrences are a union the bound admits.
+# The second is the right universe --- a value that is not a legal tag value cannot
+# appear on either side --- and it is the one §6.4's own arithmetic already assumed
+# when it spoke of "one branch per alphabet character".
+#
+# Datadog documents the set: lower-case letters, digits, underscores, minuses, colons,
+# periods and slashes, with the whole value lower-cased on ingest. The corpus agrees
+# exactly: a census of all 419 distinct tag values in the instantiated corpus, taken
+# through this project's own Datadog parser, finds these same 41 characters and no
+# others. E12 is the reason to trust the documentation here, having put the adjacent
+# claim about glob constructs to the account and had it confirmed.
+TAG_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789_:./-"
+# greenery's parser wants the hyphen escaped and not final inside a class.
+_SIGMA_CLASS = r"[a-z0-9_:.\-/]"
+
 
 def glob_to_regex(g: str) -> str:
     """A Datadog tag glob as an (implicitly fully anchored) regular expression.
@@ -95,9 +117,19 @@ def _globs_for_comparison(globs) -> str:
 
 
 def equivalent(regex_a: str, regex_b: str) -> bool:
-    """Decide L(a) = L(b) by DFA equivalence (Rich Thm 9.5)."""
+    r"""Decide L(a) = L(b) by DFA equivalence (Rich Thm 9.5), over `TAG_ALPHABET`.
+
+    Both sides are intersected with $\Sigma^{*}$ first, because the question §6 asks is
+    whether the two patterns select the same series, and a string that is not a legal
+    tag value selects nothing on either side. Deciding over every string instead makes
+    `.+` differ from the union of `c*` only on inputs neither language can ever see.
+
+    Restricting can only identify more pairs, never fewer, so no equivalence this
+    module reported before is withdrawn by it.
+    """
     from greenery import parse  # optional dependency, extra "regular"
-    return parse(regex_a).equivalent(parse(regex_b))
+    sigma = parse(f"{_SIGMA_CLASS}*")
+    return (parse(regex_a) & sigma).equivalent(parse(regex_b) & sigma)
 
 
 # Characters that genuinely need a backslash. Anything else escaped is redundant.
@@ -175,11 +207,14 @@ class _NoGlob(Exception):
 def _dot_charclass():
     """The character class the regex `.` denotes, taken from the parser itself.
 
-    Following the usual regex convention, greenery reads `.` as every character *except*
-    the newline, so this is not the complement of the empty set. The alphabet of §6 is
-    therefore newline-free, which costs nothing --- a tag value cannot contain one --- and
-    keeps both sides of every equivalence check over the same alphabet, since
-    `glob_to_regex` renders `*` as `.*`.
+    greenery 4.2.3 reads `.` as *every* character, newline included: `parse(".")` gives
+    `~Charclass(())`, the complement of the empty set, and `parse(".").matches chr(10)`.
+    This docstring claimed the opposite -- the usual regex convention, which greenery
+    does not follow -- until the eleventh pass. Nothing measured depends on it: a tag
+    value contains no newline either way, and both sides of every equivalence check use
+    this same class, since `glob_to_regex` renders `*` as `.*`. What did depend on it
+    was §6's sentence about the size of the alphabet, which is unbounded rather than
+    merely large.
     """
     from greenery import parse
     (conc,) = parse(".").concs
@@ -211,15 +246,22 @@ def _mult_fragments(mult) -> list[str]:
                     raise _NoGlob("star-requires-a-character")
                 return ["*"]
             if (lo, hi) == (1, None):                     # `.+`
-                if STAR_MATCHES_EMPTY:
-                    raise _NoGlob("nonempty-wildcard")
-                return ["*"]
-            # `.`, `.?`, `.{2,3}` -- a bounded run of arbitrary characters.
-            raise _NoGlob("single-character-wildcard")
-
-        chars = sorted(md.get_chars())
-        if md.negated:
-            raise _NoGlob("negated-character-class")
+                if not STAR_MATCHES_EMPTY:
+                    return ["*"]
+                # A star admits the empty string (E5), so `.+` is not `*`. Over
+                # `TAG_ALPHABET` it is the union of `c*`: one character, then a star
+                # for a remainder that is arbitrary anyway. This was refused as
+                # `nonempty-wildcard` until the alphabet was pinned.
+                return [c + "*" for c in TAG_ALPHABET]
+            # `.`, `.?`, `.{2,3}`: a bounded run over the alphabet, which is the same
+            # case as an explicit class and falls through to it. Whether the resulting
+            # union is worth emitting is `MAX_UNION`'s business, not this function's:
+            # `5..` yields 1,681 branches and is refused for its size, not its kind.
+            chars = sorted(TAG_ALPHABET)
+        else:
+            chars = sorted(md.get_chars())
+            if md.negated:
+                raise _NoGlob("negated-character-class")
         if hi is None:
             # `[0-9]*`, `[a-z]+`: a glob's starred gap admits every string, so it
             # cannot be restricted to a proper subset of the alphabet.

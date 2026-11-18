@@ -241,8 +241,14 @@ assert sum(template.values()) + sum(concrete.values()) == sum(occurrences.values
 assert sum(share(k)[0] for k in ("single", "union", "none")) == len(concrete)
 assert sum(share(k)[1] for k in ("single", "union", "none")) == sum(concrete.values())
 assert set(df.kind) <= {"single", "union", "none"}, set(df.kind)
+# `union-too-large` joined these in the eleventh pass, when `promql_matcher_values`
+# started decoding PromQL string escapes before classifying. `5\d\d|4\d\d` had been
+# read as the undecoded `5\\d\\d|4\\d\\d`, whose two branches are literal-backslash
+# strings and so a two-word union the proposer called exact -- the one false positive
+# §6 produced. Decoded, it is a union over the digits and exceeds B.
 assert set(refused.reason) == {
     "single-character-wildcard", "nonempty-wildcard", "unbounded-character-class",
+    "union-too-large",
 }, set(refused.reason)
 # Every returned glob set was verified by deciding equivalence, so "exact" is not a claim
 # about the proposer.

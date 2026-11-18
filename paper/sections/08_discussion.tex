@@ -29,9 +29,10 @@ ceiling of \S\ref{sec:gaps} --- how long that takes is not something this paper
 measures, and the catalogue is a list of constructs rather than an estimate --- and
 what remains at that point is
 three constructs covering $0.8\%$ of real usage, and only one of them is about
-expressiveness: \texttt{fill} interpolation ($36$) and a wildcard over tag \emph{keys}
-rather than values ($31$). The other two are information barriers --- Prometheus does not
-hold what the query reads. They are the percentile aggregators ($34$), which read a
+expressiveness: a wildcard over tag \emph{keys} rather than values ($31$), which asks
+for a pattern where a PromQL matcher takes a label name and which
+Remark~\ref{rem:label-name} reads a real server refusing. The other two are information
+barriers --- Prometheus does not hold what the query reads. They are the percentile aggregators ($34$), which read a
 sketch of the raw observations (Corollary~\ref{cor:quantile}), and the scope that
 separates an absent tag from one present with an empty value ($5$), a distinction
 Prometheus's data model \emph{defines} away. No amount of work on either language removes
@@ -204,7 +205,7 @@ which the two barriers named above contradict.
 
 Put the two together and the shape of the lock-in is specific. Leaving Datadog for
 Prometheus costs engineering: an enumerated list of constructs, a ceiling of $99.1\%$,
-four things left beyond it, plus the discipline of supplying the context the source
+three things left beyond it, plus the discipline of supplying the context the source
 queries omit. Coming back costs
 expressiveness and information, both provably --- the first by
 Corollary~\ref{cor:no-glob} and Corollary~\ref{cor:absent-char}, the second by
@@ -335,7 +336,7 @@ bucket.
 
 It is worth being plain about what that does and does not retire. It confirms the reading
 of the agent rather than overturning it, so no figure moves --- which makes it the fifth
-of eight vendor measurements to confirm rather than correct. And it is a measurement of one
+of nine vendor measurements to confirm rather than correct. And it is a measurement of one
 ingestion path on one account: the OpenMetrics check converting a Prometheus counter,
 which is the path this paper models and not the only one Datadog has.
 

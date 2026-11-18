@@ -1,0 +1,171 @@
+{
+ "acks": [
+  {
+   "errors": []
+  }
+ ],
+ "interpretation": {
+  "match-all-and-negated": "selects the series",
+  "negated-alone": "selects the series"
+ },
+ "provenance": {
+  "api": {
+   "query": "/api/v1/query",
+   "submit": "/api/v2/series"
+  },
+  "collected_at": "2026-11-18T21:31:19+00:00",
+  "experiment": "e14",
+  "metric_type": 1,
+  "run": "r1795036860",
+  "site": "datadoghq.com",
+  "t_star": 1795036860.0
+ },
+ "rejected": {},
+ "responses": {
+  "control": {
+   "from": 1795035960.0,
+   "query": "sum:qlport.e14.negall{run:r1795036860}",
+   "raw": {
+    "from_date": 1795035960000,
+    "group_by": [],
+    "message": "",
+    "query": "sum:qlport.e14.negall{run:r1795036860}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e14.negall",
+      "end": 1795036869000,
+      "expression": "sum:qlport.e14.negall{run:r1795036860}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e14.negall",
+      "pointlist": [
+       [
+        1795036860000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "run:r1795036860",
+      "start": 1795036860000,
+      "tag_set": [],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1795037760000,
+    "values": []
+   },
+   "to": 1795037760.0
+  },
+  "match-all-and-negated": {
+   "from": 1795035960.0,
+   "query": "sum:qlport.e14.negall{*,!*,run:r1795036860}",
+   "raw": {
+    "from_date": 1795035960000,
+    "group_by": [],
+    "message": "",
+    "query": "sum:qlport.e14.negall{*,!*,run:r1795036860}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e14.negall",
+      "end": 1795036869000,
+      "expression": "sum:qlport.e14.negall{run:r1795036860}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e14.negall",
+      "pointlist": [
+       [
+        1795036860000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "run:r1795036860",
+      "start": 1795036860000,
+      "tag_set": [],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1795037760000,
+    "values": []
+   },
+   "to": 1795037760.0
+  },
+  "negated-alone": {
+   "from": 1795035960.0,
+   "query": "sum:qlport.e14.negall{!*,run:r1795036860}",
+   "raw": {
+    "from_date": 1795035960000,
+    "group_by": [],
+    "message": "",
+    "query": "sum:qlport.e14.negall{!*,run:r1795036860}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e14.negall",
+      "end": 1795036869000,
+      "expression": "sum:qlport.e14.negall{run:r1795036860}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e14.negall",
+      "pointlist": [
+       [
+        1795036860000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "run:r1795036860",
+      "start": 1795036860000,
+      "tag_set": [],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1795037760000,
+    "values": []
+   },
+   "to": 1795037760.0
+  }
+ },
+ "selected_points": {
+  "match-all-and-negated": 1,
+  "negated-alone": 1
+ },
+ "stored_points": 1,
+ "submitted": [
+  {
+   "series": [
+    {
+     "metric": "qlport.e14.negall",
+     "points": [
+      {
+       "timestamp": 1795036860,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795036860"
+     ],
+     "type": 1
+    }
+   ]
+  }
+ ]
+}

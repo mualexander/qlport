@@ -272,7 +272,12 @@ for f in ("SCOPE_BOOL", "SCOPE_IN", "SCOPE_PAREN"):
     print(f"{f:12s} {int(sub.n.sum()):5d} occurrences, {share:.1%} translated")
 
 # §7 and §8 quote these, so re-running the notebook has to reproduce them.
-assert int(kinds.occurrences["language gap"]) == 70, kinds
+# LABEL_NAME_GLOB left the catalogue entirely in the eleventh pass: every one of its 31
+# occurrences was `corpus._TMPL` truncating a Datadog template variable at a hyphen, so
+# `{$cluster-location,...}` normalised to `{*-location,...}` -- a string Datadog's own
+# parser rejects. Fixing the pattern re-normalises them to `{*,*,*,*}` and they
+# translate. kappa rises from 96.3% to 96.6% and the ceiling from 99.1% to 99.5%.
+assert int(kinds.occurrences["language gap"]) == 39, kinds
 assert int(kinds.occurrences["not implemented"]) == 248, kinds
 
 # §8 names the five constructs the language-gap share is made of, with counts, so the
@@ -287,9 +292,9 @@ breakdown = {"percentiles": pctile,
              "SCOPE_DISJUNCTION": int(by_gap.get("SCOPE_DISJUNCTION", 0))}
 print("language-gap breakdown:", breakdown)
 assert breakdown == {"percentiles": 34, "FILL_INTERPOLATION": 0,
-                     "LABEL_NAME_GLOB": 31, "SCOPE_EMPTY_VALUE": 5,
+                     "LABEL_NAME_GLOB": 0, "SCOPE_EMPTY_VALUE": 5,
                      "SCOPE_DISJUNCTION": 0}, breakdown
-assert sum(breakdown.values()) == 70, breakdown
+assert sum(breakdown.values()) == 39, breakdown
 
 
 # %% [markdown]
@@ -344,8 +349,10 @@ print(f"closure A: {closure_occ:,} = {closure_occ / _tot:.1%} of corpus, "
 # the fragment §5 proves exact. That is what makes thm:arith worth stating separately
 # from thm:kernel rather than as a footnote to it.
 assert closure_occ == _tr, (closure_occ, _tr)
-assert kernel_occ == 8363, kernel_occ
-assert closure_occ == 8444, closure_occ
+# Both rose by the 31 velero occurrences the normaliser had been mangling: they are
+# plain match-all scopes once `$cluster-location` survives substitution intact.
+assert kernel_occ == 8394, kernel_occ
+assert closure_occ == 8475, closure_occ
 
 # %% [markdown]
 # ### Caveats on the translations we do claim
@@ -496,8 +503,8 @@ for k in (50, len(shapes)):
     print(f"  top {k:3} shapes -> ~{series:,} synthetic series")
 
 # §7 and §9 quote these, so a re-run has to reproduce them.
-assert len(shapes) == 332, len(shapes)
-assert total_shaped == 8339, total_shaped
+assert len(shapes) == 333, len(shapes)
+assert total_shaped == 8370, total_shaped
 assert milestones[0.5] == 6 and milestones[0.8] == 23, milestones
 assert milestones[0.9] == 50 and milestones[0.95] == 107, milestones
 print("shape-reduction assertions hold")

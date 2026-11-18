@@ -219,6 +219,19 @@ def prometheus_rule_queries(doc: Any, *, source: str, origin: str) -> list[Query
 #  Datadog:  $host  $scope
 _TMPL = r"\$\{[^{}]*\}|\$[A-Za-z_][\w.]*|\[\[[^\[\]]*\]\]"
 TEMPLATE_VAR = re.compile(_TMPL)
+# Datadog template-variable names admit a hyphen; Grafana's do not, and in PromQL a
+# hyphen is subtraction, so the wider name is used only on the Datadog side.
+#
+# This cost the paper a gap-catalogue row. `$cluster-location` matched only as far as
+# `$cluster`, so the scope `{$cluster-location,$cluster-name,$cluster-uid,$host}`
+# normalised to `{*-location,*-name,*-uid,*}` -- a string Datadog's own query parser
+# rejects (E16) -- and §6 read the leftover text as a glob over tag *keys*, invented a
+# semantics for it, and filed 31 occurrences as beyond the reach of any engineering.
+# Every occurrence of LABEL_NAME_GLOB was this substitution. Six PromQL queries carry
+# the same shape (`$namespace-viz`); they are left alone, because there a hyphen is an
+# operator and the reading is genuinely ambiguous, and §C.1 records the residue.
+_TMPL_DD = r"\$\{[^{}]*\}|\$[A-Za-z_][\w.-]*|\[\[[^\[\]]*\]\]"
+TEMPLATE_VAR_DD = re.compile(_TMPL_DD)
 _STRING = re.compile(r'"(?:[^"\\]|\\.)*"' r"|'(?:[^'\\]|\\.)*'")
 # A range bracket may build its duration out of several pieces: `[$__range]`, but
 # also `[${__range_s}s]`, where the variable supplies only the number.
@@ -275,9 +288,9 @@ def normalise(lang: str, text: str) -> str:
         def brace(m: re.Match) -> str:
             by, body = m.group(1) or "", m.group(2)
             sub = TMPL_PLACEHOLDER if by else "*"
-            return f"{by}{{{TEMPLATE_VAR.sub(sub, body)}}}"
+            return f"{by}{{{TEMPLATE_VAR_DD.sub(sub, body)}}}"
         text = _DD_BRACES.sub(brace, text)
-        return _outside_strings(text, lambda s: TEMPLATE_VAR.sub(TMPL_PLACEHOLDER, s))
+        return _outside_strings(text, lambda s: TEMPLATE_VAR_DD.sub(TMPL_PLACEHOLDER, s))
     raise ValueError(f"unknown language {lang!r}")
 
 
@@ -719,10 +732,63 @@ PROMQL_MATCHER = re.compile(r'(\w+)\s*(=~|!~)\s*(?:"((?:[^"\\]|\\.)*)"'
                             r'|`([^`]*)`)')
 
 
+_ESCAPES = {"a": "\a", "b": "\b", "f": "\f", "n": "\n", "r": "\r",
+            "t": "\t", "v": "\v", "\\": "\\", "'": "'", '"': '"', "`": "`"}
+
+
+def unquote_promql(body: str, raw: bool) -> str:
+    """The string a PromQL literal denotes, given the text between its quotes.
+
+    Backtick strings are raw; quoted strings carry Go escapes. Skipping this step is
+    not cosmetic. `le=~"1(\\\\.0)?"` in a dashboard denotes the regex `1(\\.0)?`, which
+    matches two words, and the undecoded text denotes a literal backslash followed by
+    any character, which matches neither. §6 classified five corpus patterns from the
+    undecoded form: three two-word unions were refused as inexpressible, and one
+    alternation was reported as having a glob that in fact matches nothing -- the only
+    false positive the regex work produced, and the reason this is a function rather
+    than an inline `group()`.
+    """
+    if raw:
+        return body
+    out, i = [], 0
+    while i < len(body):
+        ch = body[i]
+        if ch != "\\" or i + 1 >= len(body):
+            out.append(ch)
+            i += 1
+            continue
+        nxt = body[i + 1]
+        if nxt in _ESCAPES:
+            out.append(_ESCAPES[nxt])
+            i += 2
+        elif nxt in "xuU":
+            width = {"x": 2, "u": 4, "U": 8}[nxt]
+            hexs = body[i + 2:i + 2 + width]
+            if len(hexs) == width and all(c in "0123456789abcdefABCDEF" for c in hexs):
+                out.append(chr(int(hexs, 16)))
+                i += 2 + width
+            else:                      # not a valid escape; keep it verbatim
+                out.append(ch)
+                i += 1
+        else:                          # unknown escape: Prometheus rejects it, and a
+            out.append(ch)             # corpus string that reaches here is malformed,
+            i += 1                     # so the safe reading is the literal one
+    return "".join(out)
+
+
 def promql_matcher_values(text: str) -> list[str]:
-    """The pattern of every `=~`/`!~` label matcher in one PromQL query."""
-    return [next(g for g in m.groups()[2:] if g is not None)
-            for m in PROMQL_MATCHER.finditer(text)]
+    """The pattern of every `=~`/`!~` label matcher in one PromQL query.
+
+    Returns what each pattern *denotes*, not the source text between the quotes.
+    """
+    out = []
+    for m in PROMQL_MATCHER.finditer(text):
+        dq, sq, bt = m.group(3), m.group(4), m.group(5)
+        if bt is not None:
+            out.append(unquote_promql(bt, raw=True))
+        else:
+            out.append(unquote_promql(dq if dq is not None else sq, raw=False))
+    return out
 
 
 def is_promql(text: str) -> bool:

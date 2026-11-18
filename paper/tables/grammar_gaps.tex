@@ -7,7 +7,6 @@ datadog & single-quoted string literal & \texttt{SINGLE\_QUOTES} & 126 & \texttt
 datadog & comma-separated query list & \texttt{QUERY\_LIST} & 101 & \texttt{sum:riak.node\_gets\{*\},sum\dots{}} \\
 datadog & metric with no aggregator prefix & \texttt{IMPLICIT\_AGG} & 93 & \texttt{system.load.1\{*\}} \\
 datadog & count: and pNN: aggregators & \texttt{AGG\_SET} & 80 & \texttt{count:slurm.sacct.enabled\dots{}} \\
-datadog & wildcard in a tag key & \texttt{WILDCARD\_TAG\_KEY} & 24 & \texttt{sum:velero.backup.items\{*\dots{}} \\
 datadog & negated wildcard scope term & \texttt{NEGATED\_WILDCARD} & 9 & \texttt{sum:iis.users.anon\{*,!*\}} \\
 datadog & colon inside a tag value & \texttt{TAG\_COLON} & 3 & \texttt{avg:system.load.1\{field:a\dots{}} \\
 datadog & whitespace around ! or a separator & \texttt{SCOPE\_SPACING} & 2 & \texttt{avg:supabase.node.filesys\dots{}} \\

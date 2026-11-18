@@ -51,9 +51,12 @@ scope: "{" scope_expr "}"
            | "(" scope_expr ")"
            | membership
 membership: TAG [NOT] IN "(" tag ("," tag)* ")"
-// A tag term is `key`, `key:value` or `*`; `*` and `?` are wildcards and may appear
-// in either half (`*-zone`, `code:4*`), so match-all is a lexical property of the
-// term that the lowering layer resolves, not a separate production.
+// A tag term is `key`, `key:value` or `*`; `*` is the wildcard and may appear in
+// either half (`*-zone`, `code:4*`), so match-all is a lexical property of the term
+// that the lowering layer resolves, not a separate production. This comment said
+// "`*` and `?`" until the eleventh pass, contradicting `lower/datadog.py:is_glob` and
+// the test that pins it -- the lexer never treated `?` specially, so nothing behaved
+// the way the comment described.
 tag: TAG
 
 grouping: BY "{" KEY ("," KEY)* "}"

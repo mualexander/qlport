@@ -5,6 +5,6 @@ Language & Decision & Witness & Naive form & Queries lost \\
 promql & keyword terminals carry \textbackslash{}b & \texttt{max\_over\_time(x[5m])} & UnexpectedToken & 474 \\
 promql & FUNC needs a following paren & \texttt{up\{job="x"\}} & UnexpectedToken & 6,595 \\
 datadog & aggregator looks ahead for the colon & \texttt{sum.of.things\{*\}} & UnexpectedToken & 5 \\
-datadog & no separate STAR terminal & \texttt{avg:x\{*-zone\}} & UnexpectedToken & 28 \\
+datadog & no separate STAR terminal & \texttt{avg:x\{*-zone\}} & UnexpectedToken & 0 \\
 \bottomrule
 \end{tabular}

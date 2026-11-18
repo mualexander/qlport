@@ -259,7 +259,8 @@ def test_emitted_promql_parses_across_the_corpus():
         emitted += 1
     # Pinned, not floored. `> 3000` would have passed after losing well over half the
     # translated corpus, which is not what "the kernel carries the corpus" means.
-    assert emitted == 7305, emitted
+    assert emitted == 7333, emitted   # +28 when the normaliser stopped
+    # truncating `$cluster-location` at the hyphen (corpus._TMPL_DD)
 
 
 # --- meaning: the emitted form agrees with Datadog's rollup ---------------------------
@@ -327,7 +328,7 @@ def test_lowering_never_exposes_a_bare_counter_selector():
                 continue
             assert selects_are_wrapped(e), text
             checked += 1
-    assert checked == 7549, checked           # pinned for the same reason as above
+    assert checked == 7577, checked           # pinned for the same reason as above
 
 
 # --- single-label disjunction ---------------------------------------------------------

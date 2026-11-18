@@ -1,0 +1,306 @@
+{
+ "acks": [
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  },
+  {
+   "errors": []
+  }
+ ],
+ "interpretation": {
+  "s1_selected": true,
+  "verdict": "or binds more loosely than the comma"
+ },
+ "provenance": {
+  "api": {
+   "query": "/api/v1/query",
+   "submit": "/api/v2/series"
+  },
+  "collected_at": "2026-11-18T21:26:07+00:00",
+  "experiment": "e13",
+  "metric_type": 1,
+  "run": "r1795036500",
+  "series": {
+   "s1": [
+    "x",
+    "2"
+   ],
+   "s2": [
+    "y",
+    "1"
+   ],
+   "s3": [
+    "x",
+    "1"
+   ]
+  },
+  "site": "datadoghq.com",
+  "t_star": 1795036500.0
+ },
+ "rejected": {},
+ "responses": {
+  "asked": {
+   "from": 1795035600.0,
+   "query": "sum:qlport.e13.prec{aa:x or aa:y,bb:1,run:r1795036500} by {aa,bb}",
+   "raw": {
+    "from_date": 1795035600000,
+    "group_by": [
+     "aa",
+     "bb"
+    ],
+    "message": "",
+    "query": "sum:qlport.e13.prec{aa:x or aa:y,bb:1,run:r1795036500} by {aa,bb}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e13.prec",
+      "end": 1795036509000,
+      "expression": "sum:qlport.e13.prec{aa:y,bb:1,(aa:x OR (aa:y AND bb:1 AND run:r1795036500))}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e13.prec",
+      "pointlist": [
+       [
+        1795036500000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "aa:y,bb:1,(aa:x OR (aa:y AND bb:1 AND run:r1795036500))",
+      "start": 1795036500000,
+      "tag_set": [
+       "aa:y",
+       "bb:1"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e13.prec",
+      "end": 1795036509000,
+      "expression": "sum:qlport.e13.prec{aa:x,bb:1,(aa:x OR (aa:y AND bb:1 AND run:r1795036500))}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e13.prec",
+      "pointlist": [
+       [
+        1795036500000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "aa:x,bb:1,(aa:x OR (aa:y AND bb:1 AND run:r1795036500))",
+      "start": 1795036500000,
+      "tag_set": [
+       "aa:x",
+       "bb:1"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e13.prec",
+      "end": 1795036509000,
+      "expression": "sum:qlport.e13.prec{aa:x,bb:2,(aa:x OR (aa:y AND bb:1 AND run:r1795036500))}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e13.prec",
+      "pointlist": [
+       [
+        1795036500000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "aa:x,bb:2,(aa:x OR (aa:y AND bb:1 AND run:r1795036500))",
+      "start": 1795036500000,
+      "tag_set": [
+       "aa:x",
+       "bb:2"
+      ],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1795037400000,
+    "values": []
+   },
+   "to": 1795037400.0
+  },
+  "control": {
+   "from": 1795035600.0,
+   "query": "sum:qlport.e13.prec{run:r1795036500} by {aa,bb}",
+   "raw": {
+    "from_date": 1795035600000,
+    "group_by": [
+     "aa",
+     "bb"
+    ],
+    "message": "",
+    "query": "sum:qlport.e13.prec{run:r1795036500} by {aa,bb}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e13.prec",
+      "end": 1795036509000,
+      "expression": "sum:qlport.e13.prec{aa:x,bb:1,run:r1795036500}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e13.prec",
+      "pointlist": [
+       [
+        1795036500000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "aa:x,bb:1,run:r1795036500",
+      "start": 1795036500000,
+      "tag_set": [
+       "aa:x",
+       "bb:1"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e13.prec",
+      "end": 1795036509000,
+      "expression": "sum:qlport.e13.prec{aa:x,bb:2,run:r1795036500}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e13.prec",
+      "pointlist": [
+       [
+        1795036500000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "aa:x,bb:2,run:r1795036500",
+      "start": 1795036500000,
+      "tag_set": [
+       "aa:x",
+       "bb:2"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.e13.prec",
+      "end": 1795036509000,
+      "expression": "sum:qlport.e13.prec{aa:y,bb:1,run:r1795036500}",
+      "interval": 10,
+      "length": 1,
+      "metric": "qlport.e13.prec",
+      "pointlist": [
+       [
+        1795036500000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "aa:y,bb:1,run:r1795036500",
+      "start": 1795036500000,
+      "tag_set": [
+       "aa:y",
+       "bb:1"
+      ],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1795037400000,
+    "values": []
+   },
+   "to": 1795037400.0
+  }
+ },
+ "selected": {
+  "aa:x,bb:1,(aa:x OR (aa:y AND bb:1 AND run:r1795036500))": 1.0,
+  "aa:x,bb:2,(aa:x OR (aa:y AND bb:1 AND run:r1795036500))": 1.0,
+  "aa:y,bb:1,(aa:x OR (aa:y AND bb:1 AND run:r1795036500))": 1.0
+ },
+ "stored": {
+  "aa:x,bb:1,run:r1795036500": 1.0,
+  "aa:x,bb:2,run:r1795036500": 1.0,
+  "aa:y,bb:1,run:r1795036500": 1.0
+ },
+ "submitted": [
+  {
+   "series": [
+    {
+     "metric": "qlport.e13.prec",
+     "points": [
+      {
+       "timestamp": 1795036500,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795036500",
+      "aa:x",
+      "bb:2"
+     ],
+     "type": 1
+    }
+   ]
+  },
+  {
+   "series": [
+    {
+     "metric": "qlport.e13.prec",
+     "points": [
+      {
+       "timestamp": 1795036500,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795036500",
+      "aa:y",
+      "bb:1"
+     ],
+     "type": 1
+    }
+   ]
+  },
+  {
+   "series": [
+    {
+     "metric": "qlport.e13.prec",
+     "points": [
+      {
+       "timestamp": 1795036500,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "rig:b",
+      "run:r1795036500",
+      "aa:x",
+      "bb:1"
+     ],
+     "type": 1
+    }
+   ]
+  }
+ ]
+}

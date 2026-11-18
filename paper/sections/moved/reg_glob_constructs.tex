@@ -1,0 +1,50 @@
+\begin{remark}[E12: what a tag-value filter accepts]\label{rem:glob-constructs}
+Definition~\ref{def:glob} is the premise of every negative result in
+\S\ref{sec:regular}, and until the eleventh pass it was a sentence from Datadog's
+documentation. That is the shape of error this paper's method note is about: a rule read
+in a manual and never put to the system. It is also load-bearing in the reverse
+direction --- Table~\ref{tab:regex-glob-reasons} refuses $140$ matcher occurrences on
+the ground that no glob denotes a single arbitrary character, which is $13$ points of
+the $37.3\%$ the abstract quotes --- so if the documentation were incomplete, that row
+would be the paper's largest single error.
+
+Three series were submitted to the trial account, tagged \texttt{probe:web-1},
+\texttt{probe:web-12} and \texttt{probe:web-a}, with a control query carrying no glob to
+establish that all three were stored, which is the discipline E5 added. Then three
+questions, each designed so that the construct's presence and absence give different
+answers:
+
+\begin{center}\footnotesize
+\begin{tabular}{@{}lll@{}}
+\toprule
+Construct & Scope asked & If live \\
+\midrule
+single-character wildcard & \texttt{probe:web-?} & selects \texttt{web-1}, \texttt{web-a} \\
+character class & \texttt{probe:web-[0-9]} & selects \texttt{web-1} \\
+alternation in a value & \texttt{probe:web-1|web-a} & selects two \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The control stored all three series. All three questions came back as \emph{parse
+errors} --- \texttt{Rule 'or\_op' didn't match at '?'}, and the same at \texttt{[} and
+at \texttt{|}. That is a better answer than the one the experiment was designed to get.
+A construct that is accepted and selects nothing would be a literal, and a literal is
+still a fact about matching that a future Datadog release could change quietly; a
+construct the query grammar refuses to parse is absent from the language. Definition~14
+is now a measurement, and the $140$ occurrences rest on it rather than on
+\citet{ddfilter}.
+
+Two limits worth stating. This is one account on one site on one date, and Datadog
+versions its query grammar silently, so the reading is of the service as it behaved
+rather than of a specification. And a parse error is evidence about the \emph{filter}
+grammar only: it says nothing about what the editor's autocomplete offers or what a
+different API surface accepts, both of which are outside what any query in this corpus
+exercises.
+
+This is the ninth vendor measurement and the sixth to confirm rather than correct. The
+count is worth keeping visible in both directions: the three that corrected something
+are the reason the other six were worth running, and six confirmations in a row would
+be a reason to wonder whether the questions had got too easy.
+\end{remark}
