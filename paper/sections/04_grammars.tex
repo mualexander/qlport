@@ -129,17 +129,13 @@ and then rejects for want of an operand. We make no claim about the whole class 
 grammars for this language; a formulation that defers the decision past the
 parenthesis may well exist.
 
-The resolution is to shift --- to read the parenthesis as the label list --- and the
-consequence is that \texttt{a * on(x) group\_left (b)} is rejected even though a reader
-can see the intended parse. That is not a liberty we take: Prometheus~3.15.0 rejects the
-same expression with \texttt{1:25: parse error: unexpected end of input}, having consumed
-\texttt{(b)} as the label list and then found no operand, which is exactly the route our
-parser takes to the same verdict --- an inference from the column number, since what
-was recorded is the message and not a cached response. Accepting it would make our
-grammar \emph{more} permissive than the language it describes. The four neighbouring
-forms that Prometheus accepts are accepted here too, and our parser's verdict on all
-five is pinned by test; Prometheus's own is not, which makes this the least replicable
-of the server readings in this paper.
+The resolution is to shift, reading the parenthesis as the label list. That rejects
+\texttt{a * on(x) group\_left (b)}, even though a reader can see the intended parse, and
+it is not a liberty we take: Prometheus~3.15.0 rejects the same expression by the same
+route, and accepting it would make this grammar \emph{more} permissive than the language
+it describes (\apref{app:proofs}).
+
+\iffull\input{sections/moved/gr_conflict_resolution}\fi
 
 So RQ1's answer for PromQL is ``LALR(1) modulo one documented resolution'', not
 ``conflict-free'' --- one resolution, applied in both states, and the one the reference
@@ -173,14 +169,7 @@ queries the naive form stops parsing.}
 \label{tab:grammar-decisions}
 \end{table}
 
-\noindent
-The last row is worth singling out because it contradicts a reasonable assumption. Lark
-breaks a tie between two terminals that match at the same position by priority before
-length, not longest-match-first: a high-priority \texttt{STAR} terminal for the match-all
-scope \texttt{\{*\}} therefore splits the wildcard tag key \texttt{*-location} into
-\texttt{STAR} followed by \texttt{TAG}. Folding the wildcard into the tag terminal and
-letting the lowering layer recognise \texttt{*} is the fix, which makes match-all a
-lexical property of a scope term rather than a production of its own.
+\iffull\input{sections/moved/gr_lark_priority}\fi
 
 \subsection{Inferring the Datadog grammar}
 \label{sec:datadog-inference}
@@ -235,13 +224,12 @@ which it uses. The reason
 is that dashboard queries are not queries but \emph{templates} --- $88.6\%$ of Datadog and
 $82.5\%$ of PromQL query \emph{occurrences} contain at least one variable such as
 \texttt{\$host} or \texttt{\$\_\_rate\_interval}, so these two shares are counted the
-other way from the parse rates beside them. Both halves are now the same quantity. The
-Datadog figure used to read $87\%$, which is the share with a variable \emph{inside a
-scope} and not the share with a variable, while the PromQL figure beside it was the
-latter --- two definitions in one comparison, and the narrower one on the side the
-sentence was about. A translator for dashboards therefore takes a query
+other way from the parse rates beside them, and both are the same quantity only after a
+correction (\apref{app:eval}). A translator for dashboards therefore takes a query
 schema, not a query, and \S\ref{sec:evaluation} measures coverage on the instantiated
 form for that reason.
+
+\iffull\input{sections/moved/gr_template_shares}\fi
 
 What remains unparsed is not a grammar gap. The PromQL residual is almost entirely
 queries in which a variable is substituted into the middle of an identifier, so that no

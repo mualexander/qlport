@@ -276,8 +276,9 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
            {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
     76.2: ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
     6381: ("the occurrences that share carried", {"tr_gauge.tex"}),
-    87: ("the implementation-order figure, contrasted with the kernel's reach",
-         {"04_grammars.tex", "07_evaluation.tex", "tr_two_figures.tex"}),
+    87: ("the implementation-order figure contrasted with the kernel's reach, and\n"
+         "separately the scope-only template share it was once confused with",
+         {"07_evaluation.tex", "gr_template_shares.tex", "tr_two_figures.tex"}),
 }
 
 

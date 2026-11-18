@@ -1,0 +1,9 @@
+\begin{remark}[Priority before length, and the terminal it splits]\label{rem:lark-priority}
+The last row is worth singling out because it contradicts a reasonable assumption. Lark
+breaks a tie between two terminals that match at the same position by priority before
+length, not longest-match-first: a high-priority \texttt{STAR} terminal for the match-all
+scope \texttt{\{*\}} therefore splits the wildcard tag key \texttt{*-location} into
+\texttt{STAR} followed by \texttt{TAG}. Folding the wildcard into the tag terminal and
+letting the lowering layer recognise \texttt{*} is the fix, which makes match-all a
+lexical property of a scope term rather than a production of its own.
+\end{remark}

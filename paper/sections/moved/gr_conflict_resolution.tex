@@ -1,0 +1,13 @@
+\begin{remark}[Why the resolution is the reference implementation's]\label{rem:conflict-resolution}
+The resolution is to shift --- to read the parenthesis as the label list --- and the
+consequence is that \texttt{a * on(x) group\_left (b)} is rejected even though a reader
+can see the intended parse. That is not a liberty we take: Prometheus~3.15.0 rejects the
+same expression with \texttt{1:25: parse error: unexpected end of input}, having consumed
+\texttt{(b)} as the label list and then found no operand, which is exactly the route our
+parser takes to the same verdict --- an inference from the column number, since what
+was recorded is the message and not a cached response. Accepting it would make our
+grammar \emph{more} permissive than the language it describes. The four neighbouring
+forms that Prometheus accepts are accepted here too, and our parser's verdict on all
+five is pinned by test; Prometheus's own is not, which makes this the least replicable
+of the server readings in this paper.
+\end{remark}
