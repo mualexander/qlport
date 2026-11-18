@@ -1,0 +1,25 @@
+\begin{remark}[Where \texttt{.as\_rate()}'s divisor sits]\label{rem:as-rate-placement}
+The rollup is inside the space aggregation and the modifier's division is not, which is
+a second ordering question and was answered the same way round as the first: wrongly, at
+first, and then by measurement.
+
+\texttt{.as\_rate()} divides by the rollup interval. Dividing by a positive constant
+commutes with $\mathsf{sum}$, $\mathsf{avg}$, $\mathsf{min}$ and $\mathsf{max}$, so for
+those the divisor can sit on either side of the space aggregation and nothing
+distinguishes the readings. It does not commute with $\mathsf{count}$, which counts
+series and is blind to their values: $\mathrm{count}(x/\Delta) = \mathrm{count}(x)$
+while $\mathrm{count}(x)/\Delta$ is not. So one operator decides the question for all
+of them, and asking it of a real account answers it ---
+\texttt{count:m\{*\} by \{g\}.rollup(avg, 30)} returns $1$ per group and the same
+query with \texttt{.as\_rate()} returns $1/30$
+(\texttt{scripts\slash as\_rate\_order.py}). Datadog divides the aggregated result, so
+the emitter places the divisor outside the aggregation for $\mathsf{count}$ and, for
+readability, leaves it inside where it commutes.
+
+The same run settles the modifier's other ordering, against an explicit
+\texttt{.rollup}. Submitting every $10$\,s and rolling up over $30$\,s separates
+dividing each delta by its own submission interval from rolling up and dividing once by
+the bucket: the first reads $1$, the second $10/30$. Datadog reads $10/30$. Both
+readings coincide whenever the submission grid equals the rollup width, which is every
+harness in this project and the reason the question went unasked for so long.
+\end{remark}

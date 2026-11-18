@@ -1,0 +1,60 @@
+\begin{remark}[The assumption that underwrites all of the output]%
+\label{rem:gauge}
+Writing Theorem~\ref{thm:kernel} down is what exposed this. An
+$\mathit{op}\in\{\mathsf{avg},\mathsf{min},\mathsf{max},\mathsf{count}\}$ rollup reduces
+the points Datadog \emph{stores}. For a GAUGE those are the samples Prometheus also
+holds, and \texttt{avg\_over\_time(x[$\Delta$s])} is exact. For a COUNT they are
+per-interval deltas, and averaging deltas is not averaging running totals --- no
+\texttt{*\_over\_time} of the cumulative series computes it, and the emitted expression is
+not approximately right but unrelated. The dashboard never says which, so the emission is
+correct for a gauge and the emitter records \texttt{METRIC\_TYPE\_UNKNOWN} to say so. It
+reports rather than refuses
+because a rule \emph{can} be chosen here; for a $\mathsf{sum}$ rollup none can, and the
+same code is a refusal there instead.
+
+The condition is not a precaution. Asked of a real account, a bare query on a
+\texttt{COUNT} metric returns the \emph{mean} of four stored deltas,
+so Datadog applies its enforced \texttt{avg} default rather than the \texttt{.as\_count()}
+its user interface appends --- averaging deltas where \texttt{avg\_over\_time} averages
+running totals (\texttt{scripts\slash trial\_checks.py e3}). The deltas are $1$, $14$,
+$2$ and $3$, chosen so that each candidate predicts a different reading: $\mathsf{avg}$
+gives $5$, $\mathsf{sum}$ gives $20$, a $\mathsf{count}$ rollup gives $4$ and
+$\mathsf{sum}$ over the reported interval gives $1$. The account returns $5$. The first
+version of this probe used $1$, $2$, $3$ and $10$, whose mean is $4$ and whose count is
+also $4$, and named $\mathsf{avg}$ against a rival set that did not include
+$\mathsf{count}$ --- so the reading it took could not have told the two apart.
+
+The condition was also silent until now, and it is not rare. At an earlier stage of this
+work it appeared to hold of $6{,}381$ translated occurrences --- $76.2\%$ of the
+translated set as it then stood, which was smaller than today's --- because Datadog's
+default time aggregator is $\mathsf{avg}$ and most queries state no method at all. The remaining quarter looked exempt: a $\mathsf{sum}$ rollup needs a
+counter, the ways to ask for one are \texttt{.as\_count()}, \texttt{.as\_rate()} and
+\texttt{.rollup(sum, $\Delta$)}, and all three are documented for \texttt{COUNT}
+metrics --- so a query using one, we reasoned, establishes the type it does not state.
+
+It does not, and the error was of a kind this paper has made before: a rule read in a
+manual and never asked of the system. Submitting a \texttt{GAUGE} and querying it with
+each modifier returns the plain rollup, unchanged and undivided --- Datadog accepts both
+on a gauge and silently ignores them rather than rejecting the query
+(\texttt{scripts\slash as\_rate\_order.py}). The modifier therefore records what the
+dashboard's author took the metric to be. It is evidence about a person, not about a
+type, and no reading of the query distinguishes the two.
+
+The third way is weaker still, and for a different reason. \texttt{.rollup(sum, $\Delta$)}
+over a \texttt{GAUGE} is not ignored: the same experiment reads it as the sum of the
+stored samples, which is a perfectly meaningful query that a dashboard author might well
+intend. So where \texttt{.as\_count()} on a gauge is a mistake nobody benefits from,
+summing a gauge over a window is an ordinary thing to want --- and the translation this
+front end chooses for it, the cumulative difference, computes something else entirely.
+Of the three pieces of evidence the query can carry, the one that is hardest to dismiss
+as author error is the one whose misreading is least benign. With that premise withdrawn the
+caveat holds of all $8{,}444$ translated occurrences, $100\%$ of them
+(Table~\ref{tab:translation-caveats}).
+
+Recording it does not move $\kappa$ --- the translations are unchanged --- which is the
+point: it changes what they are claimed to be. Its refusing counterpart still never fires,
+but for a weaker reason than the one we gave: not because the method establishes the type,
+but because it is the only syntax that asks for the rule, so the emitter always has a rule
+to choose and never has to stop. So the same unstated fact is a diagnostic that cannot
+occur and a precondition that always does.
+\end{remark}

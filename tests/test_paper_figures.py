@@ -273,10 +273,10 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
            {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
     95.6: ("kappa after it and before the counter-average fix",
            {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
-    76.2: ("METRIC_TYPE_UNKNOWN before E6", {"05_translation.tex"}),
-    6381: ("the occurrences that share carried", {"05_translation.tex"}),
+    76.2: ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
+    6381: ("the occurrences that share carried", {"tr_gauge.tex"}),
     87: ("the implementation-order figure, contrasted with the kernel's reach",
-         {"04_grammars.tex", "05_translation.tex", "07_evaluation.tex"}),
+         {"04_grammars.tex", "07_evaluation.tex", "tr_two_figures.tex"}),
 }
 
 
@@ -431,7 +431,7 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb03.kappa_pct", "08_discussion.tex"),
     ("nb03.kappa_pct", "09_conclusion.tex"),
     ("nb03.kappa_pct", "body.tex"),
-    ("nb03.kernel_occurrences", "05_translation.tex"),
+    ("nb03.kernel_occurrences", "tr_two_figures.tex"),
     ("nb03.kernel_pct_corpus", "01_introduction.tex"),
     ("nb03.kernel_pct_corpus", "05_translation.tex"),
     ("nb03.kernel_pct_translated", "05_translation.tex"),

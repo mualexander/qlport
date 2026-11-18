@@ -1,0 +1,10 @@
+\begin{remark}[One gap per query]\label{rem:one-gap}
+Lowering abandons a query at its first untranslatable construct, and the
+$\bot$ it returns carries that one \texttt{Gap}. So the catalogue of
+\S\ref{sec:gaps} counts \emph{first} refusals: a query with two problems appears under
+whichever is reached first, and the per-code counts are lower bounds on how many queries
+each construct affects. What they are not lower bounds on is the total --- every refused
+query is counted exactly once --- so $\kappa$ is unaffected, and the ordering of
+\S\ref{sec:staircase} is computed from features rather than from gap codes for this
+reason.
+\end{remark}

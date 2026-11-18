@@ -1,0 +1,35 @@
+\begin{proof}[Proof of Theorem~\ref{thm:arith}]
+Induction on the structure of $q$. For $q\in\mathcal{K}$ this is
+Theorem~\ref{thm:kernel}, and for $q=\mathrm{Number}(c)$ both sides denote $c$.
+
+$\mathrm{Scale}(c,e)$ emits $p_e * c$. Scalar--vector arithmetic is pointwise in both
+languages and preserves the domain, so the claim follows from the hypothesis on $e$; the
+same argument covers a $\mathrm{BinOp}$ one of whose operands is a $\mathrm{Number}$,
+where $\chi$ takes the other operand's value.
+
+For $\mathrm{BinOp}(\oplus,l,r)$ with both operands vectors, write
+$\overline{k_l}=\chi(l)$ and $\overline{k_r}=\chi(r)$. By induction the two operand
+results agree between the systems, so it is enough that the two languages pair them the
+same way and the emitter asks for the pairing that does.
+
+If $\overline{k_l}=\overline{k_r}=\overline{k}$, the emitter emits $p_l \oplus p_r$ with
+no modifier. Each operand's PromQL result carries exactly the labels $\overline{k}$, by
+Lemma~\ref{lem:pq-matching}'s last clause, so matching on identical label sets
+\emph{is} matching on $\overline{k}$; the domain is the intersection and the values are
+pointwise. Lemma~\ref{lem:dd-matching} gives Datadog the same intersection and the same
+values.
+
+If $\overline{k_r}\subsetneq\overline{k_l}$, the emitter emits
+$p_l \oplus \texttt{on}(\overline{k_r})\ \texttt{group\_left()}\ p_r$. By
+Lemma~\ref{lem:pq-matching} the result is keyed by $\overline{k_l}$, each element paired
+with the unique element of $p_r$ agreeing on $\overline{k_r}$ --- unique because $p_r$ is
+an aggregation by $\overline{k_r}$, so its elements have distinct $\overline{k_r}$
+values. That is term for term the first clause of Lemma~\ref{lem:dd-matching}. The
+symmetric case emits \texttt{group\_right()}. Taking $\overline{k_r}=\emptyset$ gives the
+ungrouped operand, where \texttt{on()} matches everything and the broadcast is Datadog's.
+
+If neither key set contains the other, $\chi(q)$ is undefined, the emitter refuses and
+$q\notin\mathrm{dom}(T)$. Finally $C$ gains nothing, because the emitter attaches no
+caveat at a $\mathrm{BinOp}$ or a $\mathrm{Scale}$: the modifiers it chooses are decided
+by $\chi$, which is a function of the query text alone.
+\end{proof}

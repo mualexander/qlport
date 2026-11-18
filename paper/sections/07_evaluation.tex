@@ -151,14 +151,14 @@ no amount of engineering on a Datadog back end reaches.
 
 The remaining $212$ --- $2.4\%$ --- are the third kind, and the honest statement about
 them is that they are unwritten code rather than a language result. \texttt{UNSUPPORTED\_FUNCTION} is
-almost all of it, led by \texttt{top(...)} at $139$ occurrences, which \apref{app:eval}
-settles as expressible: PromQL denotes Datadog's ranking with an \texttt{@}-pinned
+almost all of it, led by \texttt{top(...)} at $139$ occurrences, which is expressible
+after all (\apref{app:eval}): PromQL denotes Datadog's ranking with an \texttt{@}-pinned
 \texttt{topk}, read off a real server, and the vendor's own \texttt{top()} was then
 measured to behave as its documentation says. Three constructs this paper once counted as
 language gaps have moved into this column on being measured --- \texttt{.weighted()},
 which does nothing at all, and the single-key scope disjunctions, which
-Proposition~\ref{prop:disjunction} translates --- and \apref{app:eval} records each,
-because a refusal that looks like evidence about a language and turns out to be evidence
+Proposition~\ref{prop:disjunction} translates --- and each is recorded there
+(\apref{app:eval}), because a refusal that looks like evidence about a language and turns out to be evidence
 about a translator is the mistake this method is most exposed to.
 
 \iffull\input{sections/moved/eval_unsupported}\fi

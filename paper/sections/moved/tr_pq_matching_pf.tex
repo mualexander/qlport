@@ -1,0 +1,9 @@
+\begin{proof}[Proof of Lemma~\ref{lem:pq-matching}]
+The first three clauses are PromQL's specification~\citep{promql}, and all four were
+checked against a real server on the same four series as Lemma~\ref{lem:dd-matching}. The last
+is the one worth checking rather than assuming, because the whole construction depends on
+it: the operands of a translated division come from \emph{different metrics}, so if
+aggregation kept the metric name their label sets could never be identical and default
+matching would pair nothing at all. It does not keep it, and
+$\texttt{sum by (g)}(a)\,/\,\texttt{sum by (g)}(b)$ duly returns $g{=}x$.
+\end{proof}

@@ -1,0 +1,21 @@
+\begin{proof}[Proof of Lemma~\ref{lem:scope}]
+Term by term. A literal tag with a non-empty value is an equality matcher; a negated one
+its negation; a glob is
+Proposition~\ref{prop:glob-regex}; a bare key or \texttt{key:*} is presence, which is
+\texttt{=\textasciitilde{}".+"} and not \texttt{".*"}, the latter also matching series
+carrying no such label; a single-key disjunction is
+Proposition~\ref{prop:disjunction}. Conjunction is the comma in both languages.
+Injectivity on label sets is needed because mangling sends \texttt{a.b} and \texttt{a\_b}
+to one name, and on metric names for the same reason: the selector has to pick out the
+series $\mathrm{name}(s)=m$ does, and \texttt{metric\_name} is the same mangling.
+Remark~\ref{rem:mangling} measures both.
+
+The empty-value hypothesis is the clause this lemma lacked until the eighth review pass,
+and it is the one that cannot be discharged by a condition on the target: Datadog
+separates three tag states and Prometheus's data model admits two, so where a series
+carries a tag with an empty value the presence matchers are wrong by that series and the
+bare forms \texttt{k:} and \texttt{!k:} have no counterpart at all.
+\S\ref{sec:gaps} reports what the translator does about each --- a refusal for the bare
+forms, a caveat for presence --- and \texttt{scripts\slash scope\_empty\_tag.py} measures
+all three states against a real account.
+\end{proof}

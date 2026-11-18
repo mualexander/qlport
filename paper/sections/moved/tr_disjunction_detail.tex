@@ -1,0 +1,25 @@
+\begin{remark}[Where the anchors go, and what the comma admits]\label{rem:disjunction-detail}
+Given the semantics of alternation the only thing to check is where the anchors go, and
+that is a question about Prometheus rather than about this translator:
+\begin{center}\footnotesize
+\texttt{\textasciicircum(?:aws|gcp)\$} \quad denotes $\textstyle\bigcup_i L(r_i)$
+\qquad versus \qquad
+\texttt{\textasciicircum aws|gcp\$} \quad which also admits \texttt{awsx}
+\end{center}
+Prometheus compiles the first. Since asserting that would be asserting what we want, it
+is read off a real server: the matcher \texttt{k=\textasciitilde{}"aws|gcp"}, over series
+carrying \texttt{aws}, \texttt{azure}, \texttt{gcp}, \texttt{awsx} and \texttt{xgcp},
+selects exactly the first and third --- and its negation selects the other three
+\emph{and} a series carrying no \texttt{k} at all, which is what the negated Datadog
+scope means (\texttt{scripts/verify\_matchers.py}, Prometheus~3.15.0, with the responses
+recorded and regression-tested).
+
+Two details decide how much of the corpus this reaches. Datadog's \texttt{or} binds
+more loosely than its comma, so \texttt{\{a:x or a:y,*,*\}} parses as
+$a{:}x \vee (a{:}y \wedge * \wedge *)$ and the right branch is a \emph{conjunction} ---
+one whose match-all terms contribute nothing, leaving a single constraint. Lowering each
+branch before asking whether it is one constraint, rather than requiring a bare term,
+is what admits those. And a branch that merely asks for the tag to be present subsumes
+every value, so the union collapses to
+\texttt{k=\textasciitilde{}".+"} rather than growing an alternative.
+\end{remark}

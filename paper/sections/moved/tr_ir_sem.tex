@@ -1,0 +1,31 @@
+\begin{definition}[Denotation]\label{def:ir-sem}
+Fix a database $D$ and a time $t$. Writing $\lambda(s)$ for a series' label set and
+$s|_{(a,b]}$ for its samples in that interval:
+\begin{align*}
+\sem{\mathrm{Select}(m,\overline{\mu},\theta)}(D,t)
+  &= \{\, s\in D \;:\; \mathrm{name}(s)=m,\ \lambda(s)\models\overline{\mu} \,\}\\
+\sem{\mathrm{Window}(e,w)}(D,t) &= \{\, (\lambda(s),\ s|_{(t-w,\,t]}) \;:\; s\in\sem{e}(D,t) \,\}\\
+\sem{\mathrm{Rollup}(\mathit{op},\Delta,e,b)}(D,t)
+  &= \{\, (\lambda(s),\ \mathit{op}(s|_{[t,\,t+\Delta)})) \;:\; s\in\sem{e}(D,t) \,\}
+\end{align*}
+For space aggregation let $\pi_{\overline{k}}$ keep the labels in $\overline{k}$ under
+$\mathit{mode}=\mathsf{by}$ and drop them under $\mathsf{without}$, and let $G_\lambda$
+collect the values of $\sem{e}(D,t)$ whose label set agrees with $\lambda$ on
+$\overline{k}$; then
+\[
+\sem{\mathrm{Agg}(\mathit{op},\overline{k},\mathit{mode},e)}(D,t)
+  = \{\,(\pi_{\overline{k}}(\lambda),\ \mathit{op}(G_\lambda)\,/\,\Delta^{[b]})\,\}.
+\]
+Here $\Delta^{[b]}$ divides only when $e$ is a $\mathrm{Rollup}$ whose $b$ (Datadog's
+\texttt{.as\_rate()}) holds, and a $\mathrm{Rollup}$ that no $\mathrm{Agg}$ encloses
+divides its own values instead. Putting the divisor on the space aggregation rather
+than on the rollup is not presentational: Remark~\ref{rem:as-rate-placement} measures
+Datadog dividing the aggregated result, and the two placements differ for
+$\mathit{op}=\mathsf{count}$. An earlier version of this definition divided per series,
+which matched neither the vendor nor, after the differential test of
+\S\ref{sec:differential}, our own emitter.
+$\mathrm{Number}$, $\mathrm{Scale}$ and
+$\mathrm{BinOp}$ are pointwise on matching label sets. A matcher is satisfied as
+PromQL satisfies it, with $=\!\sim$ anchored over the whole value
+(\S\ref{sec:disjunction}).
+\end{definition}

@@ -43,7 +43,7 @@ $\mathsf{V}$ & $\mathrm{Scale}(c,e^{\mathsf{V}})$, $\;\mathrm{Number}(c)$ & \\
 Here $\theta\in\{\text{counter},\text{gauge},\text{unknown}\}$ --- written $\theta$ and
 not $\kappa$, which is Definition~\ref{def:kappa}'s coverage and appeared in this section
 meaning both. $\theta$ is an \emph{annotation} the lowering infers and the emitter reads,
-not a constraint on which series a $\mathrm{Select}$ denotes: the denotation below ignores
+not a constraint on which series a $\mathrm{Select}$ denotes --- the denotation ignores
 it, so two $\mathrm{Select}$s differing only in $\theta$ are denotationally equal, and what
 makes the kind load-bearing is hypothesis~(3) of Theorem~\ref{thm:kernel} rather than the
 semantics. The third value is the common case --- no method in the query text settles the
@@ -54,39 +54,19 @@ A term is \emph{well sorted} if each argument has the sort its position requires
 $\mathsf{V}$ terms are complete queries.
 \end{definition}
 
-\begin{definition}[Denotation]\label{def:ir-sem}
-Fix a database $D$ and a time $t$. Writing $\lambda(s)$ for a series' label set and
-$s|_{(a,b]}$ for its samples in that interval:
-\begin{align*}
-\sem{\mathrm{Select}(m,\overline{\mu},\theta)}(D,t)
-  &= \{\, s\in D \;:\; \mathrm{name}(s)=m,\ \lambda(s)\models\overline{\mu} \,\}\\
-\sem{\mathrm{Window}(e,w)}(D,t) &= \{\, (\lambda(s),\ s|_{(t-w,\,t]}) \;:\; s\in\sem{e}(D,t) \,\}\\
-\sem{\mathrm{Rollup}(\mathit{op},\Delta,e,b)}(D,t)
-  &= \{\, (\lambda(s),\ \mathit{op}(s|_{[t,\,t+\Delta)})) \;:\; s\in\sem{e}(D,t) \,\}
-\end{align*}
-For space aggregation let $\pi_{\overline{k}}$ keep the labels in $\overline{k}$ under
-$\mathit{mode}=\mathsf{by}$ and drop them under $\mathsf{without}$, and let $G_\lambda$
-collect the values of $\sem{e}(D,t)$ whose label set agrees with $\lambda$ on
-$\overline{k}$; then
-\[
-\sem{\mathrm{Agg}(\mathit{op},\overline{k},\mathit{mode},e)}(D,t)
-  = \{\,(\pi_{\overline{k}}(\lambda),\ \mathit{op}(G_\lambda)\,/\,\Delta^{[b]})\,\}.
-\]
-Here $\Delta^{[b]}$ divides only when $e$ is a $\mathrm{Rollup}$ whose $b$ (Datadog's
-\texttt{.as\_rate()}) holds, and a $\mathrm{Rollup}$ that no $\mathrm{Agg}$ encloses
-divides its own values instead. Putting the divisor on the space aggregation rather
-than on the rollup is not presentational: Remark~\ref{rem:as-rate-placement} measures
-Datadog dividing the aggregated result, and the two placements differ for
-$\mathit{op}=\mathsf{count}$. An earlier version of this definition divided per series,
-which matched neither the vendor nor, after the differential test of
-\S\ref{sec:differential}, our own emitter.
-$\mathrm{Number}$, $\mathrm{Scale}$ and
-$\mathrm{BinOp}$ are pointwise on matching label sets. A matcher is satisfied as
-PromQL satisfies it, with $=\!\sim$ anchored over the whole value
-(\S\ref{sec:disjunction}).
-\end{definition}
+Each sort has the denotation it looks like it should (\apref{app:proofs}): a
+$\mathrm{Select}$ is the set of series whose name and labels match, a $\mathrm{Rollup}$
+reduces each of those series over $[t,t+\Delta)$, an $\mathrm{Agg}$ groups the resulting
+vector by $\overline{k}$ and reduces each group, and $\mathrm{Number}$, $\mathrm{Scale}$
+and $\mathrm{BinOp}$ are pointwise on matching label sets. One choice in it is not
+presentational: \texttt{.as\_rate()}'s divisor sits on the space aggregation rather than
+on the rollup, because Datadog divides the aggregated result and the two placements
+differ for $\mathit{op}=\mathsf{count}$ --- measured rather than chosen
+(\apref{app:experiments}).
 
-\noindent
+\iffull\input{sections/moved/tr_ir_sem}\fi
+
+\inlineonly{\noindent}%
 Two features of Definition~\ref{def:ir} are load-bearing rather than tidy. First,
 $\mathrm{Rollup}$ is the composite of $\mathrm{Window}$ and a reduction, which is why it
 goes from $\mathsf{S}$ to $\mathsf{V}$ in one step: Datadog has no term for a window on
@@ -126,31 +106,7 @@ of that commutation argument. Every translation it \emph{did} emit was still cor
 because where the aggregators commute the two orders coincide, which is exactly what
 makes the error hard to notice: the failure shows up only in the refusals.
 
-\begin{remark}[Where \texttt{.as\_rate()}'s divisor sits]\label{rem:as-rate-placement}
-The rollup is inside the space aggregation and the modifier's division is not, which is
-a second ordering question and was answered the same way round as the first: wrongly, at
-first, and then by measurement.
-
-\texttt{.as\_rate()} divides by the rollup interval. Dividing by a positive constant
-commutes with $\mathsf{sum}$, $\mathsf{avg}$, $\mathsf{min}$ and $\mathsf{max}$, so for
-those the divisor can sit on either side of the space aggregation and nothing
-distinguishes the readings. It does not commute with $\mathsf{count}$, which counts
-series and is blind to their values: $\mathrm{count}(x/\Delta) = \mathrm{count}(x)$
-while $\mathrm{count}(x)/\Delta$ is not. So one operator decides the question for all
-of them, and asking it of a real account answers it ---
-\texttt{count:m\{*\} by \{g\}.rollup(avg, 30)} returns $1$ per group and the same
-query with \texttt{.as\_rate()} returns $1/30$
-(\texttt{scripts\slash as\_rate\_order.py}). Datadog divides the aggregated result, so
-the emitter places the divisor outside the aggregation for $\mathsf{count}$ and, for
-readability, leaves it inside where it commutes.
-
-The same run settles the modifier's other ordering, against an explicit
-\texttt{.rollup}. Submitting every $10$\,s and rolling up over $30$\,s separates
-dividing each delta by its own submission interval from rolling up and dividing once by
-the bucket: the first reads $1$, the second $10/30$. Datadog reads $10/30$. Both
-readings coincide whenever the submission grid equals the rollup width, which is every
-harness in this project and the reason the question went unasked for so long.
-\end{remark}
+\iffull\input{sections/moved/tr_as_rate_placement}\fi
 
 \subsection{Lowering}
 \label{sec:lowering}
@@ -181,16 +137,13 @@ the IR is supplied. This is not elegant and the alternative is worse: inventing 
 during lowering would bury an assumption in the IR, where nothing downstream could see
 that it had been made.
 
-\begin{remark}[One gap per query]\label{rem:one-gap}
-Lowering abandons a query at its first untranslatable construct, and the
-$\bot$ it returns carries that one \texttt{Gap}. So the catalogue of
-\S\ref{sec:gaps} counts \emph{first} refusals: a query with two problems appears under
-whichever is reached first, and the per-code counts are lower bounds on how many queries
-each construct affects. What they are not lower bounds on is the total --- every refused
-query is counted exactly once --- so $\kappa$ is unaffected, and the ordering of
-\S\ref{sec:staircase} is computed from features rather than from gap codes for this
-reason.
-\end{remark}
+Lowering abandons a query at its first untranslatable construct, so the catalogue of
+\S\ref{sec:gaps} counts \emph{first} refusals and its per-code counts are lower bounds
+on how many queries each construct affects. The total is unaffected --- every refused
+query is counted exactly once --- so neither $\kappa$ nor the ordering of
+\S\ref{sec:staircase} depends on which refusal came first (\apref{app:proofs}).
+
+\iffull\input{sections/moved/tr_one_gap}\fi
 
 \subsection{Counter rollups}
 The rules for \texttt{.as\_count()}, \texttt{.as\_rate()} and \texttt{.rollup(sum,
@@ -221,29 +174,13 @@ the same alternation under \texttt{!\textasciitilde{}} instead of
 \texttt{=\textasciitilde{}}.
 \end{proposition}
 
-Given the semantics of alternation the only thing to check is where the anchors go, and
-that is a question about Prometheus rather than about this translator:
-\begin{center}\footnotesize
-\texttt{\textasciicircum(?:aws|gcp)\$} \quad denotes $\textstyle\bigcup_i L(r_i)$
-\qquad versus \qquad
-\texttt{\textasciicircum aws|gcp\$} \quad which also admits \texttt{awsx}
-\end{center}
-Prometheus compiles the first. Since asserting that would be asserting what we want, it
-is read off a real server: the matcher \texttt{k=\textasciitilde{}"aws|gcp"}, over series
-carrying \texttt{aws}, \texttt{azure}, \texttt{gcp}, \texttt{awsx} and \texttt{xgcp},
-selects exactly the first and third --- and its negation selects the other three
-\emph{and} a series carrying no \texttt{k} at all, which is what the negated Datadog
-scope means (\texttt{scripts/verify\_matchers.py}, Prometheus~3.15.0, with the responses
-recorded and regression-tested).
+What the proposition rests on is where the anchors go --- Prometheus anchors an
+alternation over the whole value, which is read off a real server rather than asserted
+(\texttt{scripts\slash verify\_matchers.py}) --- and how much of the corpus the
+single-key case reaches, which turns on Datadog's \texttt{or} binding more loosely than
+its comma and on a presence branch subsuming every value (\apref{app:proofs}).
 
-Two details decide how much of the corpus this reaches. Datadog's \texttt{or} binds
-more loosely than its comma, so \texttt{\{a:x or a:y,*,*\}} parses as
-$a{:}x \vee (a{:}y \wedge * \wedge *)$ and the right branch is a \emph{conjunction} ---
-one whose match-all terms contribute nothing, leaving a single constraint. Lowering each
-branch before asking whether it is one constraint, rather than requiring a bare term,
-is what admits those. And a branch that merely asks for the tag to be present subsumes
-every value, so the union collapses to
-\texttt{k=\textasciitilde{}".+"} rather than growing an alternative.
+\iffull\input{sections/moved/tr_disjunction_detail}\fi
 
 What remains refused is every disjunction whose branches do not all constrain
 \emph{one} key --- across different keys, or within a branch that constrains two at
@@ -281,105 +218,31 @@ need a sample older than the bucket and which the anchored form again avoids
 (Remark~\ref{rem:series-start}); and \texttt{METRIC\_TYPE\_UNKNOWN}, which deserves its
 own paragraph.
 
-\begin{remark}[The assumption that underwrites all of the output]%
-\label{rem:gauge}
-Writing Theorem~\ref{thm:kernel} down is what exposed this. An
-$\mathit{op}\in\{\mathsf{avg},\mathsf{min},\mathsf{max},\mathsf{count}\}$ rollup reduces
-the points Datadog \emph{stores}. For a GAUGE those are the samples Prometheus also
-holds, and \texttt{avg\_over\_time(x[$\Delta$s])} is exact. For a COUNT they are
-per-interval deltas, and averaging deltas is not averaging running totals --- no
-\texttt{*\_over\_time} of the cumulative series computes it, and the emitted expression is
-not approximately right but unrelated. The dashboard never says which, so the emission is
-correct for a gauge and the emitter records \texttt{METRIC\_TYPE\_UNKNOWN} to say so. It
-reports rather than refuses
-because a rule \emph{can} be chosen here; for a $\mathsf{sum}$ rollup none can, and the
-same code is a refusal there instead.
+Two measurements settle what \texttt{METRIC\_TYPE\_UNKNOWN} costs, and both are
+uncomfortable. The first is that the condition cannot be discharged from the query text.
+Datadog accepts \texttt{.as\_count()} and \texttt{.as\_rate()} on a \texttt{GAUGE} and
+silently ignores them, so a modifier records what a dashboard's author took the metric to
+be rather than what it is; it is evidence about a person, not about a type. With that
+premise withdrawn the caveat holds of all $8{,}444$ translated occurrences --- $100\%$ of
+them (Table~\ref{tab:translation-caveats}). The second is that it can nonetheless be
+checked, because the repository the corpus came from declares what the dashboards do not:
+beside each integration's \texttt{assets\slash dashboards\slash},
+\texttt{integrations-core} ships a \texttt{metadata.csv} with a \texttt{metric\_type}
+column. Joining the two, $7{,}557$ of the translated occurrences --- $89.5\%$ --- name a
+metric the repository declares as a gauge or a count, and the front end's inference
+disagrees with the declaration on $491$ of them: $6.5\%$ of the decidable set, $5.6\%$ of
+the corpus. The two directions of error are both present and are different failures. In
+$242$ occurrences the metric is a \texttt{count} and the query carries no evidence of it,
+so the emitted \texttt{*\_over\_time} reduces running totals where Datadog reduces deltas
+--- unrelated rather than approximate. In $249$ the metric is a \texttt{gauge} and the
+query carries a counter modifier anyway, so the emitter chooses a counter rule for a
+series with no deltas to difference. Recording this does not move $\kappa$ --- the
+translations are unchanged --- which is the point: it changes what they are claimed to
+be. \apref{app:experiments} gives both designs, what came back, and what a disagreement
+is and is not evidence of.
 
-The condition is not a precaution. Asked of a real account, a bare query on a
-\texttt{COUNT} metric returns the \emph{mean} of four stored deltas,
-so Datadog applies its enforced \texttt{avg} default rather than the \texttt{.as\_count()}
-its user interface appends --- averaging deltas where \texttt{avg\_over\_time} averages
-running totals (\texttt{scripts\slash trial\_checks.py e3}). The deltas are $1$, $14$,
-$2$ and $3$, chosen so that each candidate predicts a different reading: $\mathsf{avg}$
-gives $5$, $\mathsf{sum}$ gives $20$, a $\mathsf{count}$ rollup gives $4$ and
-$\mathsf{sum}$ over the reported interval gives $1$. The account returns $5$. The first
-version of this probe used $1$, $2$, $3$ and $10$, whose mean is $4$ and whose count is
-also $4$, and named $\mathsf{avg}$ against a rival set that did not include
-$\mathsf{count}$ --- so the reading it took could not have told the two apart.
-
-The condition was also silent until now, and it is not rare. At an earlier stage of this
-work it appeared to hold of $6{,}381$ translated occurrences --- $76.2\%$ of the
-translated set as it then stood, which was smaller than today's --- because Datadog's
-default time aggregator is $\mathsf{avg}$ and most queries state no method at all. The remaining quarter looked exempt: a $\mathsf{sum}$ rollup needs a
-counter, the ways to ask for one are \texttt{.as\_count()}, \texttt{.as\_rate()} and
-\texttt{.rollup(sum, $\Delta$)}, and all three are documented for \texttt{COUNT}
-metrics --- so a query using one, we reasoned, establishes the type it does not state.
-
-It does not, and the error was of a kind this paper has made before: a rule read in a
-manual and never asked of the system. Submitting a \texttt{GAUGE} and querying it with
-each modifier returns the plain rollup, unchanged and undivided --- Datadog accepts both
-on a gauge and silently ignores them rather than rejecting the query
-(\texttt{scripts\slash as\_rate\_order.py}). The modifier therefore records what the
-dashboard's author took the metric to be. It is evidence about a person, not about a
-type, and no reading of the query distinguishes the two.
-
-The third way is weaker still, and for a different reason. \texttt{.rollup(sum, $\Delta$)}
-over a \texttt{GAUGE} is not ignored: the same experiment reads it as the sum of the
-stored samples, which is a perfectly meaningful query that a dashboard author might well
-intend. So where \texttt{.as\_count()} on a gauge is a mistake nobody benefits from,
-summing a gauge over a window is an ordinary thing to want --- and the translation this
-front end chooses for it, the cumulative difference, computes something else entirely.
-Of the three pieces of evidence the query can carry, the one that is hardest to dismiss
-as author error is the one whose misreading is least benign. With that premise withdrawn the
-caveat holds of all $8{,}444$ translated occurrences, $100\%$ of them
-(Table~\ref{tab:translation-caveats}).
-
-Recording it does not move $\kappa$ --- the translations are unchanged --- which is the
-point: it changes what they are claimed to be. Its refusing counterpart still never fires,
-but for a weaker reason than the one we gave: not because the method establishes the type,
-but because it is the only syntax that asks for the rule, so the emitter always has a rule
-to choose and never has to stop. So the same unstated fact is a diagnostic that cannot
-occur and a precondition that always does.
-\end{remark}
-
-\begin{remark}[How often the inference is wrong]\label{rem:type-measured}
-A precondition that holds of all the output and cannot be checked is the weakest thing
-this paper carries, and it turns out to be checkable. The dashboards do not record a
-metric's type --- but the repository they come from does. Beside each integration's
-\texttt{assets\slash dashboards\slash}, \texttt{integrations-core} ships a
-\texttt{metadata.csv} with a \texttt{metric\_type} column, and
-\texttt{scripts\slash fetch\_corpus.py} had taken only the dashboards.
-\texttt{scripts\slash fetch\_metric\_types.py} fetches the rest, reading the commit
-from the corpus's own record so the declarations cannot come from a different tree than
-the queries. At that commit those files declare $37{,}070$ metric names: $23{,}597$
-\texttt{gauge}, $13{,}140$ \texttt{count}, $330$ \texttt{rate} and three that two
-integrations declare incompatibly.
-
-Joining the two settles the hypothesis for most of the corpus
-(\texttt{scripts\slash type\_declared.py}). Of the $8{,}444$ translated occurrences,
-$7{,}557$ --- $89.5\%$ --- name a metric the repository declares as a gauge or a count,
-and the front end's inference disagrees with the declaration on $491$ of them: $6.5\%$
-of the decidable set, $5.6\%$ of the corpus. The two directions of error are both
-present and are different failures. In $242$ occurrences the metric is a
-\texttt{count} and the query carries no evidence of it, so the emitter translates it as
-a gauge and the \texttt{*\_over\_time} it produces reduces running totals where
-Datadog reduces deltas --- the case this remark describes as unrelated rather than
-approximate. In $249$ the metric is a \texttt{gauge} and the query carries
-\texttt{.as\_count()}, \texttt{.as\_rate()} or \texttt{.rollup(sum, $\Delta$)}
-anyway, so the evidence is not merely weak but actively wrong, and the emitter chooses
-a counter rule for a series that has no deltas to difference.
-
-What this is evidence of, and what it is not. \texttt{metadata.csv} states what an
-integration submits, so a disagreement says the inference is wrong, not that it must
-be: a dashboard can query a metric the integration does not ship, and an operator can
-submit the same name as something else. That is the same standard \S\ref{sec:emission}
-applies to the modifier evidence this replaces, and it is a sharper instrument than the
-one it replaces rather than a proof. The remaining $887$ occurrences divide three ways: $736$ name metrics the
-repository does not declare, $134$ name \texttt{rate} metrics --- a third
-submission type Definition~\ref{def:phi} maps by the identity rather than modelling ---
-and $17$ name one of the three metrics two integrations declare incompatibly, so the
-repository states a contradiction rather than a type.
-\end{remark}
+\iffull\input{sections/moved/tr_gauge}\fi
+\iffull\input{sections/moved/tr_type_measured}\fi
 
 \subsection{What the composite guarantees}
 \label{sec:kernel-soundness}
@@ -402,62 +265,9 @@ $\overline{\mu}$ it produces select the same series as $\sigma$, provided the
 name-mangling of \S\ref{sec:lowering} is injective on $D$'s label \emph{sets} and on its
 metric \emph{names}, and provided no series in $D$ carries a tag with an empty value.
 \end{lemma}
-\begin{proof}
-Term by term. A literal tag with a non-empty value is an equality matcher; a negated one
-its negation; a glob is
-Proposition~\ref{prop:glob-regex}; a bare key or \texttt{key:*} is presence, which is
-\texttt{=\textasciitilde{}".+"} and not \texttt{".*"}, the latter also matching series
-carrying no such label; a single-key disjunction is
-Proposition~\ref{prop:disjunction}. Conjunction is the comma in both languages.
-Injectivity on label sets is needed because mangling sends \texttt{a.b} and \texttt{a\_b}
-to one name, and on metric names for the same reason: the selector has to pick out the
-series $\mathrm{name}(s)=m$ does, and \texttt{metric\_name} is the same mangling.
-Remark~\ref{rem:mangling} measures both.
 
-The empty-value hypothesis is the clause this lemma lacked until the eighth review pass,
-and it is the one that cannot be discharged by a condition on the target: Datadog
-separates three tag states and Prometheus's data model admits two, so where a series
-carries a tag with an empty value the presence matchers are wrong by that series and the
-bare forms \texttt{k:} and \texttt{!k:} have no counterpart at all.
-\S\ref{sec:gaps} reports what the translator does about each --- a refusal for the bare
-forms, a caveat for presence --- and \texttt{scripts\slash scope\_empty\_tag.py} measures
-all three states against a real account.
-\end{proof}
-
-\begin{remark}[The injectivity hypothesis is not vacuous]\label{rem:mangling}
-An earlier version of this proof discharged that hypothesis by asserting that no corpus
-source contains such a pair, and stated the hypothesis over label sets alone. Both were
-wrong, and in opposite directions: the corpus contains three colliding pairs, and on
-label sets --- the one class the hypothesis named --- it contains none. The collisions are
-in metric names and in a grouping key:
-\begin{center}\footnotesize
-\begin{tabular}{@{}ll@{}}
-\texttt{openstack.nova.hypervisor.load\_1} & \texttt{openstack.nova.hypervisor\_load.1}\\
-\texttt{rabbitmq.queue.messages.ready} & \texttt{rabbitmq.queue.messages\_ready}\\
-\texttt{cluster-name} & \texttt{cluster\_name}\\
-\end{tabular}
-\end{center}
-The five distinct queries using the two metric pairs --- six occurrences --- are all
-translated, so two distinct Datadog
-metrics are emitted as one PromQL selector. The third pair is a grouping key, and it is
-forced rather than incidental: a PromQL label name cannot contain a hyphen, so no
-mangling avoids it. That is why Lemma~\ref{lem:scope} now states injectivity over the
-identifier classes its proof consumes rather than over label sets only: the measured
-violations all sit outside the class the hypothesis used to name.
-
-The hypothesis is therefore a real condition on the target database and not a formality.
-A translation of either \texttt{rabbitmq} query is exact in a database carrying one of
-the pair and wrong in a database carrying both, where the selector would sum over series
-the source query never saw. The corpus cannot say which, because a corpus of queries is
-not a database. What it can say is that the collision rate is low and non-zero: three
-pairs among $5{,}389$ metric names and $723$ grouping keys, pinned by test so the claim
-cannot drift.
-
-Reporting it is the same discipline as Remark~\ref{rem:refusal} applied to a hypothesis
-rather than to a refusal. The assertion it replaces was checked by reading rather than by
-computing, which is how a false empirical claim survived in the proof of the lemma the
-soundness theorem rests on.
-\end{remark}
+\iffull\input{sections/moved/tr_scope_pf}\fi
+\iffull\input{sections/moved/tr_mangling}\fi
 
 \begin{theorem}[Kernel soundness]\label{thm:kernel}
 Let $q\in\mathcal{K}$ with $E(L(q))=(p,C)$, and let $t$ be an evaluation time. If
@@ -493,70 +303,17 @@ the list. Injectivity and the lookback are conditions on the \emph{target deploy
 on which identifiers collide once mangled, and on how the server is configured --- and
 the emitter cannot observe either, so no code records them. $C$ is therefore what the
 translator can tell you about a translation, not everything the translation needs.
-Remark~\ref{rem:mangling} shows the injectivity is not vacuous on this corpus. The
+Remark~\ref{rem:mangling} shows the injectivity is not vacuous on this corpus: three
+pairs of identifiers collide once mangled, among $5{,}389$ metric names and $723$
+grouping keys. The
 lookback is not a misconfiguration clause, which an earlier version of this theorem
 called it: it fails on a \emph{gap in the data} --- a scrape outage, a replaced target ---
 at any server configuration, and Proposition~\ref{prop:anchored}'s proof reads an
 instance off a real server. Both are unreported either way.
 \end{theorem}
-\begin{proof}
-By Lemma~\ref{lem:scope} both systems reduce over the same set of series, so it suffices
-to match the two reductions on one series $s$ and then the space aggregation.
 
-For the time reduction, (1) makes $[t,t+\Delta)$ and the PromQL window at
-$u(t)=t+\Delta-\eta$ cover the same samples, by the index argument of
-Proposition~\ref{prop:offset}; (2) makes it the same width. Hypothesis (3) fixes
-$\theta$, and the emitter has a rule for each case it admits.
-
-If $\theta$ is a gauge, $\phi_{\mathsf{zero}}(s)=s$, so Datadog's stored points in the
-bucket are exactly the samples $s|_{[t,t+\Delta)}$ that
-\texttt{$\mathit{op}_t$\_over\_time} reduces at that instant, and the two reductions are
-the same commutative operation on the same multiset.
-
-If $\theta$ is a counter and $\mathit{op}_t=\mathsf{sum}$, Datadog reports
-$\Sigma_\Delta(t)$ and the emitted form equals it by Proposition~\ref{prop:offset}
-under (4)'s first branch and (5), or by Proposition~\ref{prop:anchored} under (4)'s
-second, which needs neither.
-
-If $\theta$ is a counter and $\mathit{op}_t=\mathsf{avg}$, Datadog reports the mean of
-the deltas it stores in the bucket. The emitted form is
-$\Sigma_\Delta(t)/\texttt{count\_over\_time}$, whose numerator is that sum by the
-previous case and whose denominator counts the samples in the window. By (5) the series
-began before $t$, so every sample in $[t,t+\Delta)$ contributes exactly one delta and
-the two counts agree; the quotient is the mean.
-
-If $\theta$ is a counter and $\mathit{op}_t=\mathsf{count}$, Datadog reports how many
-deltas it stores in the bucket and the emitted \texttt{count\_over\_time} reports how
-many samples the window holds; (5) makes those the same number, by the same
-correspondence. For $\mathit{op}_t\in\{\mathsf{min},\mathsf{max}\}$ over a counter no
-rule exists --- the individual deltas are reachable only through a subquery over a
-sample grid the query does not state --- so the emitter refuses,
-$q\notin\mathrm{dom}(T)$, and there is nothing to prove.
-The $\mathit{per\_second}$ divisor is $\Delta$ on both sides.
-
-For the space reduction, Definition~\ref{def:ir-sem}'s $\mathrm{Agg}$ is what PromQL's
-$\mathit{op}_s$ \texttt{by} $(\overline{k})$ computes and what Datadog's
-$\mathit{op}_s{:}$ with \texttt{by \{$\overline{k}$\}} computes, on inputs just shown
-equal. That $C$ contains nothing further is by inspection of the emitter: the five codes
-above are the only ones it records.
-\end{proof}
-
-\noindent
-Hypothesis (3) is the one that changed shape while this paper was being written, and
-twice. It began as ``the metric is a gauge'', which was the only case the emitter then
-handled; a counter under an averaging rollup was being emitted as
-\texttt{avg\_over\_time} of the running totals, which is not a function of the deltas
-Datadog reduces at all, and the corpus-scale differential test of \S\ref{sec:differential}
-is what caught it. It then stopped being dischargeable from the query text, when the
-modifiers it rests on turned out not to establish the type (Remark~\ref{rem:gauge}).
-What it costs when it fails is measured rather than asserted: writing one stream of
-counter observations to both systems and asking the commonest shape in the corpus ---
-a query with no method at all --- Datadog reads the mean of the deltas, $10$ throughout,
-while \texttt{avg\_over\_time} reads the mean of the running totals, climbing from $20$
-to $1{,}760$ over half an hour. The relative difference runs from $0.50$ to $0.994$ and
-is unbounded in the counter's age, because one quantity grows with it and the other does
-not. The same run with the metric submitted as a \texttt{GAUGE}, where the hypothesis
-holds, agrees exactly on every bucket (\texttt{scripts\slash type\_assumption.py}).
+\iffull\input{sections/moved/tr_kernel_pf}\fi
+\iffull\input{sections/moved/tr_type_history}\fi
 
 \noindent
 The theorem is a statement about the \emph{kernel}, which is $95.4\%$ of the corpus and
@@ -575,15 +332,7 @@ silently on real data --- the first because nothing in the query settles the typ
 other two because they are statements about data the translator never sees --- and
 \S\ref{sec:caveats} measures how often each is in play.
 
-A note on the two figures, because an earlier draft quoted a third. The $87\%$ it gave
-is the cumulative column of Table~\ref{tab:implementation-order} --- the share of queries
-a translator \emph{limited to the kernel's features} would complete, which is a
-statement about a feature set. $\mathcal{K}$ is a statement about IR shape, and the two
-differ: a query using a glob or a boolean scope is outside the first and inside the
-second, since Lemma~\ref{lem:scope} covers every scope lowering admits. Computed from
-the lowered IR rather than from the feature list, the kernel carries $8{,}363$
-occurrences.
-
+\iffull\input{sections/moved/tr_two_figures}\fi
 
 \subsection{Arithmetic between queries}
 \label{sec:binop-soundness}
@@ -592,7 +341,8 @@ Outside $\mathcal{K}$ the corpus does one thing: arithmetic. A widget divides on
 aggregated query by another, scales one by a constant, or subtracts two. Extending
 Theorem~\ref{thm:kernel} over that is not a matter of applying it pointwise, because the
 two languages decide \emph{which} pairs of series an operator applies to by different
-rules, and neither rule is documented. Both are therefore measured.
+rules, and neither rule is documented. Both are therefore measured
+(\texttt{scripts\slash binop\_matching.py}; \apref{app:proofs}).
 
 \begin{definition}[Arithmetic closure]\label{def:arith}
 $\mathcal{A}$ is the smallest set of IR terms containing $\mathcal{K}$ and every
@@ -620,20 +370,8 @@ $\{\lambda\in\mathrm{dom}(r_1) : \pi_{\overline{k_2}}(\lambda)\in\mathrm{dom}(r_
 and value $r_1(\lambda)\oplus r_2(\pi_{\overline{k_2}}(\lambda))$. If neither key set
 contains the other, Datadog rejects the query.
 \end{lemma}
-\begin{proof}
-By measurement (\texttt{scripts\slash binop\_matching.py}). Two metrics are given
-groups that overlap in one value and differ elsewhere --- $a$ carries $g{=}x$ and
-$g{=}y$, $b$ carries $g{=}x$ and $g{=}z$ --- so that an inner and an outer rule give
-different answers. With equal key sets, $a/b$ returns $g{=}x$ alone: the groups present
-on one side only are dropped, which is the first clause. With $\chi(q_2)=\emptyset$,
-$a\ \mathsf{by}\ \{g\}\ /\ b$ returns both of $a$'s groups, each divided by $b$'s single
-value, which is the clause at $\overline{k_2}=\emptyset$. With
-$\chi(q_2)\subsetneq\chi(q_1)$ --- grouping one side by $\{g\}$ and the other by
-$\{g,h\}$ --- the result is keyed by $\{g,h\}$ and matched on $g$, in both directions.
-The last clause is not an inference: Datadog answers the disjoint case with
-\emph{``Series to be aligned must have group keys that match, or where one set of group
-keys is a subset of the other''}, which is the rule stated by the system itself.
-\end{proof}
+
+\iffull\input{sections/moved/tr_dd_matching_pf}\fi
 
 \begin{lemma}[How PromQL pairs series]\label{lem:pq-matching}
 For instant vectors $u,v$: $u\oplus v$ under default matching pairs elements with
@@ -643,15 +381,8 @@ with it on $\overline{k}$, keeps $u$'s labels, and requires at most one such $v$
 \texttt{group\_right()} is the mirror image. An aggregation drops every label outside its
 \texttt{by} list, \emph{including} \texttt{\_\_name\_\_}.
 \end{lemma}
-\begin{proof}
-The first three clauses are PromQL's specification~\citep{promql}, and all four were
-checked against a real server on the same four series as Lemma~\ref{lem:dd-matching}. The last
-is the one worth checking rather than assuming, because the whole construction depends on
-it: the operands of a translated division come from \emph{different metrics}, so if
-aggregation kept the metric name their label sets could never be identical and default
-matching would pair nothing at all. It does not keep it, and
-$\texttt{sum by (g)}(a)\,/\,\texttt{sum by (g)}(b)$ duly returns $g{=}x$.
-\end{proof}
+
+\iffull\input{sections/moved/tr_pq_matching_pf}\fi
 
 \begin{theorem}[Arithmetic soundness]\label{thm:arith}
 Let $q\in\mathcal{A}$ with $E(L(q))=(p,C)\neq\bot$, suppose every kernel subterm of
@@ -673,41 +404,8 @@ the corpus contains no such query --- $0$ of the $79$ occurrences carrying a bin
 operator mix intervals --- so the measured claim is unaffected and only the sentence
 below about every front-end term needed narrowing.
 \end{theorem}
-\begin{proof}
-Induction on the structure of $q$. For $q\in\mathcal{K}$ this is
-Theorem~\ref{thm:kernel}, and for $q=\mathrm{Number}(c)$ both sides denote $c$.
 
-$\mathrm{Scale}(c,e)$ emits $p_e * c$. Scalar--vector arithmetic is pointwise in both
-languages and preserves the domain, so the claim follows from the hypothesis on $e$; the
-same argument covers a $\mathrm{BinOp}$ one of whose operands is a $\mathrm{Number}$,
-where $\chi$ takes the other operand's value.
-
-For $\mathrm{BinOp}(\oplus,l,r)$ with both operands vectors, write
-$\overline{k_l}=\chi(l)$ and $\overline{k_r}=\chi(r)$. By induction the two operand
-results agree between the systems, so it is enough that the two languages pair them the
-same way and the emitter asks for the pairing that does.
-
-If $\overline{k_l}=\overline{k_r}=\overline{k}$, the emitter emits $p_l \oplus p_r$ with
-no modifier. Each operand's PromQL result carries exactly the labels $\overline{k}$, by
-Lemma~\ref{lem:pq-matching}'s last clause, so matching on identical label sets
-\emph{is} matching on $\overline{k}$; the domain is the intersection and the values are
-pointwise. Lemma~\ref{lem:dd-matching} gives Datadog the same intersection and the same
-values.
-
-If $\overline{k_r}\subsetneq\overline{k_l}$, the emitter emits
-$p_l \oplus \texttt{on}(\overline{k_r})\ \texttt{group\_left()}\ p_r$. By
-Lemma~\ref{lem:pq-matching} the result is keyed by $\overline{k_l}$, each element paired
-with the unique element of $p_r$ agreeing on $\overline{k_r}$ --- unique because $p_r$ is
-an aggregation by $\overline{k_r}$, so its elements have distinct $\overline{k_r}$
-values. That is term for term the first clause of Lemma~\ref{lem:dd-matching}. The
-symmetric case emits \texttt{group\_right()}. Taking $\overline{k_r}=\emptyset$ gives the
-ungrouped operand, where \texttt{on()} matches everything and the broadcast is Datadog's.
-
-If neither key set contains the other, $\chi(q)$ is undefined, the emitter refuses and
-$q\notin\mathrm{dom}(T)$. Finally $C$ gains nothing, because the emitter attaches no
-caveat at a $\mathrm{BinOp}$ or a $\mathrm{Scale}$: the modifiers it chooses are decided
-by $\chi$, which is a function of the query text alone.
-\end{proof}
+\iffull\input{sections/moved/tr_arith_pf}\fi
 
 \noindent
 Theorem~\ref{thm:arith} reaches further than it may look. Every term the \emph{front
@@ -725,20 +423,4 @@ Remark~\ref{rem:two-kappas} wanted and could not previously make: $\kappa$ count
 translations the emitter is willing to produce, and each of them is now covered by a
 proof as well as by the corpus-scale test of \S\ref{sec:differential}.
 
-\begin{remark}[A third kind of refusal]\label{rem:third-refusal}
-The last case of Theorem~\ref{thm:arith} is a refusal of a kind \S\ref{sec:gaps} does not
-have a column for. It is not a gap in PromQL, which expresses the pairing perfectly well
-once asked, and it is not unfinished work here. It is a query with no source denotation:
-Datadog declines to answer it. A translator cannot preserve a meaning the source system
-does not assign, so the right behaviour is to refuse, and the right accounting is to
-exclude it from both sides of the ledger rather than to count it against either language.
-No corpus query reaches it, so nothing in \S\ref{sec:gaps} moves; the case is recorded
-because the distinction is the one this paper is about and it would otherwise be filed
-under ``unimplemented'' by default.
-
-The subset case is the opposite kind of correction. An earlier version of this emitter
-admitted only $\overline{k_r}=\emptyset$ and refused every other containment, which would
-have been counted as unfinished work --- correctly, since the measurement shows PromQL
-says it with \texttt{on($\overline{k_r}$)} and Datadog accepts it. Measuring the boundary
-moved one case out of the catalogue and sharpened the other.
-\end{remark}
+\iffull\input{sections/moved/tr_third_refusal}\fi

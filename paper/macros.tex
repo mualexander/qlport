@@ -42,4 +42,7 @@
 % \inlineonly{...} is prose that only makes sense where the material is in place.
 \newcommand{\inlineonly}[1]{\iffull#1\fi}
 % Point at apparatus wherever this build put it, so one sentence reads correctly in both.
-\newcommand{\apref}[1]{\iffull\S\ref{#1}\else Appendix~\ref{#1}\fi}
+% The appendix wrappers are deferred-build-only and so are their labels, so the inline
+% build cannot cite a number --- there the material is a few paragraphs down the same
+% section. Every call site is therefore written to read with ``below'' as well.
+\newcommand{\apref}[1]{\iffull below\else Appendix~\ref{#1}\fi}

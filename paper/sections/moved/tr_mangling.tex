@@ -1,0 +1,34 @@
+\begin{remark}[The injectivity hypothesis is not vacuous]\label{rem:mangling}
+An earlier version of this proof discharged that hypothesis by asserting that no corpus
+source contains such a pair, and stated the hypothesis over label sets alone. Both were
+wrong, and in opposite directions: the corpus contains three colliding pairs, and on
+label sets --- the one class the hypothesis named --- it contains none. The collisions are
+in metric names and in a grouping key:
+\begin{center}\footnotesize
+\begin{tabular}{@{}ll@{}}
+\texttt{openstack.nova.hypervisor.load\_1} & \texttt{openstack.nova.hypervisor\_load.1}\\
+\texttt{rabbitmq.queue.messages.ready} & \texttt{rabbitmq.queue.messages\_ready}\\
+\texttt{cluster-name} & \texttt{cluster\_name}\\
+\end{tabular}
+\end{center}
+The five distinct queries using the two metric pairs --- six occurrences --- are all
+translated, so two distinct Datadog
+metrics are emitted as one PromQL selector. The third pair is a grouping key, and it is
+forced rather than incidental: a PromQL label name cannot contain a hyphen, so no
+mangling avoids it. That is why Lemma~\ref{lem:scope} now states injectivity over the
+identifier classes its proof consumes rather than over label sets only: the measured
+violations all sit outside the class the hypothesis used to name.
+
+The hypothesis is therefore a real condition on the target database and not a formality.
+A translation of either \texttt{rabbitmq} query is exact in a database carrying one of
+the pair and wrong in a database carrying both, where the selector would sum over series
+the source query never saw. The corpus cannot say which, because a corpus of queries is
+not a database. What it can say is that the collision rate is low and non-zero: three
+pairs among $5{,}389$ metric names and $723$ grouping keys, pinned by test so the claim
+cannot drift.
+
+Reporting it is the same discipline as Remark~\ref{rem:refusal} applied to a hypothesis
+rather than to a refusal. The assertion it replaces was checked by reading rather than by
+computing, which is how a false empirical claim survived in the proof of the lemma the
+soundness theorem rests on.
+\end{remark}

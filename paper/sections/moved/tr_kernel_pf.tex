@@ -1,0 +1,41 @@
+\begin{proof}[Proof of Theorem~\ref{thm:kernel}]
+By Lemma~\ref{lem:scope} both systems reduce over the same set of series, so it suffices
+to match the two reductions on one series $s$ and then the space aggregation.
+
+For the time reduction, (1) makes $[t,t+\Delta)$ and the PromQL window at
+$u(t)=t+\Delta-\eta$ cover the same samples, by the index argument of
+Proposition~\ref{prop:offset}; (2) makes it the same width. Hypothesis (3) fixes
+$\theta$, and the emitter has a rule for each case it admits.
+
+If $\theta$ is a gauge, $\phi_{\mathsf{zero}}(s)=s$, so Datadog's stored points in the
+bucket are exactly the samples $s|_{[t,t+\Delta)}$ that
+\texttt{$\mathit{op}_t$\_over\_time} reduces at that instant, and the two reductions are
+the same commutative operation on the same multiset.
+
+If $\theta$ is a counter and $\mathit{op}_t=\mathsf{sum}$, Datadog reports
+$\Sigma_\Delta(t)$ and the emitted form equals it by Proposition~\ref{prop:offset}
+under (4)'s first branch and (5), or by Proposition~\ref{prop:anchored} under (4)'s
+second, which needs neither.
+
+If $\theta$ is a counter and $\mathit{op}_t=\mathsf{avg}$, Datadog reports the mean of
+the deltas it stores in the bucket. The emitted form is
+$\Sigma_\Delta(t)/\texttt{count\_over\_time}$, whose numerator is that sum by the
+previous case and whose denominator counts the samples in the window. By (5) the series
+began before $t$, so every sample in $[t,t+\Delta)$ contributes exactly one delta and
+the two counts agree; the quotient is the mean.
+
+If $\theta$ is a counter and $\mathit{op}_t=\mathsf{count}$, Datadog reports how many
+deltas it stores in the bucket and the emitted \texttt{count\_over\_time} reports how
+many samples the window holds; (5) makes those the same number, by the same
+correspondence. For $\mathit{op}_t\in\{\mathsf{min},\mathsf{max}\}$ over a counter no
+rule exists --- the individual deltas are reachable only through a subquery over a
+sample grid the query does not state --- so the emitter refuses,
+$q\notin\mathrm{dom}(T)$, and there is nothing to prove.
+The $\mathit{per\_second}$ divisor is $\Delta$ on both sides.
+
+For the space reduction, Definition~\ref{def:ir-sem}'s $\mathrm{Agg}$ is what PromQL's
+$\mathit{op}_s$ \texttt{by} $(\overline{k})$ computes and what Datadog's
+$\mathit{op}_s{:}$ with \texttt{by \{$\overline{k}$\}} computes, on inputs just shown
+equal. That $C$ contains nothing further is by inspection of the emitter: the five codes
+above are the only ones it records.
+\end{proof}

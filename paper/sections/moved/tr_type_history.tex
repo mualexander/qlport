@@ -1,0 +1,17 @@
+\begin{remark}[What hypothesis~(3) costs when it fails]\label{rem:type-cost}
+Hypothesis (3) is the one that changed shape while this paper was being written, and
+twice. It began as ``the metric is a gauge'', which was the only case the emitter then
+handled; a counter under an averaging rollup was being emitted as
+\texttt{avg\_over\_time} of the running totals, which is not a function of the deltas
+Datadog reduces at all, and the corpus-scale differential test of \S\ref{sec:differential}
+is what caught it. It then stopped being dischargeable from the query text, when the
+modifiers it rests on turned out not to establish the type (Remark~\ref{rem:gauge}).
+What it costs when it fails is measured rather than asserted: writing one stream of
+counter observations to both systems and asking the commonest shape in the corpus ---
+a query with no method at all --- Datadog reads the mean of the deltas, $10$ throughout,
+while \texttt{avg\_over\_time} reads the mean of the running totals, climbing from $20$
+to $1{,}760$ over half an hour. The relative difference runs from $0.50$ to $0.994$ and
+is unbounded in the counter's age, because one quantity grows with it and the other does
+not. The same run with the metric submitted as a \texttt{GAUGE}, where the hypothesis
+holds, agrees exactly on every bucket (\texttt{scripts\slash type\_assumption.py}).
+\end{remark}

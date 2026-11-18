@@ -1,0 +1,14 @@
+\begin{proof}[Proof of Lemma~\ref{lem:dd-matching}]
+By measurement (\texttt{scripts\slash binop\_matching.py}). Two metrics are given
+groups that overlap in one value and differ elsewhere --- $a$ carries $g{=}x$ and
+$g{=}y$, $b$ carries $g{=}x$ and $g{=}z$ --- so that an inner and an outer rule give
+different answers. With equal key sets, $a/b$ returns $g{=}x$ alone: the groups present
+on one side only are dropped, which is the first clause. With $\chi(q_2)=\emptyset$,
+$a\ \mathsf{by}\ \{g\}\ /\ b$ returns both of $a$'s groups, each divided by $b$'s single
+value, which is the clause at $\overline{k_2}=\emptyset$. With
+$\chi(q_2)\subsetneq\chi(q_1)$ --- grouping one side by $\{g\}$ and the other by
+$\{g,h\}$ --- the result is keyed by $\{g,h\}$ and matched on $g$, in both directions.
+The last clause is not an inference: Datadog answers the disjoint case with
+\emph{``Series to be aligned must have group keys that match, or where one set of group
+keys is a subset of the other''}, which is the rule stated by the system itself.
+\end{proof}
