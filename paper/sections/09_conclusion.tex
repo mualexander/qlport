@@ -7,97 +7,41 @@
 \label{sec:conclusion}
 
 \paragraph{The three questions.}
-\textbf{RQ1.} Both languages admit deterministic one-token-lookahead parsers, with a
-caveat that is itself a finding. The inferred Datadog grammar is conflict-free. PromQL has
-exactly one shift/reduce conflict, on the parenthesis that begins either a grouping clause
-or a parenthesised expression, and it comes from that construct's optionality rather than
-from how we layered the rules --- so RQ1's answer for PromQL is ``LALR(1) modulo one
-documented resolution'', for this grammar, with no claim that none does better.
+\textbf{RQ1.} Both languages admit deterministic one-token-lookahead parsers, with an
+asymmetry that is itself a finding. The inferred Datadog grammar --- the first published
+grammar for that language --- is conflict-free. PromQL has $2$ shift/reduce conflicts,
+both on the parenthesis that begins either a vector-matching label list or a parenthesised
+operand, and both forced by that list's optionality rather than by how we layered the
+rules; so RQ1's answer for PromQL is ``LALR(1) modulo one documented resolution'', for
+this grammar, with no claim that none does better. Neither answer is where the switching
+cost lives, which is itself worth knowing.
 
 \textbf{RQ2.} The largest exactly-translating fragment we could build covers $96.3\%$ of
-Datadog query occurrences, and it is exact under stated preconditions over the whole of
-that --- the soundness theorems of \S\ref{sec:kernel-soundness} and
-\S\ref{sec:binop-soundness} between them cover every expression the translator emits,
-so nothing is shipped that is not proved. Outside the fragment, $1.2\%$ of the corpus is
-beyond reach --- three constructs, each argued rather than merely reported, and one of
-them an information barrier rather than an expressiveness gap --- while $2.4\%$ is work
-this translator has not done, giving a ceiling of $98.7\%$. In the reverse direction, on the
-sub-problem of tag filtering, the obstructions are theorems: a glob's language is a single
-word or unbounded in length, and three impossibility results follow that account for every
-refusal, $38.3\%$ of the matcher occurrences whose pattern is concrete.
+Datadog query occurrences, and the soundness theorems of \S\ref{sec:kernel-soundness} and
+\S\ref{sec:binop-soundness} between them cover every expression the translator emits, so
+nothing is shipped that is not proved. Outside the fragment, $1.2\%$ of the corpus is
+beyond reach --- three constructs, one of them an information barrier rather than an
+expressiveness gap --- against $2.4\%$ that is work this translator has not done, a
+ceiling of $98.7\%$. In the reverse direction, on the sub-problem of tag filtering, the
+obstructions are theorems: a glob's language is a single word or unbounded in length, and
+three impossibility results follow that account for every refusal we measure, $38.3\%$ of
+the matcher occurrences whose pattern is concrete.
 
 \textbf{RQ3.} Coverage on published dashboards is the $96.3\%$ above, of which $491$
-occurrences carry a metric type the vendor's own repository contradicts, so coverage
-and correctness differ by more than the inexpressible column is worth. The shape of the
-shortfall matters more than its size. Coverage against implementation effort is a
-staircase, not a curve, because a query translates only when every feature it uses is
-supported while the popularity that would guide an implementation order is marginal. Half
-the work does not port half the estate.
+occurrences carry a metric type the vendor's own repository contradicts --- so coverage
+and correctness differ by more than the whole inexpressible column is worth. The shape of
+the shortfall matters more than its size: coverage against implementation effort is a
+staircase rather than a curve, because a query translates only when every feature it uses
+is supported, while the popularity that would guide an implementation order is marginal.
+Half the work does not port half the estate.
 
-\paragraph{What the paper establishes, and what it assumes.}
-Three things here are proved: the directional information barrier, which holds for every
-possible translator and not only ours; the exactness of the rollup translations on a
-stated class, with the preconditions enumerated as the hypotheses of a theorem; and the
-non-expressibility results of \S\ref{sec:regular}. Three things are verified against a
-real Prometheus~3.15.0 rather than a model, with the responses cached and
-regression-tested: the PromQL semantics the rollup rules depend on, the anchoring of
-label-matcher regular expressions, and the series pairing that
-Theorem~\ref{thm:arith} rests on. Two further readings were taken from a real server
-and written down as prose rather than cached --- the parse error that decides
-\S\ref{sec:grammars}'s one conflict, and the rejection that
-Remark~\ref{rem:anchored-flag} turns on --- so they are evidence of a weaker kind than
-the three above, and the difference is in the artefact rather than in the reading.
-Nothing is left that was read from source and not then measured: Datadog's reset policy was taken from its
-open-source agent at a pinned commit and afterwards put to a running one.
+\noindent
+What each of those answers rests on --- what is proved, what is verified against a real
+server, what is measured against the vendor, and what is still assumed --- is set out in
+\apref{app:experiments}. Three of the eight vendor measurements contradicted what this
+paper had assumed before asking.
 
-Eight things are measured against the vendor itself rather than assumed: the bucket
-convention (left-closed and named by its start, the opposite of what this work assumed
-until it asked), the automatic rollup interval as a function of the query range, the
-default time aggregator of a bare query on a counter, whether a glob's \texttt{*} matches
-the empty string, where \texttt{.as\_rate()} sits relative to the rollup and to the space
-aggregation, what \texttt{.weighted()} computes, what \texttt{top(...)} ranks by and over
-which window, and the reset policy --- read first from
-the agent's source and then put to a running agent, which agreed with the reading. Five
-of the eight confirmed what the paper had assumed. Three did not: the bucket convention;
-\texttt{.as\_rate()}, which turned out to divide the aggregated result rather than
-each series, and whose presence in a query turned out not to establish the metric's type
-at all, because Datadog accepts the modifier on a gauge and ignores it; and
-\texttt{.weighted()}, carried here as the largest gap in the catalogue until the account
-was asked and returned the same number with the modifier and without it. The last of the
-eight decides which column $139$ corpus occurrences belong in, and is the only one
-measured on both sides: over one workload, the candidate expression against a real
-Prometheus in $20$ cases and \texttt{top()} itself against Datadog in $22$, each
-agreeing with the documented rule throughout.
-
-One assumption is settled from the vendor's source tree rather than from its API, and
-it is the one that held of all the output. Every translation carries
-\texttt{METRIC\_TYPE\_UNKNOWN} because a dashboard does not record whether a metric is
-a counter or a gauge --- but \texttt{integrations-core} declares the type of each
-metric it ships, in a file beside the dashboards that the corpus fetch had passed over.
-For the $89.5\%$ of translated occurrences whose metric is declared, the front end's
-inference is wrong on $6.5\%$: $491$ occurrences, more than the whole $1.2\%$ this
-paper calls beyond reach (Remark~\ref{rem:type-measured}). $\kappa$ counts them as
-translations, so the gap between coverage and correctness has a number for the first
-time, and it is not zero.
-
-One thing that was assumed throughout is now measured. The counter rules are checked
-against Datadog itself, by replaying a real request trace into both systems and comparing
-bucket by bucket (\S\ref{sec:replay}): both exact forms are exact and \texttt{rate} is
-not. The one part a replay cannot reach is the reset policy, because a request counter
-does not restart in half an hour; that took a counter built to restart, scraped across
-the reset by a real agent and a real Prometheus at once, and it is the last assumption of
-\S\ref{sec:ingestion} to be retired (Remark~\ref{rem:rho}).
-
-The same construction has since been run at corpus scale, and it is the reason $\kappa$
-can now be read as a statement about translations that were checked rather than merely
-emitted. Abstracting the identifiers away --- and nothing a query would emit differently ---
-collapses the corpus to $332$
-distinct query shapes, few enough that a single trial account holds every series they
-need; each is instantiated, written to both systems and compared bucket by bucket
-(\S\ref{sec:differential}). It found four translation defects that the unit tests and the
-single-trace replay had both missed --- and, six times over, found its own harness
-first, which is the more useful lesson about differential rigs than the agreement rate
-is.
+\iffull\input{sections/moved/concl_evidence}\fi
 
 \paragraph{What we would do next.}
 The reverse translator: \S\ref{sec:regular} suggests the interesting results are there, and a
