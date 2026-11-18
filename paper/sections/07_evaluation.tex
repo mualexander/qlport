@@ -204,8 +204,12 @@ $100\%$ of them, for the reason \S\ref{sec:emission} gives, and it is the one
 precondition here whose violation rate can be measured: on the $89.5\%$ of translated
 occurrences whose type the vendor's own repository declares, the front end's inference
 is wrong for $6.5\%$. So $\kappa$ counts $491$ translations that are, on that
-declaration, wrong. It is a coverage measure and never was a correctness measure, and
-this is the first number in the paper that says how far apart the two are
+declaration, wrong. What the repository declares is what an integration \emph{submits}, so
+a disagreement says the inference is wrong and not that it must be --- a dashboard can
+query a metric the integration does not ship, and an operator can submit the same name as
+something else. The declaration is a sharper instrument than the query text it replaces,
+not a proof (Remark~\ref{rem:type-measured}). $\kappa$ is a coverage measure and never was
+a correctness measure, and this is the first number in the paper that says how far apart the two are
 (\apref{app:eval}).
 
 The conclusion is the one an earlier draft of this section had backwards. That draft said
@@ -325,6 +329,21 @@ in-house ones. The template-variable share ($88.6\%$ of Datadog, $82.5\%$ of Pro
 is the figure most likely to be inflated this way; $\kappa$ is less exposed, since the
 gaps it reports are structural constructs rather than stylistic ones. A corpus of
 private dashboards would be the better test and is not obtainable.
+
+\paragraph{The Datadog half of the corpus has one source.}
+All $8{,}770$ Datadog occurrences come from \texttt{integrations-core}: one organisation's
+queries in one house style, with nothing to pair against the PromQL side's two independent
+sources, because no comparable public body of customer-written Datadog dashboards exists.
+The choice was deliberate --- no reference grammar is published and vendor-authored queries
+are the closest thing to a specification by example (\S\ref{sec:corpus}) --- but a
+specification by example is not a sample of what customers write, so \S\ref{sec:gaps}
+reports which constructs appear in Datadog's own dashboards rather than which appear in
+anyone's. It bears on \S\ref{sec:caveats}'s $491$ most sharply, because the declarations
+the inference is checked against come from the same repository as the queries: the
+disagreement is measured between two artefacts by the same authors. That is a strong
+signal about the inference, which ought to agree with them and does not, and no evidence
+about how often it fails on the metrics this repository never mentions --- $736$
+occurrences, which Remark~\ref{rem:type-measured} counts but cannot check.
 
 \paragraph{$\kappa$ is measured on one direction and one language pair.}
 Datadog metrics $\to$ PromQL. Remark~\ref{rem:directional} argues the reverse direction

@@ -66,6 +66,22 @@ is a reasonable engineering choice and a poor measurement instrument, which is w
 \S\ref{sec:framework} requires a translator to be total with every failure a named
 $\bot$.
 
+Converters for this language pair in particular exist, and none of them is a published
+result. Chronosphere describes the closest thing to \S\ref{sec:translation}'s method ---
+a Datadog grammar written from scratch, queries parsed to an AST, and that AST emitted
+through the open-source Prometheus grammar --- and reports getting ``about 90\%'' of the
+way, the remainder left to hand~\citep{marcopoli2024}; what the percentage is a percentage
+of, and what a converted query is meant to preserve, are not stated. OpenObserve's
+dashboard migrator translates metric panels and metric monitors into PromQL and marks each
+object migrated, needing review, or skipped~\citep{openobserve} --- a coarse form of the
+typed failure \S\ref{sec:framework} requires, reported without counts. Neither of these is
+a criticism of the tools: a migration tool is judged by whether the dashboard comes up.
+But it does mean the quantities this paper reports --- what is impossible rather than
+unbuilt, how often a translation rests on something the query does not say, and how often
+the resulting guess is wrong --- have no prior measurement to be set against, which makes
+them easier to doubt rather than harder, and is why \S\ref{sec:evaluation} is written so
+that every one of them can be recomputed.
+
 The standard of proof sits in compiler verification. McCarthy and Painter proved a
 compiler for arithmetic expressions correct by relating source and target
 denotations~\citep{mccarthy1967}, and CompCert carries the idea through a realistic C
@@ -124,7 +140,8 @@ record~\citep{orosz2023}.
 \subsection{What this paper adds}
 
 Each tradition leaves the same thing open. The transpilers translate without stating what
-is preserved; the verification work states what is preserved but assumes a shared input;
+is preserved, and the migration tools for this pair report neither what they preserve nor
+what they refuse; the verification work states what is preserved but assumes a shared input;
 the expressiveness literature gives the form of a negative result but is rarely pointed
 at query languages; the observability work compares implementations of one language, and
 the standardisation work needs evidence about which differences are essential; the

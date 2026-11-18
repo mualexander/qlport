@@ -231,7 +231,10 @@ ALLOWED: dict[float, str] = {
     1.4: "unregistered (nb 03): points of kappa the disjunction rule closed",
     1.1: "unregistered (nb 00): PromQL subquery share",
     0.9: "unregistered (nb 03): the 90% line on the coverage figure",
-    90: "the same line quoted as a threshold in the staircase prose",
+    90: "the same line quoted as a threshold in the staircase prose, and in the shape\n"
+        "reduction; also, in \u00a72, the coverage Chronosphere's converter reports for\n"
+        "itself -- a quotation of another tool's self-reported figure, not one of ours,\n"
+        "and the paper says in the same sentence that its derivation is not stated",
     0.3: "unregistered (nb 00): PromQL offset share",
 }
 
