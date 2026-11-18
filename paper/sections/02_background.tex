@@ -6,7 +6,7 @@
 \section{Background and Related Work}
 \label{sec:background}
 
-Four traditions bear on the question of \S\ref{sec:intro}, and none of them answers it.
+Four traditions bear on the question of \S\ref{sec:intro} and none of them answers it.
 Formal-language theory supplies the frame; compiler correctness supplies the standard of
 proof; the expressiveness literature supplies the notion of ``cannot say''; and the
 economics of switching costs supplies the reason anybody should care. What is missing is
@@ -14,29 +14,22 @@ the combination, applied to two languages whose systems do not store the same da
 
 \subsection{Query languages as formal languages}
 
-Rich's §48.1 is the licence for the whole approach: a query language is a formal language,
-so the machinery of grammars, automata and decidability applies to
-it~\citep{rich2008}. Which class a language falls in decides what can be settled about it
-mechanically. If a language is context-free it has a grammar; if that grammar is
-unambiguous, each query has exactly one parse tree, which is the precondition for any
-claim that a translation is \emph{well defined}; and if the grammar is LALR(1) in
-particular, the parse is linear and the parser is a table, so a corpus can be processed in
-bulk rather than sampled~\citep{aho2006}.
+Rich's §48.1 is the licence for the approach: a query language is a formal language, so
+grammars, automata and decidability apply to it~\citep{rich2008}, and which class a
+language falls in decides what can be settled mechanically. An unambiguous grammar gives
+each query exactly one parse tree, which is the precondition for a translation being
+well defined; an LALR(1) one makes the parse linear and the parser a table, so a corpus
+can be processed in bulk rather than sampled~\citep{aho2006}.
 
 The translation itself has a classical form. A syntax-directed transduction associates an
-output with each production and composes them over the parse
-tree~\citep{lewis1968}, and where a node's output depends on information held elsewhere
-in the tree, Knuth's attribute grammars are the standard
-account~\citep{knuth1968}. \S\ref{sec:lowering} needs both: lowering is bottom-up except
-for two attributes that the Datadog query text does not carry at all, one of which has to
-be synthesised at the query node and inherited downward.
-
-Regular languages enter twice. Both languages filter on tag values with a pattern
-language --- a glob in one, a regular expression in the other --- and the question of
-whether one pattern has a counterpart in the other is a question about two classes of
-regular languages, settled by the equivalence decision procedure
-(\S\ref{sec:regular}). This is the part of the problem where the classical theory applies
-most directly and, as it turns out, where the sharpest negative results live.
+output with each production and composes them over the parse tree~\citep{lewis1968}, and
+where a node's output depends on information held elsewhere, Knuth's attribute grammars
+are the standard account~\citep{knuth1968}. \S\ref{sec:lowering} needs both, because two
+attributes are not in the Datadog query text at all. Regular languages then enter
+directly: both languages filter tag values with a pattern language --- a glob in one, a
+regular expression in the other --- so whether one pattern has a counterpart is a
+question about two classes of regular languages, and it is where the sharpest negative
+results live (\S\ref{sec:regular}).
 
 \subsection{The two languages}
 
@@ -44,116 +37,99 @@ PromQL is documented and its reference parser is open source, so a grammar can b
 against an implementation rather than inferred~\citep{promql}. It is a vector-valued
 expression language: selectors denote sets of series, range selectors denote windows,
 functions reduce windows, and aggregation operators reduce across series. Counters are
-stored as running totals, and reset handling lives inside the range functions ---
+stored as running totals and reset handling lives inside the range functions ---
 \texttt{rate} and \texttt{increase} are reset-aware, and a recent proposal adds an
 \texttt{anchored} modifier that removes their extrapolation~\citep{prom0052}.
 
 Datadog's metric query language is not documented as a grammar. What is published is a
-reference manual with examples, which is enough to infer the syntax but not to verify it,
-and \S\ref{sec:datadog-inference} says what we did instead. Semantically the important
-difference is not syntactic at all: Datadog stores a counter as per-interval deltas, and
-a query is evaluated in two stages~\citep{datadog}, first by time and then by
-space~\citep{ddnested} --- a rollup reduces each series alone and a space aggregator
-combines the results. Neither the rollup
-interval nor the metric's type is part of the query text, which turns out to matter more
-than any construct either language has (\S\ref{sec:emission}). Datadog's own ingest
-documents the backfill window~\citep{ddhistorical}, and OTLP is a third
-ingestion path with different conventions again~\citep{ddotlp}, which is why
-\S\ref{sec:ingestion} parameterises the mapping rather than describing ``Datadog''.
+reference manual with examples, enough to infer the syntax and not to verify it
+(\S\ref{sec:datadog-inference}). The important difference is not syntactic: Datadog
+stores a counter as per-interval deltas, and a query is evaluated first by time and then
+by space~\citep{datadog,ddnested} --- a rollup reduces each series alone and a space
+aggregator combines the results. Neither the rollup interval nor the metric's type is
+part of the query text, which turns out to matter more than any construct either
+language has (\S\ref{sec:emission}). Ingest conventions differ again by path: Datadog
+documents a backfill window~\citep{ddhistorical} and OTLP maps types by its own
+table~\citep{ddotlp}, which is why \S\ref{sec:ingestion} parameterises the mapping
+rather than describing ``Datadog''.
 
-\subsection{Translating between dialects, and what that guarantees}
+\subsection{What a translation guarantees}
 
 SQL dialect translation is the closest established practice. Apache Calcite parses SQL
-into a relational algebra, optimises, and generates dialect-specific SQL on the way out,
-which is an IR-based translator of exactly the shape used
-here~\citep{begoli2018}. SQLGlot does the same job as a library across more than twenty
-dialects~\citep{sqlglot}. Both are engineering successes and neither offers what this
-paper needs: a statement of what a translation preserves. Their correctness criterion is
-that the output parses and behaves as users expect, established by test suites; when a
-construct has no counterpart, the usual outcome is a best-effort rewrite rather than a
-refusal, and nothing in the output records that an approximation happened. This is a
-reasonable engineering choice and a poor measurement instrument, which is why
-\S\ref{sec:framework} requires a translator to be total with every failure a named $\bot$.
+into a relational algebra, optimises, and generates dialect-specific SQL on the way
+out~\citep{begoli2018}; SQLGlot does the same across more than twenty
+dialects~\citep{sqlglot}. Both are engineering successes and neither offers a statement
+of what a translation preserves: their criterion is that the output parses and behaves as
+users expect, established by test suites, and where a construct has no counterpart the
+usual outcome is a best-effort rewrite that leaves no record of the approximation. That
+is a reasonable engineering choice and a poor measurement instrument, which is why
+\S\ref{sec:framework} requires a translator to be total with every failure a named
+$\bot$.
 
 The standard of proof sits in compiler verification. McCarthy and Painter proved a
-compiler for arithmetic expressions correct by relating the source and target
-denotations~\citep{mccarthy1967}, and CompCert carries the same idea through a realistic C
+compiler for arithmetic expressions correct by relating source and target
+denotations~\citep{mccarthy1967}, and CompCert carries the idea through a realistic C
 compiler with machine-checked proofs~\citep{leroy2009}. That is the shape of
-\S\ref{sec:kernel-soundness}'s theorem, though not its rigour: the proof here is on paper
-and for a fragment, and the data model it relates is two \emph{different} stored forms
-rather than one. The difference is not incidental. A verified compiler may assume the
-source and target run on the same input; here they do not, which is what
-\S\ref{sec:ingestion} exists to handle.
+\S\ref{sec:kernel-soundness}'s theorem though not its rigour --- the proof here is on
+paper and for a fragment --- and it differs in one way that is not incidental: a verified
+compiler may assume source and target run on the same input, and here they do not, which
+is what \S\ref{sec:ingestion} exists to handle. Database theory supplies the adjacent
+decision problem, equivalence and containment of conjunctive queries being decidable by
+the homomorphism characterisation~\citep{chandra1977,abiteboul1995}; it does not transfer,
+since the quantities here are numeric aggregates over time windows and exactness has to
+be stated up to floating point. The borrowing is the habit: state the equivalence you
+mean, then decide it.
 
-Query equivalence is also a studied problem in databases. Containment and equivalence of
-conjunctive queries are decidable, by the homomorphism characterisation of Chandra and
-Merlin~\citep{chandra1977}, and the surrounding theory is
-standard~\citep{abiteboul1995}. It does not transfer directly, because the quantities here
-are numeric aggregates over time windows rather than sets of tuples, and because
-exactness has to be stated up to floating point --- hence the metric of
-\S\ref{sec:framework} rather than an equality test. The relevant borrowing is the habit:
-state the equivalence you mean, then decide it.
+``PromQL cannot say this'' is also a claim with a literature behind it. Felleisen
+formalises expressive power by asking whether a construct can be eliminated by a local,
+meaning-preserving rewriting~\citep{felleisen1991}, and Mitchell relates expressiveness
+to observational equivalence~\citep{mitchell1993}. What this paper borrows is the
+\emph{distinction} rather than the criterion: \S\ref{sec:regular}'s results are of a
+blunter kind, containment facts about two classes of regular languages where the target
+has no term with the denotation at all. They are the only claims here that hold
+regardless of how much engineering is applied --- no glob denotes the non-empty tag
+values, so no work on a Datadog back end will translate \texttt{.+} into one --- and
+separating them from unfinished work is what \S\ref{sec:gaps} measures.
 
-\subsection{Expressiveness as a formal question}
+\subsection{Observability, standardisation, and why any of this is a cost}
 
-``PromQL cannot say this'' is a claim with a literature behind it. Felleisen formalises
-expressive power by asking whether a construct can be eliminated from a language by a
-local, meaning-preserving rewriting~\citep{felleisen1991}, and Mitchell relates
-expressiveness to observational equivalence and
-abstraction~\citep{mitchell1993}. What this paper borrows from that literature is the
-\emph{distinction} rather than the criterion: Felleisen's question is whether a
-construct can be eliminated from a language of equal power, and \S\ref{sec:regular}'s
-results are of a blunter kind --- containment facts about two classes of regular
-languages, where the target has no term with the denotation at all. They are the only
-claims here that hold regardless of how much engineering is applied: no glob denotes
-the non-empty tag values, so no amount of work on a Datadog back end will translate
-\texttt{.+} into one. Distinguishing such claims from unfinished work is the discipline
-\S\ref{sec:intro} describes and \S\ref{sec:gaps} measures, and the literature is what
-makes the distinction sharp rather than rhetorical.
-
-\subsection{Observability-specific work}
-
-The closest observability work compares implementations of \emph{one} language rather than
-translating between two. Volz's compliance testing found that vendors advertising PromQL
-support disagree with Prometheus on a generated conformance suite~\citep{volz2020} --- which is this
-paper's problem in miniature, and a warning: if one language's implementations already
-differ, a translation between two languages needs its soundness stated rather than
-assumed. The practice of verifying a candidate against a real server rather than a model
+The closest observability work compares implementations of \emph{one} language rather
+than translating between two. Volz's compliance testing found that vendors advertising
+PromQL support disagree with Prometheus on a generated conformance suite~\citep{volz2020}
+--- this paper's problem in miniature, and a warning: if one language's implementations
+already differ, a translation between two needs its soundness stated rather than assumed.
+The practice of verifying a candidate against a real server rather than a model
 (\S\ref{sec:ingestion}) is taken from that result.
 
-Standardisation efforts approach the problem from the other end. OpenTelemetry has
-largely settled the \emph{data} question, so metrics and traces now have a vendor-neutral
-wire format~\citep{otel}, leaving queries as the remaining lock-in surface --- and the
-CNCF's Observability TAG has an active effort towards a common query
-language~\citep{sharma2025}. Where that effort needs evidence is exactly here: which
-constructs are genuinely hard to translate, and which merely have not been. Among existing
-languages, LogQL is PromQL-shaped with a log-selection stage in
+Standardisation approaches it from the other end. OpenTelemetry has largely settled the
+\emph{data} question~\citep{otel}, leaving queries as the remaining lock-in surface, and
+the CNCF's Observability TAG has an active effort towards a common query
+language~\citep{sharma2025} --- which needs exactly the evidence this paper produces:
+which constructs are genuinely hard to translate and which merely have not been. Among
+existing languages LogQL is PromQL-shaped with a log-selection stage in
 front~\citep{logql}, while Splunk's SPL is a piped search language whose stages carry
 state~\citep{splunk}; \S\ref{sec:discussion} argues the dividing line for this method is
 whether a language denotes a function of a database at an instant.
 
-\subsection{Why any of this is a cost}
-
-Switching costs are a well-developed subject in industrial organisation. Farrell and
-Klemperer survey lock-in and the competitive effects of switching
-costs~\citep{farrell2007}, and Shapiro and Varian give the lock-in cycle its standard
-informal treatment for information goods~\citep{shapiro1999}. The relevant point for this
-paper is structural rather than quantitative: what retains a customer is not that leaving
-is impossible but that the terms of return differ from the terms of entry, so a decision
-made cheaply cannot be unmade cheaply. That is an asymmetry claim, and it is testable ---
-which is what \S\ref{sec:discussion} does with the two directions. The concrete case that
-motivates the question is on the public record~\citep{orosz2023}.
+Switching costs themselves are well developed in industrial organisation. Farrell and
+Klemperer survey lock-in and its competitive effects~\citep{farrell2007}, and Shapiro and
+Varian give the lock-in cycle its standard informal treatment for information
+goods~\citep{shapiro1999}. The structural point matters more here than any quantity: what
+retains a customer is not that leaving is impossible but that the terms of return differ
+from the terms of entry, so a decision made cheaply cannot be unmade cheaply. That is an
+asymmetry claim and it is testable, which is what \S\ref{sec:discussion} does with the
+two directions. The concrete case that motivates the question is on the public
+record~\citep{orosz2023}.
 
 \subsection{What this paper adds}
 
-Each tradition above leaves the same thing open. The transpilers translate without
-stating what is preserved. The verification work states what is preserved but assumes a
-shared input. The expressiveness literature gives the form of a negative result but is
-rarely pointed at query languages. The observability work compares implementations of one
-language, and the standardisation work needs evidence about which differences are
-essential. The economics predicts an asymmetry without measuring one.
-
-This paper's contribution is the combination: soundness stated relative to an ingestion
-mapping so that two differently-stored systems can be compared at all; a translator whose
-refusals are typed and counted rather than papered over; non-expressibility proved where
-it holds; and all of it measured on a corpus of queries nobody wrote for the purpose.
+Each tradition leaves the same thing open. The transpilers translate without stating what
+is preserved; the verification work states what is preserved but assumes a shared input;
+the expressiveness literature gives the form of a negative result but is rarely pointed
+at query languages; the observability work compares implementations of one language, and
+the standardisation work needs evidence about which differences are essential; the
+economics predicts an asymmetry without measuring one. This paper's contribution is the
+combination: soundness stated relative to an ingestion mapping, so that two
+differently-stored systems can be compared at all; a translator whose refusals are typed
+and counted rather than papered over; non-expressibility proved where it holds; and all
+of it measured on a corpus of queries nobody wrote for the purpose.
