@@ -1,0 +1,61 @@
+\begin{remark}[How the baseline was run, and what it is not]\label{rem:baseline}
+OpenObserve's migrator is hosted, has no API and no published source, so the obvious
+reading is that it cannot be measured without sending it the corpus. It can: the
+Datadog-to-PromQL translation is client-side, shipped in the page's own JavaScript, and
+the function it exports takes a query string and returns an expression, a confidence and
+a list of notes. Nothing was uploaded. The chunk is cached under
+\texttt{data/raw/openobserve/} with its SHA-256 and the date it was retrieved, because a
+hosted service is not a version: the measurement below is of that artefact, on
+18~November~2026, and nobody --- including us --- can re-execute it against the live
+site and be sure of getting the same answer. Caching is the only repeatability available,
+and it is the same discipline the vendor experiments above apply to the Datadog API.
+
+Only the one module is run. It imports a second, supplying classname and identifier
+helpers that the dashboard-level entry point uses and the query-level one does not, which
+is stubbed; the module itself contains no network call, no storage access and no dynamic
+evaluation.
+
+Three choices keep the comparison from flattering this paper. Occurrences are weighted as
+$\kappa$ weights them. Multi-query sources are held aside, because our emitter returns a
+list for those and theirs one string, so a parse check would fail ours for a reason that
+is not a defect --- $117$ occurrences. And validity is judged by this paper's PromQL
+grammar, which was inferred from the Prometheus reference parser (\S\ref{sec:grammars})
+before any of this was contemplated and is not tuned to either translator's output.
+
+What the comparison is not. Their tool targets OpenObserve rather than Prometheus, and
+OpenObserve's PromQL support is its own; an expression our grammar rejects might still be
+accepted there, so ``is not PromQL'' means what \S\ref{sec:grammars} means by it and not
+``is useless''. The tool is built for whole dashboards, and a dashboard carries a time
+range that might, in the product, supply the window its output guesses at --- though the
+guess is a literal \texttt{[5m]} in the emitted text, not a reference to anything. And
+emitting rather than refusing is their design, not an oversight: a migration tool is
+judged by whether the dashboard comes up, and a panel showing the wrong number comes up.
+That is exactly the criterion \S\ref{sec:framework} argues is the wrong one for
+measurement, and the $457$ occurrences of output that is not PromQL are the price of it
+--- but it is a price this paper, not theirs, set out to count.
+
+Our refusals, by code, every one of which receives an expression from them:
+
+\begin{center}\footnotesize
+\begin{tabular}{@{}lr@{}}
+\toprule
+Our code & Occurrences they emit for \\
+\midrule
+\texttt{UNSUPPORTED\_FUNCTION} & $196$ \\
+\texttt{FILL\_INTERPOLATION} & $36$ \\
+\texttt{PHI\_QUANTILE} & $34$ \\
+\texttt{LABEL\_NAME\_GLOB} & $31$ \\
+\texttt{SCOPE\_EMPTY\_VALUE} & $5$ \\
+\texttt{SCOPE\_DISJUNCTION} & $4$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The first of those is
+the one where their behaviour is most defensible and ours most conservative: much of that
+row is unimplemented work on our side, so an expression that drops a modifier is not
+obviously worse than no expression at all. The next three are the ones where it is not a
+matter of taste --- \S\ref{sec:gaps} argues the construct has no PromQL counterpart, and
+Corollary~\ref{cor:quantile} proves it for the percentiles.
+\end{remark}

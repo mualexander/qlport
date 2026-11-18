@@ -160,6 +160,12 @@ can be checked, which is the first number here separating coverage from correctn
 This is the answer we would now put first, and it is invisible to $\kappa$, to the gap
 catalogue and to the grammars alike, because a query that does not fix its own meaning
 parses and translates like any other.
+\item \textbf{A measured baseline (\S\ref{sec:baseline}).} Another vendor's
+Datadog-to-PromQL translator, run over this same corpus --- the first such comparison we
+know of, and possible only because its translation turns out to run in the browser. It
+refuses nothing and emits for every occurrence, yet $5.3\%$ of what it emits is not
+PromQL, and it returns an expression for all $306$ queries this paper refuses, the
+percentiles Corollary~\ref{cor:quantile} proves Prometheus cannot answer among them.
 \end{enumerate}
 
 \paragraph{A note on method.}

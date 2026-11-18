@@ -408,6 +408,18 @@ def test_the_registry_agrees_with_the_tables_on_kappa():
 # their source by name rather than by luck.
 BOUND: tuple[tuple[str, str], ...] = (
     ("nb00.ceiling_8_features_pct", "eval_staircase.tex"),
+    ("oo.corpus", "07_evaluation.tex"),
+    ("oo.invalid", "07_evaluation.tex"),
+    ("oo.invalid_matchall", "07_evaluation.tex"),
+    ("oo.dropped_modifier", "07_evaluation.tex"),
+    ("oo.drops_total", "07_evaluation.tex"),
+    ("oo.dropped_rollup", "07_evaluation.tex"),
+    ("oo.dropped_fill", "07_evaluation.tex"),
+    ("oo.invented_window", "07_evaluation.tex"),
+    ("oo.invented_window_pct", "07_evaluation.tex"),
+    ("oo.cosmetic_note_only_pct", "07_evaluation.tex"),
+    ("oo.substantive_note_pct", "07_evaluation.tex"),
+    ("oo.gap_unsupported_function", "eval_baseline.tex"),
     ("nb03.caveat_counter_reset_pct", "07_evaluation.tex"),
     ("nb03.caveat_metric_type_unknown_occurrences", "05_translation.tex"),
     ("nb03.caveat_metric_type_unknown_pct", "05_translation.tex"),

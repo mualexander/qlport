@@ -1,0 +1,10 @@
+{
+ "tool": "OpenObserve Dashboard Migrator",
+ "page": "https://migration.openobserve.ai/datadog-to-o2",
+ "asset": "https://migration.openobserve.ai/_next/static/chunks/f8ce70f9cbeedb16.js",
+ "note": "Next.js content-hashed chunk; the Datadog->PromQL translator is turbopack module 27461, exporting translateDDQuery. Fetched and cached because the service is hosted, unversioned and may change without notice.",
+ "retrieved": "2026-11-18",
+ "bytes": 62965,
+ "sha256": "8d91cba9c0346b262f07456236a90abdd3a1faa677aa1a1c0926aece6198ddbd",
+ "module": 27461
+}

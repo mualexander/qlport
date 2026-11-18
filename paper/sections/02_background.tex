@@ -76,11 +76,13 @@ dashboard migrator translates metric panels and metric monitors into PromQL and 
 object migrated, needing review, or skipped~\citep{openobserve} --- a coarse form of the
 typed failure \S\ref{sec:framework} requires, reported without counts. Neither of these is
 a criticism of the tools: a migration tool is judged by whether the dashboard comes up.
-But it does mean the quantities this paper reports --- what is impossible rather than
-unbuilt, how often a translation rests on something the query does not say, and how often
-the resulting guess is wrong --- have no prior measurement to be set against, which makes
-them easier to doubt rather than harder, and is why \S\ref{sec:evaluation} is written so
-that every one of them can be recomputed.
+It does mean the quantities this paper reports --- what is impossible rather than
+unbuilt, how often a translation rests on something the query does not say, and how
+often the resulting guess is wrong --- have no \emph{published} measurement to be set
+against. They are not beyond comparison, though: OpenObserve's translator turns out to
+run in the browser, so \S\ref{sec:baseline} drives it over this corpus and asks the one
+question both tools can be held to without first agreeing on semantics --- what each
+emits, and whether what it emits is PromQL.
 
 The standard of proof sits in compiler verification. McCarthy and Painter proved a
 compiler for arithmetic expressions correct by relating source and target

@@ -322,6 +322,64 @@ the agreement reported here is agreement \emph{given} the two conditions
 what happens when they fail --- which Remark~\ref{rem:type-cost} measures separately,
 and measures as unbounded in the counter's age.
 
+\subsection{A baseline: what another translator does}
+\label{sec:baseline}
+
+$\kappa$ has nothing to be compared against in the literature (\S\ref{sec:background}),
+but it does have something to be compared against in practice. OpenObserve ships a
+dashboard migrator whose Datadog-to-PromQL translation runs in the browser, so it can be
+driven over this corpus directly; the bundle is cached with its hash and retrieval date
+because the service is hosted and unversioned, and
+\texttt{scripts/openobserve\_baseline.py} reproduces everything below. Queries whose
+source is several comma-separated metrics are held aside --- $117$ occurrences, where our
+emitter returns a list and theirs one string --- leaving $8{,}653$.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/baseline}
+\caption{The same corpus through both translators, by occurrence. ``Parses'' is judged by
+this paper's PromQL grammar (\S\ref{sec:grammars}), which is independent of both.}
+\label{tab:baseline}
+\end{table}
+
+Table~\ref{tab:baseline} is the comparison, and it does not run in the direction a
+coverage number would suggest.
+Their translator refuses nothing: it emits an expression for every one of the $8{,}653$
+occurrences, against our $96.4\%$. But $457$ of those --- $5.3\%$ --- are not PromQL.
+$235$ carry Datadog's match-all scope \texttt{\{*\}} into a language where \texttt{*} is
+multiplication, $111$ are the Datadog text passed through unchanged, and $111$ fail for
+other reasons. Every expression we emit parses. So on the one measure both tools can be
+held to without first agreeing on semantics --- coverage by \emph{valid} output --- the
+figures are $94.7\%$ against $96.4\%$, and the translator that refuses more emits more.
+
+What happens to the queries we refuse is the sharper result. All $306$ of them receive an
+expression, across every one of the six gap codes. The $34$ percentile aggregators that
+Corollary~\ref{cor:quantile} proves Prometheus cannot answer become
+\texttt{quantile(0.95, \ldots)} across series, which is a quantile of the \emph{series}
+rather than of the distribution; the $36$ \texttt{.fill} interpolations and the $31$
+tag-key globs become expressions with the construct removed. None of this is concealed
+--- the output carries a note --- but a note is not a code. $68.6\%$ of occurrences carry
+only the cosmetic observation that dots became underscores, so the $31.3\%$ that say
+something substantive arrive in the same channel as the noise and cannot be counted
+without being read.
+
+Two of the figures are this paper's own thesis arriving from outside it. $525$
+occurrences have a Datadog modifier silently dropped ($570$ drops in all: $316$
+\texttt{.rollup}, $184$ \texttt{.fill}, $70$ \texttt{.weighted}), and dropping a
+\texttt{.rollup} does not approximate the query, it answers a different one. And
+$1{,}844$ occurrences --- $21.3\%$ --- are given a \texttt{[5m]} window no query states,
+under the note ``adjust interval as needed''. That is
+\S\ref{sec:dashboard-layer}'s finding reached independently by somebody who was not
+looking for it: the interval is not in the query, so a translator must be told it, record
+that it guessed, or guess quietly. Theirs guesses and mentions it in prose; ours records
+\texttt{ROLLUP\_DEFAULT} and counts it.
+
+One of the three dropped modifiers is dropped correctly. \texttt{.weighted()} computes
+nothing (Remark~\ref{rem:weighted}) --- which this paper established only after calling
+it inexpressible for $70$ occurrences --- so there their silent drop is right and our
+earlier refusal was wrong.
+
+\iffull\input{sections/moved/eval_baseline}\fi
+
 \subsection{Threats to validity}
 \label{sec:threats}
 
