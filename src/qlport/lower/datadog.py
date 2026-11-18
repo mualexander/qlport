@@ -120,6 +120,15 @@ def _tag_matchers(term: str, *, negated: bool) -> tuple[ir.Matcher, ...]:
         return (ir.Matcher(lab, "!~" if negated else "=~", ".+"),)
     if is_glob(value):
         return (ir.Matcher(lab, "!~" if negated else "=~", glob_to_regex(value)),)
+    if value == "":
+        # `k:` selects the series whose tag k is present and empty; `!k:` selects every
+        # other series, the ones with no k among them. Prometheus's data model defines a
+        # label with an empty value to be an absent label, so neither set is denotable:
+        # `k=""` picks up the series with no k and `k!=""` drops them. Measured on all
+        # three tag states by `scripts/scope_empty_tag.py`. Until the eighth review pass
+        # these fell through to the equality branch below and emitted a selector denoting
+        # a different series set -- five translated occurrences of `!k:`.
+        _refuse(Gap.SCOPE_EMPTY_VALUE, f"{'!' if negated else ''}{key}:")
     return (ir.Matcher(lab, "!=" if negated else "=", value),)
 
 

@@ -63,6 +63,14 @@ A \emph{translator} is a total function
 $T:\Lang(G_s)\to\Lang(G_t)\cup\{\bot\}$, where $\bot$ carries a \emph{gap code} naming
 the construct that stopped it. Its \emph{domain} is
 $\mathrm{dom}(T)=\{q : T(q)\neq\bot\}$, the fragment of the Problem Statement.
+
+The translator this paper builds factors through an intermediate representation, so it
+is useful to name the halves: a \emph{lowering} $L:\Lang(G_s)\to\mathit{IR}\cup\{\bot\}$
+and an \emph{emission} $E:\mathit{IR}\to(\Lang(G_t)\times\mathcal{P}(\text{codes}))
+\cup\{\bot\}$, with $T=\pi_1\circ E\circ L$ and $\bot$ absorbing. The theorems of
+\S\ref{sec:translation} are stated over $E(L(q))$, because they need the caveat set $C$
+that $E$ returns alongside the expression; an earlier version wrote $E(T(q))$, which does
+not type-check, $T$'s codomain being the target language rather than the IR.
 \end{definition}
 
 \noindent
@@ -97,12 +105,20 @@ For $a,b\in\mathbb{R}$ put $\delta(a,b)=|a-b|/\max(|a|,|b|)$, with $\delta(0,0)=
 results $r_1,r_2$,
 \[
 d(r_1,r_2)=\begin{cases}
+0 & \mathrm{dom}(r_1)=\mathrm{dom}(r_2)=\emptyset\\
 \max_{\lambda\in\mathrm{dom}(r_1)}\delta\big(r_1(\lambda),r_2(\lambda)\big)
-  & \mathrm{dom}(r_1)=\mathrm{dom}(r_2)\\
+  & \mathrm{dom}(r_1)=\mathrm{dom}(r_2)\neq\emptyset\\
 \infty & \text{otherwise.}
 \end{cases}
 \]
 \end{definition}
+
+\noindent
+The first case is not a convention chosen for tidiness. Two results that both select
+nothing agree, and a maximum over the empty set would otherwise leave $d$ undefined on
+exactly the pairs \S\ref{sec:ingestion}'s failure modes produce --- an empty window, a
+bucket with no samples, a series that has not started. \texttt{metrics.py} has always
+taken this reading; the definition did not say so.
 
 \noindent
 Differing label sets give $\infty$ rather than a large number because they are a
@@ -117,14 +133,17 @@ $\delta$ is symmetric, and $\delta(a,b)=0$ iff $a=b$. For the triangle inequalit
 $\delta(a,b)\le 2$ always, and $\delta(a,b)\ge 1$ whenever $a$ and $b$ have strictly
 opposite signs or one is $0$ and the other is not.
 
-If $a,b,c$ all share a sign, write $r_{xy}=\max(|x|,|y|)/\min(|x|,|y|)\ge 1$ for the ratio
+If $a,b,c$ are all non-zero and share a sign, write $r_{xy}=\max(|x|,|y|)/\min(|x|,|y|)\ge 1$ for the ratio
 of magnitudes; then $\delta(x,y)=(r_{xy}-1)/r_{xy}$ and $r_{ac}\le r_{ab}\,r_{bc}$. Since
 $(r-1)/r$ increases in $r$, it suffices that
 $1-\tfrac{1}{st}\le(1-\tfrac1s)+(1-\tfrac1t)$ for $s,t\ge1$, which rearranges to
 $(s-1)(t-1)\ge 0$.
 
-If $b$ has the sign opposite to $a$ and $c$, both right-hand terms are at least $1$ and
-the left is at most $2$. If $a$ and $c$ have opposite signs, take $|a|\ge|c|$ by symmetry,
+If any of the three is $0$ while another is not, every $\delta$ with a zero argument and
+a non-zero one is $1$: so if exactly one of $a,c$ is $0$ the left side is $1$ and the
+right has a term of $1$ unless $b=0$ too, in which case the other term is $1$; and if
+$a=c$ the left side is $0$. If $b$ has the sign opposite to $a$ and $c$, both right-hand
+terms are at least $1$ and the left is at most $2$. If $a$ and $c$ have opposite signs, take $|a|\ge|c|$ by symmetry,
 so $\delta(a,c)=1+|c|/|a|$, and $b$ shares a sign with one of them, say $a$. When
 $|b|\ge|c|$ the claim reduces to
 $|c|\big(\tfrac{1}{|a|}-\tfrac{1}{|b|}\big)\le\delta(a,b)$, which holds because
@@ -141,13 +160,15 @@ lemma it would be an appeal to intuition about ``closeness''.
 \subsection{Exactness, soundness, coverage}
 
 \begin{definition}[Exact and $\varepsilon$-sound]\label{def:sound}
-Let $\mathcal{C}\subseteq\mathcal{D}$. A translator $T$ is \emph{$\varepsilon$-sound on
-$\mathcal{C}$} if for every $q\in\mathrm{dom}(T)$, every $D\in\mathcal{C}$ and every
+Let $\mathcal{C}\subseteq\mathcal{D}$ and let $u:\mathbb{T}\to\mathbb{T}$ be an
+\emph{evaluation map}. A translator $T$ is \emph{$\varepsilon$-sound on $\mathcal{C}$
+along $u$} if for every $q\in\mathrm{dom}(T)$, every $D\in\mathcal{C}$ and every
 $t\in\mathbb{T}$,
 \[
-d\big(\sem{q}_s(D,t),\ \sem{T(q)}_t(D,t)\big)\le\varepsilon,
+d\big(\sem{q}_s(D,t),\ \sem{T(q)}_t(D,u(t))\big)\le\varepsilon,
 \]
-and \emph{exact} on $\mathcal{C}$ when $\varepsilon=0$.
+and \emph{exact} on $\mathcal{C}$ along $u$ when $\varepsilon=0$. Unqualified,
+``$\varepsilon$-sound'' means along the identity.
 \end{definition}
 
 \noindent

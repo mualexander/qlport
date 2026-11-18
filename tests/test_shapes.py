@@ -105,25 +105,35 @@ def _inst(ddq):
     return instantiate(lower_all(parse("datadog", ddq, "v2"))[0])
 
 
-def test_a_non_empty_requirement_puts_the_label_on_the_series():
-    """Datadog's `!tag:` becomes `{tag!=""}`, which absence does not satisfy.
+def test_a_presence_requirement_puts_the_label_on_the_series():
+    """`provider:*` becomes `{provider=~".+"}`, which absence does not satisfy.
 
     Prometheus reads a missing label as the empty string, so a series without the label
     fails the matcher. Leaving it off made the PromQL side of the differential test
     select nothing at all while Datadog returned data.
+
+    The witness used to be `!provider:`, which the eighth review pass found is not a
+    presence requirement at all and is now refused -- Datadog's `!k:` keeps the series
+    carrying no `k`, and no PromQL selector does.
     """
-    got = _inst("count:m.x{*,!provider:} by {kind}")
+    got = _inst("count:m.x{*,provider:*} by {kind}")
     assert got.ok
     for spec in got.series:
         assert spec.labels["provider"] != ""
 
 
 def test_a_grouping_key_that_is_only_required_present_still_varies():
-    # Any non-empty value satisfies `!provider:`, so grouping by the same tag must
+    # Any non-empty value satisfies `provider:*`, so grouping by the same tag must
     # still produce several series --- otherwise the aggregation under test is trivial.
-    got = _inst("count:m.x{*,!provider:} by {provider}")
+    got = _inst("count:m.x{*,provider:*} by {provider}")
     assert got.ok
     assert len({s.labels["provider"] for s in got.series}) > 1
+
+
+def test_a_scope_separating_absent_from_empty_is_refused_before_instantiation():
+    """`!k:` and `k:` never reach the harness, because lowering refuses them."""
+    for q in ("count:m.x{*,!provider:} by {kind}", "count:m.x{provider:} by {kind}"):
+        assert not _inst(q).ok, q
 
 
 def test_a_grouping_key_the_scope_pins_keeps_its_value():

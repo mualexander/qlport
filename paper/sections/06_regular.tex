@@ -86,8 +86,14 @@ $\Sigma^{+}$ contains words of length $1$, so $m(g)\le 1$. Hence $m(g)=1$: $g$ h
 single literal character $c$ and at least one star. By Lemma~\ref{lem:dichotomy} every
 word of $L(g)$ contains $c$, while $\Sigma^{+}$ contains the one-character words of
 $\Sigma\setminus\{c\}$, which is non-empty. (3) The same argument gives $m(g)=1$ with one
-literal $c\in A$, and then $L(g)$ contains $c\sigma$ for every $\sigma\in\Sigma$,
-including $\sigma\notin A$.
+literal $c$, which must lie in $A$ since every word of $L(g)$ contains it. A single
+literal and at least one star leaves three shapes: $c{*}$, ${*}c$ and ${*}c{*}$. In the
+first and third $L(g)$ contains $c\sigma$ for every $\sigma\in\Sigma$; in the second it
+contains $\sigma c$ for every $\sigma$. Either way it contains a word using a
+$\sigma\notin A$, which $A^{+}$ does not, and $\Sigma\setminus A\neq\emptyset$.
+
+Taking $c\sigma$ in every case, as an earlier version of this proof did, is wrong for
+$g={*}c$: that language has no word beginning with $c$ unless $c$ repeats.
 \end{proof}
 
 \subsection{Deciding whether a regex has a glob}
@@ -190,7 +196,7 @@ and \texttt{!\textasciitilde{}} matcher'', and the scanner behind it accepted on
 double-quoted patterns. PromQL writes a string three ways, its own grammar in
 Section~\ref{sec:grammars} says so, and $114$ matcher occurrences sat in the other two. Treating a single glob as the target --- the obvious
 reading of ``does this regex have a glob'' --- would therefore have understated the
-reverse direction by $34$ points of occurrence coverage, and the construction that
+reverse direction by $33.0$ points of occurrence coverage, and the construction that
 recovers them is the one Section~\ref{sec:translation} already proved for the other
 direction.
 
@@ -211,10 +217,31 @@ union of them.}
 Table~\ref{tab:regex-glob-reasons} is the part this section can be held to, and it has
 to be read against the target of \S\ref{sec:glob-unions} rather than against a single
 glob. Three constructs account for every refusal, and each is an instance of
-Corollary~\ref{cor:no-glob}: a single-character wildcard such as \texttt{5..} would need a
+Corollary~\ref{cor:no-glob} \emph{or} of one of the two facts below: a single-character
+wildcard such as \texttt{5..} would need a
 glob for $\Sigma$, which part~(1) forbids; \texttt{.+} would need one for $\Sigma^{+}$,
 forbidden by part~(2); and \texttt{5[0-9]+} would need a star confined to the digits,
 forbidden by part~(3).
+
+``Each is an instance'' is the part that needed care, and an earlier version of this
+sentence overstated it. The corollary is about three \emph{specific} languages and is
+closed under neither concatenation with a literal nor union, while most refused corpus
+patterns are of those shapes: \texttt{dm-.+} is not $\Sigma^{+}$, and
+\texttt{5[0-9]+} is not $A^{+}$, because $A^{+}$ contains words of length one and that
+language's shortest word has three characters. Two facts close the gap, and both are
+already in this section rather than new.
+
+The first is the uniqueness step inside Proposition~\ref{prop:decidable}'s proof: if
+$L(r)=L(g)$ then $L(r)$ has a \emph{unique} shortest word. Most of the patterns the
+corollary does not reach fail that immediately --- \texttt{dm-.+} has shortest words
+\texttt{dm-} and nothing else of that length only if the suffix can be empty, which
+\texttt{.+} forbids, so its shortest words are \texttt{dm-}$\sigma$ for every $\sigma$,
+and there are $|\Sigma|$ of them. The second is the generalisation part~(3) is an
+instance of: \emph{if $L$ is infinite and some $\sigma\in\Sigma$ occurs in no word of
+$L$, then $L$ is no union of finitely many globs}, because an infinite glob language
+needs a star and a star admits every character. That is what the prose below has always
+said, and stating it as a fact rather than as an aside is what the $10$ unconditional
+occurrences actually rest on.
 
 The three are not equally final, and saying so costs less than leaving it implied. The
 target here is a union of at most $B$ globs, and the first two constructs \emph{are}
@@ -252,6 +279,13 @@ the cases a structural proposer's refusal would otherwise have to be taken on tr
 (\texttt{scripts\slash crosscheck\_globs.py}), and \texttt{tests\slash test\_regular.py}
 fails if a disagreement ever appears, if any pattern goes unreached, or if the two sides
 stop sharing a population.
+
+One qualification on ``complete''. The search is complete for the regular expressions its
+parser accepts, which is the dialect of the equivalence library rather than all of
+PromQL's: a pattern carrying an interior anchor, or one whose escapes the structural
+proposer normalises first, is refused by the search where the proposer answers. No corpus
+pattern is of either shape --- all $184$ were reached --- so the agreement reported above
+is over the whole population, but the word means complete relative to that dialect.
 
 \begin{remark}[The largest refusal turned on an undocumented detail]%
 \label{rem:star-empty}

@@ -259,7 +259,7 @@ def test_emitted_promql_parses_across_the_corpus():
         emitted += 1
     # Pinned, not floored. `> 3000` would have passed after losing well over half the
     # translated corpus, which is not what "the kernel carries the corpus" means.
-    assert emitted == 7309, emitted
+    assert emitted == 7305, emitted
 
 
 # --- meaning: the emitted form agrees with Datadog's rollup ---------------------------
@@ -327,7 +327,7 @@ def test_lowering_never_exposes_a_bare_counter_selector():
                 continue
             assert selects_are_wrapped(e), text
             checked += 1
-    assert checked == 7553, checked           # pinned for the same reason as above
+    assert checked == 7549, checked           # pinned for the same reason as above
 
 
 # --- single-label disjunction ---------------------------------------------------------
@@ -825,6 +825,10 @@ def test_the_reachable_gap_codes_are_the_ones_the_catalogue_claims():
         "UNSUPPORTED_FUNCTION", "LABEL_NAME_GLOB", "SCOPE_DISJUNCTION", "PHI_QUANTILE",
         "FILL_INTERPOLATION", "ROLLUP_DEFAULT", "ROLLUP_ALIGNMENT",
         "METRIC_TYPE_UNKNOWN", "COUNTER_RESET", "ANCHORED_VERSION", "PHI_SERIES_START",
+        # The eighth review pass added both: a scope separating an absent tag from a
+        # present empty one has no PromQL counterpart at all, and the presence forms
+        # have one only where no series carries that tag with an empty value.
+        "SCOPE_EMPTY_VALUE", "TAG_PRESENCE_EMPTY",
     }, sorted(referenced)
 
     # Declared because the paper argues about them; nothing raises them here.

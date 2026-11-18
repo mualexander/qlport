@@ -113,8 +113,13 @@ ALLOWED: dict[float, str] = {
     300: "automatic rollup interval over a day, seconds",
     1800: "the one rollup width the differential window cannot hold two of",
     8587: "regex matchers in the PromQL corpus; the table beside it reports the split",
-    2.5: "the differential's largest relative deviation, times 10^-14",
+    0.628: "cor:rate: what rate() reads on one of two databases with equal phi images",
+    887: "rem:type-measured: translated occurrences whose declared type is not decidable",
+    98.8: "superseded: the ceiling before the empty-value scopes were refused, named in "
+          "rem:empty-tag as the figure this correction moves",
+    0.667: "and on the other, which is why rate is inadmissible on C_warm too",
     325: "shapes the differential had before the abstraction kept rollup intervals",
+    335: "and after that, before the empty-value scopes left the translated set",
     3600: "the second rollup width the differential window cannot hold two of",
     114: "matcher occurrences in single-quoted and backtick literals, which the "
          "double-quoted-only scanner of an earlier pass did not see",
@@ -227,7 +232,7 @@ ALLOWED: dict[float, str] = {
 # made on magnitude alone. A share and a count are different claims; a checker that
 # cannot tell them apart launders one into the other.
 SCALAR_ONLY: set[float] = {
-    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 45, 49, 54, 103, 110, 111, 133, 139, 221, 238, 344, 388, 723, 763, 897, 1013, 1760, 5227, 5389, 8096, 8472, 28490, 2.5, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91,
+    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 45, 49, 54, 103, 110, 111, 133, 139, 221, 238, 344, 388, 723, 763, 897, 1013, 1760, 5227, 5389, 8096, 8472, 28490, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 0.628, 0.667, 887, 335, 1.4,
 }
 
 

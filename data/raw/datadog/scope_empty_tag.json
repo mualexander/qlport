@@ -1,0 +1,893 @@
+{
+ "datadog_matches_prediction": true,
+ "forms_whose_translation_selects_a_different_set": [
+  "!k:",
+  "!k:*",
+  "k:",
+  "k:*"
+ ],
+ "probes": {
+  "!k:": {
+   "datadog_predicted": [
+    "has_k",
+    "no_k"
+   ],
+   "matches_prediction": true,
+   "promql_matcher": "k!=\"\"",
+   "promql_selects": [
+    "has_k"
+   ],
+   "query": "sum:qlport.scope.r1794967020.g{run:r1794967020,!k:} by {probe}",
+   "raw": {
+    "from_date": 1794966960000,
+    "group_by": [
+     "probe"
+    ],
+    "message": "",
+    "query": "sum:qlport.scope.r1794967020.g{run:r1794967020,!k:} by {probe}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.scope.r1794967020.g",
+      "end": 1794967561000,
+      "expression": "sum:qlport.scope.r1794967020.g{probe:has_k,run:r1794967020,!k:}",
+      "interval": 2,
+      "length": 10,
+      "metric": "qlport.scope.r1794967020.g",
+      "pointlist": [
+       [
+        1794967020000.0,
+        1.0
+       ],
+       [
+        1794967080000.0,
+        1.0
+       ],
+       [
+        1794967140000.0,
+        1.0
+       ],
+       [
+        1794967200000.0,
+        1.0
+       ],
+       [
+        1794967260000.0,
+        1.0
+       ],
+       [
+        1794967320000.0,
+        1.0
+       ],
+       [
+        1794967380000.0,
+        1.0
+       ],
+       [
+        1794967440000.0,
+        1.0
+       ],
+       [
+        1794967500000.0,
+        1.0
+       ],
+       [
+        1794967560000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:has_k,run:r1794967020,!k:",
+      "start": 1794967020000,
+      "tag_set": [
+       "probe:has_k"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.scope.r1794967020.g",
+      "end": 1794967561000,
+      "expression": "sum:qlport.scope.r1794967020.g{probe:no_k,run:r1794967020,!k:}",
+      "interval": 2,
+      "length": 10,
+      "metric": "qlport.scope.r1794967020.g",
+      "pointlist": [
+       [
+        1794967020000.0,
+        1.0
+       ],
+       [
+        1794967080000.0,
+        1.0
+       ],
+       [
+        1794967140000.0,
+        1.0
+       ],
+       [
+        1794967200000.0,
+        1.0
+       ],
+       [
+        1794967260000.0,
+        1.0
+       ],
+       [
+        1794967320000.0,
+        1.0
+       ],
+       [
+        1794967380000.0,
+        1.0
+       ],
+       [
+        1794967440000.0,
+        1.0
+       ],
+       [
+        1794967500000.0,
+        1.0
+       ],
+       [
+        1794967560000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:no_k,run:r1794967020,!k:",
+      "start": 1794967020000,
+      "tag_set": [
+       "probe:no_k"
+      ],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1794967620000,
+    "values": []
+   },
+   "same_series_set": false,
+   "selected": [
+    "has_k",
+    "no_k"
+   ]
+  },
+  "!k:*": {
+   "datadog_predicted": [
+    "no_k"
+   ],
+   "matches_prediction": true,
+   "promql_matcher": "k!~\".+\"",
+   "promql_selects": [
+    "empty_k",
+    "no_k"
+   ],
+   "query": "sum:qlport.scope.r1794967020.g{run:r1794967020,!k:*} by {probe}",
+   "raw": {
+    "from_date": 1794966960000,
+    "group_by": [
+     "probe"
+    ],
+    "message": "",
+    "query": "sum:qlport.scope.r1794967020.g{run:r1794967020,!k:*} by {probe}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.scope.r1794967020.g",
+      "end": 1794967561000,
+      "expression": "sum:qlport.scope.r1794967020.g{probe:no_k,run:r1794967020,!k:*}",
+      "interval": 2,
+      "length": 10,
+      "metric": "qlport.scope.r1794967020.g",
+      "pointlist": [
+       [
+        1794967020000.0,
+        1.0
+       ],
+       [
+        1794967080000.0,
+        1.0
+       ],
+       [
+        1794967140000.0,
+        1.0
+       ],
+       [
+        1794967200000.0,
+        1.0
+       ],
+       [
+        1794967260000.0,
+        1.0
+       ],
+       [
+        1794967320000.0,
+        1.0
+       ],
+       [
+        1794967380000.0,
+        1.0
+       ],
+       [
+        1794967440000.0,
+        1.0
+       ],
+       [
+        1794967500000.0,
+        1.0
+       ],
+       [
+        1794967560000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:no_k,run:r1794967020,!k:*",
+      "start": 1794967020000,
+      "tag_set": [
+       "probe:no_k"
+      ],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1794967620000,
+    "values": []
+   },
+   "same_series_set": false,
+   "selected": [
+    "no_k"
+   ]
+  },
+  "all": {
+   "datadog_predicted": [
+    "empty_k",
+    "has_k",
+    "no_k"
+   ],
+   "matches_prediction": true,
+   "promql_matcher": null,
+   "promql_selects": [
+    "empty_k",
+    "has_k",
+    "no_k"
+   ],
+   "query": "sum:qlport.scope.r1794967020.g{run:r1794967020} by {probe}",
+   "raw": {
+    "from_date": 1794966960000,
+    "group_by": [
+     "probe"
+    ],
+    "message": "",
+    "query": "sum:qlport.scope.r1794967020.g{run:r1794967020} by {probe}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.scope.r1794967020.g",
+      "end": 1794967561000,
+      "expression": "sum:qlport.scope.r1794967020.g{probe:empty_k,run:r1794967020}",
+      "interval": 2,
+      "length": 10,
+      "metric": "qlport.scope.r1794967020.g",
+      "pointlist": [
+       [
+        1794967020000.0,
+        1.0
+       ],
+       [
+        1794967080000.0,
+        1.0
+       ],
+       [
+        1794967140000.0,
+        1.0
+       ],
+       [
+        1794967200000.0,
+        1.0
+       ],
+       [
+        1794967260000.0,
+        1.0
+       ],
+       [
+        1794967320000.0,
+        1.0
+       ],
+       [
+        1794967380000.0,
+        1.0
+       ],
+       [
+        1794967440000.0,
+        1.0
+       ],
+       [
+        1794967500000.0,
+        1.0
+       ],
+       [
+        1794967560000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:empty_k,run:r1794967020",
+      "start": 1794967020000,
+      "tag_set": [
+       "probe:empty_k"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.scope.r1794967020.g",
+      "end": 1794967561000,
+      "expression": "sum:qlport.scope.r1794967020.g{probe:has_k,run:r1794967020}",
+      "interval": 2,
+      "length": 10,
+      "metric": "qlport.scope.r1794967020.g",
+      "pointlist": [
+       [
+        1794967020000.0,
+        1.0
+       ],
+       [
+        1794967080000.0,
+        1.0
+       ],
+       [
+        1794967140000.0,
+        1.0
+       ],
+       [
+        1794967200000.0,
+        1.0
+       ],
+       [
+        1794967260000.0,
+        1.0
+       ],
+       [
+        1794967320000.0,
+        1.0
+       ],
+       [
+        1794967380000.0,
+        1.0
+       ],
+       [
+        1794967440000.0,
+        1.0
+       ],
+       [
+        1794967500000.0,
+        1.0
+       ],
+       [
+        1794967560000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:has_k,run:r1794967020",
+      "start": 1794967020000,
+      "tag_set": [
+       "probe:has_k"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.scope.r1794967020.g",
+      "end": 1794967561000,
+      "expression": "sum:qlport.scope.r1794967020.g{probe:no_k,run:r1794967020}",
+      "interval": 2,
+      "length": 10,
+      "metric": "qlport.scope.r1794967020.g",
+      "pointlist": [
+       [
+        1794967020000.0,
+        1.0
+       ],
+       [
+        1794967080000.0,
+        1.0
+       ],
+       [
+        1794967140000.0,
+        1.0
+       ],
+       [
+        1794967200000.0,
+        1.0
+       ],
+       [
+        1794967260000.0,
+        1.0
+       ],
+       [
+        1794967320000.0,
+        1.0
+       ],
+       [
+        1794967380000.0,
+        1.0
+       ],
+       [
+        1794967440000.0,
+        1.0
+       ],
+       [
+        1794967500000.0,
+        1.0
+       ],
+       [
+        1794967560000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:no_k,run:r1794967020",
+      "start": 1794967020000,
+      "tag_set": [
+       "probe:no_k"
+      ],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1794967620000,
+    "values": []
+   },
+   "same_series_set": true,
+   "selected": [
+    "empty_k",
+    "has_k",
+    "no_k"
+   ]
+  },
+  "k:": {
+   "datadog_predicted": [
+    "empty_k"
+   ],
+   "matches_prediction": true,
+   "promql_matcher": "k=\"\"",
+   "promql_selects": [
+    "empty_k",
+    "no_k"
+   ],
+   "query": "sum:qlport.scope.r1794967020.g{run:r1794967020,k:} by {probe}",
+   "raw": {
+    "from_date": 1794966960000,
+    "group_by": [
+     "probe"
+    ],
+    "message": "",
+    "query": "sum:qlport.scope.r1794967020.g{run:r1794967020,k:} by {probe}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.scope.r1794967020.g",
+      "end": 1794967561000,
+      "expression": "sum:qlport.scope.r1794967020.g{probe:empty_k,k:,run:r1794967020}",
+      "interval": 2,
+      "length": 10,
+      "metric": "qlport.scope.r1794967020.g",
+      "pointlist": [
+       [
+        1794967020000.0,
+        1.0
+       ],
+       [
+        1794967080000.0,
+        1.0
+       ],
+       [
+        1794967140000.0,
+        1.0
+       ],
+       [
+        1794967200000.0,
+        1.0
+       ],
+       [
+        1794967260000.0,
+        1.0
+       ],
+       [
+        1794967320000.0,
+        1.0
+       ],
+       [
+        1794967380000.0,
+        1.0
+       ],
+       [
+        1794967440000.0,
+        1.0
+       ],
+       [
+        1794967500000.0,
+        1.0
+       ],
+       [
+        1794967560000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "k:,probe:empty_k,run:r1794967020",
+      "start": 1794967020000,
+      "tag_set": [
+       "probe:empty_k"
+      ],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1794967620000,
+    "values": []
+   },
+   "same_series_set": false,
+   "selected": [
+    "empty_k"
+   ]
+  },
+  "k:*": {
+   "datadog_predicted": [
+    "empty_k",
+    "has_k"
+   ],
+   "matches_prediction": true,
+   "promql_matcher": "k=~\".+\"",
+   "promql_selects": [
+    "has_k"
+   ],
+   "query": "sum:qlport.scope.r1794967020.g{run:r1794967020,k:*} by {probe}",
+   "raw": {
+    "from_date": 1794966960000,
+    "group_by": [
+     "probe"
+    ],
+    "message": "",
+    "query": "sum:qlport.scope.r1794967020.g{run:r1794967020,k:*} by {probe}",
+    "res_type": "time_series",
+    "resp_version": 1,
+    "series": [
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.scope.r1794967020.g",
+      "end": 1794967561000,
+      "expression": "sum:qlport.scope.r1794967020.g{probe:empty_k,run:r1794967020,k:*}",
+      "interval": 2,
+      "length": 10,
+      "metric": "qlport.scope.r1794967020.g",
+      "pointlist": [
+       [
+        1794967020000.0,
+        1.0
+       ],
+       [
+        1794967080000.0,
+        1.0
+       ],
+       [
+        1794967140000.0,
+        1.0
+       ],
+       [
+        1794967200000.0,
+        1.0
+       ],
+       [
+        1794967260000.0,
+        1.0
+       ],
+       [
+        1794967320000.0,
+        1.0
+       ],
+       [
+        1794967380000.0,
+        1.0
+       ],
+       [
+        1794967440000.0,
+        1.0
+       ],
+       [
+        1794967500000.0,
+        1.0
+       ],
+       [
+        1794967560000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:empty_k,run:r1794967020,k:*",
+      "start": 1794967020000,
+      "tag_set": [
+       "probe:empty_k"
+      ],
+      "unit": null
+     },
+     {
+      "aggr": "sum",
+      "attributes": {},
+      "display_name": "qlport.scope.r1794967020.g",
+      "end": 1794967561000,
+      "expression": "sum:qlport.scope.r1794967020.g{probe:has_k,run:r1794967020,k:*}",
+      "interval": 2,
+      "length": 10,
+      "metric": "qlport.scope.r1794967020.g",
+      "pointlist": [
+       [
+        1794967020000.0,
+        1.0
+       ],
+       [
+        1794967080000.0,
+        1.0
+       ],
+       [
+        1794967140000.0,
+        1.0
+       ],
+       [
+        1794967200000.0,
+        1.0
+       ],
+       [
+        1794967260000.0,
+        1.0
+       ],
+       [
+        1794967320000.0,
+        1.0
+       ],
+       [
+        1794967380000.0,
+        1.0
+       ],
+       [
+        1794967440000.0,
+        1.0
+       ],
+       [
+        1794967500000.0,
+        1.0
+       ],
+       [
+        1794967560000.0,
+        1.0
+       ]
+      ],
+      "query_index": 0,
+      "scope": "probe:has_k,run:r1794967020,k:*",
+      "start": 1794967020000,
+      "tag_set": [
+       "probe:has_k"
+      ],
+      "unit": null
+     }
+    ],
+    "status": "ok",
+    "times": [],
+    "to_date": 1794967620000,
+    "values": []
+   },
+   "same_series_set": false,
+   "selected": [
+    "empty_k",
+    "has_k"
+   ]
+  }
+ },
+ "provenance": {
+  "collected_at": "2026-11-18T02:15:52+00:00",
+  "metric": "qlport.scope.r1794967020.g",
+  "n_points": 10,
+  "run": "r1794967020",
+  "series": {
+   "empty_k": [
+    "k:"
+   ],
+   "has_k": [
+    "k:v"
+   ],
+   "no_k": []
+  },
+  "site": "datadoghq.com",
+  "step": 60.0,
+  "t0": 1794967020.0
+ },
+ "submitted": [
+  {
+   "series": [
+    {
+     "metric": "qlport.scope.r1794967020.g",
+     "points": [
+      {
+       "timestamp": 1794967020,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967080,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967140,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967200,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967260,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967320,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967380,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967440,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967500,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967560,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "run:r1794967020",
+      "probe:has_k",
+      "k:v"
+     ],
+     "type": 3
+    }
+   ]
+  },
+  {
+   "series": [
+    {
+     "metric": "qlport.scope.r1794967020.g",
+     "points": [
+      {
+       "timestamp": 1794967020,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967080,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967140,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967200,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967260,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967320,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967380,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967440,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967500,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967560,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "run:r1794967020",
+      "probe:no_k"
+     ],
+     "type": 3
+    }
+   ]
+  },
+  {
+   "series": [
+    {
+     "metric": "qlport.scope.r1794967020.g",
+     "points": [
+      {
+       "timestamp": 1794967020,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967080,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967140,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967200,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967260,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967320,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967380,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967440,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967500,
+       "value": 1.0
+      },
+      {
+       "timestamp": 1794967560,
+       "value": 1.0
+      }
+     ],
+     "tags": [
+      "run:r1794967020",
+      "probe:empty_k",
+      "k:"
+     ],
+     "type": 3
+    }
+   ]
+  }
+ ]
+}

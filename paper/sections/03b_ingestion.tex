@@ -28,7 +28,10 @@ v & v<u,\ \rho=\mathsf{zero}\quad\text{(restarted from $0$, as PromQL assumes)}\
 0 & v<u,\ \rho=\mathsf{clamp}\quad\text{(the decrease contributes nothing)}
 \end{cases}
 \]
-Gauges map by the identity. $\phi_\rho$ extends to databases series by series:
+Every series that is not a counter --- a gauge, and the $\mathsf{delta}$ kind
+Definition~\ref{def:model} also admits --- maps by the identity, so $\phi_\rho$ is total
+on $\mathcal{D}$ and the statements below may quantify over all of it.
+$\phi_\rho$ extends to databases series by series:
 $\phi_\rho(D)=\{\phi_\rho(s): s\in D\}$. The first sample is omitted. For the agent path
 this paper models, that is read from the agent's source rather than from
 documentation~\citep{ddagent}, as Remark~\ref{rem:rho} describes; Datadog documents the
@@ -114,11 +117,17 @@ $\sem{\cdot}_{\mathrm{DD}}$ and $\sem{\cdot}_{\mathrm{PQ}}$ for the two denotati
 
 \begin{definition}[$\phi$-relative $\varepsilon$-soundness]\label{def:phi-sound}
 Let $\mathcal{C}\subseteq\mathcal{D}$ be a class of databases. A translation $T$ from
-Datadog to PromQL is \emph{$\varepsilon$-sound for $\phi_\rho$ on $\mathcal{C}$} if
+Datadog to PromQL is \emph{$\varepsilon$-sound for $\phi_\rho$ on $\mathcal{C}$ along an
+evaluation map $u$} if
 \[
 \forall q\in \Lang(G_{\mathrm{DD}}).\; T(q)\neq\bot \Rightarrow \forall D\in\mathcal{C},\ t\in\mathbb{T}.\;\;
-d\big(\sem{q}_{\mathrm{DD}}(\phi_\rho(D),t),\ \sem{T(q)}_{\mathrm{PQ}}(D,t)\big)\le\varepsilon .
+d\big(\sem{q}_{\mathrm{DD}}(\phi_\rho(D),t),\ \sem{T(q)}_{\mathrm{PQ}}(D,u(t))\big)\le\varepsilon .
 \]
+The evaluation map is not bookkeeping. Remark~\ref{rem:closure} measures Datadog's
+buckets as left-closed and labelled by their start, and a PromQL range window as
+right-closed; no single instant reads both, so a definition quantifying one $t$ over both
+sides has no positive instance in this paper. Every exactness result below names its
+$u$, and each is $u(t)=t+\Delta-\eta$.
 Definition~\ref{def:sound} is the special case
 $\phi_\rho=\mathrm{id}$.
 \end{definition}
@@ -205,22 +214,36 @@ Let $B$ be any finite set of bucket boundaries and $0<p<1$. There are finite mul
 $X,Y$ of observations with identical $B$-bucket counts and $q_p(X)\neq q_p(Y)$.
 \end{proposition}
 \begin{proof}
-Let $[a,b)$ be a bucket of $B$ of positive width. Take $X$ to be $n\ge 1$ copies of $a$
-and $Y$ to be $n$ copies of $(a+b)/2$, with no other observations. Both put $n$ in that
-bucket and nothing in any other, so their bucket counts agree. Every quantile of $X$ is
-$a$ and every quantile of $Y$ is $(a+b)/2$, so $q_p$ differs by $(b-a)/2$ for every $p$.
+Let $[a,c)$ be a bucket of $B$ of positive width, which exists whenever $|B|\ge2$; for
+$|B|\le1$ take the unbounded bucket and any two distinct positive observations. Put
+$m=(a+c)/2$ and let $X=\{m-r,\,m+r\}$ for any $0<r<(c-a)/2$, and $Y=\{m,m\}$. Both put
+$2$ in $[a,c)$ and nothing elsewhere, so their bucket counts agree; and both have sum
+$2m$ and count $2$. Their medians are $m-r$ and $m$ under any convention that returns an
+observed value, so $q_p$ differs.
+
+The witness is chosen to survive more than the bucket counts, which is what the
+corollary below needs and what an earlier version of this proof did not supply. It took
+$X$ to be $n$ copies of $a$ against $n$ copies of $(a+c)/2$: those agree on bucket counts
+and differ in their \emph{sum}, so \texttt{histogram\_sum} separates them and they
+witness nothing about expressions over everything Prometheus stores.
 \end{proof}
 
 \begin{corollary}[Datadog's percentile aggregators are blocked by information]%
 \label{cor:quantile}
 A Datadog distribution metric answers $\mathtt{p}NN$ from a sketch of the raw
-observations. Prometheus stores those observations bucketed --- as
-\texttt{\_bucket} series classically, as an exponential bucketing under native
-histograms --- and by Proposition~\ref{prop:quantile} the quantile is not determined by
-those counts. So no PromQL expression over what Prometheus holds equals
+observations. What Prometheus stores of those observations is a bucketing together with
+their sum and their count --- \texttt{\_bucket}, \texttt{\_sum} and \texttt{\_count}
+series classically, an exponential bucketing with a Sum and a Count under native
+histograms --- and Proposition~\ref{prop:quantile}'s witness agrees on all three while
+its quantiles differ. So no PromQL expression over what Prometheus holds equals
 $\mathtt{p}NN$, for any expression whatsoever, and the refusal is informational rather
 than a shortage of operators: PromQL has \texttt{histogram\_quantile}, and what it
 computes is an interpolation within a bucket rather than the quantile itself.
+
+Naming the sum and the count explicitly is the eighth review pass's correction. The
+corollary used to infer from ``the quantile is not determined by the bucket counts'', and
+Prometheus holds more than the bucket counts --- so the step did not reach the quantifier
+the sentence claims, even though the conclusion is true.
 \end{corollary}
 
 \noindent
@@ -241,18 +264,33 @@ extrapolates to the ends of the range~\citep{promql}; the dependence on $v_1$ is
 implementation, where the quantity is named \texttt{durationToZero} --- and $v_1$ is erased by
 $\phi_\rho$. It
 \emph{is} $\phi_\rho$-invariant on the class $\mathcal{C}_{\mathrm{warm}}$ of databases
-in which no counter series begins within a window being evaluated, because the remaining
-inputs to the extrapolation --- the increase over the window and the sample spacing ---
-all survive $\phi_\rho$.
+in which no counter series begins within a window being evaluated.
 \end{corollary}
+
+\noindent
+That positive half is weaker than an earlier version of this corollary claimed, and the
+reason is worth recording because it is a fact about Prometheus rather than about
+$\phi$. The claim was that on $\mathcal{C}_{\mathrm{warm}}$ ``the remaining inputs to the
+extrapolation --- the increase over the window and the sample spacing --- all survive
+$\phi_\rho$''. They do not exhaust the inputs: when the computed increase is positive,
+\texttt{rate} derives a \texttt{durationToZero} from the \emph{absolute value} of the
+first sample inside the window, and $\phi_\rho$ erases absolute values exactly as it
+erases $v_1$. Two databases differing by a constant offset therefore have equal
+$\phi_\rho$ images and different \texttt{rate} readings --- $0.628$ against $0.667$ on an
+ordinary counter --- and the dependence is confirmed against a real Prometheus~3.15.0
+rather than against this paper's model of it. So \texttt{rate} is inadmissible on
+$\mathcal{C}_{\mathrm{warm}}$ too, and the class on which it is admissible is smaller
+than the one named here. Nothing downstream rests on it: §\ref{sec:translation} cites
+Corollary~\ref{cor:raw}, not this one, and \texttt{rate} is never emitted.
 
 \noindent
 Corollary~\ref{cor:rate} is worth stating carefully, because it marks the limit of what
 invariance buys. Invariance is \emph{necessary} for a sound translation and not
-sufficient: on $\mathcal{C}_{\mathrm{warm}}$ the expression \texttt{rate(x[$\Delta$])} is
-admissible and still not exact, since extrapolating to the window edges computes a
-different quantity from the bucket sum Datadog reports. Admissibility rules candidates
-out; exactness has to be established separately.
+sufficient, and \texttt{rate} fails both: it is inadmissible wherever the extrapolation
+reads an absolute value, and even where it is admissible it is not exact, since
+extrapolating to the window edges computes a different quantity from the bucket sum
+Datadog reports. Admissibility rules candidates out; exactness has to be established
+separately.
 
 \subsubsection{Two exact forms}
 
@@ -261,6 +299,10 @@ labels $b$,
 \[
 \Sigma_\Delta(b)=\sum\{\,\delta : (t_i,\delta)\in\phi_\rho(s),\ t_i\in[b,\,b+\Delta)\,\},
 \]
+undefined where that set is empty rather than $0$: Datadog reports no point for a bucket
+holding no data, and a range selector over the same window returns nothing, so reading
+the empty sum as zero would make the two sides disagree exactly where they agree.
+\texttt{datadog\_eval} has always reported it as absent; the definition now says so.
 and \texttt{.as\_rate()} reports $\Sigma_\Delta(b)/\Delta$. Both reduce to the same
 cumulative difference, which is the single most useful fact in this direction: the
 corpus of Section~\ref{sec:evaluation} uses \texttt{.as\_count()} about $6.6$ times as
@@ -294,43 +336,84 @@ rollup interval --- the ordinary case --- that is every bucket. The evaluation i
 must therefore lie strictly \emph{inside} the bucket.
 
 \begin{proposition}[Cumulative difference]\label{prop:offset}
-Let $\sigma$ be the least gap between consecutive samples, let $\mathcal{C}_{\Delta}$ be
-the databases in which no counter series resets within $[b,b+\Delta)$ \emph{and every
-counter series has a sample before $b$}, and assume Prometheus's lookback covers
-$\sigma$. Then on $\mathcal{C}_{\Delta}$ the expression
-\texttt{x - x offset $\Delta$}, evaluated at $u=b+\Delta-\varepsilon$ for any
-$0<\varepsilon\le\sigma$, is $\phi_\rho$-invariant and equals $\Sigma_\Delta(b)$ exactly.
+Let $\mathcal{C}_{\Delta}$ be the databases in which no counter series resets within
+$[b,b+\Delta)$ \emph{and every counter series has a sample before $b$}. For such a
+database write $t_m$ for the last sample in $[b,b+\Delta)$ and $t_k$ for the last sample
+before $b$, and let $\eta$ satisfy
+\[
+0<\eta\le\min\big(b+\Delta-t_m,\ b-t_k\big).
+\]
+Assume Prometheus's lookback covers both $u-t_m$ and $(u-\Delta)-t_k$ for
+$u=b+\Delta-\eta$. Then on $\mathcal{C}_{\Delta}$ the expression
+\texttt{x - x offset $\Delta$}, evaluated at $u$, is $\phi_\rho$-invariant and equals
+$\Sigma_\Delta(b)$ exactly.
 \end{proposition}
 \begin{proof}
-An instant selector at $u$ returns $v_{\ell(u)}$ for $\ell(u)=\max\{i:t_i\le u\}$. Let
-$t_m$ be the last sample in $[b,b+\Delta)$ and $t_{k}$ the last sample before $b$. The
-next sample after $t_m$ is at or after $b+\Delta$ and at least $\sigma$ beyond $t_m$, so
-$t_m\le b+\Delta-\sigma\le u$ and hence $\ell(u)=m$; likewise $t_k\le b-\sigma$, so
-$t_k\le u-\Delta<b$ and $\ell(u-\Delta)=k$. With no reset in the bucket,
+An instant selector at $u$ returns $v_{\ell(u)}$ for $\ell(u)=\max\{i:t_i\le u\}$,
+provided the lookback reaches $t_{\ell(u)}$; the hypothesis grants that at both $u$ and
+$u-\Delta$. Since $\eta\le b+\Delta-t_m$ we have $t_m\le u<b+\Delta$, and the next sample
+is at or after $b+\Delta>u$, so $\ell(u)=m$; since $\eta\le b-t_k$ we have
+$t_k\le u-\Delta<b$, so $\ell(u-\Delta)=k$. With no reset in the bucket,
 $\delta_\rho(v_{i-1},v_i)=v_i-v_{i-1}$ for every $t_i\in[b,b+\Delta)$, so the sum
 telescopes: $\Sigma_\Delta(b)=v_m-v_k$, which is the value of the expression. It is
 $\phi_\rho$-invariant on $\mathcal{C}_\Delta$ because it has been shown equal to a
 function of $\phi_\rho(s)$ alone.
 \end{proof}
 
+\begin{remark}[Why the bound is not the scrape interval]\label{rem:eta}
+An earlier version of this proposition set $0<\varepsilon\le\sigma$ for $\sigma$ the
+least gap between consecutive samples, and argued that the next sample after $t_m$ is at
+least $\sigma$ beyond it and at or after $b+\Delta$, hence $t_m\le b+\Delta-\sigma$. That
+does not follow: the next sample may exceed $b+\Delta$ by any amount, which bounds
+nothing. The inference holds only when the sample grid's phase divides $\Delta$, and the
+replay of \S\ref{sec:replay} reports the jittered grid as the ordinary deployment case.
+On a series scraped every $15$\,s whose last sample inside the bucket sits $14$\,s
+before its right edge, the least gap is $15$ while $b+\Delta-t_m$ is $14$, so $\eta=15$
+is admitted by the old bound and excluded by the correct one ---
+and at $\eta=15$ both exact forms miss the bucket's largest delta entirely, returning a
+$d$ close to $1$ where the correct bound returns $0$.
+No measurement in this paper is affected, because every script evaluates at
+$\eta=10^{-3}$ (\texttt{datadog\_eval.EVAL\_EPSILON}), well inside
+$\min(b+\Delta-t_m,\,b-t_k)$ on every grid it uses; the implementation's own docstring
+states the correct condition, and the proposition had not caught up with it. The offset
+$\eta$ is also renamed here: it was written $\varepsilon$, which is Definition~\ref{def:sound}'s
+tolerance, and the two appeared in one sentence of Theorem~\ref{thm:kernel}.
+\end{remark}
+
 \begin{proposition}[Anchored increase]\label{prop:anchored}
-Let $\rho=\mathsf{zero}$ and $\varepsilon$ be as above. Then
-\texttt{increase(x[$\Delta$] anchored)} evaluated at $b+\Delta-\varepsilon$ equals
-$\Sigma_{\mathsf{zero},\Delta}(b)$ on all of $\mathcal{D}$ --- including the series
-excluded from $\mathcal{C}_\Delta$ by either hypothesis --- and is
+Let $\rho=\mathsf{zero}$, let $t_m,t_k,\eta,u$ be as in
+Proposition~\ref{prop:offset}, and assume Prometheus's lookback covers $u-t_a$ for $t_a$
+the last sample at or before $u-\Delta$. Then
+\texttt{increase(x[$\Delta$] anchored)} evaluated at $u$ equals
+$\Sigma_{\mathsf{zero},\Delta}(b)$ whenever the bucket contains a sample, including on
+series the second hypothesis of $\mathcal{C}_\Delta$ excludes, and is
 $\phi_{\mathsf{zero}}$-invariant.
 \end{proposition}
 \begin{proof}
 The \texttt{anchored} modifier pins the left window boundary to the last
 sample at or before $u-\Delta$ and performs no extrapolation, both of which the
-proposal states~\citep{prom0052}. On a decrease $v_i<v_{i-1}$ it contributes $v_i$
+proposal states~\citep{prom0052}. What the proposal does not say, and what an earlier
+version of this proposition therefore missed, is that the anchor is itself subject to the
+lookback: read off a real Prometheus~3.15.0, a series whose only samples are one at
+time zero and three more arriving after a gap of over ten minutes returns $2$ for this
+expression over the bucket holding those three, where Datadog returns $12$ --- and
+returns $12$ once the server is started with a lookback wide enough to see the first
+sample. Hence the hypothesis above, and hence the withdrawal of the claim that
+this form is exact on \emph{all} of $\mathcal{D}$: a scrape outage wider than the
+lookback defeats it, at any server configuration, which is not the misconfiguration an
+earlier draft of Theorem~\ref{thm:kernel} called it. On a decrease $v_i<v_{i-1}$ it contributes $v_i$
 rather than $v_i-v_{i-1}$; the proposal says only that the modifier ``deals with
 counter resets'', so that clause is taken from the readings of
 Table~\ref{tab:model-verification} and Remark~\ref{rem:rho} rather than from the text. Term by term this is exactly
 $\delta_{\mathsf{zero}}$, and by the index argument of
 Proposition~\ref{prop:offset} the terms it sums are those with
 $t_i\in[b,b+\Delta)$, so the total is $\Sigma_{\mathsf{zero},\Delta}(b)$, a function of
-$\phi_{\mathsf{zero}}(s)$ alone.
+$\phi_{\mathsf{zero}}(s)$ alone. The hypothesis that the bucket contains a sample is
+needed for the same reason Definition~\ref{def:d}'s first case is: with no sample in
+$[b,b+\Delta)$ the range selector returns nothing while $\Sigma_\Delta(b)$ is an empty
+sum, and a number is not an absent result. \texttt{datadog\_eval} reports the empty
+bucket as absent on both sides, which is what Datadog does and what this proposition now
+says.
 \end{proof}
 
 \begin{remark}[The second hypothesis, and the second advantage]\label{rem:series-start}

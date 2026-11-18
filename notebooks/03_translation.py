@@ -227,6 +227,7 @@ EXPRESSIVENESS = {
     ("PHI_QUANTILE", None),                           # a quantile is not a bucketing
     ("FILL_INTERPOLATION", None),                     # interpolation inside the query
     ("LABEL_NAME_GLOB", None),                        # label names are not queryable
+    ("SCOPE_EMPTY_VALUE", None),                      # an empty label *is* an absent one
 }
 # SCOPE_DISJUNCTION is deliberately *not* here. §5 shows the four surviving cases are
 # sayable in PromQL -- a union of selectors with the rollup distributed over the
@@ -262,7 +263,7 @@ for f in ("SCOPE_BOOL", "SCOPE_IN", "SCOPE_PAREN"):
     print(f"{f:12s} {int(sub.n.sum()):5d} occurrences, {share:.1%} translated")
 
 # §7 and §8 quote these, so re-running the notebook has to reproduce them.
-assert int(kinds.occurrences["language gap"]) == 101, kinds
+assert int(kinds.occurrences["language gap"]) == 106, kinds
 assert int(kinds.occurrences["not implemented"]) == 212, kinds
 
 # §8 names the five constructs the language-gap share is made of, with counts, so the
@@ -273,11 +274,13 @@ by_gap = gap_rows.groupby("gap")["n"].sum()
 breakdown = {"percentiles": pctile,
              "FILL_INTERPOLATION": int(by_gap.get("FILL_INTERPOLATION", 0)),
              "LABEL_NAME_GLOB": int(by_gap.get("LABEL_NAME_GLOB", 0)),
+             "SCOPE_EMPTY_VALUE": int(by_gap.get("SCOPE_EMPTY_VALUE", 0)),
              "SCOPE_DISJUNCTION": int(by_gap.get("SCOPE_DISJUNCTION", 0))}
 print("language-gap breakdown:", breakdown)
 assert breakdown == {"percentiles": 34, "FILL_INTERPOLATION": 36,
-                     "LABEL_NAME_GLOB": 31, "SCOPE_DISJUNCTION": 0}, breakdown
-assert sum(breakdown.values()) == 101, breakdown
+                     "LABEL_NAME_GLOB": 31, "SCOPE_EMPTY_VALUE": 5,
+                     "SCOPE_DISJUNCTION": 0}, breakdown
+assert sum(breakdown.values()) == 106, breakdown
 
 
 # %% [markdown]
@@ -332,8 +335,8 @@ print(f"closure A: {closure_occ:,} = {closure_occ / _tot:.1%} of corpus, "
 # the fragment §5 proves exact. That is what makes thm:arith worth stating separately
 # from thm:kernel rather than as a footnote to it.
 assert closure_occ == _tr, (closure_occ, _tr)
-assert kernel_occ == 8368, kernel_occ
-assert closure_occ == 8449, closure_occ
+assert kernel_occ == 8363, kernel_occ
+assert closure_occ == 8444, closure_occ
 
 # %% [markdown]
 # ### Caveats on the translations we do claim
@@ -484,10 +487,10 @@ for k in (50, len(shapes)):
     print(f"  top {k:3} shapes -> ~{series:,} synthetic series")
 
 # §7 and §9 quote these, so a re-run has to reproduce them.
-assert len(shapes) == 335, len(shapes)
-assert total_shaped == 8344, total_shaped
+assert len(shapes) == 332, len(shapes)
+assert total_shaped == 8339, total_shaped
 assert milestones[0.5] == 6 and milestones[0.8] == 23, milestones
-assert milestones[0.9] == 51 and milestones[0.95] == 108, milestones
+assert milestones[0.9] == 50 and milestones[0.95] == 107, milestones
 print("shape-reduction assertions hold")
 
 
@@ -594,6 +597,39 @@ _q["type_undeclared_occurrences"] = int(_td["occurrences"]["undeclared"])
 _q["type_rate_occurrences"] = int(_td["occurrences"]["rate"])
 _q["type_wrong_pct_of_corpus"] = round(
     _td["wrong_occurrences"] / int(total_n) * 100, 1)
+
+# §5's kernel display writes all four of Rollup's arguments because `per_second` is set
+# on a sizeable minority of the kernel, and thm:arith's shared-interval hypothesis is
+# vacuous on no corpus query -- both stated as counts rather than as impressions.
+
+# %%
+_per_sec = _binops = _mixed = 0
+for _text, _n in occurrences.items():
+    try: _lo = lower_all(parse("datadog", _text, "v2"))
+    except Exception: continue
+    if not _lo or any(isinstance(x, Bottom) for x in _lo): continue
+    if any(isinstance(emit_detail(x, default_rollup=DEFAULT_ROLLUP), Bottom) for x in _lo):
+        continue
+    def _walk(e, out):
+        out.append(e)
+        for _f in ("expr", "lhs", "rhs", "arg"):
+            _k = getattr(e, _f, None)
+            if isinstance(_k, ir.Expr): _walk(_k, out)
+        return out
+    _nodes = [n for x in _lo for n in _walk(x, [])]
+    if any(isinstance(n, ir.Rollup) and n.per_second for n in _nodes):
+        if all(_is_kernel(x) for x in _lo):
+            _per_sec += _n
+    if any(isinstance(n, ir.BinOp) for n in _nodes):
+        _binops += _n
+        _ivals = {n.interval for n in _nodes
+                  if isinstance(n, ir.Rollup) and n.interval is not None}
+        if len(_ivals) > 1: _mixed += _n
+_q["kernel_per_second_occurrences"] = int(_per_sec)
+_q["binop_occurrences"] = int(_binops)
+_q["binop_mixed_interval_occurrences"] = int(_mixed)
+print(f"kernel occurrences with .as_rate(): {_per_sec}")
+print(f"occurrences with a binary operator: {_binops}, of which mixing intervals: {_mixed}")
 
 # `rem:weighted` states how many distinct corpus forms carry the modifier, and the figure
 # it used to state came from matching the substring `weighted`, which also catches four

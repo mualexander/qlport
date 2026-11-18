@@ -3,7 +3,7 @@
 The codes double as the rows of the gap catalogue (paper §5) and the failure
 breakdown for κ (paper §7), so add a code rather than reusing a vague one.
 
-Eleven of these are reachable from the Datadog → PromQL emitter; the rest name gaps
+Thirteen of these are reachable from the Datadog → PromQL emitter; the rest name gaps
 the paper argues about but no implemented path raises. PHI_ABSOLUTE, OFFSET, SUBQUERY,
 MANY_TO_ONE and RATE_EXTRAPOLATION belong to the reverse direction, and REGEX_NOT_GLOB
 to §6's regex → glob conversion, which `regular.py` now decides; the code stays
@@ -13,12 +13,17 @@ column rather than as a Gap, so nothing raises it either. Kept because the
 paper names them, not because anything returns them: `grep -rn 'Gap[.]'` is the check on
 which is which.
 
-PHI_QUANTILE is the one code here that names an *information* barrier in the main
-direction, which paper §3.1 otherwise argues cannot arise: phi is defined for counters
-and gauges, and a distribution metric is a third ingestion path where Datadog holds a
-sketch of the raw observations and Prometheus a bucketing of them, neither a function of
-the other. Everything else this emitter refuses is an expressiveness gap or unfinished
-work.
+PHI_QUANTILE and SCOPE_EMPTY_VALUE are the two codes here that name an *information*
+barrier in the main direction, which paper §3.1 otherwise argues cannot arise. For
+PHI_QUANTILE: phi is defined for counters and gauges, and a distribution metric is a
+third ingestion path where Datadog holds a sketch of the raw observations and Prometheus
+a bucketing of them, neither a function of the other. For SCOPE_EMPTY_VALUE the loss is
+in the label space rather than the sample space: Datadog separates three tag states
+(absent, present and empty, present with a value) and Prometheus's data model *defines* a
+label with an empty value to be an absent label, so a scope that distinguishes the first
+two asks for something no selector over the target can recover.
+`scripts/scope_empty_tag.py` measures all three states against a real account.
+Everything else this emitter refuses is an expressiveness gap or unfinished work.
 
 PHI_SERIES_START moved from the second list to the first. It was written for the reverse
 direction and turns out to be a precondition of the counter rules in this one: the
@@ -37,6 +42,8 @@ class Gap(str, Enum):
     PHI_SERIES_START = "result depends on where a series begins inside the window"
     PHI_QUANTILE = ("query reads a quantile of observations the target stores only "
                     "in buckets")
+    SCOPE_EMPTY_VALUE = ("scope separates an absent tag from a present empty one, a "
+                         "distinction the target's data model does not represent")
     # expressiveness gaps: data exists, target language cannot say it
     OFFSET = "time-shifted selector has no target equivalent"
     SUBQUERY = "subqueries have no target equivalent"
@@ -50,6 +57,8 @@ class Gap(str, Enum):
     # Documented as a time-range x widget-type lookup table, not a formula -- but the
     # query text never records the time range, so the interval has to be assumed.
     ROLLUP_DEFAULT = "Datadog's automatic rollup interval is not carried by the query"
+    TAG_PRESENCE_EMPTY = ("tag-presence filter is exact only where no series carries "
+                          "that tag with an empty value")
     COUNTER_RESET = "cumulative difference misreads a counter reset"
     ANCHORED_VERSION = ("anchored range selectors need Prometheus 3.7+ started with "
                         "--enable-feature=promql-extended-range-selectors")

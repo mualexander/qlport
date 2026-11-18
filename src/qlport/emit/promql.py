@@ -334,6 +334,14 @@ class _Emitter:
         if isinstance(e, ir.Number):
             return _number(e.value)
         if isinstance(e, ir.Select):
+            # `k:*` lowers to `k=~".+"` and `!k:*` to `k!~".+"`, which is right for the
+            # two tag states Prometheus has and wrong for the third: Datadog's presence
+            # filter keeps a series whose tag is present and empty, and `.+` does not.
+            # Measured on all three states by `scripts/scope_empty_tag.py`. A rule exists
+            # here -- unlike the bare `k:` the lowering refuses -- but only under a
+            # precondition the query cannot state, so it is a caveat and not a refusal.
+            if any(m.op in ("=~", "!~") and m.value == ".+" for m in e.matchers):
+                self.note(Gap.TAG_PRESENCE_EMPTY)
             return _selector(e)
         if isinstance(e, ir.Agg):
             inner = e.expr

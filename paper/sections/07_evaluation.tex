@@ -209,8 +209,8 @@ dashboards than the ones it handles. There is no cheap win hiding in the popular
 consolation that the failures are all one-offs.
 
 Two sanity conditions hold on the translated set. Every emitted expression parses under
-the PromQL grammar of Section~\ref{sec:grammars} --- all $7{,}552$ of them, since $89$
-of the $7{,}398$ translated \emph{distinct} queries are comma-separated lists that emit
+the PromQL grammar of Section~\ref{sec:grammars} --- all $7{,}548$ of them, since $89$
+of the $7{,}394$ translated \emph{distinct} queries are comma-separated lists that emit
 one expression per series. Those two counts are by distinct query rather than by
 occurrence, because what is being checked is a property of each emitted string. That is checked as an assertion rather than reported as a rate, since the
 only acceptable number of syntactically invalid outputs is zero.
@@ -369,14 +369,53 @@ reach the ceiling below only for a translator that is told the time range, and w
 carry two more preconditions of exactly the kind \S\ref{sec:discussion} argues are the
 real switching cost.
 
-\texttt{PHI\_QUANTILE} ($34$) is the only information barrier this corpus raises in the
-main direction, and \S\ref{sec:ingestion} proves it rather than asserting it: a Datadog
-distribution metric answers $\mathtt{p}NN$ from a sketch of the raw observations,
-Prometheus keeps those observations bucketed, and no function of a bucketing is the
-quantile (Corollary~\ref{cor:quantile}). The point is not that one system is more
-precise --- a sketch is lossy too --- but that the two keep different lossy summaries of
-one stream and neither recovers the other. PromQL's \texttt{histogram\_quantile} is not
+\texttt{PHI\_QUANTILE} ($34$) is one of the two information barriers this corpus raises
+in the main direction, and \S\ref{sec:ingestion} proves it rather than asserting it: a
+Datadog distribution metric answers $\mathtt{p}NN$ from a sketch of the raw observations,
+Prometheus keeps those observations bucketed with their sum and count, and no function of
+those is the quantile (Corollary~\ref{cor:quantile}). The point is not that one system is
+more precise --- a sketch is lossy too --- but that the two keep different lossy summaries
+of one stream and neither recovers the other. PromQL's \texttt{histogram\_quantile} is not
 the missing operator; it is a different approximation.
+
+\begin{remark}[The second information barrier is in the label space]\label{rem:empty-tag}
+\texttt{SCOPE\_EMPTY\_VALUE} ($5$) is the other, and it was found by reading
+Lemma~\ref{lem:scope}'s proof rather than by any measurement this paper had taken. Datadog
+separates three states of a tag: absent, present with an empty value, present with a
+value. Prometheus's data model has two, because it \emph{defines} a label with an empty
+value to be an absent label. Put to a real account on three series carrying
+\texttt{k:v}, no \texttt{k} at all and \texttt{k:} respectively
+(\texttt{scripts\slash scope\_empty\_tag.py}), all five scope forms behaved as that model
+predicts:
+\begin{center}\footnotesize
+\begin{tabular}{@{}llll@{}}
+\toprule
+Scope & Datadog selects & Emitted matcher & which selects \\
+\midrule
+\texttt{!k:}  & \texttt{k:v}, no \texttt{k} & \texttt{k!=""}                      & \texttt{k:v} \\
+\texttt{k:}   & \texttt{k:}                 & \texttt{k=""}                       & \texttt{k:}, no \texttt{k} \\
+\texttt{k:*}  & \texttt{k:}, \texttt{k:v}   & \texttt{k=\textasciitilde{}".+"}    & \texttt{k:v} \\
+\texttt{!k:*} & no \texttt{k}               & \texttt{k!\textasciitilde{}".+"}    & \texttt{k:}, no \texttt{k} \\
+\bottomrule
+\end{tabular}
+\end{center}
+Every row differs, and no PromQL selector closes any of them, because the distinction is
+absent from what the target stores. The two bare forms are therefore refused: $5$
+occurrences, all of \texttt{!k:}, which until this reading were translated as
+\texttt{k!=""} and so dropped every series carrying no such tag --- the ordinary case, not
+a corner one. The two glob forms are \emph{not} refused, because a rule does exist for
+them: they are exact wherever no series carries that tag with an empty value, which is a
+precondition the query cannot state and the translator therefore records, as
+\texttt{TAG\_PRESENCE\_EMPTY} on $120$ occurrences ($1.4\%$ of the translated set) in
+Table~\ref{tab:translation-caveats}. Refusing those $120$ would have been the
+overcautious reading; an empty-valued tag is an odd thing for a real estate to carry, and
+the honest report is the precondition rather than a $\bot$.
+
+What this costs the paper is one point of the ceiling, $98.8\%$ to $98.7\%$, and what it
+buys is the better half of the trade: a second construct that is inexpressible rather
+than unbuilt, measured against the vendor, in a direction \S\ref{sec:ingestion} argues is
+nearly free of information loss. ``Nearly'' is now carrying two exceptions instead of one.
+\end{remark}
 
 \texttt{FILL\_INTERPOLATION} ($36$) and \texttt{LABEL\_NAME\_GLOB} ($31$) are the two
 clean expressiveness cases, and both are genuine --- and with \texttt{.weighted()}
@@ -459,16 +498,18 @@ what Prometheus does not \emph{hold} (the percentile aggregators), what PromQL c
 (everything else). A fourth is possible and empty here --- a query Datadog itself
 rejects, which Remark~\ref{rem:third-refusal} describes. The refusals that are not unfinished work are
 the percentile aggregators ($34$, blocked by information rather than by expressiveness
---- Corollary~\ref{cor:quantile}), \texttt{.fill} interpolation ($36$) and tag-key
-globs ($31$): $101$ occurrences, $1.2\%$ of the corpus. The other
+--- Corollary~\ref{cor:quantile}), \texttt{.fill} interpolation ($36$), tag-key
+globs ($31$) and the scopes that separate an absent tag from a present empty one
+($5$, blocked by information again --- Remark~\ref{rem:empty-tag}): $106$ occurrences,
+$1.2\%$ of the corpus. The other
 $212$ --- $2.4\%$ --- are constructs this translator has not implemented,
 \texttt{top(...)} chief among them. Because a query is abandoned at its first obstruction (Remark~\ref{rem:one-gap}),
-$98.8\%$ is an upper bound on what implementing the unimplemented set would reach: a
+$98.7\%$ is an upper bound on what implementing the unimplemented set would reach: a
 refused query could carry a second, inexpressible construct behind the first. Re-reading
 the $212$ for the other three codes' constructs finds exactly one --- a
 \texttt{.fill(60)} nested inside a \texttt{top(...)} --- so the bound is tight and the
-ceiling is $98.8\%$ to the decimal it is quoted at. So the ceiling for this direction is
-$98.8\%$ against the $96.3\%$ measured here, and the distance between the two is
+ceiling is $98.7\%$ to the decimal it is quoted at. So the ceiling for this direction is
+$98.7\%$ against the $96.3\%$ measured here, and the distance between the two is
 engineering rather than language design --- as the disjunction rule demonstrated by closing $1.4$
 points of it and \texttt{.weighted()} by closing $0.8$ more. That is the finding to carry into \S\ref{sec:discussion}:
 going this way, almost all of the apparent incompatibility is work, and what is left is
@@ -551,11 +592,11 @@ somebody relies on the translation.
 How often it is \emph{violated} is now measured rather than left as a worry, and it is
 the one place in this paper where a precondition turns out to fail at a rate worth
 reporting. The repository the dashboards come from declares each metric's type in a
-file the corpus fetch had passed over, which settles the question for $7{,}562$ of the
-$8{,}449$ translated occurrences --- $89.5\%$. On $496$ of those the front end's
-inference disagrees with the declaration: $6.6\%$ of the decidable set and $5.7\%$ of
-the corpus, split $242$ counters translated as gauges and $254$ gauges translated as
-counters (Remark~\ref{rem:type-measured}). So $\kappa$ counts those $496$ among its
+file the corpus fetch had passed over, which settles the question for $7{,}557$ of the
+$8{,}444$ translated occurrences --- $89.5\%$. On $491$ of those the front end's
+inference disagrees with the declaration: $6.5\%$ of the decidable set and $5.6\%$ of
+the corpus, split $242$ counters translated as gauges and $249$ gauges translated as
+counters (Remark~\ref{rem:type-measured}). So $\kappa$ counts those $491$ among its
 translations and they are, on the vendor's own declaration, wrong. $\kappa$ is a
 coverage measure and was never a correctness measure; this is the first number in the
 paper that says how far apart the two are.
@@ -678,11 +719,11 @@ all, which put $70$ occurrences into this experiment under a window width they d
 state and two of them under a width the rig cannot hold two buckets of; the congruence
 check below could not see it, because it masked digits along with identifiers and
 \texttt{[15s]} and \texttt{[300s]} mask alike. Abstracting that much collapses the
-$8{,}344$ translated occurrences that are
-a single query to \textbf{$335$ distinct shapes}, and they are as unevenly distributed as
+$8{,}339$ translated occurrences that are
+a single query to \textbf{$332$ distinct shapes}, and they are as unevenly distributed as
 everything else in this corpus: $6$ shapes cover half the occurrences, $23$ cover $80\%$,
-$51$ cover $90\%$ and $108$ cover $95\%$. A median query has one metric slot and two tag
-keys, so at three label values apiece the whole set came to $894$ synthetic
+$50$ cover $90\%$ and $107$ cover $95\%$. A median query has one metric slot and two tag
+keys, so at three label values apiece the whole set came to $885$ synthetic
 series --- a scale a single trial account sustains, which is why the experiment turned
 out not to need a reconstruction of somebody's production estate. The reduction is only
 sound if every query in a class translates the same way, and that is checkable rather
@@ -692,13 +733,13 @@ that found a wart worth fixing --- the emitter decided parenthesisation by scann
 own output for operators, so a hyphen inside a tag value such as \texttt{result:hit-wait}
 was read as one and wrapped the expression in parentheses that meant nothing.
 
-Table~\ref{tab:differential} reports the outcome. Of the $335$ shapes, $332$ could be
-compared, and all $332$ agreed with Datadog on every one of $22{,}860$ bucket
+Table~\ref{tab:differential} reports the outcome. Of the $332$ shapes, $329$ could be
+compared, and all $329$ agreed with Datadog on every one of $22{,}608$ bucket
 comparisons --- to float64 precision rather than bit-identity, since two engines summing
 the same values in a different order differ in the last bit, and the bound is the one the
 model-versus-server check of Section~\ref{sec:ingestion} already uses; the largest
-deviation over all $332$ is $2.5\times10^{-14}$ and $139$ of them are bit-identical.
-Weighted by the corpus queries those shapes stand for, that is $8{,}339$ of the $8{,}344$
+deviation over all $329$ is $1.4\times10^{-13}$ and $136$ of them are bit-identical.
+Weighted by the corpus queries those shapes stand for, that is $8{,}334$ of the $8{,}339$
 translated single-query occurrences. So all but about a hundred of $\kappa$'s occurrences
 are now translations checked against the vendor rather than merely emitted --- the
 remainder being the comma-separated lists, which the shape reduction does not cover ---
@@ -717,8 +758,10 @@ land on boundaries and the instant is load-bearing. A scope requiring a tag mere
 they test for presence were compared over a single series and their space aggregation was
 never exercised. And the rollup interval was not part of a shape, so $70$ occurrences were
 tested at a window width they do not state. All three are fixed, the shape count rose
-from $325$ to $335$ as the finer abstraction split six classes, and the agreement did not
-move: $332$ of $332$, on a grid where the closure convention is visible and where every
+from $325$ to $335$ as the finer abstraction split six classes, and then to $332$ when
+the empty-value scopes of Remark~\ref{rem:empty-tag} left the translated set, and the
+agreement did not
+move: $329$ of $329$, on a grid where the closure convention is visible and where every
 occurrence is tested at its own width. The one occurrence class the fix removed rather
 than repaired is the second \texttt{window-too-short} row --- a $3600$\,s rollup, which
 the old abstraction had folded in with $300$\,s and credited as agreeing, and which this

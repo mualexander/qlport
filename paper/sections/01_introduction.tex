@@ -69,13 +69,13 @@ Going from Datadog to PromQL, $96.3\%$ of query occurrences translate, and the s
 is mostly unfinished work rather than impossibility: $1.2\%$ of the corpus is beyond
 reach --- two constructs PromQL cannot say and one the target system does not hold ---
 against $2.4\%$ this translator has not implemented, with a
-ceiling of $98.8\%$ once the latter is done. On that evidence the switching cost in the
+ceiling of $98.7\%$ once the latter is done. On that evidence the switching cost in the
 direction people travel is \emph{engineering} (\S\ref{sec:gaps}).
 
 Translating is not the same as translating correctly, and the distance between them is
 measurable here. Every expression we emit assumes a metric type the query does not
 state; the repository the dashboards come from declares that type for $89.5\%$ of them,
-and our inference is wrong on $6.6\%$ of those --- $496$ occurrences, more than the
+and our inference is wrong on $6.5\%$ of those --- $491$ occurrences, more than the
 whole inexpressible column (\S\ref{sec:emission}).
 
 The design artefact is elsewhere, and \S\ref{sec:discussion} argues it is the more

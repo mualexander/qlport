@@ -1,5 +1,5 @@
 {
- "decidable_occurrences": 7562,
+ "decidable_occurrences": 7557,
  "decidable_share_of_translated_pct": 89.5,
  "declared_for_corpus_metrics": {
   "active_directory.dfsr.conflict_space_in_use": "gauge",
@@ -4897,7 +4897,7 @@
   "ambiguous": 11,
   "rate": 121,
   "undeclared": 520,
-  "wrong-counter": 186,
+  "wrong-counter": 182,
   "wrong-gauge": 216
  },
  "examples": {
@@ -4949,18 +4949,18 @@
   "ambiguous": 17,
   "rate": 134,
   "undeclared": 736,
-  "wrong-counter": 254,
+  "wrong-counter": 249,
   "wrong-gauge": 242
  },
  "provenance": {
-  "collected_at": "2026-11-17T23:40:15+00:00",
+  "collected_at": "2026-11-18T02:37:17+00:00",
   "commit": "452093828d8d91fae1a7be29b62d9197a20b1aa0",
   "declarations_in_population": 37070,
   "declarations_recorded_here": 4883,
   "declared_from": "data/corpus/sources/integrations-core-metadata/declared.json",
   "default_rollup_s": 60.0
  },
- "translated_occurrences": 8449,
- "wrong_occurrences": 496,
- "wrong_share_of_decidable_pct": 6.6
+ "translated_occurrences": 8444,
+ "wrong_occurrences": 491,
+ "wrong_share_of_decidable_pct": 6.5
 }

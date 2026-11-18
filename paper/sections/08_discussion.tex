@@ -20,8 +20,8 @@ That is not the result the thesis predicted, and it is worth stating in the stro
 form the data supports: going from Datadog to PromQL, the switching cost is
 \emph{engineering} --- with the qualification, measured below, that part of that
 engineering is not implementing language constructs at all but supplying metadata the
-query omits, and that a translator which skips it gets $6.6\%$ of its metric types
-wrong. A team working through the gap catalogue would reach the $98.8\%$
+query omits, and that a translator which skips it gets $6.5\%$ of its metric types
+wrong. A team working through the gap catalogue would reach the $98.7\%$
 ceiling of \S\ref{sec:gaps} --- how long that takes is not something this paper
 measures, and the catalogue is a list of constructs rather than an estimate --- and
 what remains at that point is
@@ -96,8 +96,8 @@ and this section's ledger should not charge it twice.
 
 Charging it once is enough, because it now has a price. The type the query omits is
 declared, for $89.5\%$ of translated occurrences, in the repository the dashboards come
-from, and the front end's inference is wrong on $6.6\%$ of those ---
-Remark~\ref{rem:type-measured}. That is $496$ panels a migration would carry across
+from, and the front end's inference is wrong on $6.5\%$ of those ---
+Remark~\ref{rem:type-measured}. That is $491$ panels a migration would carry across
 believing them exact, more than the entire $1.2\%$ this paper calls beyond reach, and
 it is caused by the ingestion mapping rather than by anything either language can or
 cannot say. The directional barrier of \S\ref{sec:ingestion} was argued as a matter of
@@ -148,12 +148,16 @@ Remark~\ref{rem:directional} shows that the information barrier of
 \S\ref{sec:ingestion} is \emph{directional}: because Datadog stores
 $\phi_\rho(D)$ and Prometheus stores $D$, a PromQL query that is not
 $\phi_\rho$-invariant has no sound Datadog translation \emph{for any target expression
-whatsoever}, while no Datadog query is blocked this way going the other direction. The
-target system never holds less than the source did going to Prometheus; it does coming
-back.
+whatsoever}, while the Datadog queries blocked this way going the other direction are
+few and named: the percentile aggregators of \S\ref{sec:ingestion}, and the scopes that
+separate an absent tag from a present empty one. Going to Prometheus the target holds
+less in two places; coming back it holds less in general. That is a difference of degree,
+and Remark~\ref{rem:directional} states it as one --- an earlier version of this sentence
+said no refusal in this direction was informational, which that remark retracts and which
+the paragraph four above contradicts.
 
 Put the two together and the shape of the lock-in is specific. Leaving Datadog for
-Prometheus costs engineering: an enumerated list of constructs, a ceiling of $98.8\%$,
+Prometheus costs engineering: an enumerated list of constructs, a ceiling of $98.7\%$,
 three things left beyond it, plus the discipline of supplying the context the source
 queries omit. Coming back costs
 expressiveness and information, both provably. That is the asymmetry the switching-cost

@@ -26,8 +26,8 @@ set of label-set/value pairs with distinct label sets. The terms are
 \toprule
 Sort & Term & \\
 \midrule
-$\mathsf{S}$ & $\mathrm{Select}(m,\overline{\mu},\kappa)$
-  & metric name, label matchers, kind $\kappa$ \\
+$\mathsf{S}$ & $\mathrm{Select}(m,\overline{\mu},\theta)$
+  & metric name, label matchers, kind $\theta$ \\
 $\mathsf{M}$ & $\mathrm{Window}(e^{\mathsf{S}},w)$ & the samples in $(t-w,t]$ \\
 $\mathsf{V}$ & $\mathrm{RangeFn}(f,e^{\mathsf{M}})$ & a function of a window \\
 $\mathsf{V}$ & $\mathrm{Rollup}(\mathit{op},\Delta,e^{\mathsf{S}},b)$
@@ -40,7 +40,14 @@ $\mathsf{V}$ & $\mathrm{Scale}(c,e^{\mathsf{V}})$, $\;\mathrm{Number}(c)$ & \\
 \bottomrule
 \end{tabular}
 \end{center}
-Here $\kappa\in\{\text{counter},\text{gauge},\text{unknown}\}$,
+Here $\theta\in\{\text{counter},\text{gauge},\text{unknown}\}$ --- written $\theta$ and
+not $\kappa$, which is Definition~\ref{def:kappa}'s coverage and appeared in this section
+meaning both. $\theta$ is an \emph{annotation} the lowering infers and the emitter reads,
+not a constraint on which series a $\mathrm{Select}$ denotes: the denotation below ignores
+it, so two $\mathrm{Select}$s differing only in $\theta$ are denotationally equal, and what
+makes the kind load-bearing is hypothesis~(3) of Theorem~\ref{thm:kernel} rather than the
+semantics. The third value is the common case --- no method in the query text settles the
+type --- and Remark~\ref{rem:gauge} is about what the emitter does with it ---
 $\mathit{op}\in\{\mathsf{sum},\mathsf{avg},\mathsf{min},\mathsf{max},\mathsf{count}\}$,
 and a matcher $\mu$ is one of $k=v$, $k\neq v$, $k=\!\sim\! r$, $k\neq\!\sim\! r$.
 A term is \emph{well sorted} if each argument has the sort its position requires; only
@@ -51,7 +58,7 @@ $\mathsf{V}$ terms are complete queries.
 Fix a database $D$ and a time $t$. Writing $\lambda(s)$ for a series' label set and
 $s|_{(a,b]}$ for its samples in that interval:
 \begin{align*}
-\sem{\mathrm{Select}(m,\overline{\mu},\kappa)}(D,t)
+\sem{\mathrm{Select}(m,\overline{\mu},\theta)}(D,t)
   &= \{\, s\in D \;:\; \mathrm{name}(s)=m,\ \lambda(s)\models\overline{\mu} \,\}\\
 \sem{\mathrm{Window}(e,w)}(D,t) &= \{\, (\lambda(s),\ s|_{(t-w,\,t]}) \;:\; s\in\sem{e}(D,t) \,\}\\
 \sem{\mathrm{Rollup}(\mathit{op},\Delta,e,b)}(D,t)
@@ -324,7 +331,7 @@ summing a gauge over a window is an ordinary thing to want --- and the translati
 front end chooses for it, the cumulative difference, computes something else entirely.
 Of the three pieces of evidence the query can carry, the one that is hardest to dismiss
 as author error is the one whose misreading is least benign. With that premise withdrawn the
-caveat holds of all $8{,}449$ translated occurrences, $100\%$ of them
+caveat holds of all $8{,}444$ translated occurrences, $100\%$ of them
 (Table~\ref{tab:translation-caveats}).
 
 Recording it does not move $\kappa$ --- the translations are unchanged --- which is the
@@ -349,15 +356,15 @@ the queries. At that commit those files declare $37{,}070$ metric names: $23{,}5
 integrations declare incompatibly.
 
 Joining the two settles the hypothesis for most of the corpus
-(\texttt{scripts\slash type\_declared.py}). Of the $8{,}449$ translated occurrences,
-$7{,}562$ --- $89.5\%$ --- name a metric the repository declares as a gauge or a count,
-and the front end's inference disagrees with the declaration on $496$ of them: $6.6\%$
-of the decidable set, $5.7\%$ of the corpus. The two directions of error are both
+(\texttt{scripts\slash type\_declared.py}). Of the $8{,}444$ translated occurrences,
+$7{,}557$ --- $89.5\%$ --- name a metric the repository declares as a gauge or a count,
+and the front end's inference disagrees with the declaration on $491$ of them: $6.5\%$
+of the decidable set, $5.6\%$ of the corpus. The two directions of error are both
 present and are different failures. In $242$ occurrences the metric is a
 \texttt{count} and the query carries no evidence of it, so the emitter translates it as
 a gauge and the \texttt{*\_over\_time} it produces reduces running totals where
 Datadog reduces deltas --- the case this remark describes as unrelated rather than
-approximate. In $254$ the metric is a \texttt{gauge} and the query carries
+approximate. In $249$ the metric is a \texttt{gauge} and the query carries
 \texttt{.as\_count()}, \texttt{.as\_rate()} or \texttt{.rollup(sum, $\Delta$)}
 anyway, so the evidence is not merely weak but actively wrong, and the emitter chooses
 a counter rule for a series that has no deltas to difference.
@@ -367,9 +374,11 @@ integration submits, so a disagreement says the inference is wrong, not that it 
 be: a dashboard can query a metric the integration does not ship, and an operator can
 submit the same name as something else. That is the same standard \S\ref{sec:emission}
 applies to the modifier evidence this replaces, and it is a sharper instrument than the
-one it replaces rather than a proof. The remaining $736$ occurrences name metrics the
-repository does not declare and $134$ name \texttt{rate} metrics, which is a third
-submission type Definition~\ref{def:phi} does not model at all.
+one it replaces rather than a proof. The remaining $887$ occurrences divide three ways: $736$ name metrics the
+repository does not declare, $134$ name \texttt{rate} metrics --- a third
+submission type Definition~\ref{def:phi} maps by the identity rather than modelling ---
+and $17$ name one of the three metrics two integrations declare incompatibly, so the
+repository states a contradiction rather than a type.
 \end{remark}
 
 \subsection{What the composite guarantees}
@@ -379,26 +388,48 @@ The fragment that carries the corpus is the one \S\ref{sec:staircase} orders fir
 a space aggregation of a rollup of a selector. Call it the \emph{kernel},
 \[
 \mathcal{K}\;::=\;\mathrm{Agg}(\mathit{op}_s,\overline{k},\mathsf{by},\
-\mathrm{Rollup}(\mathit{op}_t,\Delta,\mathrm{Select}(m,\overline{\mu},\kappa))).
+\mathrm{Rollup}(\mathit{op}_t,\Delta,\mathit{per\_second},\mathrm{Select}(m,\overline{\mu},\theta)))).
 \]
+The $\mathit{per\_second}$ flag is written out because Definition~\ref{def:ir} carries it
+and because $258$ of the kernel's occurrences set it: an earlier version of this display
+listed three of $\mathrm{Rollup}$'s four arguments, which put every \texttt{.as\_rate()}
+rollup outside the kernel as literally defined while the counts included them. The proof
+below treats the case.
 
 \begin{lemma}[Scopes and selectors agree]\label{lem:scope}
 For every Datadog scope $\sigma$ that lowering does not refuse, the matchers
 $\overline{\mu}$ it produces select the same series as $\sigma$, provided the
-name-mangling of \S\ref{sec:lowering} is injective on $D$'s label sets.
+name-mangling of \S\ref{sec:lowering} is injective on $D$'s label \emph{sets} and on its
+metric \emph{names}, and provided no series in $D$ carries a tag with an empty value.
 \end{lemma}
 \begin{proof}
-Term by term. A literal tag is an equality matcher; a negated tag its negation; a glob is
+Term by term. A literal tag with a non-empty value is an equality matcher; a negated one
+its negation; a glob is
 Proposition~\ref{prop:glob-regex}; a bare key or \texttt{key:*} is presence, which is
 \texttt{=\textasciitilde{}".+"} and not \texttt{".*"}, the latter also matching series
 carrying no such label; a single-key disjunction is
 Proposition~\ref{prop:disjunction}. Conjunction is the comma in both languages.
-Injectivity is needed because mangling sends \texttt{a.b} and \texttt{a\_b} to one name.
+Injectivity on label sets is needed because mangling sends \texttt{a.b} and \texttt{a\_b}
+to one name, and on metric names for the same reason: the selector has to pick out the
+series $\mathrm{name}(s)=m$ does, and \texttt{metric\_name} is the same mangling.
+Remark~\ref{rem:mangling} measures both.
+
+The empty-value hypothesis is the clause this lemma lacked until the eighth review pass,
+and it is the one that cannot be discharged by a condition on the target: Datadog
+separates three tag states and Prometheus's data model admits two, so where a series
+carries a tag with an empty value the presence matchers are wrong by that series and the
+bare forms \texttt{k:} and \texttt{!k:} have no counterpart at all.
+\S\ref{sec:gaps} reports what the translator does about each --- a refusal for the bare
+forms, a caveat for presence --- and \texttt{scripts\slash scope\_empty\_tag.py} measures
+all three states against a real account.
 \end{proof}
 
 \begin{remark}[The injectivity hypothesis is not vacuous]\label{rem:mangling}
 An earlier version of this proof discharged that hypothesis by asserting that no corpus
-source contains such a pair. It does --- three times:
+source contains such a pair, and stated the hypothesis over label sets alone. Both were
+wrong, and in opposite directions: the corpus contains three colliding pairs, and on
+label sets --- the one class the hypothesis named --- it contains none. The collisions are
+in metric names and in a grouping key:
 \begin{center}\footnotesize
 \begin{tabular}{@{}ll@{}}
 \texttt{openstack.nova.hypervisor.load\_1} & \texttt{openstack.nova.hypervisor\_load.1}\\
@@ -406,10 +437,13 @@ source contains such a pair. It does --- three times:
 \texttt{cluster-name} & \texttt{cluster\_name}\\
 \end{tabular}
 \end{center}
-All four queries using the two metric pairs are translated, so two distinct Datadog
-metrics are emitted as one PromQL selector. The third pair is grouping keys, and it is
+The five distinct queries using the two metric pairs --- six occurrences --- are all
+translated, so two distinct Datadog
+metrics are emitted as one PromQL selector. The third pair is a grouping key, and it is
 forced rather than incidental: a PromQL label name cannot contain a hyphen, so no
-mangling avoids it.
+mangling avoids it. That is why Lemma~\ref{lem:scope} now states injectivity over the
+identifier classes its proof consumes rather than over label sets only: the measured
+violations all sit outside the class the hypothesis used to name.
 
 The hypothesis is therefore a real condition on the target database and not a formality.
 A translation of either \texttt{rabbitmq} query is exact in a database carrying one of
@@ -426,12 +460,16 @@ soundness theorem rests on.
 \end{remark}
 
 \begin{theorem}[Kernel soundness]\label{thm:kernel}
-Let $q\in\mathcal{K}$ with $E(T(q))=(p,C)$, and let $t$ be an evaluation time. If
+Let $q\in\mathcal{K}$ with $E(L(q))=(p,C)$, and let $t$ be an evaluation time. If
 \begin{enumerate}
 \item $t$ is a multiple of $\Delta$, and the emitted expression is evaluated at
-      $t+\Delta-\varepsilon$ rather than at $t$ or $t+\Delta$
+      $u(t)=t+\Delta-\eta$ for an $\eta$ inside Proposition~\ref{prop:offset}'s bound
+      --- not at $t$ and not at $t+\Delta$
       \hfill (\texttt{ROLLUP\_ALIGNMENT})
-\item $\Delta$ is the interval the query states \hfill (\texttt{ROLLUP\_DEFAULT})
+\item the $\Delta$ the emitter wrote into the range selector is the width of the bucket
+      Datadog reports, which holds when the query states the interval and is what
+      \texttt{ROLLUP\_DEFAULT} says is \emph{assumed} when it does not
+      \hfill (\texttt{ROLLUP\_DEFAULT})
 \item the metric's type is the one the query's methods imply: a \texttt{COUNT} where the
       query carries \texttt{.as\_count()}, \texttt{.as\_rate()} or
       \texttt{.rollup(sum,$\Delta$)}, a \texttt{GAUGE} otherwise
@@ -442,46 +480,52 @@ Let $q\in\mathcal{K}$ with $E(T(q))=(p,C)$, and let $t$ be an evaluation time. I
 \item where the emitted form reads a counter: every series has a sample before $t$
       \hfill (\texttt{PHI\_SERIES\_START})
 \end{enumerate}
-and Lemma~\ref{lem:scope}'s injectivity holds, and Prometheus's lookback covers the
-sample spacing as Proposition~\ref{prop:offset} requires, then
-$\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,t)$ ---
-exactly, not within $\varepsilon$. The five numbered hypotheses are exactly the elements
+and the name mangling of \S\ref{sec:lowering} is injective on $D$'s metric names, on
+its label sets and on $q$'s grouping keys, and Prometheus's lookback covers the two
+distances Proposition~\ref{prop:offset} requires, then
+$\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,u(t))$ ---
+exactly, not within the $\varepsilon$ of Definition~\ref{def:sound}. In the language of
+that definition the kernel is exact along $u(t)=t+\Delta-\eta$.
+
+The five numbered hypotheses are exactly the elements
 of $C$; the last two are not, and that asymmetry is worth stating rather than hiding in
 the list. Injectivity and the lookback are conditions on the \emph{target deployment} ---
-on which metric names collide once mangled, and on how the server is configured --- and
+on which identifiers collide once mangled, and on how the server is configured --- and
 the emitter cannot observe either, so no code records them. $C$ is therefore what the
 translator can tell you about a translation, not everything the translation needs.
-Remark~\ref{rem:mangling} shows the first is not vacuous on this corpus; the second
-fails only on a server whose scrape interval exceeds its lookback delta, which is a
-misconfiguration rather than a choice, but it is unreported either way.
+Remark~\ref{rem:mangling} shows the injectivity is not vacuous on this corpus. The
+lookback is not a misconfiguration clause, which an earlier version of this theorem
+called it: it fails on a \emph{gap in the data} --- a scrape outage, a replaced target ---
+at any server configuration, and Proposition~\ref{prop:anchored}'s proof reads an
+instance off a real server. Both are unreported either way.
 \end{theorem}
 \begin{proof}
 By Lemma~\ref{lem:scope} both systems reduce over the same set of series, so it suffices
 to match the two reductions on one series $s$ and then the space aggregation.
 
 For the time reduction, (1) makes $[t,t+\Delta)$ and the PromQL window at
-$t+\Delta-\varepsilon$ cover the same samples, by the index argument of
+$u(t)=t+\Delta-\eta$ cover the same samples, by the index argument of
 Proposition~\ref{prop:offset}; (2) makes it the same width. Hypothesis (3) fixes
-$\kappa$, and the emitter has a rule for each case it admits.
+$\theta$, and the emitter has a rule for each case it admits.
 
-If $\kappa$ is a gauge, $\phi_{\mathsf{zero}}(s)=s$, so Datadog's stored points in the
+If $\theta$ is a gauge, $\phi_{\mathsf{zero}}(s)=s$, so Datadog's stored points in the
 bucket are exactly the samples $s|_{[t,t+\Delta)}$ that
 \texttt{$\mathit{op}_t$\_over\_time} reduces at that instant, and the two reductions are
 the same commutative operation on the same multiset.
 
-If $\kappa$ is a counter and $\mathit{op}_t=\mathsf{sum}$, Datadog reports
+If $\theta$ is a counter and $\mathit{op}_t=\mathsf{sum}$, Datadog reports
 $\Sigma_\Delta(t)$ and the emitted form equals it by Proposition~\ref{prop:offset}
 under (4)'s first branch and (5), or by Proposition~\ref{prop:anchored} under (4)'s
 second, which needs neither.
 
-If $\kappa$ is a counter and $\mathit{op}_t=\mathsf{avg}$, Datadog reports the mean of
+If $\theta$ is a counter and $\mathit{op}_t=\mathsf{avg}$, Datadog reports the mean of
 the deltas it stores in the bucket. The emitted form is
 $\Sigma_\Delta(t)/\texttt{count\_over\_time}$, whose numerator is that sum by the
 previous case and whose denominator counts the samples in the window. By (5) the series
 began before $t$, so every sample in $[t,t+\Delta)$ contributes exactly one delta and
 the two counts agree; the quotient is the mean.
 
-If $\kappa$ is a counter and $\mathit{op}_t=\mathsf{count}$, Datadog reports how many
+If $\theta$ is a counter and $\mathit{op}_t=\mathsf{count}$, Datadog reports how many
 deltas it stores in the bucket and the emitted \texttt{count\_over\_time} reports how
 many samples the window holds; (5) makes those the same number, by the same
 correspondence. For $\mathit{op}_t\in\{\mathsf{min},\mathsf{max}\}$ over a counter no
@@ -537,7 +581,7 @@ a translator \emph{limited to the kernel's features} would complete, which is a
 statement about a feature set. $\mathcal{K}$ is a statement about IR shape, and the two
 differ: a query using a glob or a boolean scope is outside the first and inside the
 second, since Lemma~\ref{lem:scope} covers every scope lowering admits. Computed from
-the lowered IR rather than from the feature list, the kernel carries $8{,}368$
+the lowered IR rather than from the feature list, the kernel carries $8{,}363$
 occurrences.
 
 
@@ -610,11 +654,24 @@ $\texttt{sum by (g)}(a)\,/\,\texttt{sum by (g)}(b)$ duly returns $g{=}x$.
 \end{proof}
 
 \begin{theorem}[Arithmetic soundness]\label{thm:arith}
-Let $q\in\mathcal{A}$ with $E(T(q))=(p,C)\neq\bot$, and suppose every kernel subterm of
-$q$ satisfies the hypotheses of Theorem~\ref{thm:kernel} at $t$. Then
-$\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,t)$, and $C$ is
+Let $q\in\mathcal{A}$ with $E(L(q))=(p,C)\neq\bot$, suppose every kernel subterm of
+$q$ satisfies the hypotheses of Theorem~\ref{thm:kernel} at $t$, and suppose they all
+carry the same $\Delta$. Then
+$\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,u(t))$ for the
+common $u(t)=t+\Delta-\eta$, and $C$ is
 the union of those subterms' caveats --- the extension introduces no condition of its
 own.
+
+The shared $\Delta$ is a hypothesis rather than an observation, and it was missing. A
+PromQL expression is evaluated at one instant while Theorem~\ref{thm:kernel} fixes one
+per subterm, so two kernel subterms with different intervals cannot both satisfy it. For
+\begin{center}\footnotesize
+\texttt{sum:a\{*\}.as\_count().rollup(sum, 60)\ /\ sum:b\{*\}.as\_count().rollup(sum, 300)}
+\end{center}
+no instant returns Datadog's reading. The theorem is vacuous there rather than false, and
+the corpus contains no such query --- $0$ of the $79$ occurrences carrying a binary
+operator mix intervals --- so the measured claim is unaffected and only the sentence
+below about every front-end term needed narrowing.
 \end{theorem}
 \begin{proof}
 Induction on the structure of $q$. For $q\in\mathcal{K}$ this is
@@ -661,7 +718,7 @@ $\mathrm{Rollup}$ of a $\mathrm{Select}$, which is $\mathcal{K}$; its only other
 constructors are $\mathrm{Number}$, $\mathrm{Scale}$ and $\mathrm{BinOp}$ over terms it
 has already lowered, which is the closure. $\mathrm{Window}$ and $\mathrm{RangeFn}$ are
 reachable from neither, and the emitter refuses them in any case. The corpus then checks
-what the construction establishes: $\mathcal{A}$ covers $8{,}449$ occurrences, $96.3\%$
+what the construction establishes: $\mathcal{A}$ covers $8{,}444$ occurrences, $96.3\%$
 of the corpus and $100\%$ of what was emitted. So the gap between what is claimed and
 what is shipped is empty rather than small. That is the statement \S\ref{sec:framework}'s
 Remark~\ref{rem:two-kappas} wanted and could not previously make: $\kappa$ counts
