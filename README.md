@@ -1,7 +1,7 @@
 # qlport
 
-Research code for **"Switching Costs as a Language-Design Artifact: Are Observability Query
-Languages Inter-Translatable?"** (CS 681, Applications of Computability).
+Research code for **"A Dashboard Query Does Not Say What It Means: Switching Costs in
+Observability Query Translation"** (CS 681, Applications of Computability).
 
 Main direction: **Datadog metrics queries → PromQL**: a company currently sending metrics to
 Datadog wants to send them to Prometheus instead, and its dashboards and alerts must keep working.
