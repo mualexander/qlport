@@ -75,18 +75,15 @@ with comma and \texttt{and} as the same operator (\S\ref{sec:datadog-inference})
 space aggregator is optional: a bare metric name is a legal query, which the published
 examples never show.
 
+
+\iffull\input{sections/moved/gr_strict_mode}\fi
+
 \subsection{Is the table conflict-free?}
 
-Table~\ref{tab:grammar-stats} reports the constructed tables. A methodological note
-first, because the answer depends on it: the parser generator we use (Lark) reports
-shift/reduce and reduce/reduce conflicts, and collisions between terminals, only in a
-strict mode that is off by default. With it off, conflicts are resolved silently by
-preferring a shift, so a grammar that builds has demonstrated nothing about ambiguity.
-The last column of Table~\ref{tab:grammar-stats} is therefore produced under strict
-mode; the parsers used elsewhere in this work keep the permissive mode deliberately, for
-the reason given in \S\ref{sec:promql-conflict}. That the strict check is doing real work
-is itself checked: perturbing either grammar into an ambiguous production, or adding a
-terminal that matches the same strings as an existing one, is caught in both cases.
+Table~\ref{tab:grammar-stats} reports the constructed tables, under a strict mode the
+parser generator leaves off by default --- with it off, conflicts are resolved silently
+by preferring a shift, so a grammar that merely builds has demonstrated nothing about
+ambiguity (\apref{app:proofs}).
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/grammar_stats}
@@ -106,96 +103,50 @@ deterministic.
 \subsubsection{The PromQL conflicts, and their one cause}
 \label{sec:promql-conflict}
 
-PromQL's table carries $2$ conflicts, both a shift/reduce on the left parenthesis, and
-neither is an accident of our encoding. They sit in two states --- one reached after
-\texttt{group\_left} and one after \texttt{group\_right} --- and have a single cause, so
-an earlier version of this subsection reported one conflict rather than two. That was not
-a reading of the table: Lark raises at the \emph{first} conflict in strict mode, so the
-message the measurement returned said one however many there were, and the count is now
-read off the resolution log instead (\texttt{parse.py}'s
-\texttt{lalr\_conflict\_report}). The cause is that the vector-matching modifiers take an
-\emph{optional} parenthesised label list, so after either of them an opening parenthesis
-may begin that list or a parenthesised right operand:
-\begin{center}\footnotesize
-\texttt{a * on(x) group\_left (y) b}\qquad vs.\qquad\texttt{a * on(x) group\_left (b)}
-\end{center}
-One token of lookahead cannot distinguish them at that point, and the conflict comes
-from the optionality rather than from our layering: making the label list mandatory
-removes it entirely, which is how we identify the cause, but that also rejects
-\texttt{group\_left b}, which the language allows. What this shows is that \emph{this}
-grammar is not LALR(1), not that no LALR(1) grammar for PromQL exists --- the language
-is not ambiguous, since the expression above has one parse, which Prometheus produces
-and then rejects for want of an operand. We make no claim about the whole class of
-grammars for this language; a formulation that defers the decision past the
-parenthesis may well exist.
+PromQL's table carries $2$ conflicts, both a shift/reduce on the left parenthesis, in
+the two states reached after \texttt{group\_left} and after \texttt{group\_right}. They
+have a single cause: the vector-matching modifiers take an \emph{optional} parenthesised
+label list, so after either of them an opening parenthesis may begin that list or may
+begin a parenthesised right operand, and one token of lookahead cannot tell which. The
+conflict therefore comes from the optionality rather than from our layering --- making
+the label list mandatory removes it entirely, which is how we identify the cause, and
+also rejects \texttt{group\_left b}, which the language allows (\apref{app:proofs}).
 
-The resolution is to shift, reading the parenthesis as the label list. That rejects
-\texttt{a * on(x) group\_left (b)}, even though a reader can see the intended parse, and
-it is not a liberty we take: Prometheus~3.15.0 rejects the same expression by the same
-route, and accepting it would make this grammar \emph{more} permissive than the language
-it describes (\apref{app:proofs}).
+The resolution is to shift, reading the parenthesis as the label list, and it is the
+resolution Prometheus~3.15.0 itself makes on the same expression. What this shows is
+that \emph{this} grammar is not LALR(1), not that no LALR(1) grammar for PromQL exists:
+the language is not ambiguous, since the ambiguous-looking expression has one parse,
+which Prometheus produces and then rejects for want of an operand. We make no claim
+about the whole class of grammars for this language.
 
+So RQ1's answer is asymmetric --- conflict-free for the language with no published
+grammar, LALR(1) modulo one documented resolution for the language that has one --- and
+it is not where the switching cost lives. A tie-break on an optional parenthesised label
+list in the \emph{target} language costs a migration nothing and affects no corpus query,
+and an earlier version of this section offered it as evidence for this paper's thesis,
+which it is not. What the section does buy is narrower and load-bearing elsewhere: one
+parse tree per query for \S\ref{sec:translation} to translate, and the measurement below
+of how far a vendor's documentation falls short of the vendor's own language.
+
+\iffull\input{sections/moved/gr_conflict_cause}\fi
 \iffull\input{sections/moved/gr_conflict_resolution}\fi
 
-So RQ1's answer for PromQL is ``LALR(1) modulo one documented resolution'', not
-``conflict-free'' --- one resolution, applied in both states, and the one the reference
-implementation already makes. We draw nothing further from it. A tie-break on an optional
-parenthesised label list in the \emph{target} language costs a migration nothing, no
-corpus query is affected, and an earlier version of this section offered it as evidence
-for the paper's thesis, which it is not.
-
-\subsection{Lexical decisions}
-
-Keyword-rich query languages put most of the difficulty in the lexer rather than the
-parser, and both grammars needed terminals shaped by word boundaries, lookaheads and
-priorities. Table~\ref{tab:grammar-decisions} records them the same way
-\S\ref{sec:datadog-inference} records the missing productions: each decision is
-perturbed back to the form it would naively take, and a witness is re-parsed to show
-what breaks. A row that still parsed would mean the decision was dead weight; none is.
-The witnesses are minimal queries written for the table rather than corpus queries, which
-an earlier version of this paragraph claimed they were; what the corpus supplies is the
-count beside each one, of distinct corpus queries the real grammar parses and the naive
-form does not. Every decision is load-bearing against the corpus as well as against its
-witness, and the Datadog colon lookahead is the row where the two differ in kind: no
-corpus query names a metric beginning with an aggregator word, and what the corpus
-exhibits instead is a \emph{function} whose name does, \texttt{count\_not\_null(...)}.
-
-\begin{table}[htbp]\centering\scriptsize
-\input{tables/grammar_decisions}
-\caption{Load-bearing lexical decisions. Each row perturbs one terminal to its naive
-form and re-parses the witness, which the real grammar accepts. The witnesses are
-minimal queries written for this table; the last column is how many distinct corpus
-queries the naive form stops parsing.}
-\label{tab:grammar-decisions}
-\end{table}
-
-\iffull\input{sections/moved/gr_lark_priority}\fi
+\iffull\input{sections/moved/gr_lexical}\fi
 
 \subsection{Inferring the Datadog grammar}
 \label{sec:datadog-inference}
 
 PromQL has a published grammar to compare against~\citep{promql}. Datadog's metrics
 query language has none, so its grammar has to be inferred and the inference has to be
-checked. We did it in two stages, and report both, because the gap between them is the
-measurement.
+checked. It was done in two stages and both are reported, because the gap between them
+is the measurement. Grammar v1 was written from the documentation and the published
+examples alone, before the corpus existed; grammar v2 is v1 plus every production the
+corpus showed was missing, each one verified twice --- the construct fails under v1 and
+is explained by exactly that repair, and v2 parses the same construct with no repair at
+all. The residual, queries no combination of repairs explains, is reported rather than
+absorbed (\apref{app:proofs}).
 
-Grammar v1 was written from the documentation and the published examples alone, before
-the corpus existed. Running it over the corpus (\S\ref{sec:evaluation}) left a
-substantial share of real queries unparsed, and the question is what to conclude from a
-failure. Rather than classify failures by hand, each is explained by the smallest set of
-\emph{repairs} that makes it parse, where every repair is one concrete production or
-terminal change. Grammar v2 is v1 with all of those changes applied. Each row of
-Table~\ref{tab:grammar-gaps} is therefore verified twice: the construct fails under v1
-and is explained by exactly that repair, and v2 parses the same construct with no repair
-at all. The residual --- queries no combination of repairs explains --- is reported
-rather than absorbed.
-
-\begin{table}[htbp]\centering\scriptsize
-\input{tables/grammar_gaps}
-\caption{Constructs the documentation-derived grammar v1 was missing, with the number of
-distinct corpus queries that need each. Every row is a production in v2.}
-\label{tab:grammar-gaps}
-\end{table}
+\iffull\input{sections/moved/gr_inference_table}\fi
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/parse_coverage}

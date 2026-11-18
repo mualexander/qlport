@@ -1,0 +1,28 @@
+\subsection{Lexical decisions}
+
+Keyword-rich query languages put most of the difficulty in the lexer rather than the
+parser, and both grammars needed terminals shaped by word boundaries, lookaheads and
+priorities. Table~\ref{tab:grammar-decisions} records them the same way
+\S\ref{sec:datadog-inference} records the missing productions: each decision is
+perturbed back to the form it would naively take, and a witness is re-parsed to show
+what breaks. A row that still parsed would mean the decision was dead weight; none is.
+The witnesses are minimal queries written for the table rather than corpus queries, which
+an earlier version of this paragraph claimed they were; what the corpus supplies is the
+count beside each one, of distinct corpus queries the real grammar parses and the naive
+form does not. Every decision is load-bearing against the corpus as well as against its
+witness, and the Datadog colon lookahead is the row where the two differ in kind: no
+corpus query names a metric beginning with an aggregator word, and what the corpus
+exhibits instead is a \emph{function} whose name does, \texttt{count\_not\_null(...)}.
+
+\begin{table}[htbp]\centering\scriptsize
+\input{tables/grammar_decisions}
+\caption{Load-bearing lexical decisions. Each row perturbs one terminal to its naive
+form and re-parses the witness, which the real grammar accepts. The witnesses are
+minimal queries written for this table; the last column is how many distinct corpus
+queries the naive form stops parsing.}
+\label{tab:grammar-decisions}
+\end{table}
+
+% This file is itself deferred, so the hook inside it is unconditional: it is included
+% exactly once either way, inline in \S\ref{sec:grammars} or in the appendix.
+\input{sections/moved/gr_lark_priority}

@@ -1,0 +1,30 @@
+\begin{remark}[The two conflicts, and the one optionality behind them]\label{rem:conflict-cause}
+PromQL's table carries $2$ conflicts, both a shift/reduce on the left parenthesis, and
+neither is an accident of our encoding. They sit in two states --- one reached after
+\texttt{group\_left} and one after \texttt{group\_right} --- and have a single cause, so
+an earlier version of this subsection reported one conflict rather than two. That was not
+a reading of the table: Lark raises at the \emph{first} conflict in strict mode, so the
+message the measurement returned said one however many there were, and the count is now
+read off the resolution log instead (\texttt{parse.py}'s
+\texttt{lalr\_conflict\_report}). The cause is that the vector-matching modifiers take an
+\emph{optional} parenthesised label list, so after either of them an opening parenthesis
+may begin that list or a parenthesised right operand:
+\begin{center}\footnotesize
+\texttt{a * on(x) group\_left (y) b}\qquad vs.\qquad\texttt{a * on(x) group\_left (b)}
+\end{center}
+One token of lookahead cannot distinguish them at that point, and the conflict comes
+from the optionality rather than from our layering: making the label list mandatory
+removes it entirely, which is how we identify the cause, but that also rejects
+\texttt{group\_left b}, which the language allows. What this shows is that \emph{this}
+grammar is not LALR(1), not that no LALR(1) grammar for PromQL exists --- the language
+is not ambiguous, since the expression above has one parse, which Prometheus produces
+and then rejects for want of an operand. We make no claim about the whole class of
+grammars for this language; a formulation that defers the decision past the
+parenthesis may well exist.
+
+The resolution is to shift, reading the parenthesis as the label list. That rejects
+\texttt{a * on(x) group\_left (b)}, even though a reader can see the intended parse, and
+it is not a liberty we take: Prometheus~3.15.0 rejects the same expression by the same
+route, and accepting it would make this grammar \emph{more} permissive than the language
+it describes (\apref{app:proofs}).
+\end{remark}

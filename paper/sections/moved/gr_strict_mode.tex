@@ -1,0 +1,12 @@
+\begin{remark}[Conflicts are reported only in a mode that is off by default]\label{rem:strict-mode}
+Table~\ref{tab:grammar-stats} reports the constructed tables. A methodological note
+first, because the answer depends on it: the parser generator we use (Lark) reports
+shift/reduce and reduce/reduce conflicts, and collisions between terminals, only in a
+strict mode that is off by default. With it off, conflicts are resolved silently by
+preferring a shift, so a grammar that builds has demonstrated nothing about ambiguity.
+The last column of Table~\ref{tab:grammar-stats} is therefore produced under strict
+mode; the parsers used elsewhere in this work keep the permissive mode deliberately, for
+the reason given in \S\ref{sec:promql-conflict}. That the strict check is doing real work
+is itself checked: perturbing either grammar into an ambiguous production, or adding a
+terminal that matches the same strings as an existing one, is caught in both cases.
+\end{remark}

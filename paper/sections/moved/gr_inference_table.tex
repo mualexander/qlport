@@ -1,0 +1,19 @@
+\begin{remark}[How v2 was obtained, and the table of repairs]\label{rem:inference-table}
+Grammar v1 was written from the documentation and the published examples alone, before
+the corpus existed. Running it over the corpus (\S\ref{sec:evaluation}) left a
+substantial share of real queries unparsed, and the question is what to conclude from a
+failure. Rather than classify failures by hand, each is explained by the smallest set of
+\emph{repairs} that makes it parse, where every repair is one concrete production or
+terminal change. Grammar v2 is v1 with all of those changes applied. Each row of
+Table~\ref{tab:grammar-gaps} is therefore verified twice: the construct fails under v1
+and is explained by exactly that repair, and v2 parses the same construct with no repair
+at all. The residual --- queries no combination of repairs explains --- is reported
+rather than absorbed.
+
+\begin{table}[htbp]\centering\scriptsize
+\input{tables/grammar_gaps}
+\caption{Constructs the documentation-derived grammar v1 was missing, with the number of
+distinct corpus queries that need each. Every row is a production in v2.}
+\label{tab:grammar-gaps}
+\end{table}
+\end{remark}
