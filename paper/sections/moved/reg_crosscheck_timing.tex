@@ -1,0 +1,17 @@
+\begin{remark}[What the cross-check cost, and which patterns cost it]\label{rem:crosscheck-timing}
+An earlier version of this paragraph reported $168$ of $183$ and recorded the remainder
+as not reached, which was a statement about a clock rather than about the procedure. The
+script takes a time budget, that run was given $2{,}400$\,s, and four patterns of one
+family --- a parenthesised alternation inside a long literal, as in
+\texttt{cnpg\_pg\_stat\_(bgwriter|checkpointer)\_checkpoints\_timed} --- cost $91$ to
+$176$ seconds each when timed on an idle machine, so the budget expired partway through
+them. Run without one the cross-check takes $4{,}725$\,s and finishes. What makes those
+patterns expensive is worth naming, because it is the procedure working rather than
+struggling: the shortest word of such a pattern is forty-odd characters, so the pruned
+space of star insertions is large, and the search has to \emph{exhaust} it to conclude
+that no single glob exists. The costly cases are the negative ones, and they are exactly
+the cases a structural proposer's refusal would otherwise have to be taken on trust. The run is cached
+(\texttt{scripts\slash crosscheck\_globs.py}), and \texttt{tests\slash test\_regular.py}
+fails if a disagreement ever appears, if any pattern goes unreached, or if the two sides
+stop sharing a population.
+\end{remark}

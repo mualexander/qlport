@@ -1,0 +1,21 @@
+\begin{remark}[The largest refusal turned on an undocumented detail]%
+\label{rem:star-empty}
+$238$ of the $388$ refused occurrences are \texttt{.+} or a pattern containing it,
+including the corpus's most common concrete regular expression (\texttt{.+}, $133$
+occurrences) and its most elaborate one
+(\texttt{(/dev/)?(mmcblk.p.+|nvme.+|\dots{})}, $49$). They are refused by
+Corollary~\ref{cor:no-glob}(2) --- but that part of the corollary assumed \texttt{*}
+matches the empty string, and Datadog does not document whether it does. The two readings
+cannot both be wrong and cannot both be right: a glob has exactly one wildcard, which
+either requires a character or does not, so under one reading \texttt{.+} has no glob and
+under the other \texttt{.*} has none. The corpus uses \texttt{.+} $133$ times and
+\texttt{.*} $9$ times, so the reading is worth $124$ occurrences either way.
+
+It is settled, and in favour of the reading taken here. Submitting two series of one
+metric whose \texttt{probe} tag is \texttt{web-} and \texttt{web-1}, and filtering on
+\texttt{probe:web-*}, returns both: the wildcard matches the empty string. So
+\texttt{.*} has a glob, \texttt{.+} has none, and the figures above stand as computed
+(\texttt{scripts\slash trial\_checks.py e5}, cached and regression-tested).
+\texttt{regular.py} still records the reading in a single constant, so the measurement
+can be redone under the other one if Datadog's behaviour changes.
+\end{remark}

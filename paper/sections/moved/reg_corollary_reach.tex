@@ -1,0 +1,21 @@
+\begin{remark}[What the corollary reaches, and the two facts that close the gap]\label{rem:corollary-reach}
+``Each is an instance'' is the part that needed care, and an earlier version of this
+sentence overstated it. The corollary is about three \emph{specific} languages and is
+closed under neither concatenation with a literal nor union, while most refused corpus
+patterns are of those shapes: \texttt{dm-.+} is not $\Sigma^{+}$, and
+\texttt{5[0-9]+} is not $A^{+}$, because $A^{+}$ contains words of length one and that
+language's shortest word has three characters. Two facts close the gap, and both are
+already in this section rather than new.
+
+The first is the uniqueness step inside Proposition~\ref{prop:decidable}'s proof: if
+$L(r)=L(g)$ then $L(r)$ has a \emph{unique} shortest word. Most of the patterns the
+corollary does not reach fail that immediately --- \texttt{dm-.+} has shortest words
+\texttt{dm-} and nothing else of that length only if the suffix can be empty, which
+\texttt{.+} forbids, so its shortest words are \texttt{dm-}$\sigma$ for every $\sigma$,
+and there are $|\Sigma|$ of them. The second is the generalisation part~(3) is an
+instance of: \emph{if $L$ is infinite and some $\sigma\in\Sigma$ occurs in no word of
+$L$, then $L$ is no union of finitely many globs}, because an infinite glob language
+needs a star and a star admits every character. That is what the prose below has always
+said, and stating it as a fact rather than as an aside is what the $10$ unconditional
+occurrences actually rest on.
+\end{remark}

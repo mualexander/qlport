@@ -262,9 +262,10 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
           {"08_discussion.tex"}),
     348: ("refusals under the commutation argument",
           {"01_introduction.tex", "05_translation.tex", "08_discussion.tex"}),
-    124: ("disjunctive scopes before prop:disjunction",
+    124: ("disjunctive scopes before prop:disjunction, and separately what the\n"
+           "empty-string reading of a glob star is worth",
           {"01_introduction.tex", "06_regular.tex", "07_evaluation.tex",
-           "08_discussion.tex", "eval_rows_fill_glob.tex"}),
+           "08_discussion.tex", "eval_rows_fill_glob.tex", "reg_star_empty.tex"}),
     120: ("of those, the single-key ones",
           {"01_introduction.tex", "07_evaluation.tex", "08_discussion.tex"}),
     116: ("translations once thought to carry ROLLUP_ALIGNMENT alone",

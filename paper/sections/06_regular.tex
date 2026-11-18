@@ -37,14 +37,8 @@ Let $\mathrm{glob}(g)$ be the regular expression obtained from $g$ by replacing 
 $L(\mathrm{glob}(g))=L(g)$, where the regular expression is read under PromQL's whole-value
 anchoring.
 \end{proposition}
-\begin{proof}
-Induction on $n$. For $n=0$ both sides are $\{s_0\}$. For the step, \texttt{.*} denotes
-$\Sigma^{*}$ and concatenation of regular expressions denotes concatenation of languages,
-which is exactly how Definition~\ref{def:glob} quantifies $w_i$. Anchoring matters: it is
-what makes the outermost concatenation span the whole value, and it is the fact
-Proposition~\ref{prop:disjunction} rests on, read off a real server there rather than
-assumed.
-\end{proof}
+
+\iffull\input{sections/moved/reg_glob_regex_pf}\fi
 
 \noindent
 Every glob therefore has an exact PromQL matcher, which is why no gap code in
@@ -56,11 +50,8 @@ For every glob $g$: if $n=0$ then $L(g)=\{s_0\}$ is a single word; and if $n\ge 
 $L(g)$ contains a word of every length $\ell\ge m(g)$, and every word of $L(g)$ contains
 each $s_i$ as a factor, in order.
 \end{lemma}
-\begin{proof}
-The first case is immediate. For the second, taking $w_1\in\Sigma^{\ell-m(g)}$ and
-$w_i=\varepsilon$ for $i>1$ gives a word of length $\ell$; the factor claim is
-Definition~\ref{def:glob} read left to right.
-\end{proof}
+
+\iffull\input{sections/moved/reg_dichotomy_pf}\fi
 
 \noindent
 So a glob language is either a singleton or unbounded in length. That is a strong
@@ -78,23 +69,8 @@ alternation of distinct literals;
 restricted to part of the alphabet.
 \end{enumerate}
 \end{corollary}
-\begin{proof}
-(1) A finite language with two words is neither a singleton nor unbounded, so
-Lemma~\ref{lem:dichotomy} excludes it. (2) $\varepsilon\notin\Sigma^{+}$ forces
-$m(g)\ge 1$, since $m(g)=0$ makes $g$ a string of stars and $\varepsilon\in L(g)$; and
-$\Sigma^{+}$ contains words of length $1$, so $m(g)\le 1$. Hence $m(g)=1$: $g$ has a
-single literal character $c$ and at least one star. By Lemma~\ref{lem:dichotomy} every
-word of $L(g)$ contains $c$, while $\Sigma^{+}$ contains the one-character words of
-$\Sigma\setminus\{c\}$, which is non-empty. (3) The same argument gives $m(g)=1$ with one
-literal $c$, which must lie in $A$ since every word of $L(g)$ contains it. A single
-literal and at least one star leaves three shapes: $c{*}$, ${*}c$ and ${*}c{*}$. In the
-first and third $L(g)$ contains $c\sigma$ for every $\sigma\in\Sigma$; in the second it
-contains $\sigma c$ for every $\sigma$. Either way it contains a word using a
-$\sigma\notin A$, which $A^{+}$ does not, and $\Sigma\setminus A\neq\emptyset$.
 
-Taking $c\sigma$ in every case, as an earlier version of this proof did, is wrong for
-$g={*}c$: that language has no word beginning with $c$ unless $c$ repeats.
-\end{proof}
+\iffull\input{sections/moved/reg_no_glob_pf}\fi
 
 \subsection{Deciding whether a regex has a glob}
 \label{sec:decide}
@@ -125,15 +101,7 @@ $L(r)=L(\mathrm{glob}(g))$, which is decidable by Rich Thm 9.5. The search is fi
 exhaustive, so it answers either way.
 \end{proof}
 
-\noindent
-Two remarks on making this run. Breadth-first search is not an optimisation but the
-method: enumerating candidate words in order instead, as a general-purpose regular-language
-library does, does not terminate in practice on a corpus regex whose shortest word is
-sixty characters over a twenty-character alphabet. And the $2^{|w|+1}$ candidates can be
-pruned without losing completeness, because inserting stars only grows the language: any
-star belonging to a solution must, on its own, keep the candidate inside $L(r)$, so gaps
-failing that single subset test cannot appear in any solution at all. On the corpus this
-leaves a handful of candidates rather than $2^{61}$.
+\iffull\input{sections/moved/reg_search_impl}\fi
 
 \subsection{Unions, and the same fact in both directions}
 \label{sec:glob-unions}
@@ -187,18 +155,17 @@ parses with the variable in place. For these the reverse direction is not hard b
 than of either language.
 
 Among the $1{,}041$ occurrences whose pattern is concrete, Table~\ref{tab:regex-glob}
-gives the three-way split and Table~\ref{tab:regex-glob-examples} what each outcome
-looks like. A glob exists for $653$ of them ($62.7\%$), but for more than
+gives the three-way split. A glob exists for $653$ of them ($62.7\%$), but for more than
 half of those only as a union: one glob covers $309$ occurrences ($29.7\%$) and a bounded
-union covers $344$ ($33.0\%$). Those counts rose in the seventh reading of the apparatus,
-and the caption of Table~\ref{tab:regex-glob} is why: it says ``every \texttt{=\textasciitilde{}}
-and \texttt{!\textasciitilde{}} matcher'', and the scanner behind it accepted only
-double-quoted patterns. PromQL writes a string three ways, its own grammar in
-Section~\ref{sec:grammars} says so, and $114$ matcher occurrences sat in the other two. Treating a single glob as the target --- the obvious
+union covers $344$ ($33.0\%$). Treating a single glob as the target --- the obvious
 reading of ``does this regex have a glob'' --- would therefore have understated the
 reverse direction by $33.0$ points of occurrence coverage, and the construction that
 recovers them is the one Section~\ref{sec:translation} already proved for the other
-direction.
+direction. Those counts rose late in this work, because the scanner behind them read
+only one of PromQL's three string forms and $114$ matcher occurrences sat in the other
+two (\apref{app:eval}).
+
+\iffull\input{sections/moved/reg_string_forms}\fi
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/regex_glob_reasons}
@@ -207,41 +174,20 @@ single glob by Corollary~\ref{cor:no-glob}; only the third is also beyond a boun
 union of them.}
 \label{tab:regex-glob-reasons}
 \end{table}
-
-\begin{table}[htbp]\centering\footnotesize
-\input{tables/regex_glob_examples}
-\caption{The three most frequent regular expressions of each outcome.}
-\label{tab:regex-glob-examples}
-\end{table}
+\iffull\input{sections/moved/reg_examples_table}\fi
 
 Table~\ref{tab:regex-glob-reasons} is the part this section can be held to, and it has
 to be read against the target of \S\ref{sec:glob-unions} rather than against a single
 glob. Three constructs account for every refusal, and each is an instance of
-Corollary~\ref{cor:no-glob} \emph{or} of one of the two facts below: a single-character
+Corollary~\ref{cor:no-glob} \emph{or} of one of two facts that generalise it
+(\apref{app:proofs}): a single-character
 wildcard such as \texttt{5..} would need a
 glob for $\Sigma$, which part~(1) forbids; \texttt{.+} would need one for $\Sigma^{+}$,
 forbidden by part~(2); and \texttt{5[0-9]+} would need a star confined to the digits,
 forbidden by part~(3).
 
-``Each is an instance'' is the part that needed care, and an earlier version of this
-sentence overstated it. The corollary is about three \emph{specific} languages and is
-closed under neither concatenation with a literal nor union, while most refused corpus
-patterns are of those shapes: \texttt{dm-.+} is not $\Sigma^{+}$, and
-\texttt{5[0-9]+} is not $A^{+}$, because $A^{+}$ contains words of length one and that
-language's shortest word has three characters. Two facts close the gap, and both are
-already in this section rather than new.
 
-The first is the uniqueness step inside Proposition~\ref{prop:decidable}'s proof: if
-$L(r)=L(g)$ then $L(r)$ has a \emph{unique} shortest word. Most of the patterns the
-corollary does not reach fail that immediately --- \texttt{dm-.+} has shortest words
-\texttt{dm-} and nothing else of that length only if the suffix can be empty, which
-\texttt{.+} forbids, so its shortest words are \texttt{dm-}$\sigma$ for every $\sigma$,
-and there are $|\Sigma|$ of them. The second is the generalisation part~(3) is an
-instance of: \emph{if $L$ is infinite and some $\sigma\in\Sigma$ occurs in no word of
-$L$, then $L$ is no union of finitely many globs}, because an infinite glob language
-needs a star and a star admits every character. That is what the prose below has always
-said, and stating it as a fact rather than as an aside is what the $10$ unconditional
-occurrences actually rest on.
+\iffull\input{sections/moved/reg_corollary_reach}\fi
 
 The three are not equally final, and saying so costs less than leaving it implied. The
 target here is a union of at most $B$ globs, and the first two constructs \emph{are}
@@ -264,50 +210,21 @@ and all $73$ unions. Nothing is left undecided: no pattern exceeds the search's 
 candidate bound, so the agreement is over the whole population rather than over a
 reachable part of it.
 
-An earlier version of this paragraph reported $168$ of $183$ and recorded the remainder
-as not reached, which was a statement about a clock rather than about the procedure. The
-script takes a time budget, that run was given $2{,}400$\,s, and four patterns of one
-family --- a parenthesised alternation inside a long literal, as in
-\texttt{cnpg\_pg\_stat\_(bgwriter|checkpointer)\_checkpoints\_timed} --- cost $91$ to
-$176$ seconds each when timed on an idle machine, so the budget expired partway through
-them. Run without one the cross-check takes $4{,}725$\,s and finishes. What makes those
-patterns expensive is worth naming, because it is the procedure working rather than
-struggling: the shortest word of such a pattern is forty-odd characters, so the pruned
-space of star insertions is large, and the search has to \emph{exhaust} it to conclude
-that no single glob exists. The costly cases are the negative ones, and they are exactly
-the cases a structural proposer's refusal would otherwise have to be taken on trust. The run is cached
-(\texttt{scripts\slash crosscheck\_globs.py}), and \texttt{tests\slash test\_regular.py}
-fails if a disagreement ever appears, if any pattern goes unreached, or if the two sides
-stop sharing a population.
+One of these refusals rests on something Datadog does not document. The $238$
+occurrences refused as \texttt{.+}, or as a pattern containing it, are refused by
+Corollary~\ref{cor:no-glob}(2) --- and that part of the corollary assumed \texttt{*}
+matches the empty string. The two readings cannot both hold: a glob has exactly one
+wildcard, which either requires a character or does not, so under one reading
+\texttt{.+} has no glob and under the other \texttt{.*} has none. The corpus writes
+\texttt{.+} $133$ times and \texttt{.*} $9$ times, so the reading is worth $124$
+occurrences either way. It was put to a real account rather than guessed, and the
+wildcard does match the empty string, so the figures above stand as computed
+(\texttt{scripts\slash trial\_checks.py e5}; \apref{app:experiments}).
 
-One qualification on ``complete''. The search is complete for the regular expressions its
-parser accepts, which is the dialect of the equivalence library rather than all of
-PromQL's: a pattern carrying an interior anchor, or one whose escapes the structural
-proposer normalises first, is refused by the search where the proposer answers. No corpus
-pattern is of either shape --- all $184$ were reached --- so the agreement reported above
-is over the whole population, but the word means complete relative to that dialect.
+\iffull\input{sections/moved/reg_crosscheck_timing}\fi
+\iffull\input{sections/moved/reg_complete_dialect}\fi
 
-\begin{remark}[The largest refusal turned on an undocumented detail]%
-\label{rem:star-empty}
-$238$ of the $388$ refused occurrences are \texttt{.+} or a pattern containing it,
-including the corpus's most common concrete regular expression (\texttt{.+}, $133$
-occurrences) and its most elaborate one
-(\texttt{(/dev/)?(mmcblk.p.+|nvme.+|\dots{})}, $49$). They are refused by
-Corollary~\ref{cor:no-glob}(2) --- but that part of the corollary assumed \texttt{*}
-matches the empty string, and Datadog does not document whether it does. The two readings
-cannot both be wrong and cannot both be right: a glob has exactly one wildcard, which
-either requires a character or does not, so under one reading \texttt{.+} has no glob and
-under the other \texttt{.*} has none. The corpus uses \texttt{.+} $133$ times and
-\texttt{.*} $9$ times, so the reading is worth $124$ occurrences either way.
-
-It is settled, and in favour of the reading taken here. Submitting two series of one
-metric whose \texttt{probe} tag is \texttt{web-} and \texttt{web-1}, and filtering on
-\texttt{probe:web-*}, returns both: the wildcard matches the empty string. So
-\texttt{.*} has a glob, \texttt{.+} has none, and the figures above stand as computed
-(\texttt{scripts\slash trial\_checks.py e5}, cached and regression-tested).
-\texttt{regular.py} still records the reading in a single constant, so the measurement
-can be redone under the other one if Datadog's behaviour changes.
-\end{remark}
+\iffull\input{sections/moved/reg_star_empty}\fi
 
 \noindent
 The practical conclusion for the reverse direction is narrower than

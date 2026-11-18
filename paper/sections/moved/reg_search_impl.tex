@@ -1,0 +1,11 @@
+\begin{remark}[Making the search run]\label{rem:search-impl}
+Two things make the search of Proposition~\ref{prop:decidable} run.
+Breadth-first search is not an optimisation but the
+method: enumerating candidate words in order instead, as a general-purpose regular-language
+library does, does not terminate in practice on a corpus regex whose shortest word is
+sixty characters over a twenty-character alphabet. And the $2^{|w|+1}$ candidates can be
+pruned without losing completeness, because inserting stars only grows the language: any
+star belonging to a solution must, on its own, keep the candidate inside $L(r)$, so gaps
+failing that single subset test cannot appear in any solution at all. On the corpus this
+leaves a handful of candidates rather than $2^{61}$.
+\end{remark}

@@ -1,0 +1,17 @@
+\begin{proof}[Proof of Corollary~\ref{cor:no-glob}]
+(1) A finite language with two words is neither a singleton nor unbounded, so
+Lemma~\ref{lem:dichotomy} excludes it. (2) $\varepsilon\notin\Sigma^{+}$ forces
+$m(g)\ge 1$, since $m(g)=0$ makes $g$ a string of stars and $\varepsilon\in L(g)$; and
+$\Sigma^{+}$ contains words of length $1$, so $m(g)\le 1$. Hence $m(g)=1$: $g$ has a
+single literal character $c$ and at least one star. By Lemma~\ref{lem:dichotomy} every
+word of $L(g)$ contains $c$, while $\Sigma^{+}$ contains the one-character words of
+$\Sigma\setminus\{c\}$, which is non-empty. (3) The same argument gives $m(g)=1$ with one
+literal $c$, which must lie in $A$ since every word of $L(g)$ contains it. A single
+literal and at least one star leaves three shapes: $c{*}$, ${*}c$ and ${*}c{*}$. In the
+first and third $L(g)$ contains $c\sigma$ for every $\sigma\in\Sigma$; in the second it
+contains $\sigma c$ for every $\sigma$. Either way it contains a word using a
+$\sigma\notin A$, which $A^{+}$ does not, and $\Sigma\setminus A\neq\emptyset$.
+
+Taking $c\sigma$ in every case, as an earlier version of this proof did, is wrong for
+$g={*}c$: that language has no word beginning with $c$ unless $c$ repeats.
+\end{proof}
