@@ -42,6 +42,19 @@ def _sources() -> list[Path]:
     )
 
 
+_COMMENT = re.compile(r"(?<!\\\\)%.*")
+
+
+def _body(path: Path) -> str:
+    """The file with LaTeX comments stripped.
+
+    Both pointer checks below first fired on `macros.tex`, whose comment quotes the
+    very mis-reading they exist to catch. A scan that cannot tell prose from a comment
+    reports the documentation of a bug as the bug.
+    """
+    return "\n".join(_COMMENT.sub("", line) for line in path.read_text().split("\n"))
+
+
 def _log(name: str) -> str:
     """The build log, insisting it is newer than every source that went into it.
 
@@ -214,8 +227,10 @@ def test_apref_is_used_only_where_it_can_resolve():
     body. Inside a deferred block it tells the reader to consult the page they are on."""
     bad = []
     for path in sorted(MOVED.glob("*.tex")):
-        if "\\apref{" in path.read_text():
-            bad.append(f"  {path.name} uses \\apref; cite the block by its own label")
+        text = _body(path)
+        for macro in ("\\apref{", "\\apin{"):
+            if macro in text:
+                bad.append(f"  {path.name} uses {macro[:-1]}; cite the block by its own label")
     assert not bad, "\n".join(bad)
 
 
@@ -226,8 +241,27 @@ def test_every_apref_target_exists():
         targets.update(re.findall(r"\\apphead\{[^}]*\}\{([^}]*)\}", text))
     used = set()
     for path in [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex")]:
-        used.update(re.findall(r"\\apref\{([^}]*)\}", path.read_text()))
+        text = _body(path)
+        used.update(re.findall(r"\\apref\{([^}]*)\}", text))
+        used.update(re.findall(r"\\apin\{([^}]*)\}", text))
     assert used <= targets, f"\\apref to labels no wrapper defines: {sorted(used - targets)}"
+
+
+def test_an_appendix_pointer_carries_its_own_preposition():
+    """`\\apref` renders as "below", so a sentence needing "in" must use `\\apin`.
+
+    Two call sites read "is set out Appendix~B" in the deferred build for three passes,
+    because the sentence frame that works for "below" silently drops the preposition
+    the appendix form needs. The macro now carries it; this keeps the frames apart.
+    """
+    bad = []
+    for path in [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex")]:
+        flat = " ".join(_body(path).split())
+        for m in re.finditer(r"(\w+(?:\s+\w+){0,2})\s+\\apref\{", flat):
+            lead = m.group(1).lower().split()[-1]
+            if lead in {"out", "collected", "given", "listed", "recorded", "stated"}:
+                bad.append(f"  {path.name}: \"{m.group(1)} \\apref\" wants \\apin")
+    assert not bad, "\n".join(bad) + "\n  (\\apref renders as 'below'; \\apin as 'in Appendix N')"
 
 
 def test_make_paper_is_reproducible_from_a_clean_tree():
@@ -284,3 +318,32 @@ def test_the_feature_bound_slack_is_the_registry_value():
     assert clause.group(1).replace("{,}", "").replace(",", "") == str(slack), (
         f"§7 states the slack as {clause.group(1)}; the registry computes {slack}"
     )
+
+
+def test_the_promql_population_matches_the_parse_table():
+    """§4 and two appendix blocks quoted 8,096 where the table says 8,102.
+
+    The population has no registry key, so `BOUND` could not reach it and the allowlist
+    carried the stale value with the reason "unregistered (nb 00): PromQL expressions"
+    -- an entry asserting that the dead figure was the live one. Two of the three stale
+    sites sat within two lines of a generated figure whose own legend printed 8,102.
+    The table is generated, so it is the authority, and the pre-correction value is
+    barred outright rather than left to an allowlist to decline to question.
+    """
+    table = (PAPER / "tables" / "parse_coverage.tex").read_text()
+    m = re.search(r"promql\s*&\s*([\d,]+)\s*&", table)
+    assert m, "tables/parse_coverage.tex no longer has a promql row"
+    spelled = m.group(1).replace(",", "{,}")
+    quoting = {
+        "04_grammars.tex", "07_evaluation.tex",
+        "moved/eval_language_use.tex", "moved/eval_staircase.tex",
+    }
+    for rel in sorted(quoting):
+        text = (SECTIONS / rel).read_text()
+        assert f"${spelled}$" in text, (
+            f"{rel} should state the PromQL population as {m.group(1)}"
+        )
+    for path in sorted(SECTIONS.rglob("*.tex")):
+        assert "8{,}096" not in path.read_text(), (
+            f"{path.name} still quotes the pre-correction PromQL population"
+        )

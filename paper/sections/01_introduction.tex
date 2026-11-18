@@ -50,7 +50,8 @@ which is what lets the paper say that a PromQL query reading absolute counter va
 no Datadog translation \emph{at all}, for reasons of information rather than syntax.
 
 \paragraph{What we did.}
-We inferred an LALR(1) grammar for each language and checked it for conflicts; defined an
+We inferred a grammar for each language and checked each for conflicts, finding
+Datadog's conflict-free and PromQL's LALR(1) only modulo two documented resolutions; defined an
 intermediate representation with a denotation; built a translator that lowers Datadog
 queries into it and emits PromQL, refusing with a named gap code rather than guessing;
 proved the translations exact under stated preconditions and verified the PromQL side
@@ -70,7 +71,10 @@ Going from Datadog to PromQL, $96.3\%$ of query occurrences translate, and the s
 is mostly unfinished work rather than impossibility: $1.2\%$ of the corpus is beyond
 reach --- two constructs PromQL cannot say and two the target system does not hold ---
 against $2.4\%$ this translator has not implemented, with a
-ceiling of $98.7\%$ once the latter is done. On that evidence the switching cost in the
+ceiling of $98.7\%$ once the latter is done --- with a condition the number usually
+travels without: $139$ of those $212$ are \texttt{top(...)}, whose PromQL form needs the
+dashboard's time range twice over, so the ceiling is reachable only by a translator that
+is told what the query does not say. On that evidence the switching cost in the
 direction people travel is \emph{engineering} (\S\ref{sec:gaps}).
 
 Translating is not the same as translating correctly, and the distance between them is
@@ -85,8 +89,10 @@ interval is optional, and $96.9\%$ of the translations we emit are of queries th
 it empty, so the interval comes from the dashboard's time range instead. PromQL's slot is
 obligatory where it applies and $55.6\%$ of the corpus's range selectors fill it with a
 dashboard variable anyway --- so the contrast is one of degree, and what both languages
-share is that the value arrives from a layer outside either of them. The same holds of the
-metric's type, and more sharply: no query in either language declares it. On the Datadog
+share is that the value arrives from a layer outside either of them. The metric's type is a second thing no query states, and \S\ref{sec:discussion} is
+careful that it is not a second instance of the same property: neither language declares
+it, and what makes it bite here is the ingestion mapping branching on it rather than
+anything either language can or cannot say. On the Datadog
 side $88.6\%$ of query occurrences carry at least one template variable and on the PromQL
 side $82.5\%$ do, which is the measurement that stops this being a complaint about one
 vendor. The translations are exact, and exact relative to context the query omits; no
@@ -95,11 +101,14 @@ coverage number can see that, which is why $\kappa$ is not this paper's main res
 
 Coming back is a different matter, and here the obstructions are proved. A Datadog tag
 filter is a glob, and \S\ref{sec:regular} shows a glob's language is either a single word
-or unbounded in length --- from which it follows that no glob denotes a single arbitrary
-character, nor the non-empty values, nor a wildcard confined to part of the alphabet.
-Together with a bound on union size that we choose and state, those three account for
-every refusal in that section --- $37.3\%$ of the corpus's matcher occurrences whose
-pattern is concrete --- and $10$ of them hold without any bound at all.
+or unbounded in length --- from which, together with the fact that a glob star admits
+every character, it follows that no glob denotes a single arbitrary character, nor the
+non-empty values, nor a wildcard confined to part of the alphabet. A fourth result
+generalises the last of those: a language that never uses some character of the alphabet
+is no union of finitely many globs, however many branches are spent. Together with a
+bound on union size that we choose and state, these account for every refusal in that
+section --- $37.3\%$ of the corpus's matcher occurrences whose pattern is concrete ---
+and the fourth carries $10$ of them with no bound at all.
 
 Put together with the directional barrier of \S\ref{sec:ingestion}, the picture is an
 asymmetry: leaving costs engineering, returning costs expressiveness. The asymmetry binds
@@ -111,11 +120,13 @@ it is paid by a different decision at a different time.
 
 \paragraph{Contributions.}
 \begin{enumerate}
-\item \textbf{Grammars (\S\ref{sec:grammars}).} LALR(1) grammars for both languages,
-including one for Datadog's metric query language, which the vendor does not publish and
-which had to be inferred from documentation and $8{,}770$ vendor-authored queries. The
-Datadog grammar is conflict-free; PromQL has $2$ shift/reduce conflicts, and we
-show both are forced by the language rather than by our rules.
+\item \textbf{Grammars (\S\ref{sec:grammars}).} Deterministic one-token-lookahead
+grammars for both languages, including one for Datadog's metric query language, which
+the vendor does not publish and which had to be inferred from documentation and
+$8{,}770$ vendor-authored queries. The Datadog grammar is conflict-free LALR(1); the
+PromQL one has $2$ shift/reduce conflicts, which we show come from the optionality of
+the vector-matching label list rather than from how we layered the rules --- not that no
+LALR(1) grammar for PromQL exists, a claim \S\ref{sec:grammars} declines to make.
 \item \textbf{$\phi$-relative soundness (\S\ref{sec:ingestion}).} Soundness stated
 relative to an ingestion mapping, with the consequence that the information barrier
 between these two systems is \emph{directional} --- a result about the languages that
@@ -176,5 +187,6 @@ ingestion mapping. \S\ref{sec:grammars} answers RQ1, \S\ref{sec:translation} and
 \S\ref{sec:caveats}, RQ4. \S\ref{sec:discussion} takes up what the measurements mean,
 and \S\ref{sec:conclusion} what remains. Three appendices carry the apparatus: the
 proofs and constructions, what the vendor was asked and what came back, and the corpus
-and evaluation machinery. Every proof is in the first of them, and every remark numbered
-above~3 is in one of the three.
+and evaluation machinery. Every proof but one is in the first of them --- the
+exception is \S\ref{sec:regular}'s decision procedure, which is stated and built in
+the same place --- and every remark numbered above~3 is in one of the three.

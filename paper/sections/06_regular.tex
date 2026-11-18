@@ -55,8 +55,10 @@ each $s_i$ as a factor, in order.
 
 \noindent
 So a glob language is either a singleton or unbounded in length. That is a strong
-restriction, and it settles each construct the corpus refuses --- not by measurement but
-by proof.
+restriction, and together with what a star admits --- every character of $\Sigma$,
+by Definition~\ref{def:glob} --- it settles each construct the corpus refuses, not by
+measurement but by proof. The second ingredient is easy to lose sight of: parts~(1)
+and~(2) below come from the dichotomy alone, part~(3) does not.
 
 \begin{corollary}[Three things no glob says]\label{cor:no-glob}
 Assume $|\Sigma|\ge 2$. Then
@@ -71,6 +73,21 @@ restricted to part of the alphabet.
 \end{corollary}
 
 \iffull\input{sections/moved/reg_no_glob_pf}\fi
+
+\noindent
+Part~(3) generalises, and the generalisation is what the unconditional refusals of
+\S\ref{sec:glob-corpus} rest on, so it is stated rather than left as an aside.
+
+\begin{corollary}[A character a language never uses]\label{cor:absent-char}
+Let $L$ be infinite and let some $\sigma\in\Sigma$ occur in no word of $L$. Then $L$ is
+not a union of finitely many glob languages.
+\end{corollary}
+\iffull\input{sections/moved/reg_absent_char_pf}\fi
+
+\noindent
+This is the one result here that holds against an \emph{arbitrary} union, with no bound
+on how many branches a translator may spend, which is why \S\ref{sec:glob-corpus} can
+separate ten refusals from the rest.
 
 \subsection{Deciding whether a regex has a glob}
 \label{sec:decide}
@@ -183,8 +200,10 @@ Corollary~\ref{cor:no-glob} \emph{or} of one of two facts that generalise it
 (\apref{app:proofs}): a single-character
 wildcard such as \texttt{5..} would need a
 glob for $\Sigma$, which part~(1) forbids; \texttt{.+} would need one for $\Sigma^{+}$,
-forbidden by part~(2); and \texttt{5[0-9]+} would need a star confined to the digits,
-forbidden by part~(3).
+forbidden by part~(2); and \texttt{5[0-9]+} would need a star that never admits a
+non-digit, forbidden by Corollary~\ref{cor:absent-char} --- not by part~(3), which is
+about $A^{+}$ itself and which \texttt{5[0-9]+} is not, its shortest word having three
+characters where $A^{+}$ has words of one.
 
 
 \iffull\input{sections/moved/reg_corollary_reach}\fi

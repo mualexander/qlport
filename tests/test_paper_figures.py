@@ -159,7 +159,6 @@ ALLOWED: dict[float, str] = {
     # --- E9: what `.weighted()` does, and what it would have done if weighted --------
     66.7: "E9: the plain mean of the irregular series, with and without the modifier",
     16.7: "E9: what a mean weighted by each point's interval would have read",
-    54: "E9: of those, the ones attaching it to sum:",
     0.8: "points of kappa that implementing .weighted() closed",
     # --- E1, E7, E8: values from cached experiment records ---------------------------
     1000: "E1: the counter value just before the scripted reset",
@@ -172,10 +171,7 @@ ALLOWED: dict[float, str] = {
     0.994: "E7: the relative difference after half an hour",
     0.5: "E7: the relative difference at the start of the run",
     # --- corpus figures from notebooks 00, 01, 04, 05: unregistered -------------------
-    11628: "unregistered (nb 00): Datadog formula expressions",
-    8096: "unregistered (nb 00): PromQL expressions",
     5389: "unregistered (test_corpus): distinct Datadog metric names",
-    5227: "unregistered (nb 00): PromQL function occurrences",
     723: "unregistered (test_corpus): distinct grouping keys",
     388: "unregistered (nb 04): refused patterns",
     378: "of those, the two constructs that are finite unions exceeding the bound "
@@ -191,26 +187,26 @@ ALLOWED: dict[float, str] = {
     4725: "what the unbudgeted cross-check took, seconds",
     176: "the slowest single pattern in it, seconds, timed uncontended",
     91: "and the fastest of that same four-pattern family",
-    139: "unregistered (nb 00): top() occurrences, and boolean-scope queries",
+    139: "three different quantities of this magnitude: nb00.top_occurrences, which\n         is registered and bound in \u00a77 and concl_evidence; the PromQL alerting\n         rules of \u00a77.1; and the \u00a74 grammar-gap count. Only the first is a\n         registry figure, so the other two ride here",
     133: "unregistered (nb 04): occurrences of .+",
     96: "unregistered (nb 00): PromQL recording rules",
     93: "unregistered (nb 01): queries needing a bare metric name",
     70: "unregistered (nb 03): .weighted() occurrences; also the second share "
         "in the discussion's hypothetical illustration",
     49: "unregistered (nb 04): occurrences of the most elaborate regex",
-    45: "unregistered (nb 04): refusals the complete procedure reached",
     36: "unregistered (nb 03): FILL_INTERPOLATION occurrences",
     31: "unregistered (nb 03): LABEL_NAME_GLOB occurrences",
     22: "unregistered (nb 00): per_second() occurrences",
     9: "unregistered (nb 04): occurrences of .*",
     8: "unregistered (nb 03): unparsed occurrences",
+    8102: "the PromQL population after the nine LogQL panels are dropped. It has no\n          registry key, so it is pinned instead to the generated parse-coverage table\n          by tests/test_paper_builds.py -- which is what the 8,096 this replaces\n          escaped, having been allowlisted here as though it were the live value",
+    5231: "unregistered (nb 00): PromQL function occurrences, recomputed as\n          sum(corpus.function_names) over the 8,102 kept expressions. The 5,227 this\n          replaces was the pre-correction corpus; the 69% rate/irate share derived\n          from it is 69.3% either way and did not move",
     99.9: "unregistered (nb 01): Datadog instantiated parse rate, v2",
     99.1: "unregistered (nb 01): PromQL instantiated parse rate",
-    95: "unregistered (nb 00): share of Datadog space aggregators that are sum/avg",
+    95: "unregistered (nb 00): share of Datadog space aggregators that are sum/avg;\n        also the coverage level \u00a7C.2's shape reduction reports 107 shapes reaching,\n        and a round level in \u00a74 -- three uses, one magnitude",
     92.6: "unregistered (nb 01): Datadog instantiated parse rate, v1",
     71.2: "unregistered (nb 01): PromQL raw parse rate",
     69: "unregistered (nb 00): share of PromQL functions that are rate/irate",
-    56: "E9 distinct corpus forms carrying .weighted(), and the share of Datadog queries using by {...}",
     34: "unregistered: percentile-aggregator occurrences (nb 03), and the union share (nb 04)",
     27.4: "unregistered (replay): aligned-grid agreement on the bucket edge",
     23: "unregistered (nb 03): shapes covering 80% -- also an allowed small integer",
@@ -247,7 +243,7 @@ ALLOWED: dict[float, str] = {
 # made on magnitude alone. A share and a count are different claims; a checker that
 # cannot tell them apart launders one into the other.
 SCALAR_ONLY: set[float] = {
-    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 45, 49, 54, 103, 110, 111, 133, 139, 221, 238, 344, 388, 723, 897, 1760, 5227, 5389, 8096, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 0.628, 0.667, 887, 335, 1.4,
+    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 49, 103, 110, 111, 133, 139, 221, 238, 344, 388, 723, 897, 1760, 8102, 5231, 5389, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 0.628, 0.667, 887, 335, 1.4,
 }
 
 
@@ -259,7 +255,8 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
     542: ("the four misclassified episodes, less the overlap between two of them",
           {"08_discussion.tex"}),
     348: ("refusals under the commutation argument",
-          {"01_introduction.tex", "05_translation.tex", "08_discussion.tex"}),
+          {"01_introduction.tex", "05_translation.tex", "07_evaluation.tex",
+           "08_discussion.tex"}),
     124: ("disjunctive scopes before prop:disjunction, and separately what the\n"
            "empty-string reading of a glob star is worth",
           {"01_introduction.tex", "06_regular.tex", "07_evaluation.tex",
@@ -272,6 +269,14 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
            {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
     95.6: ("kappa after it and before the counter-average fix",
            {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
+    11628: ("the formula count an earlier draft reported, which was the metric ones\n            plus 5,606 over log, event and security-signal requests; the live figure\n            is nb00.formulas = 6,022 and Table 6's caption said 11,628 until the\n            tenth pass, where it broke the corpus arithmetic on its own page",
+           {"eval_held_aside.tex"}),
+    54: ("E9: the superseded count of forms attaching .weighted() to sum:, now 52",
+         {"eval_weighted.tex"}),
+    56: ("E9: the superseded count of distinct forms carrying .weighted(), now 52 ---\n         and, separately, the share of Datadog queries using by {...}",
+         {"eval_weighted.tex", "eval_language_use.tex"}),
+    45: ("the queries the first six Datadog features complete, an nb-00 staircase\n         quantity. The reason recorded here until the tenth pass described nb 04's\n         refusals, which the cross-check now reports as all 50 of 184",
+         {"eval_staircase.tex"}),
     76.2: ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
     6381: ("the occurrences that share carried", {"tr_gauge.tex"}),
     87: ("the implementation-order figure contrasted with the kernel's reach, and\n"

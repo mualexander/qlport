@@ -22,11 +22,13 @@ Datadog query occurrences, and the soundness theorems of \S\ref{sec:kernel-sound
 nothing is shipped that is not proved. Outside the fragment, $1.2\%$ of the corpus is
 beyond reach --- four constructs, two of them information barriers rather than
 expressiveness gaps --- against $2.4\%$ that is work this translator has not done, a
-ceiling of $98.7\%$. In the reverse direction, on the sub-problem of tag filtering, the
-obstructions are theorems: a glob's language is a single word or unbounded in length, and
-three impossibility results follow. With a stated bound on union size they account for
+ceiling of $98.7\%$ --- reachable, since $139$ of those occurrences are
+\texttt{top(...)}, only by a translator supplied with the dashboard's time range. In the reverse direction, on the sub-problem of tag filtering, the
+obstructions are theorems: a glob's language is a single word or unbounded in length,
+and with what a glob star admits three impossibility results follow, with a fourth
+generalising the last of them. With a stated bound on union size they account for
 every refusal we measure --- $37.3\%$ of the matcher occurrences whose pattern is
-concrete --- and $10$ of those need no bound at all.
+concrete --- and the fourth carries $10$ of those with no bound at all.
 
 \textbf{RQ3.} Coverage on published dashboards is the $96.3\%$ above, and the shape of
 the shortfall matters more than its size: coverage against implementation effort is a
@@ -36,14 +38,24 @@ Half the work does not port half the estate.
 
 \textbf{RQ4.} No. A dashboard query does not determine its own meaning, and this is the
 answer we would now put first. Of the translations we emit, $96.9\%$ depend on a rollup
-interval the source query leaves to the dashboard's time range, and $100\%$ on a metric
-type no query in either language declares. Neither is a defect of one vendor: $88.6\%$ of
+interval the source query leaves to the dashboard's time range --- and PromQL, which has
+a slot for it, sees $55.6\%$ of range selectors filled with a dashboard variable anyway,
+so the contrast between the two languages is one of degree. A metric's type is a second
+thing no query states, and \S\ref{sec:dashboard-layer} is careful that it is not a
+second instance of the same property: what makes it bite is $\phi_\rho$ branching on
+it, which is \S\ref{sec:ingestion} appearing twice rather than a second fact about
+either language. Neither is a defect of one vendor: $88.6\%$ of
 Datadog query occurrences and $82.5\%$ of PromQL ones carry at least one template
 variable, so in both languages the object a migration ports is a schema plus a
-resolution layer that belongs to the dashboard tool. One of the two assumptions is
-checkable, because the repository the dashboards come from declares each metric's type,
-and where it can be checked our inference is wrong for $6.5\%$ --- $491$ occurrences,
-more than the whole inexpressible column. $\kappa$ counts those as translations.
+resolution layer that belongs to the dashboard tool. The type assumption is the one that
+is checkable, because the repository the dashboards come from declares each metric's
+type, and where it can be checked our inference is wrong for $6.5\%$ --- $491$
+occurrences, more than the whole inexpressible column. That $6.5\%$ is in the first
+instance a fact about \emph{this} front end's heuristic, and feeding it the declarations
+would drive it down; the number that is about design rather than about our inference is
+the $736$ occurrences naming metrics the repository does not declare at all, where
+nothing outside the query settles the question either. $\kappa$ counts all of them as
+translations.
 Coverage and correctness differ, by a measured amount, and no coverage number could have
 told us: a query that does not fix its own meaning parses and translates like any
 other.
@@ -51,7 +63,7 @@ other.
 \noindent
 What each of those answers rests on --- what is proved, what is verified against a real
 server, what is measured against the vendor, and what is still assumed --- is set out
-\apref{app:experiments}. Three of the eight vendor measurements contradicted what this
+\apin{app:experiments}. Three of the eight vendor measurements contradicted what this
 paper had assumed before asking.
 
 \iffull\input{sections/moved/concl_evidence}\fi

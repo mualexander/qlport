@@ -25,8 +25,7 @@ table.}
 \noindent
 Four things in these distributions are load-bearing for the rest of the paper.
 
-\emph{Datadog's head is very short.} \texttt{sum:} and \texttt{avg:} are $95\%$ of all
-every space-aggregator occurrence in Table~\ref{tab:operator-frequency}, and \texttt{by \{...\}} appears in $56\%$ of
+\emph{Datadog's head is very short.} \texttt{sum:} and \texttt{avg:} are $95\%$ of every space-aggregator occurrence in Table~\ref{tab:operator-frequency}, and \texttt{by \{...\}} appears in $56\%$ of
 queries. A translator that handles two aggregators and grouping already speaks most of
 what the corpus says.
 
@@ -36,9 +35,9 @@ cumulative difference by Proposition~\ref{prop:offset}, which is why that propos
 rather than anything about \texttt{rate}, is the one that carries a migration.
 
 \emph{PromQL's head is a rate.} \texttt{rate} and \texttt{irate} together are $69\%$ of
-all $5{,}227$ function occurrences. Meanwhile subqueries appear in $1.1\%$ of PromQL
+all $5{,}231$ function occurrences. Meanwhile subqueries appear in $1.1\%$ of PromQL
 queries, \texttt{offset} in $0.3\%$, and the \texttt{@} modifier in none at all --- a
-construct the language has and $8{,}096$ shipped expressions never reach for. The gap
+construct the language has and $8{,}102$ shipped expressions never reach for. The gap
 between what a query language contains and what its users employ is itself part of the
 switching-cost story: the hard parts of a language can be rare.
 

@@ -11,8 +11,10 @@ Teams stay on a proprietary observability vendor less because of their data than
 of their dashboards: thousands of saved queries that a migration must rewrite by hand,
 with no way to tell whether a rewrite preserved what the original meant. We ask whether
 that switching cost follows from how the query languages are designed, and answer by
-building the translator and measuring it. We infer an LALR(1) grammar for each language
---- including one for Datadog's metric language, which the vendor does not publish ---
+building the translator and measuring it. We infer a grammar for each language ---
+including one for Datadog's metric language, which the vendor does not publish --- and
+check both for conflicts: Datadog's is conflict-free LALR(1), and PromQL's is LALR(1)
+only modulo two documented resolutions. We
 define an intermediate representation with a denotation, and state soundness relative to
 an \emph{ingestion mapping}, because the two systems do not store the same thing: a
 Prometheus counter is a running total and a Datadog counter is a sequence of
@@ -24,15 +26,21 @@ occurrences translate; the shortfall is $1.2\%$ beyond reach against $2.4\%$ uni
 so in the direction teams travel the cost is engineering rather than expressiveness.
 That is not where the switching cost turns out to be. A dashboard query does not
 determine its own meaning: $96.9\%$ of our translations depend on a rollup interval the
-source query leaves to the dashboard's time range and $100\%$ on a metric type no query
-in either language declares, and where the vendor's own repository declares that type our
-inference is wrong for $6.5\%$ of the cases it can settle --- more occurrences than the
-whole inexpressible column. Coverage and correctness differ by a measured amount that no
+source query leaves to the dashboard's time range, and PromQL, which has a slot for it,
+sees $55.6\%$ of the corpus's range selectors filled with a dashboard variable anyway
+--- so this is a difference of degree between the two languages rather than of kind.
+The metric's type is a second thing no query states and is not a second instance of the
+same property: neither language declares it, and what makes it bite is the ingestion
+mapping branching on it. It is, though, the assumption we can check, and where the
+vendor's own repository declares the type our inference is wrong for $6.5\%$ of the
+cases it can settle --- $491$ occurrences, more than the whole inexpressible column. Coverage and correctness differ by a measured amount that no
 coverage number can see, because a query that does not fix its own meaning parses and
 translates like any other. Nor is this one vendor's doing: $88.6\%$ of Datadog and
 $82.5\%$ of PromQL query occurrences carry a template variable, so what a migration ports
-is a query schema plus a resolution layer belonging to the dashboard tool, which is where
-the lock-in surface actually lies and where a common query language would not reach.
+is a query schema plus a resolution layer belonging to the dashboard tool --- which is
+where the switching cost we measured actually sits, and where a common query language
+would not reach. We measure the query layer only; re-instrumentation, cardinality and
+alerting integration are costs this paper says nothing about.
 Going back is different in kind --- a Datadog tag filter is a glob, glob-expressibility
 of a regular expression is decidable, and every refusal we measure in that direction is
 a theorem about globs rather than unfinished work --- ten of them outright, and the

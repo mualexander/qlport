@@ -195,7 +195,7 @@ than reporting it.
 A grammar describes what is sayable; the corpus says what is said, and the two are far
 apart in both languages. Constructs the grammars above must accept turn out to be all
 but unused --- subqueries appear in $1.1\%$ of PromQL queries and the \texttt{@}
-modifier in none of the $8{,}096$ --- while the constructs that dominate are very few:
+modifier in none of the $8{,}102$ --- while the constructs that dominate are very few:
 \texttt{sum:} and \texttt{avg:} are $95\%$ of Datadog's space-aggregator occurrences,
 and \texttt{rate} and \texttt{irate} are $69\%$ of PromQL's function calls.
 
@@ -203,5 +203,5 @@ The asymmetry cuts in opposite directions for a parser and for a translator. A g
 must cover the tail or it is not a grammar of the language, which is what the strictness
 of this section buys; a translator need not, and so the question of how much of a real
 estate ports is a question about the distribution rather than about the grammar.
-Section~\ref{sec:evaluation} measures it there, and finds coverage a staircase rather
+\S\ref{sec:staircase} measures it there, and finds coverage a staircase rather
 than a curve.

@@ -1,0 +1,24 @@
+\begin{proof}[Proof of Lemma~\ref{lem:metric}]
+$\delta$ is symmetric, and $\delta(a,b)=0$ iff $a=b$. For the triangle inequality, note
+$\delta(a,b)\le 2$ always, and $\delta(a,b)\ge 1$ whenever $a$ and $b$ have strictly
+opposite signs or one is $0$ and the other is not.
+
+If $a,b,c$ are all non-zero and share a sign, write $r_{xy}=\max(|x|,|y|)/\min(|x|,|y|)\ge 1$ for the ratio
+of magnitudes; then $\delta(x,y)=(r_{xy}-1)/r_{xy}$ and $r_{ac}\le r_{ab}\,r_{bc}$. Since
+$(r-1)/r$ increases in $r$, it suffices that
+$1-\tfrac{1}{st}\le(1-\tfrac1s)+(1-\tfrac1t)$ for $s,t\ge1$, which rearranges to
+$(s-1)(t-1)\ge 0$.
+
+If any of the three is $0$ while another is not, every $\delta$ with a zero argument and
+a non-zero one is $1$: so if exactly one of $a,c$ is $0$ the left side is $1$ and the
+right has a term of $1$ unless $b=0$ too, in which case the other term is $1$; and if
+$a=c$ the left side is $0$. If $b$ has the sign opposite to $a$ and $c$, both right-hand
+terms are at least $1$ and the left is at most $2$. If $a$ and $c$ have opposite signs, take $|a|\ge|c|$ by symmetry,
+so $\delta(a,c)=1+|c|/|a|$, and $b$ shares a sign with one of them, say $a$. When
+$|b|\ge|c|$ the claim reduces to
+$|c|\big(\tfrac{1}{|a|}-\tfrac{1}{|b|}\big)\le\delta(a,b)$, which holds because
+$|c|\le|a|$; when $|b|<|c|$ the right-hand side is
+$\big(1-|b|/|a|\big)+\big(1+|b|/|c|\big)=2-|b|/|a|+|b|/|c|$, which exceeds $2$ because
+$|b|<|c|\le|a|$, and $2\ge 1+|c|/|a|=\delta(a,c)$. Taking a maximum over a common domain
+preserves all three properties, and $\infty$ is absorbing.
+\end{proof}

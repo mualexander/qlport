@@ -23,7 +23,7 @@ queries and a community's queries on the same footing
 \input{tables/corpus_sources}
 \caption{Corpus sources. Queries are extracted from dashboard and alerting definitions,
 not written for this paper. The Datadog figure counts metric queries; the same documents
-also contribute $11{,}628$ formula expressions, held aside in \apref{app:eval}.}
+also contribute $6{,}022$ formula expressions, held aside in \apref{app:eval}.}
 \label{tab:corpus-sources}
 \end{table}
 
@@ -142,8 +142,8 @@ Prometheus's data model \emph{defines} the two to be the same
 (\apref{app:eval}). Two more are the second kind and are the clean expressiveness cases:
 \texttt{FILL\_INTERPOLATION} ($36$), since no PromQL term introduces a sample where the
 database holds none, and \texttt{LABEL\_NAME\_GLOB} ($31$), since label names are not
-queryable in PromQL at all. Together they are the $106$ occurrences --- $1.2\%$ --- that
-no amount of engineering on a Datadog back end reaches.
+queryable in PromQL at all. Those four rows together --- $34$, $5$, $36$ and $31$ --- are the $106$ occurrences
+--- $1.2\%$ --- that no amount of engineering on a Datadog back end reaches.
 
 The remaining $212$ --- $2.4\%$ --- are the third kind, and the honest statement about
 them is that they are unwritten code rather than a language result. \texttt{UNSUPPORTED\_FUNCTION} is
@@ -151,9 +151,11 @@ almost all of it, led by \texttt{top(...)} at $139$ occurrences, which is expres
 after all (\apref{app:eval}): PromQL denotes Datadog's ranking with an \texttt{@}-pinned
 \texttt{topk}, read off a real server, and the vendor's own \texttt{top()} was then
 measured to behave as its documentation says. Three constructs this paper once counted as
-language gaps have moved into this column on being measured --- \texttt{.weighted()},
-which does nothing at all, and the single-key scope disjunctions, which
-Proposition~\ref{prop:disjunction} translates --- and each is recorded there
+language gaps have moved into this column on being measured --- the $348$ occurrences
+refused under the commutation argument of \S\ref{sec:lowering}, which the real
+evaluation order never raises; \texttt{.weighted()}, which does nothing at all; and the
+single-key scope disjunctions, which Proposition~\ref{prop:disjunction} translates ---
+and each is recorded there
 (\apref{app:eval}), because a refusal that looks like evidence about a language and turns out to be evidence
 about a translator is the mistake this method is most exposed to.
 
@@ -317,8 +319,8 @@ the right design for testing the rules, since a run in which the assumptions wer
 already wrong would measure the assumptions rather than the arithmetic. But it means
 the agreement reported here is agreement \emph{given} the two conditions
 \S\ref{sec:discussion} argues are the real switching cost, and the run is silent on
-what happens when they fail --- which Remark~\ref{rem:gauge} measures separately, and
-measures as unbounded.
+what happens when they fail --- which Remark~\ref{rem:type-cost} measures separately,
+and measures as unbounded in the counter's age.
 
 \subsection{Threats to validity}
 \label{sec:threats}
@@ -344,6 +346,15 @@ disagreement is measured between two artefacts by the same authors. That is a st
 signal about the inference, which ought to agree with them and does not, and no evidence
 about how often it fails on the metrics this repository never mentions --- $736$
 occurrences, which Remark~\ref{rem:type-measured} counts but cannot check.
+
+\paragraph{Everything here is about the query layer.}
+What we measure is the cost of rewriting saved queries, and \S\ref{sec:discussion}'s
+conclusions about where the switching cost sits are conclusions about that layer. A real
+migration also re-instruments services, re-models metric cardinality and cost,
+re-establishes retention, and rebuilds alerting and on-call integration, and none of
+those is measured here or follows from anything that is. The claim that the dashboard
+layer is where the cost concentrates is a claim \emph{within} the query problem, not a
+ranking of it against the rest of a migration.
 
 \paragraph{$\kappa$ is measured on one direction and one language pair.}
 Datadog metrics $\to$ PromQL. Remark~\ref{rem:directional} argues the reverse direction

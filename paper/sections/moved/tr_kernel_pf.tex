@@ -4,8 +4,14 @@ to match the two reductions on one series $s$ and then the space aggregation.
 
 For the time reduction, (1) makes $[t,t+\Delta)$ and the PromQL window at
 $u(t)=t+\Delta-\eta$ cover the same samples, by the index argument of
-Proposition~\ref{prop:offset}; (2) makes it the same width. Hypothesis (3) fixes
-$\theta$, and the emitter has a rule for each case it admits.
+Proposition~\ref{prop:offset}; (2) makes it the same width. Hypothesis~(3) fixes the metric's
+type. The lowering writes $\theta=\text{counter}$ where the query carries the evidence
+\S\ref{sec:lowering} names and $\theta=\text{unknown}$ otherwise --- it never writes
+$\text{gauge}$ --- and the emitter routes $\text{unknown}$ to the gauge rule. So the two
+cases below are the emitter's two rules rather than three values of $\theta$, and the
+case that carries almost the whole corpus is the first of them reached through
+$\text{unknown}$, which is also why \texttt{METRIC\_TYPE\_UNKNOWN} marks every
+translation.
 
 If $\theta$ is a gauge, $\phi_{\mathsf{zero}}(s)=s$, so Datadog's stored points in the
 bucket are exactly the samples $s|_{[t,t+\Delta)}$ that

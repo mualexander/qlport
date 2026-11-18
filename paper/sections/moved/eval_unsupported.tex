@@ -11,7 +11,8 @@ as unwritten code; and one is a rollup whose \emph{width} is not numeric,
 function is looked up. All three stay in the unimplemented column: PromQL can denote an empty
 selection with a contradictory matcher pair, the individual deltas a
 \texttt{max} rollup needs are reachable through a subquery over a sample grid the
-query does not state --- the same omission as everywhere else in this section --- and a
+query does not state --- the same omission the rollup interval makes everywhere else
+--- and a
 named calendar width is a unit the front end does not yet convert. Everything in it is now unimplemented
 work and nothing else, which it was not when this section was first written: the
 percentile aggregators sat in it as a genuine gap and \texttt{.weighted()} as a

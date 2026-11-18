@@ -51,3 +51,9 @@
 % build cannot cite a number --- there the material is a few paragraphs down the same
 % section. Every call site is therefore written to read with ``below'' as well.
 \newcommand{\apref}[1]{\iffull below\else Appendix~\ref{#1}\fi}
+
+% \apin is \apref where the sentence needs a preposition. ``is set out \apref{...}''
+% reads correctly as ``set out below'' and wrongly as ``set out Appendix~B'', which it
+% did at two sites for three passes, so the preposition belongs inside the macro rather
+% than in the hands of each call site.
+\newcommand{\apin}[1]{\iffull below\else in Appendix~\ref{#1}\fi}

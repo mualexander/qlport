@@ -40,16 +40,18 @@ $\mathsf{V}$ & $\mathrm{Scale}(c,e^{\mathsf{V}})$, $\;\mathrm{Number}(c)$ & \\
 \bottomrule
 \end{tabular}
 \end{center}
-Here $\theta\in\{\text{counter},\text{gauge},\text{unknown}\}$ --- written $\theta$ and
-not $\kappa$, which is Definition~\ref{def:kappa}'s coverage and appeared in this section
-meaning both. $\theta$ is an \emph{annotation} the lowering infers and the emitter reads,
-not a constraint on which series a $\mathrm{Select}$ denotes --- the denotation ignores
-it, so two $\mathrm{Select}$s differing only in $\theta$ are denotationally equal, and what
-makes the kind load-bearing is hypothesis~(3) of Theorem~\ref{thm:kernel} rather than the
-semantics. The third value is the common case --- no method in the query text settles the
-type --- and Remark~\ref{rem:gauge} is about what the emitter does with it ---
+Here $\theta\in\{\text{counter},\text{gauge},\text{unknown}\}$,
 $\mathit{op}\in\{\mathsf{sum},\mathsf{avg},\mathsf{min},\mathsf{max},\mathsf{count}\}$,
 and a matcher $\mu$ is one of $k=v$, $k\neq v$, $k=\!\sim\! r$, $k\neq\!\sim\! r$.
+
+Three things about $\theta$. It is written $\theta$ and not $\kappa$, which is
+Definition~\ref{def:kappa}'s coverage and appeared in this section meaning both. It is an
+\emph{annotation} the lowering infers and the emitter reads, not a constraint on which
+series a $\mathrm{Select}$ denotes --- the denotation ignores it, so two
+$\mathrm{Select}$s differing only in $\theta$ are denotationally equal, and what makes the
+kind load-bearing is hypothesis~(3) of Theorem~\ref{thm:kernel} rather than the
+semantics. And $\text{unknown}$ is the common case, because no method in the query text
+settles the type; Remark~\ref{rem:gauge} is about what the emitter does with it.
 A term is \emph{well sorted} if each argument has the sort its position requires; only
 $\mathsf{V}$ terms are complete queries.
 \end{definition}
@@ -73,8 +75,9 @@ goes from $\mathsf{S}$ to $\mathsf{V}$ in one step: Datadog has no term for a wi
 its own, so an IR that separated them would offer the front end a choice the source
 language does not have. $\mathrm{Window}$ and $\mathrm{RangeFn}$ remain because PromQL
 does separate them, and the Datadog-to-PromQL emitter accordingly refuses both --- they
-are reserved for the reverse direction in the same way as the unreachable codes of
-\S\ref{sec:gaps}.
+are reserved for the reverse direction. No corpus query reaches them, which is the
+status the fourth kind of refusal has in \S\ref{sec:gaps} --- that catalogue's own rows
+are all reached, and Remark~\ref{rem:third-refusal} is where an empty one is discussed.
 
 Second, the sorts make \S\ref{sec:ingestion}'s Corollary~\ref{cor:raw} structural.
 A complete query has sort $\mathsf{V}$, and the only terms of sort $\mathsf{S}$ are
@@ -136,6 +139,15 @@ $\mathrm{Rollup}$ is the one node whose denotation is undefined until a paramete
 the IR is supplied. This is not elegant and the alternative is worse: inventing a default
 during lowering would bury an assumption in the IR, where nothing downstream could see
 that it had been made.
+
+Lowering also renames. Prometheus admits a narrower identifier alphabet than Datadog
+does, so a metric name or tag key is \emph{mangled} on the way across: the separators
+Datadog allows and Prometheus does not --- a dot, a hyphen, a space --- become
+underscores, and the result is the label or metric name the emitter writes. The mangling
+is the one step of lowering that can lose information, since two source identifiers can
+arrive at one target identifier, which is why both soundness theorems below hypothesise
+that it is injective on the identifiers they range over and why
+Remark~\ref{rem:mangling} measures whether it is.
 
 Lowering abandons a query at its first untranslatable construct, so the catalogue of
 \S\ref{sec:gaps} counts \emph{first} refusals and its per-code counts are lower bounds
@@ -241,7 +253,7 @@ query carries a counter modifier anyway, so the emitter chooses a counter rule f
 series with no deltas to difference. Recording this does not move $\kappa$ --- the
 translations are unchanged --- which is the point: it changes what they are claimed to
 be. Both designs, what came back, and what a disagreement is and is not evidence of are
-set out \apref{app:experiments}.
+set out \apin{app:experiments}.
 
 \iffull\input{sections/moved/tr_gauge}\fi
 \iffull\input{sections/moved/tr_type_measured}\fi
@@ -253,19 +265,24 @@ The fragment that carries the corpus is the one \S\ref{sec:staircase} orders fir
 a space aggregation of a rollup of a selector. Call it the \emph{kernel},
 \[
 \mathcal{K}\;::=\;\mathrm{Agg}(\mathit{op}_s,\overline{k},\mathsf{by},\
-\mathrm{Rollup}(\mathit{op}_t,\Delta,\mathit{per\_second},\mathrm{Select}(m,\overline{\mu},\theta)))).
+\mathrm{Rollup}(\mathit{op}_t,\Delta,\mathrm{Select}(m,\overline{\mu},\theta),\mathit{per\_second})).
 \]
 The $\mathit{per\_second}$ flag is written out because Definition~\ref{def:ir} carries it
 and because $258$ of the kernel's occurrences set it: an earlier version of this display
 listed three of $\mathrm{Rollup}$'s four arguments, which put every \texttt{.as\_rate()}
-rollup outside the kernel as literally defined while the counts included them. The proof
+rollup outside the kernel as literally defined while the counts included them; the
+version that fixed the count then wrote the flag and the series in the wrong order, so
+no term of $\mathcal{K}$ was well sorted either, which is the same defect caught twice. The proof
 in \apref{app:proofs} treats the case.
 
 \begin{lemma}[Scopes and selectors agree]\label{lem:scope}
 For every Datadog scope $\sigma$ that lowering does not refuse, the matchers
 $\overline{\mu}$ it produces select the same series as $\sigma$, provided the
 name-mangling of \S\ref{sec:lowering} is injective on $D$'s label \emph{sets} and on its
-metric \emph{names}, and provided no series in $D$ carries a tag with an empty value.
+metric \emph{names}, and provided no series in $D$ carries an empty value for a tag that
+$\overline{\mu}$ tests merely for presence. (The proviso was universal over tags until the
+tenth pass, which made it strictly stronger than the hypothesis Theorem~\ref{thm:kernel}
+supplies when it invokes this lemma.)
 \end{lemma}
 
 \iffull\input{sections/moved/tr_scope_pf}\fi
@@ -287,7 +304,9 @@ Let $q\in\mathcal{K}$ with $E(L(q))=(p,C)$, and let $t$ be an evaluation time. I
       \texttt{.rollup(sum,$\Delta$)}, a \texttt{GAUGE} otherwise
       \hfill (\texttt{METRIC\_TYPE\_UNKNOWN})
 \item where the emitted form is the cumulative difference: no series resets in
-      $[t,t+\Delta)$, or the anchored form was emitted
+      $[t,t+\Delta)$, or the anchored form was emitted \emph{and} the target server runs
+      with extended range selectors enabled --- a condition on the deployment rather
+      than on the data, and without it the expression does not evaluate at all
       \hfill (\texttt{COUNTER\_RESET}, \texttt{ANCHORED\_VERSION})
 \item where the emitted form reads a counter: every series has a sample before $t$
       \hfill (\texttt{PHI\_SERIES\_START})
@@ -309,7 +328,11 @@ The six numbered hypotheses are exactly the elements
 of $C$; the injectivity and the lookback are not, and that asymmetry is worth stating rather than hiding in
 the list. Those two are conditions on the \emph{target deployment} ---
 on which identifiers collide once mangled, and on how the server is configured --- and
-the emitter cannot observe either, so no code records them. $C$ is therefore what the
+the emitter cannot observe either, so no code records them. Being a condition on the
+deployment does not by itself make a condition unobservable, which is why the two ideas
+are worth separating: hypothesis~(4)'s anchored branch is also a fact about how the
+server was started, and \texttt{ANCHORED\_VERSION} does record it, because it is the
+emitter that chose the form that needs it. $C$ is therefore what the
 translator can tell you about a translation, not everything the translation needs.
 Remark~\ref{rem:mangling} shows the injectivity is not vacuous on this corpus: three
 pairs of identifiers collide once mangled, among $5{,}389$ metric names and $723$
@@ -327,16 +350,17 @@ The theorem is a statement about the \emph{kernel}, which is $95.4\%$ of the cor
 $99.0\%$ of what the translator emits, but not all of it. What the remainder does is
 arithmetic between kernel queries, and \S\ref{sec:binop-soundness} extends the theorem
 over exactly that. The honest
-summary is that the fragment the corpus overwhelmingly uses is exact under five stated
-conditions, three of which are properties of the evaluation grid and the data rather
-than of either language, while two --- the rollup interval and the metric's type --- are
-facts a dashboard does not record. That pair is what \S\ref{sec:discussion} builds its
-argument on, and the extension below adds no sixth.
+summary is that the fragment the corpus overwhelmingly uses is exact under six stated
+conditions, four of which are properties of the evaluation grid, the deployment and the
+data rather than of either language, while two --- the rollup interval and the metric's
+type --- are facts a dashboard does not record. That pair is what
+\S\ref{sec:discussion} builds its argument on, and the extension below adds no seventh
+\emph{code}, though it does carry a hypothesis of its own.
 
 That is also the answer to the question RQ2 was posed to avoid: the preconditions do not
-make the translation approximate. Conditions (3), (4) and (5) are the ones that can fail
+make the translation approximate. Conditions (3), (4), (5) and (6) are the ones that can fail
 silently on real data --- the first because nothing in the query settles the type, the
-other two because they are statements about data the translator never sees --- and
+other three because they are statements about data the translator never sees --- and
 \S\ref{sec:caveats} measures how often each is in play.
 
 \iffull\input{sections/moved/tr_two_figures}\fi
@@ -397,8 +421,8 @@ $q$ satisfies the hypotheses of Theorem~\ref{thm:kernel} at $t$, and suppose the
 carry the same $\Delta$. Then
 $\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,u(t))$ for the
 common $u(t)=t+\Delta-\eta$, and $C$ is
-the union of those subterms' caveats --- the extension introduces no condition of its
-own.
+the union of those subterms' caveats --- the extension introduces no caveat \emph{code}
+of its own, though the shared $\Delta$ is a condition of its own and is not in $C$.
 \end{theorem}
 
 \noindent

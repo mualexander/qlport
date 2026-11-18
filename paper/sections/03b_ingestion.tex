@@ -188,8 +188,8 @@ labels $b$,
 undefined where that set is empty rather than $0$: Datadog reports no point for a bucket
 holding no data, and a range selector over the same window returns nothing, so reading
 the empty sum as zero would make the two sides disagree exactly where they agree.
-\texttt{datadog\_eval} has always reported it as absent; the definition now says so.
-and \texttt{.as\_rate()} reports $\Sigma_\Delta(b)/\Delta$. Both reduce to the same
+\texttt{datadog\_eval} has always reported it as absent; the definition now says so. And
+\texttt{.as\_rate()} reports $\Sigma_\Delta(b)/\Delta$. Both reduce to the same
 cumulative difference, which is the single most useful fact in this direction: the
 corpus of Section~\ref{sec:evaluation} uses \texttt{.as\_count()} about $6.6$ times as
 often as \texttt{.as\_rate()}.
@@ -256,8 +256,8 @@ the reset-free workloads and falls to between $91.4\%$ and $98.3\%$ once counter
 restart, with relative
 error as large as $1.68$, while the anchored form is exact on every bucket of every
 workload. ``Modelled'' is the right word there and is not a hedge: that table reads
-Datadog's side from the reference evaluator of \S\ref{sec:replay}, and it is the replay
-of \S\ref{sec:replay} and the scripted reset of Remark~\ref{rem:rho} that put the same
+Datadog's side from the reference evaluator that Table~\ref{tab:model-verification}
+checks, and it is the replay of \S\ref{sec:replay} and the scripted reset of Remark~\ref{rem:rho} that put the same
 claims to the system itself. \texttt{rate} is exact only on perfectly regular traffic.
 
 \begin{table}[htbp]\centering\footnotesize
