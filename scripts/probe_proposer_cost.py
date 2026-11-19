@@ -29,19 +29,47 @@ sys.path.insert(0, str(ROOT / "src"))
 OUT = ROOT / "data" / "processed" / "proposer_cost.json"
 
 
-def _one(rx: str) -> dict:
-    """Decide one pattern, timed. Runs in a worker process."""
-    from qlport.regular import regex_to_globs
+class _OverCap(Exception):
+    pass
+
+
+def _one(rx: str, cap: float, complete: bool = False) -> dict:
+    """Decide one pattern, timed and capped. Runs in a worker process.
+
+    The cap is armed with `SIGALRM` inside the worker, which is the only place it can
+    bind. An earlier version of this script passed the cap to `Future.result`, but
+    `as_completed` yields a future only once it has finished, so `result` returned
+    instantly and the cap never fired: the probe reported true times and abandoned
+    nothing, and one pattern ran for 261 seconds under a nominal 60-second limit. A
+    budget that cannot interrupt the work is not a budget.
+    """
+    import signal
+
+    def _raise(signum, frame):                    # noqa: ARG001 - handler signature
+        raise _OverCap
+
+    from qlport.regular import regex_to_globs, single_glob_by_search
 
     t0 = time.time()
+    signal.signal(signal.SIGALRM, _raise)
+    signal.setitimer(signal.ITIMER_REAL, cap)
     try:
-        g = regex_to_globs(rx)
-        return {"regex": rx, "seconds": round(time.time() - t0, 3),
-                "kind": g.kind, "exact": bool(g.exact),
-                "globs": len(g.globs), "reason": g.reason}
+        if complete:
+            found = single_glob_by_search(rx)
+            out = {"kind": "search", "found": found}
+        else:
+            g = regex_to_globs(rx)
+            out = {"kind": g.kind, "exact": bool(g.exact),
+                   "globs": len(g.globs), "reason": g.reason}
+        return {"regex": rx, "seconds": round(time.time() - t0, 3), **out}
+    except _OverCap:
+        return {"regex": rx, "seconds": None, "kind": "over-cap",
+                "reason": f"exceeded {cap:g}s"}
     except Exception as exc:                      # a refusal is a result; a crash is not
         return {"regex": rx, "seconds": round(time.time() - t0, 3),
                 "kind": "error", "reason": f"{type(exc).__name__}: {exc}"}
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
 
 
 def main() -> int:
@@ -49,6 +77,8 @@ def main() -> int:
     ap.add_argument("--cap", type=float, default=60.0,
                     help="seconds any one pattern may take before it is abandoned")
     ap.add_argument("--workers", type=int, default=20)
+    ap.add_argument("--complete", action="store_true",
+                    help="probe single_glob_by_search, the complete procedure, instead")
     args = ap.parse_args()
 
     sys.path.insert(0, str(ROOT / "scripts"))
@@ -60,23 +90,27 @@ def main() -> int:
 
     rows: list[dict] = []
     with ProcessPoolExecutor(max_workers=args.workers) as pool:
-        futures = {pool.submit(_one, rx): rx for rx in regexes}
+        futures = {pool.submit(_one, rx, args.cap, args.complete): rx
+                   for rx in regexes}
         for i, fut in enumerate(as_completed(futures), 1):
             rx = futures[fut]
             try:
-                row = fut.result(timeout=args.cap)
-            except Exception:
-                row = {"regex": rx, "seconds": None, "kind": "over-cap",
-                       "reason": f"exceeded {args.cap:g}s"}
+                row = fut.result()
+            except Exception as exc:              # the worker died rather than returned
+                row = {"regex": rx, "seconds": None, "kind": "worker-lost",
+                       "reason": f"{type(exc).__name__}: {exc}"}
             rows.append(row)
-            if row["kind"] in ("over-cap", "error") or (row["seconds"] or 0) > 1.0:
+            if row["kind"] in ("over-cap", "error", "worker-lost") \
+                    or (row["seconds"] or 0) > 1.0:
                 print(f"  [{i:>3}/{len(regexes)}] "
                       f"{str(row['seconds']):>8}s {row['kind']:<11} {rx[:58]}", flush=True)
 
     timed = [r for r in rows if r["seconds"] is not None]
     over = [r for r in rows if r["kind"] == "over-cap"]
     timed.sort(key=lambda r: -r["seconds"])
-    OUT.write_text(json.dumps({"cap_seconds": args.cap, "rows": rows}, indent=1) + "\n")
+    OUT.write_text(json.dumps(
+        {"cap_seconds": args.cap, "complete_procedure": args.complete, "rows": rows},
+        indent=1) + "\n")
 
     print(f"\ndecided within the cap : {len(timed)} of {len(rows)}")
     print(f"over the cap           : {len(over)}")
