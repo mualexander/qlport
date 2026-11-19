@@ -69,7 +69,9 @@ MAX_PRODUCT = 4096
 # others. E12 is the reason to trust the documentation here, having put the adjacent
 # claim about glob constructs to the account and had it confirmed.
 TAG_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789_:./-"
-# greenery's parser wants the hyphen escaped and not final inside a class.
+# greenery's parser wants the hyphen escaped and not final inside a class. Kept as the
+# written form of the alphabet; the decider substitutes a Charclass rather than parsing
+# this, because parsing it was never the slow part and intersecting with it was.
 _SIGMA_CLASS = r"[a-z0-9_:.\-/]"
 
 
@@ -116,20 +118,58 @@ def _globs_for_comparison(globs) -> str:
     return "|".join(f"(?:{p})" for p in parts) if len(parts) > 1 else parts[0]
 
 
+def _sigma_charclass():
+    """`TAG_ALPHABET` as a greenery character class."""
+    from greenery import Charclass
+    return Charclass(tuple((c, c) for c in sorted(TAG_ALPHABET)))
+
+
+def _restrict_to_sigma(obj):
+    """The same pattern with every full-alphabet class replaced by $\\Sigma$.
+
+    Recursive over greenery's term structure: a `Charclass` is swapped when it is the
+    one `.` denotes, a `Mult` keeps its multiplier, and a `Conc` and a `Pattern` are
+    rebuilt from their restricted parts.
+    """
+    from greenery import Charclass, Pattern
+    from greenery.rxelems import Conc, Mult
+
+    if isinstance(obj, Charclass):
+        return _sigma_charclass() if obj == _dot_charclass() else obj
+    if isinstance(obj, Mult):
+        return Mult(_restrict_to_sigma(obj.multiplicand), obj.multiplier)
+    if isinstance(obj, Conc):
+        return Conc(*(_restrict_to_sigma(m) for m in obj.mults))
+    if isinstance(obj, Pattern):
+        return Pattern(*(_restrict_to_sigma(c) for c in obj.concs))
+    raise TypeError(f"not a greenery term: {type(obj).__name__}")
+
+
 def equivalent(regex_a: str, regex_b: str) -> bool:
     r"""Decide L(a) = L(b) by DFA equivalence (Rich Thm 9.5), over `TAG_ALPHABET`.
 
-    Both sides are intersected with $\Sigma^{*}$ first, because the question §6 asks is
-    whether the two patterns select the same series, and a string that is not a legal
-    tag value selects nothing on either side. Deciding over every string instead makes
-    `.+` differ from the union of `c*` only on inputs neither language can ever see.
+    The question §6 asks is whether two patterns select the same series, and a string
+    that is not a legal tag value selects nothing on either side, so the decision is
+    taken over $\Sigma$ rather than over every string. Both sides are rewritten to put
+    $\Sigma$ where `.` stood, which makes the glob side's `*` range over $\Sigma$ too
+    and so needs no separate rendering.
 
     Restricting can only identify more pairs, never fewer, so no equivalence this
     module reported before is withdrawn by it.
+
+    Substitution rather than intersection, and the difference is not cosmetic. An
+    earlier version of this function restricted by taking $L \cap \Sigma^{*}$, which is
+    a DFA product against the class `.` denotes --- every code point --- and the product
+    grows with the pattern. On `.*refused_spans.*` it cost $4.1$ seconds; on
+    `.*otelcol_processor_.+refused_spans.*` it did not finish in $85$. Two runs of §6's
+    apparatus spent fourteen hours on a single pattern because of it and wrote nothing.
+    Substituting first costs $2$ milliseconds and leaves the automata over $41$
+    characters throughout: the same two decisions take $0.33$ seconds and $24$ seconds.
     """
     from greenery import parse  # optional dependency, extra "regular"
-    sigma = parse(f"{_SIGMA_CLASS}*")
-    return (parse(regex_a) & sigma).equivalent(parse(regex_b) & sigma)
+    a = _restrict_to_sigma(parse(regex_a))
+    b = _restrict_to_sigma(parse(regex_b))
+    return a.equivalent(b)
 
 
 # Characters that genuinely need a backslash. Anything else escaped is redundant.
