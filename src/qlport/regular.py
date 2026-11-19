@@ -145,6 +145,27 @@ def _restrict_to_sigma(obj):
     raise TypeError(f"not a greenery term: {type(obj).__name__}")
 
 
+def _fsm_over_sigma(regex: str):
+    r"""The pattern's DFA with `.` reading as $\Sigma$ rather than as every code point.
+
+    §6 decides its questions over the tag alphabet, and `equivalent` does this by
+    substitution. The complete procedure of the decidability proposition did not: it
+    built its automata with `parse(...).to_fsm()` directly, so the structural proposer
+    was deciding over $41$ characters while the search it is checked against decided
+    over every code point. The cross-check reported zero disagreements throughout, but
+    they were agreements between answers to two different questions. What hid it is that
+    the search bails at ``no unique shortest word'' under either reading, which is the
+    outcome for every pattern containing a `.`; the two would have parted company on a
+    pattern writing the tag alphabet out as a class, which this corpus happens not to
+    contain. Both sides now read `.` the same way.
+
+    It is also the faster route, for the reason given on `equivalent`: the automata stay
+    over $41$ characters instead of over Unicode.
+    """
+    from greenery import parse
+    return _restrict_to_sigma(parse(regex)).to_fsm()
+
+
 def equivalent(regex_a: str, regex_b: str) -> bool:
     r"""Decide L(a) = L(b) by DFA equivalence (Rich Thm 9.5), over `TAG_ALPHABET`.
 
@@ -387,6 +408,12 @@ def regex_to_globs(r: str) -> GlobConversion:
     try:
         ok = equivalent(body, _globs_for_comparison(globs))
     except Exception:
+        # Anything the decision raises is recorded as undecided rather than as a gap,
+        # because a decision this module could not take is not a fact about the two
+        # languages. A caller imposing a time limit must raise something deriving from
+        # `BaseException`, or this very line will file the timeout as a refusal: a
+        # three-second cap in `scripts/probe_proposer_cost.py` did exactly that and
+        # produced fourteen refusals that an uncapped run decides as exact unions.
         return GlobConversion(r, reason="equivalence-undecided")
     if not ok:
         # The proposal was wrong. That is a bug in this module rather than a fact about
@@ -423,11 +450,16 @@ def _one_char(cc) -> str:
 
 
 def _class_size(cc, cap: int = 2) -> int:
-    """How many characters the class admits, counted no higher than `cap`.
+    r"""How many characters the class admits, counted no higher than `cap`.
 
     A negated class stands for the whole alphabet minus a finite set, so it admits more
-    than one character whenever the alphabet is larger than that set --- which it is, the
-    alphabet being Unicode. Only ``more than one'' matters here, so this returns `cap`.
+    than one character whenever the alphabet is larger than that set --- which it is for
+    every negated class the corpus contains. Only ``more than one'' matters here, so this
+    returns `cap`.
+
+    `_fsm_over_sigma` substitutes $\Sigma$ for the class `.` denotes before this is
+    reached, and $\Sigma$ is not negated, so `.` now counts $41$ rather than `cap`.
+    Both exceed one, which is all this is asked, so no uniqueness verdict moves.
     """
     if cc.negated:
         return cap
@@ -445,8 +477,7 @@ def shortest_word(r: str) -> tuple[str | None, bool]:
     Returns `(None, False)` for the empty language. Word counts are capped at two,
     because the caller needs uniqueness rather than a census.
     """
-    from greenery import parse
-    fsm = parse(r).to_fsm()
+    fsm = _fsm_over_sigma(r)
     # count[state] and witness[state] at the state's own minimal distance.
     count = {fsm.initial: 1}
     witness = {fsm.initial: ""}
@@ -514,10 +545,9 @@ def single_glob_by_search(r: str, *, max_candidates: int = 4096) -> str | None:
 
     `regex_to_globs` is the fast structural route used in bulk. Keeping both is what lets
     the tests show they agree, and lets §6 check its refusals against a complete
-    procedure rather than trusting the proposer.
+    procedure rather than trusting the proposer --- over the same alphabet as the
+    proposer, which `_fsm_over_sigma` records was not true before the twelfth pass.
     """
-    from greenery import parse
-
     if not STAR_MATCHES_EMPTY:  # pragma: no cover - the proposition assumes this reading
         raise NotImplementedError("the search assumes * matches the empty string")
     body = unanchor(r)
@@ -526,12 +556,12 @@ def single_glob_by_search(r: str, *, max_candidates: int = 4096) -> str | None:
     w, unique = shortest_word(body)
     if w is None or not unique:
         return None                    # empty language, or no unique shortest word
-    target = parse(body).to_fsm()
-    if parse(_glob_for_comparison(w)).to_fsm().equivalent(target):
+    target = _fsm_over_sigma(body)
+    if _fsm_over_sigma(_glob_for_comparison(w)).equivalent(target):
         return w                       # a literal glob, no stars needed
 
     usable = [i for i in range(len(w) + 1)
-              if parse(_glob_for_comparison(_insert_stars(w, {i}))).to_fsm()
+              if _fsm_over_sigma(_glob_for_comparison(_insert_stars(w, {i})))
               .issubset(target)]
     if 1 << len(usable) > max_candidates:
         raise SearchTooLarge(f"{len(usable)} usable gaps in a {len(w)}-character word")
@@ -539,6 +569,6 @@ def single_glob_by_search(r: str, *, max_candidates: int = 4096) -> str | None:
     for size in range(1, len(usable) + 1):
         for combo in itertools.combinations(usable, size):
             cand = _insert_stars(w, set(combo))
-            if parse(_glob_for_comparison(cand)).to_fsm().equivalent(target):
+            if _fsm_over_sigma(_glob_for_comparison(cand)).equivalent(target):
                 return cand
     return None
