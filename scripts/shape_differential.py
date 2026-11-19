@@ -151,15 +151,25 @@ def representatives(run_tag: str) -> list[dict]:
             # Two rollups of different widths in one query would need two bucket grids;
             # recorded rather than compared on the wrong one.
             continue
-        # Datadog tag keys may contain dots; PromQL label names may not, so the IR
-        # holds `openai_organization_name` where the query says
-        # `openai.organization.name`. Submitting the normalised spelling while asking
-        # Datadog to group by the dotted one means Datadog groups by a tag that is not
-        # there --- it silently returns one ungrouped series, which the comparison then
-        # reports as groups that did not line up. The tags go out in the query's own
-        # spelling and are mapped back when the response is read.
+        # Datadog tag keys may contain dots and hyphens; PromQL label names may not,
+        # so the IR holds `openai_organization_name` where the query says
+        # `openai.organization.name`, and `cluster_location` where it says
+        # `cluster-location`. Submitting the normalised spelling while asking Datadog
+        # to group by the original means Datadog groups by a tag that is not there ---
+        # it silently returns one ungrouped series, which the comparison then reports
+        # as groups that did not line up. The tags go out in the query's own spelling
+        # and are mapped back when the response is read.
+        #
+        # The hyphen was missing from this character class until the eleventh pass, and
+        # could not fire while it was: the only corpus queries with hyphenated group
+        # keys are the 31 velero panels, and `corpus._TMPL` --- blind to the hyphen in
+        # the same way --- had been mangling those into a refusal, so no shape with a
+        # hyphenated key ever reached this harness. Two latent faults over one
+        # character, each hiding the other. When the normaliser was fixed, shape 262
+        # arrived and came back `unmatched` with exactly the symptom the comment above
+        # describes.
         dd_keys = {label_name(t): t
-                   for t in re.findall(r"[A-Za-z_][\w.]*", rec["text"])
+                   for t in re.findall(r"[A-Za-z_][\w.-]*", rec["text"])
                    if label_name(t) != t}
         out.append({
             "interval": intervals[0],
