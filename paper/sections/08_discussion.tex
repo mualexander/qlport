@@ -11,11 +11,11 @@
 This paper set out to ask whether vendor lock-in in observability is a language-design
 artefact. For the direction it measures, the honest answer is mostly no, and the
 measurement that says so is the one the whole apparatus was built to produce. Of
-$8{,}770$ Datadog query occurrences, $96.3\%$ translate; of the $3.6\%$ that carry a gap
+$8{,}770$ Datadog query occurrences, $96.6\%$ translate; of the $3.6\%$ that carry a gap
 code,
 \S\ref{sec:gaps} splits the shortfall into $0.8\%$ that PromQL genuinely cannot express
-and $2.8\%$ that is unimplemented work in this translator. The second number is larger
-than the first.
+and $3.3\%$ that is unimplemented work in this translator. The first number is
+$0$.
 
 That is not the result the thesis predicted, and it is worth stating in the strongest
 form the data supports: going from Datadog to PromQL, the switching cost is
@@ -51,7 +51,7 @@ work, when another does (Remark~\ref{rem:fill}). The fourth is a residue of the 
 so together they are $578$ distinct occurrences, more than six points of $\kappa$, every
 one an error in the direction that would have made the thesis look better. None was a
 fact about the languages, and the running total is the reason this section states the
-$0.8\%$ with less confidence than the $96.3\%$: the inexpressible column is the one
+$0.8\%$ with less confidence than the $96.6\%$: the inexpressible column is the one
 this paper has been repeatedly wrong about, always the same way.
 
 \subsection{The cost is real, and it is that a query does not say what it means}
@@ -59,7 +59,7 @@ this paper has been repeatedly wrong about, always the same way.
 The gap catalogue is the wrong place to look for the design artefact. The caveats are
 the right one.
 
-Table~\ref{tab:translation-caveats} reports that $96.9\%$ of translated occurrences carry
+Table~\ref{tab:translation-caveats} reports that $97.0\%$ of translated occurrences carry
 \texttt{ROLLUP\_DEFAULT} and that \emph{all} of them carry
 \texttt{METRIC\_TYPE\_UNKNOWN}. An earlier version of this section said both say the same
 kind of thing. They do not, and separating them costs the argument one of its two
@@ -77,7 +77,7 @@ occurrences that carry a range selector at all, $2{,}006$ --- $55.6\%$ --- fill 
 a dashboard template variable rather than a duration, overwhelmingly
 \texttt{\$\_\_rate\_interval} or \texttt{\$\_\_interval}. Those panels take their window
 from the dashboard's time range too, by a different mechanism and with the same
-consequence for anyone translating them. The comparison is therefore $96.9\%$ against
+consequence for anyone translating them. The comparison is therefore $97.0\%$ against
 $55.6\%$: a real difference, and a difference of degree. The categorical version was
 available to be checked against this corpus from the beginning and was not, which makes
 it the one claim in this paper that went longest without the control it needed.
@@ -142,7 +142,7 @@ answer to RQ4 and the most useful thing here for anyone actually porting an esta
 were each reported as a qualification on something else, which is how they went so long
 without being read as one result.
 
-The first is \S\ref{sec:caveats}'s: $96.9\%$ of our translations depend on a rollup
+The first is \S\ref{sec:caveats}'s: $97.0\%$ of our translations depend on a rollup
 interval the source query left to the dashboard's time range, and $100\%$ on a metric
 type no query in either language declares. The second is \S\ref{sec:corpus}'s: $88.6\%$
 of Datadog query occurrences and $82.5\%$ of PromQL ones carry at least one template
@@ -161,9 +161,9 @@ neither $\kappa$ nor a gap catalogue can see, because a schema parses and transl
 exactly like a query and is counted as covered.
 
 Two consequences follow and neither is a hedge. For a migration, the work is not where
-$\kappa$ points: the $318$ refused occurrences are $290$ distinct strings to rewrite by
-hand, while $8{,}186$ translated occurrences need an interval supplied from a dashboard
-setting and all $8{,}444$ need a metric type supplied from somewhere outside the query ---
+$\kappa$ points: the $287$ refused occurrences are $262$ distinct strings to rewrite by
+hand, while $8{,}217$ translated occurrences need an interval supplied from a dashboard
+setting and all $8{,}475$ need a metric type supplied from somewhere outside the query ---
 and on the evidence of \S\ref{sec:caveats} a tool that guesses the type gets $491$ of them
 wrong. Recovering context is the task; translating the query text is the part that is
 nearly solved. For the standardisation effort of \citet{sharma2025}, a common query
@@ -340,7 +340,7 @@ of nine vendor measurements to confirm rather than correct. And it is a measurem
 ingestion path on one account: the OpenMetrics check converting a Prometheus counter,
 which is the path this paper models and not the only one Datadog has.
 
-Finally, the comparison of $0.8\%$ against $2.8\%$ in \S\ref{sec:gaps} is a comparison
+Finally, the comparison of $0$ against $3.3\%$ in \S\ref{sec:gaps} is a comparison
 between a property of the languages and a property of one translator's state on one
 afternoon. The first number is stable; the second falls as work is done, and has already
 fallen twice during this paper. Read as an argument that the main direction's cost is

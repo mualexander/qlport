@@ -16,13 +16,13 @@ rules; so RQ1's answer for PromQL is ``LALR(1) modulo one documented resolution'
 this grammar, with no claim that none does better. Neither answer is where the switching
 cost lives, which is itself worth knowing.
 
-\textbf{RQ2.} The largest exactly-translating fragment we could build covers $96.3\%$ of
+\textbf{RQ2.} The largest exactly-translating fragment we could build covers $96.6\%$ of
 Datadog query occurrences, and the soundness theorems of \S\ref{sec:kernel-soundness} and
 \S\ref{sec:binop-soundness} between them cover every expression the translator emits, so
-nothing is shipped that is not proved. Outside the fragment, $0.8\%$ of the corpus is
-beyond reach --- three constructs, two of them information barriers rather than
-expressiveness gaps --- against $2.8\%$ that is work this translator has not done, a
-ceiling of $99.1\%$ --- reachable, since $139$ of those occurrences are
+nothing is shipped that is not proved. Outside the fragment, nothing is beyond reach: the
+column that held the information barriers and the expressiveness gaps is empty on this
+corpus, and all $3.3\%$ of the shortfall is work this translator has not done ---
+a ceiling of $99.9\%$, reachable, since $139$ of those occurrences are
 \texttt{top(...)}, only by a translator supplied with the dashboard's time range. In the reverse direction, on the sub-problem of tag filtering, the
 obstructions are theorems: a glob's language is a single word or unbounded in length,
 and with what a glob star admits three impossibility results follow, with a fourth
@@ -30,17 +30,17 @@ generalising the last of them. With a stated bound on union size they account fo
 every refusal we measure --- $37.3\%$ of the matcher occurrences whose pattern is
 concrete --- and the fourth carries $10$ of those with no bound at all.
 
-\textbf{RQ3.} Coverage on published dashboards is the $96.3\%$ above, and the shape of
+\textbf{RQ3.} Coverage on published dashboards is the $96.6\%$ above, and the shape of
 the shortfall matters more than its size: coverage against implementation effort is a
 staircase rather than a curve, because a query translates only when every feature it uses
 is supported, while the popularity that would guide an implementation order is marginal.
 Half the work does not port half the estate. Set against another
-vendor's translator on the same corpus, coverage by \emph{valid} output is $96.4\%$ to
+vendor's translator on the same corpus, coverage by \emph{valid} output is $96.7\%$ to
 $94.7\%$ (\S\ref{sec:baseline}): the tool that refuses nothing emits less usable PromQL
-than the one that refuses $3.5\%$, which is the case for typed refusal in one line.
+than the one that refuses $3.3\%$, which is the case for typed refusal in one line.
 
 \textbf{RQ4.} No. A dashboard query does not determine its own meaning, and this is the
-answer we would now put first. Of the translations we emit, $96.9\%$ depend on a rollup
+answer we would now put first. Of the translations we emit, $97.0\%$ depend on a rollup
 interval the source query leaves to the dashboard's time range --- and PromQL, which has
 a slot for it, sees $55.6\%$ of range selectors filled with a dashboard variable anyway,
 so the contrast between the two languages is one of degree. A metric's type is a second

@@ -237,12 +237,12 @@ uncomfortable. The first is that the condition cannot be discharged from the que
 Datadog accepts \texttt{.as\_count()} and \texttt{.as\_rate()} on a \texttt{GAUGE} and
 silently ignores them, so a modifier records what a dashboard's author took the metric to
 be rather than what it is; it is evidence about a person, not about a type. With that
-premise withdrawn the caveat holds of all $8{,}444$ translated occurrences --- $100\%$ of
+premise withdrawn the caveat holds of all $8{,}475$ translated occurrences --- $100\%$ of
 them (Table~\ref{tab:translation-caveats}). The second is that it can nonetheless be
 checked, because the repository the corpus came from declares what the dashboards do not:
 beside each integration's \texttt{assets\slash dashboards\slash},
 \texttt{integrations-core} ships a \texttt{metadata.csv} with a \texttt{metric\_type}
-column. Joining the two, $7{,}557$ of the translated occurrences --- $89.5\%$ --- name a
+column. Joining the two, $7{,}588$ of the translated occurrences --- $89.5\%$ --- name a
 metric the repository declares as a gauge or a count, and the front end's inference
 disagrees with the declaration on $491$ of them: $6.5\%$ of the decidable set, $5.6\%$ of
 the corpus. The two directions of error are both present and are different failures. In
@@ -346,7 +346,7 @@ instance off a real server. Both are unreported either way.
 \iffull\input{sections/moved/tr_type_history}\fi
 
 \inlineonly{\noindent}%
-The theorem is a statement about the \emph{kernel}, which is $95.4\%$ of the corpus and
+The theorem is a statement about the \emph{kernel}, which is $95.7\%$ of the corpus and
 $99.0\%$ of what the translator emits, but not all of it. What the remainder does is
 arithmetic between kernel queries, and \S\ref{sec:binop-soundness} extends the theorem
 over exactly that. The honest
@@ -448,7 +448,7 @@ $\mathrm{Rollup}$ of a $\mathrm{Select}$, which is $\mathcal{K}$; its only other
 constructors are $\mathrm{Number}$, $\mathrm{Scale}$ and $\mathrm{BinOp}$ over terms it
 has already lowered, which is the closure. $\mathrm{Window}$ and $\mathrm{RangeFn}$ are
 reachable from neither, and the emitter refuses them in any case. The corpus then checks
-what the construction establishes: $\mathcal{A}$ covers $8{,}444$ occurrences, $96.3\%$
+what the construction establishes: $\mathcal{A}$ covers $8{,}475$ occurrences, $96.6\%$
 of the corpus and $100\%$ of what was emitted. So the gap between what is claimed and
 what is shipped is empty rather than small. That is the statement \S\ref{sec:framework}'s
 Remark~\ref{rem:two-kappas} wanted and could not previously make: $\kappa$ counts

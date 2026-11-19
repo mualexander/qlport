@@ -66,7 +66,7 @@ The thesis survives, but not in the form it was posed, and the finding that matt
 not the one the questions above were built to get.
 
 A dashboard query does not determine its own meaning. A Datadog query's slot for the
-rollup interval is optional, and $96.9\%$ of the translations we emit are of queries
+rollup interval is optional, and $97.0\%$ of the translations we emit are of queries
 that leave it empty, so the interval arrives from the dashboard's time range instead.
 PromQL's slot is obligatory where it applies, and $55.6\%$ of the corpus's range
 selectors fill it with a dashboard variable anyway --- so the contrast between the two
@@ -87,12 +87,13 @@ any other, so neither the grammars nor the gap catalogue nor $\kappa$ can see it
 is why it took all of them to find it, and why the coverage result comes second here
 although it came first in the work.
 
-Going from Datadog to PromQL, $96.3\%$ of query occurrences translate, and the shortfall
-is mostly unfinished work rather than impossibility: $0.8\%$ of the corpus is beyond
-reach --- two constructs the target system does not hold and one PromQL cannot say ---
-against $2.8\%$ this translator has not implemented, with a ceiling of $99.1\%$ once the
-latter is done. That ceiling carries a condition it usually travels without: $139$ of
-those $248$ occurrences are \texttt{top(...)}, whose PromQL form needs the dashboard's
+Going from Datadog to PromQL, $96.6\%$ of query occurrences translate, and the shortfall
+is \emph{all} unfinished work: nothing in the corpus is beyond reach, and the
+$3.3\%$ that does not translate is code this translator has not written, with a ceiling
+of $99.9\%$ once it is. Reaching an empty column took five retractions, so
+\S\ref{sec:discussion} treats the zero as the least certain number here rather than the
+most. That ceiling carries a condition it usually travels without: $139$ of
+those $287$ occurrences are \texttt{top(...)}, whose PromQL form needs the dashboard's
 time range twice over, so the ceiling is reachable only by a translator that is told
 what the query does not say --- the first finding reappearing as a term in the second.
 On that evidence the switching cost in the direction people travel is
@@ -131,7 +132,7 @@ it is paid by a different decision at a different time.
 \S\ref{sec:dashboard-layer}).} The paper's main result, and the one the other six were
 built to reach without knowing it. Every translation carries the preconditions it rests
 on, so the share depending on context the query omits is counted rather than conceded:
-$96.9\%$ on a rollup interval, $100\%$ on a metric type, against $55.6\%$ of PromQL
+$97.0\%$ on a rollup interval, $100\%$ on a metric type, against $55.6\%$ of PromQL
 range selectors taking their window from a dashboard variable --- which makes the
 contrast between the languages one of degree and locates the cost in neither of them.
 One of the two assumptions is checkable against the vendor's own declarations and is
@@ -156,7 +157,7 @@ Datadog's \texttt{.as\_count()} and \texttt{.as\_rate()} translated exactly, not
 to within $\varepsilon$, with the preconditions named; and soundness theorems whose
 hypotheses are the preconditions the emitter reports, plus three it does not record
 and the paper therefore states instead, covering first the kernel
-($95.4\%$ of the corpus) and then its arithmetic closure --- which is every expression
+($95.7\%$ of the corpus) and then its arithmetic closure --- which is every expression
 this translator emits.
 \item \textbf{The regular sub-problem (\S\ref{sec:regular}).} Glob-expressibility of a
 regular expression is decidable, by an argument about shortest words, and the
@@ -175,8 +176,8 @@ that produced it and the features that cost the remainder.
 Datadog-to-PromQL translator, run over this same corpus --- the first such comparison we
 know of, and possible only because its translation turns out to run in the browser. It
 refuses nothing and emits for every occurrence, yet $5.3\%$ of what it emits is not
-PromQL, and it returns an expression for all $306$ queries this paper refuses, the
-percentiles Corollary~\ref{cor:quantile} proves Prometheus cannot answer among them.
+PromQL, and it returns an expression for all $275$ queries this paper refuses, the
+percentiles among them.
 \end{enumerate}
 
 \paragraph{A note on method.}

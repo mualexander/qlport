@@ -1,0 +1,90 @@
+\begin{remark}[E13: which of a scope's two connectives binds tighter]\label{rem:precedence}
+Remark~\ref{rem:disjunction-detail} asserts that Datadog's \texttt{or} binds more loosely
+than its comma, so \texttt{\{a:x or a:y,*\}} parses with the comma inside the right
+branch. The justification offered was an analogy with the Lucene-style filter syntax
+Datadog's editor accepts, which is not evidence about this grammar, and the claim decides
+how $160$ \texttt{SCOPE\_BOOL} occurrences are \emph{translated} rather than whether they
+are. No corpus query discriminates: the only shape mixing the two connectives puts
+match-all terms on the other side, so both readings agree on it.
+
+Three series over two tag keys --- \texttt{aa:x bb:2}, \texttt{aa:y bb:1},
+\texttt{aa:x bb:1} --- and one question, \texttt{\{aa:x or aa:y, bb:1\}}. Under the
+looser-\texttt{or} reading this is $aa{:}x \vee (aa{:}y \wedge bb{:}1)$ and selects the
+first series whatever its \texttt{bb}; under the tighter reading it is
+$(aa{:}x \vee aa{:}y) \wedge bb{:}1$ and excludes it. The account selected it. The
+assertion was right, and is now a measurement.
+\end{remark}
+
+\begin{remark}[E14: what a negated match-all selects]\label{rem:negated-all}
+Nine corpus occurrences carry \texttt{\{*,!*\}}, and \S\ref{sec:gaps} put them in the
+unimplemented column on the strength of two claims: that PromQL can denote an empty
+selection, and that \texttt{\{*,!*\}} \emph{is} one. The first is true --- a
+contradictory matcher pair returns nothing, read off a real server. The second was never
+asked.
+
+It is false. On the account, both \texttt{\{*,!*\}} and \texttt{\{!*\}} select the
+series. Whatever \texttt{!*} does to a scope, it is not exclusion, and the nine
+occurrences are not a request for the empty set. They stay in the unimplemented column,
+where they already were, but for a different and much duller reason: the term can be
+dropped. The entry in \S\ref{sec:gaps} that called them an empty selection was reasoning
+about a construct nobody had run.
+
+This is the kind of error that costs nothing in any number the paper reports and would
+have cost a reader everything: a translation of those nine queries built on the
+catalogue's reading would have emitted an expression returning no data where Datadog
+returns a series.
+\end{remark}
+
+\begin{remark}[E15: whether a \texttt{rate} metric passes through $\phi_\rho$ unchanged]\label{rem:rate-identity}
+Definition~\ref{def:phi} sends every non-counter series through $\phi_\rho$ by the
+identity, and Remark~\ref{rem:type-measured} counts $134$ corpus occurrences naming
+metrics the vendor declares as \texttt{rate}. Those occurrences sit inside $\kappa$ and
+their exactness rests on that clause, which was asserted: a Datadog \texttt{RATE} is
+submitted as a per-second value over a declared interval, and whether what the system
+stores and reduces is that value or the count it implies is exactly the question
+$\phi_\rho$ exists to ask.
+
+One \texttt{RATE} series and one \texttt{COUNT} series, both carrying five points of the
+same constant at interval $60$, both read back with an \texttt{avg} and a \texttt{sum}
+rollup over a window spanning them:
+
+\begin{center}\footnotesize
+\begin{tabular}{@{}lrr@{}}
+\toprule
+& \texttt{RATE} & \texttt{COUNT} \\
+\midrule
+\texttt{.rollup(avg, 300)} & $7.0$ & $7.0$ \\
+\texttt{.rollup(sum, 300)} & $28.0$ & $28.0$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Identical, and both the submitted values unrescaled --- the $28$ rather than $35$ being
+the window catching four of the five points, which is the ordinary boundary effect and
+not a factor. So a \texttt{RATE} is stored and reduced as the numbers it was given, the
+identity clause is what the system does, and the $134$ occurrences rest on a
+measurement.
+\end{remark}
+
+\begin{remark}[E16: what a keyless scope term globs over]\label{rem:keyless-glob}
+This experiment was designed to settle a reading and instead exposed a defect in this
+project's own corpus pipeline, which is why it is worth reporting even though the
+question it asked turned out not to arise.
+
+\S\ref{sec:regular} had read a keyless scope term such as \texttt{*-location} as a glob
+over the whole \texttt{key:value} string, and that reading has an odd consequence:
+\texttt{cluster-location:us-east1} does not end in \texttt{-location}, so the dashboards
+carrying the term would select nothing. Three series were submitted, one per tag key ---
+\texttt{cluster-location:eu}, \texttt{site-location:us}, \texttt{region:ap} --- so that
+a glob over keys and a glob over whole tags would give different answers.
+
+Neither answer came back. Datadog's query parser \emph{rejects} the keyless term
+outright, both bare and with a value --- \texttt{\{*-location\}} and
+\texttt{\{*-location:*\}} --- giving the same error it gives for a single-character
+wildcard. A leading \texttt{*} in a keyless term is not Datadog
+syntax, so no corpus query could have contained one --- and the $31$ that appeared to
+were an artefact of \texttt{corpus.\_TMPL} truncating \texttt{\$cluster-location} at its
+hyphen. The experiment asked what a construct means and learned that the construct does
+not exist, which is a better outcome than either reading.
+\end{remark}

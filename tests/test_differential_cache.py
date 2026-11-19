@@ -31,9 +31,12 @@ ROLLUP = 60.0
 def _with_queries(run: dict) -> list[dict]:
     """The rows that record a representative query.
 
-    Three of the 332 do not: two whose rollup interval the run window cannot hold
-    twice, and the one whose filters no synthetic series satisfies. Both record only
-    why they could not be compared, so there is nothing to re-translate.
+    Four of the 333 do not: two whose rollup interval the run window cannot hold
+    twice, one whose filters no synthetic series satisfies, and the shape the
+    normaliser fix added, which came back `unmatched` because `dd_keys` was blind to a
+    hyphen. Each records only why it could not be compared, so there is nothing to
+    re-translate. The fourth is expected to compare once the differential is re-run
+    with the parse-tree mapping, which will make this 330.
     """
     rows = [r for r in run["rows"] if "datadog" in r]
     assert len(rows) == 329, len(rows)
@@ -48,11 +51,18 @@ def run() -> dict:
 
 
 def test_the_run_matches_the_figures_the_paper_reports(run):
-    """These are the numbers in tab:differential and in §7's prose."""
-    assert len(run["rows"]) == 332
-    assert run["status_counts"] == {"compared": 329, "no-data": 1, "window-too-short": 2}
+    """These are the numbers in tab:differential and in §7's prose.
+
+    The second run of the experiment, on the corpus after `corpus._TMPL` was fixed and
+    with a fresh set of synthetic series. It reproduces the first run's 329 of 329 over
+    the same 22,608 buckets -- the independent replication §7.6 said it did not have --
+    and carries one more shape and one more uncompared status than the first did.
+    """
+    assert len(run["rows"]) == 333
+    assert run["status_counts"] == {
+        "compared": 329, "no-data": 1, "unmatched": 1, "window-too-short": 2}
     assert run["shapes_compared"] == 329 and run["shapes_exact"] == 329
-    assert run["occurrences_compared"] == 8334 and run["occurrences_exact"] == 8334
+    assert run["occurrences_compared"] == 8364 and run["occurrences_exact"] == 8364
     assert sum(r.get("buckets", 0) for r in run["rows"]) == 22608
 
 

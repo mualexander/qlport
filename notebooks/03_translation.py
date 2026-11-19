@@ -223,11 +223,37 @@ print(gaps[["gap", "occurrences", "distinct"]].to_string(index=False))
 # hold what the source reads -- and the rest are expressiveness gaps, where the data is
 # there and no PromQL term says it. `.weighted()` used to head this set and left it
 # entirely when E9 measured the modifier as the identity.
-EXPRESSIVENESS = {
-    ("PHI_QUANTILE", None),                           # a quantile is not a bucketing
-    ("LABEL_NAME_GLOB", None),                        # label names are not queryable
-    ("SCOPE_EMPTY_VALUE", None),                      # an empty label *is* an absent one
-}
+# Empty, as of the eleventh pass. Every refusal this emitter raises is unfinished work
+# or missing context; none is a property of either language. The five that left, and why:
+#
+#   .weighted()        E9 measured the modifier as the identity, so there was nothing
+#                      to express (70 occurrences).
+#   SCOPE_DISJUNCTION  a union of selectors says it; the syntax-directed translation of
+#                      a scope does not, which is a fact about this translator (124,
+#                      of which 120 were closed outright and 4 reclassified).
+#   FILL_INTERPOLATION E10 read `m or (last_over_time(m[W]) * 0)` off a real server
+#                      doing per-series zero-fill. The argument had tried exactly one
+#                      candidate, `or vector(0)`, and generalised from it (36).
+#   LABEL_NAME_GLOB    never a Datadog construct at all: `corpus._TMPL` truncated
+#                      `$cluster-location` at the hyphen and §6 invented a semantics
+#                      for the leftover text. E16 confirms Datadog's parser rejects the
+#                      string we had fabricated (31).
+#   PHI_QUANTILE       Corollary 2 assumes a distribution metric. `integrations-core`
+#                      declares 23,600 gauge, 13,143 count, 330 rate and no
+#                      distribution, and none of these 34 occurrences is one, so the
+#                      corollary's hypothesis is false for every case it refused. The
+#                      refusal fires on seeing `pNN:` and never checks it.
+#   SCOPE_EMPTY_VALUE  Prometheus drops an empty-valued label at ingest, so no database
+#                      it holds -- and so no image of phi -- distinguishes an absent tag
+#                      from a present-empty one. `!k:` therefore selects everything on
+#                      every database in scope, and the exact translation is to drop the
+#                      term. The same remark already excused `k:*` on 120 occurrences
+#                      under exactly this condition (5).
+#
+# Six of the seven moved the figure in the direction that flattered the thesis, and two
+# of the seven were defects in this project's own instruments rather than claims about
+# Datadog. §8 argues from the pattern rather than around it.
+EXPRESSIVENESS: set[tuple[str, str | None]] = set()
 # FILL_INTERPOLATION left this set when E10 asked a real server. The paper's argument
 # was that no PromQL term supplies a value for a series with no data, having considered
 # `or vector(0)` -- which is right about that candidate and wrong about the claim:
@@ -255,7 +281,10 @@ def _is_gap(r) -> bool:
 
 bot = tr[tr.outcome == "bottom"].assign(gap_kind=lambda d: [
     "language gap" if _is_gap(r) else "not implemented" for r in d.itertuples()])
-kinds = bot.groupby("gap_kind")["n"].agg(occurrences="sum", distinct="size")
+# Reindexed because the language-gap class is now empty and a groupby drops it. The
+# zero is the result, so it has to survive into the table rather than vanish from it.
+kinds = (bot.groupby("gap_kind")["n"].agg(occurrences="sum", distinct="size")
+         .reindex(["language gap", "not implemented"], fill_value=0))
 kinds["share"] = kinds.occurrences / total_n
 print(kinds.to_string())
 ceiling = (translated.n.sum() + kinds.occurrences["not implemented"]) / total_n
@@ -277,13 +306,17 @@ for f in ("SCOPE_BOOL", "SCOPE_IN", "SCOPE_PAREN"):
 # `{$cluster-location,...}` normalised to `{*-location,...}` -- a string Datadog's own
 # parser rejects. Fixing the pattern re-normalises them to `{*,*,*,*}` and they
 # translate. kappa rises from 96.3% to 96.6% and the ceiling from 99.1% to 99.5%.
-assert int(kinds.occurrences["language gap"]) == 39, kinds
-assert int(kinds.occurrences["not implemented"]) == 248, kinds
+assert int(kinds.occurrences["language gap"]) == 0, kinds
+assert int(kinds.occurrences["not implemented"]) == 287, kinds
 
 # §8 names the five constructs the language-gap share is made of, with counts, so the
 # breakdown is asserted and not just its total.
 gap_rows = bot[bot.gap_kind == "language gap"]
-pctile = int(gap_rows[[bool(re.fullmatch(r"p\d{1,3}:", str(x))) for x in gap_rows.detail]].n.sum())
+# Indexing an empty frame with an empty list comprehension loses the columns, so the
+# mask is built explicitly. The breakdown is now all zeros and still worth computing:
+# a column asserted to be empty is a result, and an exception is not.
+_pct_mask = [bool(re.fullmatch(r"p\d{1,3}:", str(x))) for x in gap_rows.detail]
+pctile = int(gap_rows.loc[_pct_mask, "n"].sum()) if len(gap_rows) else 0
 by_gap = gap_rows.groupby("gap")["n"].sum()
 breakdown = {"percentiles": pctile,
              "FILL_INTERPOLATION": int(by_gap.get("FILL_INTERPOLATION", 0)),
@@ -291,10 +324,10 @@ breakdown = {"percentiles": pctile,
              "SCOPE_EMPTY_VALUE": int(by_gap.get("SCOPE_EMPTY_VALUE", 0)),
              "SCOPE_DISJUNCTION": int(by_gap.get("SCOPE_DISJUNCTION", 0))}
 print("language-gap breakdown:", breakdown)
-assert breakdown == {"percentiles": 34, "FILL_INTERPOLATION": 0,
-                     "LABEL_NAME_GLOB": 0, "SCOPE_EMPTY_VALUE": 5,
+assert breakdown == {"percentiles": 0, "FILL_INTERPOLATION": 0,
+                     "LABEL_NAME_GLOB": 0, "SCOPE_EMPTY_VALUE": 0,
                      "SCOPE_DISJUNCTION": 0}, breakdown
-assert sum(breakdown.values()) == 39, breakdown
+assert sum(breakdown.values()) == 0, breakdown
 
 
 # %% [markdown]

@@ -1,5 +1,5 @@
 {
- "decidable_occurrences": 7557,
+ "decidable_occurrences": 7588,
  "decidable_share_of_translated_pct": 89.5,
  "declared_for_corpus_metrics": {
   "active_directory.dfsr.conflict_space_in_use": "gauge",
@@ -4628,6 +4628,29 @@
   "vault.vault.runtime.gc.pause_ns.sum": "count",
   "vault.vault.runtime.sys.bytes": "gauge",
   "vault.vault.token.create.count": "count",
+  "velero.backup.amount": "gauge",
+  "velero.backup.deletion.failure.count": "count",
+  "velero.backup.deletion.success.count": "count",
+  "velero.backup.duration.seconds.sum": "count",
+  "velero.backup.failure.count": "count",
+  "velero.backup.items": "gauge",
+  "velero.backup.items.errors": "gauge",
+  "velero.backup.last_status": "gauge",
+  "velero.backup.success.count": "count",
+  "velero.backup.tarball_size_bytes": "gauge",
+  "velero.csi_snapshot.failure.count": "count",
+  "velero.csi_snapshot.success.count": "count",
+  "velero.pod_volume.data.download.cancel.count": "count",
+  "velero.pod_volume.data.download.failure.count": "count",
+  "velero.pod_volume.data.download.success.count": "count",
+  "velero.pod_volume.data.upload.cancel.count": "count",
+  "velero.pod_volume.data.upload.failure.count": "count",
+  "velero.pod_volume.data.upload.success.count": "count",
+  "velero.restore.amount": "gauge",
+  "velero.restore.failed.count": "count",
+  "velero.restore.success.count": "count",
+  "velero.volume_snapshot.failure.count": "count",
+  "velero.volume_snapshot.success.count": "count",
   "versa.app.bandwidth": "gauge",
   "versa.app.sessions": "gauge",
   "versa.cpu.usage": "gauge",
@@ -4893,7 +4916,7 @@
   "rate": 330
  },
  "distinct": {
-  "agree": 6344,
+  "agree": 6372,
   "ambiguous": 11,
   "rate": 121,
   "undeclared": 520,
@@ -4945,7 +4968,7 @@
   ]
  },
  "occurrences": {
-  "agree": 7066,
+  "agree": 7097,
   "ambiguous": 17,
   "rate": 134,
   "undeclared": 736,
@@ -4953,14 +4976,14 @@
   "wrong-gauge": 242
  },
  "provenance": {
-  "collected_at": "2026-11-18T02:37:17+00:00",
+  "collected_at": "2026-11-19T02:31:08+00:00",
   "commit": "452093828d8d91fae1a7be29b62d9197a20b1aa0",
   "declarations_in_population": 37070,
-  "declarations_recorded_here": 4883,
+  "declarations_recorded_here": 4906,
   "declared_from": "data/corpus/sources/integrations-core-metadata/declared.json",
   "default_rollup_s": 60.0
  },
- "translated_occurrences": 8444,
+ "translated_occurrences": 8475,
  "wrong_occurrences": 491,
  "wrong_share_of_decidable_pct": 6.5
 }

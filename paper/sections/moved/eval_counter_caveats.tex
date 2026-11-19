@@ -1,12 +1,12 @@
 \begin{remark}[Two conditions that coincide in this corpus without being one]\label{rem:counter-caveats}
-\texttt{COUNTER\_RESET} marks the $23.6\%$ that use the cumulative-difference form of
+\texttt{COUNTER\_RESET} marks the $23.7\%$ that use the cumulative-difference form of
 Proposition~\ref{prop:offset}, exact unless a counter resets inside the window;
 Table~\ref{tab:rollup-live} measures what that costs when one does, and
 Proposition~\ref{prop:anchored} removes it at the price of a server started with an
 experimental feature enabled --- a stronger condition than a version number, and
 Remark~\ref{rem:anchored-flag} is about how we came to believe otherwise.
 
-\texttt{PHI\_SERIES\_START} marks the same $23.6\%$, and marks it for a second reason
+\texttt{PHI\_SERIES\_START} marks the same $23.7\%$, and marks it for a second reason
 that went unrecorded until this draft. The cumulative difference needs a sample
 \emph{before} the bucket to subtract, and a series younger than the window has none, so
 the expression returns no result where Datadog returns the deltas it does hold
