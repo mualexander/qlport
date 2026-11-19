@@ -29,8 +29,17 @@ sys.path.insert(0, str(ROOT / "src"))
 OUT = ROOT / "data" / "processed" / "proposer_cost.json"
 
 
-class _OverCap(Exception):
-    pass
+class _OverCap(BaseException):
+    """Deriving from `BaseException`, deliberately, so a cap cannot become a result.
+
+    `regular.regex_to_globs` records anything its equivalence decision raises as
+    `equivalence-undecided`, which is honest for a decision it could not take and wrong
+    for a clock this script started. While this derived from `Exception` that `except`
+    caught the cap, and a three-second run reported fourteen patterns as refusals in
+    exactly 3.00 seconds each -- the same fourteen an uncapped run decides as exact
+    unions of globs. A refusal recorded because the measurement ran out of patience is
+    the error this paper is about, so the cap is not catchable as one.
+    """
 
 
 def _one(rx: str, cap: float, complete: bool = False) -> dict:
@@ -65,7 +74,7 @@ def _one(rx: str, cap: float, complete: bool = False) -> dict:
     except _OverCap:
         return {"regex": rx, "seconds": None, "kind": "over-cap",
                 "reason": f"exceeded {cap:g}s"}
-    except Exception as exc:                      # a refusal is a result; a crash is not
+    except Exception as exc:                      # a crash is not a result either
         return {"regex": rx, "seconds": round(time.time() - t0, 3),
                 "kind": "error", "reason": f"{type(exc).__name__}: {exc}"}
     finally:
