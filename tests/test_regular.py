@@ -117,11 +117,14 @@ def test_a_union_is_found_where_one_glob_cannot_serve(regex, globs):
     assert regex_to_glob(regex) is None
 
 
+# Four cases left this list when `TAG_ALPHABET` was pinned. `.` had been refused as a
+# `single-character-wildcard` and `.+` as a `nonempty-wildcard`, both on the reading
+# that the alphabet was unbounded; over the 41 characters a Datadog tag value may
+# contain, each is a union the bound admits, and `test_a_full_class_is_a_finite_union`
+# below pins what they return instead. `5..` is still refused, but for its size rather
+# than its kind: 41 squared is 1,681 branches against a bound of 64.
 @pytest.mark.parametrize("regex,reason", [
-    ("5..", "single-character-wildcard"),
-    (".", "single-character-wildcard"),
-    ("ext.?|xfs", "single-character-wildcard"),
-    (".+", "nonempty-wildcard"),
+    ("5..", "union-too-large"),
     ("[a-z]+", "unbounded-character-class"),
     ("cassandra-\\d+", "unbounded-character-class"),
     ("(ab)*", "repeated-group"),
@@ -131,6 +134,30 @@ def test_the_refusals_name_the_construct(regex, reason):
     assert got.kind == "none" and not got.exact
     assert got.reason == reason
     assert got.globs == ()
+
+
+def test_a_full_class_is_a_finite_union_over_the_tag_alphabet():
+    """`.` and `.+` are unions, not refusals, once the alphabet is pinned.
+
+    This is the half of §6 that turns on what $\\Sigma$ is. Definition 14 left it
+    unstated for eleven passes, and the two readings differ by 218 corpus occurrences:
+    over every string `.+` is no finite union of globs, and over the 41 characters a
+    Datadog tag value may contain it is the union of `c*`. The equivalence is decided
+    over the same alphabet, so what comes back is verified rather than proposed.
+    """
+    from qlport.regular import TAG_ALPHABET
+
+    assert len(TAG_ALPHABET) == 41
+    for regex in (".", ".+"):
+        got = regex_to_globs(regex)
+        assert got.kind == "union" and got.exact, (regex, got)
+        assert len(got.globs) == len(TAG_ALPHABET), (regex, got.globs)
+    # `.` is one character from the alphabet; `.+` is one character then anything.
+    assert set(regex_to_globs(".").globs) == set(TAG_ALPHABET)
+    assert set(regex_to_globs(".+").globs) == {c + "*" for c in TAG_ALPHABET}
+    # `.*` stays a single glob: a star already admits every string, E5 having measured
+    # that it matches the empty one too.
+    assert regex_to_globs(".*").globs == ("*",)
 
 
 # --------------------------- the dichotomy corollary: three things no glob says

@@ -116,9 +116,13 @@ def types() -> dict:
 
 def test_the_type_join_is_internally_consistent(types):
     occ = types["occurrences"]
-    assert sum(occ.values()) == types["translated_occurrences"] == 8444
+    # 8,444 until corpus._TMPL stopped truncating a template variable at a hyphen,
+    # which returned 31 velero occurrences to the translated set.
+    assert sum(occ.values()) == types["translated_occurrences"] == 8475
     decidable = occ["agree"] + occ["wrong-gauge"] + occ["wrong-counter"]
-    assert decidable == types["decidable_occurrences"] == 7557
+    # 7,557 before the same fix; the 31 velero metrics are declared, so they joined
+    # the decidable set too and both derived shares held at 89.5% and 6.5%.
+    assert decidable == types["decidable_occurrences"] == 7588
     assert occ["wrong-gauge"] + occ["wrong-counter"] == types["wrong_occurrences"] == 491
     assert types["wrong_share_of_decidable_pct"] == 6.5
     assert types["decidable_share_of_translated_pct"] == 89.5
