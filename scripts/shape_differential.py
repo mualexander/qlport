@@ -60,6 +60,7 @@ from qlport.harness.shapes import instantiate                    # noqa: E402
 from qlport.ir import shape                                      # noqa: E402
 from qlport.lower.datadog import label_name, lower_all, metric_name          # noqa: E402
 from qlport.metrics import reldiff                               # noqa: E402
+from lark import Token                                          # noqa: E402
 from qlport.parse import parse                                   # noqa: E402
 from qlport.semantics import datadog_eval as dd                  # noqa: E402
 
@@ -96,6 +97,46 @@ def _ids() -> str:
 # ------------------------------------------------------------------ representatives
 
 _DD_METRIC = re.compile(r"(?<![\w.])([a-z_]+:)?([A-Za-z][\w.]*)\s*\{")
+
+
+def dd_spellings(text: str) -> dict[str, str]:
+    """The query's own spelling of every identifier that lowers to a different name.
+
+    Keyed by the name the IR and PromQL use, valued by what the query wrote. Datadog
+    tag keys admit dots, hyphens and slashes; PromQL label names admit none of them, so
+    the IR holds `cluster_location` where the query says `cluster-location` and
+    `openai_organization_name` where it says `openai.organization.name`. Submitting the
+    normalised spelling while asking Datadog to group by the original makes Datadog
+    group by a tag that is not there: it silently returns one ungrouped series, and the
+    comparison then reports groups that did not line up.
+
+    Taken off the parse tree, because the grammar already knows which token is which.
+    Only three kinds of identifier are ever mapped --- a METRIC, a grouping KEY, and the
+    key half of a scope TAG --- and the tree labels all three. The regex this replaces
+    matched identifier-shaped runs anywhere in the query text, which pulled in
+    hyphenated tag *values* as well: 283 spurious entries over this corpus, harmless
+    only because no value's normalised form collided with a real label name. That was a
+    property of the corpus rather than of the code, and a query carrying the value
+    `foo-bar` beside the key `foo_bar` would have collided.
+
+    `*` is excluded explicitly: it is a TAG token with no key half, and `label_name`
+    sends it to `_`.
+    """
+    out: dict[str, str] = {}
+
+    def add(name: str) -> None:
+        normalised = label_name(name)
+        if normalised != name:
+            out[normalised] = name
+
+    for tok in parse("datadog", text).scan_values(lambda x: isinstance(x, Token)):
+        if tok.type in ("METRIC", "KEY"):
+            add(str(tok))
+        elif tok.type == "TAG":
+            key, _, has_value = str(tok).partition(":")
+            if has_value or _:          # `k:v` or `k:`; a bare `*` has neither
+                add(key)
+    return out
 
 
 def representatives(run_tag: str) -> list[dict]:
@@ -151,26 +192,11 @@ def representatives(run_tag: str) -> list[dict]:
             # Two rollups of different widths in one query would need two bucket grids;
             # recorded rather than compared on the wrong one.
             continue
-        # Datadog tag keys may contain dots and hyphens; PromQL label names may not,
-        # so the IR holds `openai_organization_name` where the query says
-        # `openai.organization.name`, and `cluster_location` where it says
-        # `cluster-location`. Submitting the normalised spelling while asking Datadog
-        # to group by the original means Datadog groups by a tag that is not there ---
-        # it silently returns one ungrouped series, which the comparison then reports
-        # as groups that did not line up. The tags go out in the query's own spelling
-        # and are mapped back when the response is read.
-        #
-        # The hyphen was missing from this character class until the eleventh pass, and
-        # could not fire while it was: the only corpus queries with hyphenated group
-        # keys are the 31 velero panels, and `corpus._TMPL` --- blind to the hyphen in
-        # the same way --- had been mangling those into a refusal, so no shape with a
-        # hyphenated key ever reached this harness. Two latent faults over one
-        # character, each hiding the other. When the normaliser was fixed, shape 262
-        # arrived and came back `unmatched` with exactly the symptom the comment above
-        # describes.
-        dd_keys = {label_name(t): t
-                   for t in re.findall(r"[A-Za-z_][\w.-]*", rec["text"])
-                   if label_name(t) != t}
+        # The tags go out in the query's own spelling and are mapped back when the
+        # response is read; `dd_spellings` says what that spelling is. This was a regex
+        # over the query text until the eleventh pass, blind to the hyphen, which is
+        # how shape 262 came back `unmatched`.
+        dd_keys = dd_spellings(rec["text"])
         out.append({
             "interval": intervals[0],
             "index": i, "occurrences": rec["n"], "datadog_original": rec["text"],
