@@ -134,7 +134,15 @@ def _factor_one_product(globs: tuple[str, ...]) -> str | None:
     Factoring $\bigcup_i P c_i S = P (\bigcup_i c_i) S = P \Sigma S$ when the $c_i$
     exhaust $\Sigma$ is distributivity of concatenation over union, applied once per
     varying position. A lone glob is its own rendering and needs no factoring.
+
+    The family qualifies when the globs are distinct and of one length, each varying
+    position carries exactly $\Sigma$, and there are $|\Sigma|^{k}$ of them for $k$
+    varying positions. Those conditions are not merely necessary: together they are
+    sufficient, and the proof is in the comment at the test they imply.
     """
+    # Deduplicated first, because the cardinality test below is only a test of the
+    # right thing when the globs are distinct, and a caller is free to repeat one.
+    globs = tuple(sorted(set(globs)))
     if not globs or len({len(g) for g in globs}) != 1:
         return None
     first = globs[0]
@@ -146,13 +154,15 @@ def _factor_one_product(globs: tuple[str, ...]) -> str | None:
         return None
     if any({g[i] for g in globs} != alphabet for i in varying):
         return None
-    # Full projections are not enough: a set of $41^{2}$ pairs can cover both positions
-    # without being the product of them, and factoring such a set would widen the
-    # language. So the product is checked for, not inferred.
+    # Those three conditions already force the product, and the comment that used to
+    # stand here said the opposite -- that $41^{2}$ pairs could cover both positions
+    # without being the product of them. They cannot. Every position outside `varying`
+    # is constant by construction, so distinct globs have distinct tuples over the
+    # varying positions; each such position projects onto exactly $\Sigma$, so every
+    # tuple lies in $\Sigma^{k}$; and there are $|\Sigma|^{k}$ of them, which is the
+    # whole of $\Sigma^{k}$. The check is kept because it is cheap and because it is
+    # the premise, not the conclusion, that a future caller might break.
     spread = set(varying)
-    fixed = [(i, c) for i, c in enumerate(first) if i not in spread]
-    if any(any(g[i] != c for i, c in fixed) for g in globs):
-        return None
     if {tuple(g[i] for i in varying) for g in globs} != set(
             itertools.product(sorted(alphabet), repeat=len(varying))):
         return None
@@ -298,28 +308,99 @@ def equivalent(regex_a: str, regex_b: str) -> bool:
 
 # Characters that genuinely need a backslash. Anything else escaped is redundant.
 _NEEDS_ESCAPE = frozenset(".^$*+?()[]{}|\\")
+# Inside a bracket expression only these four mean anything, so only these four keep
+# their backslash. `.` and `/` are literals there and greenery rejects them escaped.
+_NEEDS_ESCAPE_IN_CLASS = frozenset("]\\-^")
 
 
 def drop_redundant_escapes(r: str) -> str:
-    """Remove backslashes that escape characters which never needed one.
+    r"""Remove backslashes that escape characters which never needed one.
 
-    `re.escape` escapes freely --- it emits `\\-` for a hyphen --- and a regex that has
+    `re.escape` escapes freely --- it emits `\-` for a hyphen --- and a regex that has
     been through it, or through a hand that was being careful, carries escapes the
-    decision procedure's parser rejects outright. The escape means nothing to the
-    language either way, so dropping it changes no denotation and lets a regex be
-    decided rather than reported as unparseable. Alphanumerics keep their backslash,
-    since `\\d` and `\\1` are not redundant.
+    decision procedure's parser rejects outright: greenery reads neither `a\-b` nor
+    `\/x`. The escape means nothing to the language there, so dropping it changes no
+    denotation and lets the regex be decided rather than reported as unparseable.
+    Alphanumerics keep their backslash, since `\d` and `\1` are not redundant.
+
+    Inside a bracket expression the rule is a different one, and applying the outer rule
+    there was a bug with teeth. `-` is the range operator in a class, so dropping the
+    escape in `[a-z0-9_:.\-/]` turns a literal hyphen into the range `.-/` --- a class
+    that no longer contains `-` at all. The language changes silently, and the one
+    regex that spells out $\Sigma$ stopped being recognised as $\Sigma$. So in a class
+    only `] \ - ^` keep their backslash, which are the four that mean something there,
+    and greenery accepts all four escaped while rejecting `\.` and `\/`.
     """
-    out, i = [], 0
+    out, i, in_class, first = [], 0, False, False
     while i < len(r):
-        if r[i] == "\\" and i + 1 < len(r):
+        c = r[i]
+        if c == "\\" and i + 1 < len(r):
             nxt = r[i + 1]
-            out.append(("\\" + nxt) if (nxt.isalnum() or nxt in _NEEDS_ESCAPE) else nxt)
+            needs = _NEEDS_ESCAPE_IN_CLASS if in_class else _NEEDS_ESCAPE
+            out.append(("\\" + nxt) if (nxt.isalnum() or nxt in needs) else nxt)
             i += 2
-        else:
-            out.append(r[i])
-            i += 1
+            first = False
+            continue
+        if in_class:
+            if c == "]" and not first:
+                in_class = False
+            first = False
+        elif c == "[":
+            in_class, first = True, True
+        out.append(c)
+        i += 1
     return "".join(out)
+
+
+def _trailing_anchor(body: str) -> bool:
+    r"""Does `body` end in an anchor rather than in an escaped `$`?
+
+    By the parity of the backslashes before it, which is the only way to tell: `a\$` is
+    a literal dollar and `a\\$` is a literal backslash followed by an anchor. The test
+    this replaces asked whether the string ended in `\$`, which reads the second as the
+    first and leaves the anchor in the body for the parser to choke on.
+    """
+    if not body.endswith("$"):
+        return False
+    i, n = len(body) - 2, 0
+    while i >= 0 and body[i] == "\\":
+        n += 1
+        i -= 1
+    return n % 2 == 0
+
+
+def _anchors_outside_classes(body: str) -> bool:
+    r"""Is there a `^` or `$` that a regex engine would read as an anchor?
+
+    Inside a bracket expression neither character is one: `[^0-9]` is a negation and
+    `[$]` is a literal dollar. The scan this replaces was a regex over the whole string,
+    so it reported both as interior anchors --- which is a refusal with the wrong reason
+    attached for the negated class, whose own refusal §6 argues separately, and a
+    refusal outright for the literal. Neither appears in the corpus; both would be
+    misreported if one did.
+    """
+    i, in_class, first = 0, False, False
+    while i < len(body):
+        c = body[i]
+        if c == "\\":
+            i += 2
+            continue
+        if in_class:
+            if c == "]" and not first:
+                in_class = False
+            first = False
+            i += 1
+            continue
+        if c == "[":
+            in_class, i = True, i + 1
+            if i < len(body) and body[i] == "^":
+                i += 1                       # a negation caret, not an anchor
+            first = True                     # a `]` here is a literal
+            continue
+        if c in "^$":
+            return True
+        i += 1
+    return False
 
 
 def unanchor(r: str) -> str | None:
@@ -330,9 +411,9 @@ def unanchor(r: str) -> str | None:
     a glob can say it, so this returns None rather than quietly dropping it.
     """
     body = r[1:] if r.startswith("^") else r
-    if body.endswith("$") and not body.endswith("\\$"):
+    if _trailing_anchor(body):
         body = body[:-1]
-    if re.search(r"(?<!\\)[\^$]", body):
+    if _anchors_outside_classes(body):
         return None
     return body
 
@@ -387,8 +468,15 @@ def _dot_charclass():
 
 
 def _is_full(cc) -> bool:
-    """Is this character class the one `.` denotes?"""
-    return cc == _dot_charclass()
+    r"""Is this character class the whole alphabet the procedure decides over?
+
+    Two spellings of the same thing. `.` denotes every character, and the explicit
+    class `[a-z0-9_:.\-/]` denotes $\Sigma$; since `_fsm_over_sigma` restricts both
+    sides of every comparison to $\Sigma$, a pattern cannot tell them apart. Accepting
+    only the first refused `[a-z0-9_:.\-/]*` as an `unbounded-character-class` while
+    deciding `.*` as the glob `*` --- the same language, two answers.
+    """
+    return cc == _dot_charclass() or cc == _sigma_charclass()
 
 
 def _mult_fragments(mult) -> list[str]:
@@ -494,11 +582,17 @@ def regex_to_globs(r: str) -> GlobConversion:
     body = drop_redundant_escapes(body)
     try:
         from greenery import parse
+        from greenery.parse import NoMatch
     except ImportError:  # pragma: no cover - declared in the "regular" extra
         return GlobConversion(r, reason="greenery-missing")
     try:
         pattern = parse(body)
-    except Exception:
+    except (NoMatch, ValueError, IndexError):
+        # The three greenery raises on a pattern it cannot read: `NoMatch` for `a**`,
+        # `ValueError` for `a{2,1}`, `IndexError` for a bare `[`. Enumerated rather
+        # than caught wholesale, so that a fault in the parser is not filed as a fact
+        # about the regex -- which is the same mistake `equivalence-undecided` below
+        # made with a timeout.
         return GlobConversion(r, reason="unparsed")
 
     try:

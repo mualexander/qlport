@@ -1,0 +1,566 @@
+{
+ "collected_at": "2026-11-20T17:15:17+00:00",
+ "narrow_alphabet_size": 41,
+ "patterns_total": 184,
+ "patterns_out_of_sigma": 36,
+ "agreed": 36,
+ "seconds": 4.6,
+ "rows": [
+  {
+   "regex": "(Error|Failed)",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "E",
+    "F"
+   ],
+   "alphabet_size": 43,
+   "globs": 2
+  },
+  {
+   "regex": "(Lost)",
+   "narrow_kind": "single",
+   "wide_kind": "single",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "L"
+   ],
+   "alphabet_size": 42,
+   "globs": 1
+  },
+  {
+   "regex": "(MemoryPressure|DiskPressure|PIDPressure)",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "D",
+    "I",
+    "M",
+    "P"
+   ],
+   "alphabet_size": 45,
+   "globs": 3
+  },
+  {
+   "regex": "(Pending|Lost)",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "L",
+    "P"
+   ],
+   "alphabet_size": 43,
+   "globs": 2
+  },
+  {
+   "regex": ".*Virtual.*",
+   "narrow_kind": "single",
+   "wide_kind": "single",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "V"
+   ],
+   "alphabet_size": 42,
+   "globs": 1
+  },
+  {
+   "regex": "01-Inlet Ambient",
+   "narrow_kind": "single",
+   "wide_kind": "single",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    " ",
+    "A",
+    "I"
+   ],
+   "alphabet_size": 44,
+   "globs": 1
+  },
+  {
+   "regex": "02-CPU 1|03-CPU 2",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    " ",
+    "C",
+    "P",
+    "U"
+   ],
+   "alphabet_size": 45,
+   "globs": 2
+  },
+  {
+   "regex": "04-P1 DIMM 1-6|05-P1 DIMM 7-12|06-P2 DIMM 1-6|07-P2 DIMM 7-12|08-P1 Mem Zone|09-P1 Mem Zone|10-P2 Mem Zone|11-P2 Mem Zone",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    " ",
+    "D",
+    "I",
+    "M",
+    "P",
+    "Z"
+   ],
+   "alphabet_size": 47,
+   "globs": 8
+  },
+  {
+   "regex": "12-HD Max|13-Chipset 1|14-Chipset1 Zone",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    " ",
+    "C",
+    "D",
+    "H",
+    "M",
+    "Z"
+   ],
+   "alphabet_size": 47,
+   "globs": 3
+  },
+  {
+   "regex": "15-P/S 1 Inlet|17-P/S 2 Inlet|16-P/S 1 Zone|18-P/S 2 Zone",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    " ",
+    "I",
+    "P",
+    "S",
+    "Z"
+   ],
+   "alphabet_size": 46,
+   "globs": 4
+  },
+  {
+   "regex": "21-VR P1|22-VR P2|23-VR P1 Mem|25-VR P2 Mem|42-SuperCap Max|31-HD Controller|32-HD Cntlr Zone",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    " ",
+    "C",
+    "D",
+    "H",
+    "M",
+    "P",
+    "R",
+    "S",
+    "V",
+    "Z"
+   ],
+   "alphabet_size": 51,
+   "globs": 7
+  },
+  {
+   "regex": "33-PCI 1 Zone",
+   "narrow_kind": "single",
+   "wide_kind": "single",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    " ",
+    "C",
+    "I",
+    "P",
+    "Z"
+   ],
+   "alphabet_size": 46,
+   "globs": 1
+  },
+  {
+   "regex": "33-PCI 1 Zone|36-PCI 2 Zone|23-VR P1 Mem|24-VR P1 Mem|34-PCI 1 Zone",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    " ",
+    "C",
+    "I",
+    "M",
+    "P",
+    "R",
+    "V",
+    "Z"
+   ],
+   "alphabet_size": 49,
+   "globs": 5
+  },
+  {
+   "regex": "37-System Board|38-System Board|39-Sys Exhaust|40-Sys Exhaust|41-Sys Exhaust",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    " ",
+    "B",
+    "E",
+    "S"
+   ],
+   "alphabet_size": 45,
+   "globs": 5
+  },
+  {
+   "regex": "<none>|Job",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "<",
+    ">",
+    "J"
+   ],
+   "alphabet_size": 44,
+   "globs": 2
+  },
+  {
+   "regex": "CONNECT|WATCH",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "A",
+    "C",
+    "E",
+    "H",
+    "N",
+    "O",
+    "T",
+    "W"
+   ],
+   "alphabet_size": 49,
+   "globs": 2
+  },
+  {
+   "regex": "CVE.*",
+   "narrow_kind": "single",
+   "wide_kind": "single",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "C",
+    "E",
+    "V"
+   ],
+   "alphabet_size": 44,
+   "globs": 1
+  },
+  {
+   "regex": "ContainerCreating",
+   "narrow_kind": "single",
+   "wide_kind": "single",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "C"
+   ],
+   "alphabet_size": 42,
+   "globs": 1
+  },
+  {
+   "regex": "ErrImagePull|ImagePullBackOff|CrashLoopBackOff",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "B",
+    "C",
+    "E",
+    "I",
+    "L",
+    "O",
+    "P"
+   ],
+   "alphabet_size": 48,
+   "globs": 3
+  },
+  {
+   "regex": "Error|Failed",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "E",
+    "F"
+   ],
+   "alphabet_size": 43,
+   "globs": 2
+  },
+  {
+   "regex": "Failed|Pending",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "F",
+    "P"
+   ],
+   "alphabet_size": 43,
+   "globs": 2
+  },
+  {
+   "regex": "GitRepository|HelmRepository|Bucket",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "B",
+    "G",
+    "H",
+    "R"
+   ],
+   "alphabet_size": 45,
+   "globs": 3
+  },
+  {
+   "regex": "Kustomization|HelmRelease",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "H",
+    "K",
+    "R"
+   ],
+   "alphabet_size": 44,
+   "globs": 2
+  },
+  {
+   "regex": "LIST|GET",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "E",
+    "G",
+    "I",
+    "L",
+    "S",
+    "T"
+   ],
+   "alphabet_size": 47,
+   "globs": 2
+  },
+  {
+   "regex": "LIST|GET|POST|PUT|PATCH|DELETE",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "A",
+    "C",
+    "D",
+    "E",
+    "G",
+    "H",
+    "I",
+    "L",
+    "O",
+    "P",
+    "S",
+    "T",
+    "U"
+   ],
+   "alphabet_size": 54,
+   "globs": 6
+  },
+  {
+   "regex": "PIDPressure",
+   "narrow_kind": "single",
+   "wide_kind": "single",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "D",
+    "I",
+    "P"
+   ],
+   "alphabet_size": 44,
+   "globs": 1
+  },
+  {
+   "regex": "POST|PUT|PATCH|DELETE",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "A",
+    "C",
+    "D",
+    "E",
+    "H",
+    "L",
+    "O",
+    "P",
+    "S",
+    "T",
+    "U"
+   ],
+   "alphabet_size": 52,
+   "globs": 4
+  },
+  {
+   "regex": "Pending|Running",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "P",
+    "R"
+   ],
+   "alphabet_size": 43,
+   "globs": 2
+  },
+  {
+   "regex": "Pending|Unknown",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "P",
+    "U"
+   ],
+   "alphabet_size": 43,
+   "globs": 2
+  },
+  {
+   "regex": "Pod|",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "P"
+   ],
+   "alphabet_size": 42,
+   "globs": 2
+  },
+  {
+   "regex": "Running|Succeeded",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "R",
+    "S"
+   ],
+   "alphabet_size": 43,
+   "globs": 2
+  },
+  {
+   "regex": "SERVFAIL|REFUSED",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "A",
+    "D",
+    "E",
+    "F",
+    "I",
+    "L",
+    "R",
+    "S",
+    "U",
+    "V"
+   ],
+   "alphabet_size": 51,
+   "globs": 2
+  },
+  {
+   "regex": "ToBeDeletedByClusterAutoscaler|cloud.google.com/impending-node-termination|aws-node-termination-handler/spot-itn",
+   "narrow_kind": "none",
+   "wide_kind": "none",
+   "wide_reason": "union-too-large",
+   "agrees": true,
+   "extra_characters": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "T"
+   ],
+   "alphabet_size": 46,
+   "globs": 0
+  },
+  {
+   "regex": "UP|DOWN",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "D",
+    "N",
+    "O",
+    "P",
+    "U",
+    "W"
+   ],
+   "alphabet_size": 47,
+   "globs": 2
+  },
+  {
+   "regex": "disableDaily|disableHourly|disableWeekly|disableMonthly",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    "D",
+    "H",
+    "M",
+    "W"
+   ],
+   "alphabet_size": 45,
+   "globs": 4
+  },
+  {
+   "regex": "idle|idle in transaction|idle in transaction (aborted)",
+   "narrow_kind": "union",
+   "wide_kind": "union",
+   "wide_reason": "",
+   "agrees": true,
+   "extra_characters": [
+    " "
+   ],
+   "alphabet_size": 42,
+   "globs": 3
+  }
+ ]
+}

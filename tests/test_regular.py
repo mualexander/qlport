@@ -570,3 +570,103 @@ def test_the_multi_shape_union_decides_quickly_and_is_verified():
     got = regex_to_globs("pvc.*.ctrl.*|pvc.*.rep.*|pvc.*.target.*")
     assert got.kind == "union" and got.verified and got.exact
     assert len(got.globs) == 123
+
+
+def test_a_repeated_glob_does_not_pass_the_cardinality_test(monkeypatch):
+    """The one way the premise behind the product test can fail.
+
+    `_factor_one_product` reasons that |Sigma|^k globs with full projections at every
+    varying position must be the whole product. That holds for distinct globs and fails
+    for a multiset: over a three-character alphabet, `aa ab ac ba bb bc ca cb cb` is
+    nine globs projecting onto all of Sigma twice over, and is not the product. So the
+    input is deduplicated before it is counted, and this family is refused for being
+    eight globs rather than accepted for being nine.
+    """
+    import qlport.regular as R
+
+    monkeypatch.setattr(R, "TAG_ALPHABET", "abc")
+    monkeypatch.setattr(R, "_SIGMA_CLASS", "[abc]")
+    full = [a + b for a in "abc" for b in "abc"]
+    assert R._factor_one_product(tuple(full)) is not None
+    repeated = [g for g in full if g != "cc"] + ["cb"]
+    assert len(repeated) == len(full)
+    assert R._factor_one_product(tuple(repeated)) is None
+
+
+def test_a_deduplicated_family_still_factors(monkeypatch):
+    """Dedup must not turn a genuine expansion into a refusal for being short."""
+    import qlport.regular as R
+
+    monkeypatch.setattr(R, "TAG_ALPHABET", "abc")
+    monkeypatch.setattr(R, "_SIGMA_CLASS", "[abc]")
+    full = [a + b for a in "abc" for b in "abc"]
+    once = R._factor_one_product(tuple(full))
+    twice = R._factor_one_product(tuple(full + full))
+    assert once is not None and twice == once
+
+
+def test_the_product_test_is_implied_by_the_three_conditions_before_it(monkeypatch):
+    """The claim the corrected comment makes, checked by exhaustion.
+
+    Over a three-character alphabet and two varying positions there is exactly one way
+    to choose nine distinct pairs, and it is the product. The comment that used to stand
+    at this test asserted a counterexample exists; none does, so the search is the test.
+    """
+    import itertools as it
+
+    import qlport.regular as R
+
+    monkeypatch.setattr(R, "TAG_ALPHABET", "abc")
+    monkeypatch.setattr(R, "_SIGMA_CLASS", "[abc]")
+    pairs = ["".join(t) for t in it.product("abc", repeat=2)]
+    nines = list(it.combinations(pairs, 9))
+    assert len(nines) == 1
+    for family in nines:
+        assert {g[0] for g in family} == {g[1] for g in family} == set("abc")
+        assert R._factor_one_product(tuple(family)) is not None
+
+
+# --- the universe the gate decides over, where a pattern leaves it ----------------
+
+WIDENED = Path(__file__).resolve().parent.parent / "data" / "raw" / "globs" / \
+    "widened.json"
+
+
+@pytest.fixture(scope="module")
+def widened() -> dict:
+    if not WIDENED.exists():  # pragma: no cover - run widen_alphabet_check.py
+        pytest.skip("widened.json not recorded; run scripts/widen_alphabet_check.py")
+    return json.loads(WIDENED.read_text())
+
+
+def test_the_patterns_whose_literals_leave_the_alphabet_are_still_counted(widened):
+    """A comparison that cannot fail is not a verification, and 36 of 184 could not.
+
+    Every equivalence is decided over TAG_ALPHABET, which is right for a pattern whose
+    literals are legal tag values. For `LIST|GET` or `01-Inlet Ambient` both sides
+    restrict to the empty language and equivalence holds for that reason alone. PromQL
+    label values are not lower-cased, so these are ordinary Kubernetes and HTTP values
+    rather than corpus defects, and they carry 13.0% of the matcher occurrences.
+    """
+    assert widened["narrow_alphabet_size"] == 41
+    assert widened["patterns_out_of_sigma"] == 36
+    assert widened["patterns_total"] == 184
+
+
+def test_every_one_of_them_decides_the_same_way_over_a_real_alphabet(widened):
+    """Re-decided over Sigma widened by the characters each pattern uses, all 36 agree.
+
+    So the classifications §6 reports for them were right rather than lucky, and no
+    figure in the paper moves. What changes is that the claim is now checked by a
+    comparison that could have come out the other way.
+    """
+    assert widened["agreed"] == widened["patterns_out_of_sigma"]
+    disagreeing = [r for r in widened["rows"] if not r["agrees"]]
+    assert disagreeing == [], disagreeing
+
+
+def test_the_widened_alphabet_really_was_wider(widened):
+    """Without this the test above is the vacuous comparison it exists to replace."""
+    for row in widened["rows"]:
+        assert row["extra_characters"], row
+        assert row["alphabet_size"] == 41 + len(row["extra_characters"]), row
