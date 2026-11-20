@@ -1,52 +1,31 @@
-% TO FINISH: this paragraph is a revision behind, and the figures are settled rather
-% than in doubt. data/processed/translations.csv now reads 8,770 occurrences as 8,475
-% translated (96.6%), 287 refused (3.3%) and 8 unparsed (0.1%); nb03's EXPRESSIVENESS
-% set is deliberately empty, so the language gap is 0 occurrences and 0.0%, which is
-% what nb03.language_gap_pct says and what §1, §3b and §9 already state. The ceiling is
-% therefore nb03.ceiling_pct = 99.9%, and the 0.1% below it is the 8 queries that do
-% not parse -- not a language barrier.
-%
-% So the sentence below cannot be fixed by changing its numerals: its three
-% beyond-reach codes have each left the class for a reason nb03 records above
-% EXPRESSIVENESS. PHI_QUANTILE's 34 are refused on seeing `pNN:` without checking the
-% corollary's hypothesis, and none of their metrics is a distribution. LABEL_NAME_GLOB's
-% 31 were `corpus._TMPL` truncating `$cluster-location` at the hyphen, and E16 confirms
-% Datadog's parser rejects the string that was fabricated. SCOPE_EMPTY_VALUE's 5 have
-% an exact translation: drop the term, as rem:empty-tag already excused for `k:*`. What
-% this paragraph should now report is that the beyond-reach class is empty on this
-% corpus -- a stronger version of the asymmetry, and the one §8 should argue from.
-%
-% Every site quoting the old figures needs reading individually, because three
-% different quantities share these magnitudes: `0.8%` is also what .weighted() closed
-% of the ceiling, and `70` is also oo.dropped_weighted in the baseline comparison.
-% The sites are 04_grammars:169, 07_evaluation:54,57 and :429,440, 08_discussion:16,
-% 27, 31, 46, 54, 111, 150, 207, 01_introduction:192, concl_evidence:58,
-% eval_differential_fixes:13, eval_shape_reduction:12, eval_weighted:3,27 and this file.
-\paragraph{How much of the $3.6\%$ is beyond reach.}
-Separating the kinds of refusal is the point of having codes at all, and on this
-corpus the split is lopsided. Three kinds arise and the catalogue keeps them apart:
-what Prometheus does not \emph{hold} (the percentile aggregators and the scopes that
-separate an absent tag from a present empty one), what PromQL cannot
-\emph{say} (two constructs), and what this translator has not \emph{built}
-(everything else). A fourth is possible and empty here --- a query Datadog itself
-rejects, which Remark~\ref{rem:third-refusal} describes. The refusals that are not unfinished work are
-the percentile aggregators ($34$, blocked by information rather than by expressiveness
---- Corollary~\ref{cor:quantile}), tag-key globs ($31$) and the scopes that separate an
-absent tag from a present empty one ($5$, blocked by information again ---
-Remark~\ref{rem:empty-tag}): $70$ occurrences, $0.8\%$ of the corpus. The other
-$287$ --- $3.3\%$, which is all of them --- are constructs this translator has not
-implemented,
-\texttt{top(...)} chief among them. Because a query is abandoned at its first obstruction (Remark~\ref{rem:one-gap}),
-$99.1\%$ is an upper bound on what implementing the unimplemented set would reach: a
-refused query could carry a second, inexpressible construct behind the first. Re-reading
-the $287$ for the other codes' constructs finds none. It found one before
-Remark~\ref{rem:fill} --- a \texttt{.fill(60)} nested inside a \texttt{top(...)},
-which was the single case keeping the bound from being exact and stopped being one when
-\texttt{.fill} stopped being inexpressible. So the bound is now tight with nothing left
-over, and the ceiling is $99.1\%$ to the decimal it is quoted at --- against the
-$96.6\%$ measured here, and the distance between the two is
-engineering rather than language design --- as the disjunction rule demonstrated by closing $1.4$
-points of it and \texttt{.weighted()} by closing $0.8$ more. That is the finding to carry into \S\ref{sec:discussion}:
-going this way, almost all of the apparent incompatibility is work, and what is left is
-small enough to enumerate query by query.
+\paragraph{How much of the shortfall is beyond reach.}
+Separating the kinds of refusal is the point of having codes at all, and on this corpus
+the separation has an answer this paper did not set out to report: none of it is beyond
+reach. Three kinds are possible and the catalogue keeps them apart --- what Prometheus
+does not \emph{hold}, what PromQL cannot \emph{say}, and what this translator has not
+\emph{built} --- with a fourth, a query Datadog itself rejects, which
+Remark~\ref{rem:third-refusal} describes and which is empty here too. The first two
+columns are empty. All $287$ refused occurrences, $3.3\%$ of the corpus, are constructs
+this translator has not implemented, \texttt{top(...)} chief among them.
+
+The column did not start empty, and \S\ref{sec:discussion} keeps the running count of
+what left it and why, because the pattern is more informative than the total. The last
+three to go were the percentile aggregators ($34$), the tag-key globs ($31$) and the
+scopes separating an absent tag from one present with an empty value ($5$): a corollary
+applied where its own hypothesis fails, a construct this paper's normaliser fabricated
+out of a template variable, and an information barrier that turns out to decide the
+translation rather than to block it.
+
+Because a query is abandoned at its first obstruction (Remark~\ref{rem:one-gap}),
+$99.9\%$ is an upper bound on what implementing the unimplemented set would reach rather
+than a promise: a refused query could carry a second obstruction behind the first.
+Re-reading the $287$ for the other codes' constructs finds none, so the bound is tight
+with nothing left over. What separates it from $100\%$ is not a construct at all --- it
+is the $8$ occurrences \S\ref{sec:grammars}'s grammar does not parse, which is a fact
+about this paper's instrument and not about either language. Against the $96.6\%$
+measured here, the whole distance to the ceiling is engineering, as the disjunction rule
+demonstrated by closing $1.4$ points of it and \texttt{.weighted()} by closing $0.8$
+more. That is the finding to carry into \S\ref{sec:discussion}: going this way, the
+apparent incompatibility is work, all of it, and what is left over is small enough to
+enumerate query by query.
 

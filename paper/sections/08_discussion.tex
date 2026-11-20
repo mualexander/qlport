@@ -9,13 +9,12 @@
 \subsection{The question as posed has a negative answer}
 
 This paper set out to ask whether vendor lock-in in observability is a language-design
-artefact. For the direction it measures, the honest answer is mostly no, and the
+artefact. For the direction it measures, the honest answer is no, and the
 measurement that says so is the one the whole apparatus was built to produce. Of
-$8{,}770$ Datadog query occurrences, $96.6\%$ translate; of the $3.6\%$ that carry a gap
-code,
-\S\ref{sec:gaps} splits the shortfall into $0.8\%$ that PromQL genuinely cannot express
-and $3.3\%$ that is unimplemented work in this translator. The first number is
-$0$.
+$8{,}770$ Datadog query occurrences, $96.6\%$ translate. Of the rest, $3.3\%$ carry a
+gap code naming a construct this translator has not implemented and $0.1\%$ do not parse
+at all. \S\ref{sec:gaps}'s column for what PromQL genuinely cannot express holds
+$0.0\%$: it is empty, and it was not empty when this paper started.
 
 That is not the result the thesis predicted, and it is worth stating in the strongest
 form the data supports: going from Datadog to PromQL, the switching cost is
@@ -24,35 +23,47 @@ engineering is not implementing language constructs at all but supplying metadat
 query omits, and that a translator which skips it gets $6.5\%$ of its metric types
 wrong. A team working through the gap catalogue, and willing to supply the dashboard's
 time range to the $139$ \texttt{top(...)} occurrences that cannot be translated without
-it, would reach the $99.1\%$
+it, would reach the $99.9\%$
 ceiling of \S\ref{sec:gaps} --- how long that takes is not something this paper
-measures, and the catalogue is a list of constructs rather than an estimate --- and
-what remains at that point is
-three constructs covering $0.8\%$ of real usage, and only one of them is about
-expressiveness: a wildcard over tag \emph{keys} rather than values ($31$), which asks
-for a pattern where a PromQL matcher takes a label name and which
-Remark~\ref{rem:label-name} reads a real server refusing. The other two are information
-barriers --- Prometheus does not hold what the query reads. They are the percentile aggregators ($34$), which read a
-sketch of the raw observations (Corollary~\ref{cor:quantile}), and the scope that
-separates an absent tag from one present with an empty value ($5$), a distinction
-Prometheus's data model \emph{defines} away. No amount of work on either language removes
-it. A language-design story cannot rest on that.
+measures, and the catalogue is a list of constructs rather than an estimate --- and what
+remains at that point is not a construct at all. The $0.1\%$ below the ceiling is
+queries this paper's own grammar does not parse.
+
+Three constructs stood in the inexpressible column at the last count, and each left it
+for a reason worth stating, because the reasons are not alike. A wildcard over tag
+\emph{keys} rather than values ($31$) asked for a pattern where a PromQL matcher takes a
+label name, and Remark~\ref{rem:label-name} reads a real server refusing exactly that
+--- but no Datadog query ever asked it: \texttt{corpus.\_TMPL} truncated
+\texttt{\$cluster-location} at its hyphen and this paper invented a semantics for the
+text left over. The percentile aggregators ($34$) read a sketch of the raw observations,
+which Prometheus does not hold --- but Corollary~\ref{cor:quantile} assumes a
+distribution metric and not one of the $34$ names one, so the refusal fired on seeing
+\texttt{pNN:} and never checked its own hypothesis. The scope separating an absent tag
+from one present with an empty value ($5$) asks for a distinction Prometheus's data
+model \emph{defines} away --- which is exactly why the exact translation is to drop the
+term, as Remark~\ref{rem:empty-tag} had already established for $120$ occurrences of
+\texttt{k:*} under the same condition. One was an instrument fault, one a corollary
+applied where its hypothesis fails, and one a barrier that turns out to decide the
+translation rather than to block it. A language-design story cannot rest on any of
+them.
 
 It is also worth noticing how nearly this paper reported the opposite, and how often.
-Five times a refusal or a classification put something in the inexpressible column that
+Eight times a refusal or a classification put something in the inexpressible column that
 did not belong there: the aggregation order backwards, refusing $348$ occurrences on a
 commutation argument (\S\ref{sec:rollup-order}); all $124$ disjunctive scopes called a
 language gap when $120$ were a single regex matcher away (\S\ref{sec:gaps});
 \texttt{.weighted()} called inexpressible for $70$ occurrences when it computes nothing
 (Remark~\ref{rem:weighted}); the four disjunctions no single key covers counted
-against PromQL when \S\ref{sec:disjunction} says how PromQL expresses them; and $36$
+against PromQL when \S\ref{sec:disjunction} says how PromQL expresses them; $36$
 zero-fills called inexpressible because the one candidate the argument tried does not
-work, when another does (Remark~\ref{rem:fill}). The fourth is a residue of the second,
-so together they are $578$ distinct occurrences, more than six points of $\kappa$, every
-one an error in the direction that would have made the thesis look better. None was a
-fact about the languages, and the running total is the reason this section states the
-$0.8\%$ with less confidence than the $96.6\%$: the inexpressible column is the one
-this paper has been repeatedly wrong about, always the same way.
+work, when another does (Remark~\ref{rem:fill}); and the three constructs above, at
+$31$, $34$ and $5$. The fourth is a residue of the second, so together they are $648$
+distinct occurrences, $7.4$ points of $\kappa$, every one an error in the direction that
+would have made the thesis look better. None was a fact about the languages. The column
+is empty now, which is a stronger claim than any of the figures it used to hold --- and
+the right way to read it is with the running total beside it, because the inexpressible
+column is the one this paper has been repeatedly wrong about, always the same way, and
+the eighth correction is not evidence that there will be no ninth.
 
 \subsection{The cost is real, and it is that a query does not say what it means}
 
@@ -108,9 +119,9 @@ Charging it once is enough, because it now has a price. The type the query omits
 declared, for $89.5\%$ of translated occurrences, in the repository the dashboards come
 from, and the front end's inference is wrong on $6.5\%$ of those ---
 Remark~\ref{rem:type-measured}. That is $491$ panels a migration would carry across
-believing them exact, several times the entire $0.8\%$ this paper calls beyond reach, and
-it is caused by the ingestion mapping rather than by anything either language can or
-cannot say. The directional barrier of \S\ref{sec:ingestion} was argued as a matter of
+believing them exact, against nothing at all in the column this paper once called beyond
+reach, and it is caused by the ingestion mapping rather than by anything either language
+can or cannot say. The directional barrier of \S\ref{sec:ingestion} was argued as a matter of
 information; this is what it costs in practice, in the direction the paper calls
 cheap.
 
@@ -204,9 +215,9 @@ said no refusal in this direction was informational, which that remark retracts 
 which the two barriers named above contradict.
 
 Put the two together and the shape of the lock-in is specific. Leaving Datadog for
-Prometheus costs engineering: an enumerated list of constructs, a ceiling of $99.1\%$,
-three things left beyond it, plus the discipline of supplying the context the source
-queries omit. Coming back costs
+Prometheus costs engineering: an enumerated list of constructs, a ceiling of $99.9\%$,
+nothing left beyond it that either language explains, plus the discipline of supplying
+the context the source queries omit. Coming back costs
 expressiveness and information, both provably --- the first by
 Corollary~\ref{cor:no-glob} and Corollary~\ref{cor:absent-char}, the second by
 Proposition~\ref{prop:reverse}, and in each case for every translator rather than for
@@ -226,7 +237,8 @@ of PromQL written by people who were not thinking about globs.
 
 The units differ on the two sides of the comparison. The $8.1\%$ is a share of concrete
 regex \emph{matcher occurrences} --- by distinct pattern the same refusals are $3.8\%$
-(Table~\ref{tab:regex-glob}) --- while $\kappa$'s $3.6\%$ is a share of whole queries. A
+(Table~\ref{tab:regex-glob}) --- while the $3.3\%$ that $\kappa$ refuses is a share of
+whole queries. A
 query carries several matchers and fails if any one of them does, so the per-query
 reverse refusal rate is not $8.1\%$ and is not measured here; the conjunctive structure
 that makes \S\ref{sec:staircase}'s staircase would push it up, and nothing in this

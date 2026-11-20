@@ -50,20 +50,15 @@ Our code & Occurrences they emit for \\
 \end{tabular}
 \end{center}
 
-% TO FINISH: the LABEL_NAME_GLOB row is gone from the table above, because the code
-% left the catalogue and the baseline script stops emitting a figure for it. The five
-% rows that remain sum to oo.emits_where_we_refuse = 275, which the row broke.
-% The sentence below is the ceiling cluster's, not this remark's: nb03's EXPRESSIVENESS
-% set is empty, so none of these rows is a language gap now -- FILL_INTERPOLATION left
-% it when E10 read `m or (last_over_time(m[W]) * 0)` off a real server, and
-% PHI_QUANTILE's corollary assumes a distribution metric that none of its 34
-% occurrences has. The contrast to draw here is between a translator that refuses and
-% one that emits, which the table makes on its own, not between taste and proof.
 \noindent
 The first of those is
 the one where their behaviour is most defensible and ours most conservative: much of that
 row is unimplemented work on our side, so an expression that drops a modifier is not
-obviously worse than no expression at all. The next three are the ones where it is not a
-matter of taste --- \S\ref{sec:gaps} argues the construct has no PromQL counterpart, and
-Corollary~\ref{cor:quantile} proves it for the percentiles.
+obviously worse than no expression at all. The same is now true of the other four. Each
+of these rows was at some point argued to be a construct PromQL cannot express, and each
+left that column (\S\ref{sec:gaps}); what is left is a difference in policy, not in
+expressiveness. That is the comparison worth making here, and it is the one the table
+makes on its own: a translator that refuses where it cannot be sure, against one that
+emits an expression for all $275$ of these occurrences and leaves the dashboard to show
+the result.
 \end{remark}

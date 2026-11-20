@@ -1,12 +1,18 @@
 
-\texttt{LABEL\_NAME\_GLOB} ($31$) is the one clean expressiveness case left, and with
-\texttt{.weighted()} withdrawn, the disjunctions reclassified and
-\texttt{FILL\_INTERPOLATION} returned by Remark~\ref{rem:fill}, it and the percentiles
-and the empty-valued scopes are all that remains. A wildcard in a tag \emph{key} rather
-than a value, as in \texttt{\{*-location\}}, asks for a match over label \emph{names},
-which a PromQL selector cannot do, because label names are not queryable there ---
+\texttt{LABEL\_NAME\_GLOB} ($31$) was the last entry in the expressiveness column, and
+how it left is worth more than the fact that it did: it was wrong about Datadog, not
+about PromQL. A wildcard in a tag \emph{key} rather than a value, as in
+\texttt{\{*-location\}}, asks for a match over label \emph{names}, which a PromQL
+selector cannot do, because label names are not queryable there ---
 Remark~\ref{rem:label-name} puts that to a real server, including the quoted-name
-syntax 3.x added, which looks like somewhere a pattern could go and is not.
+syntax 3.x added, which looks like somewhere a pattern could go and is not. That
+finding stands. The premise does not: no Datadog query in this corpus ever wrote
+\texttt{\{*-location\}}. \texttt{corpus.\_TMPL} matched a template variable only as far
+as its first hyphen, so \texttt{\{\$cluster-location,\dots\}} normalised to a string
+Datadog's own parser rejects (Remark~\ref{rem:keyless-glob}), and this paper proved
+something about text it had manufactured. What is left is a true statement about PromQL
+with no Datadog construct on the other side of it, which is the right shape for the
+column to be empty in.
 
 This paragraph used to argue the fill row as well, and the argument it used is the one
 Remark~\ref{rem:fill} broke: that a PromQL expression has no term introducing a sample

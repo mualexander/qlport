@@ -237,7 +237,6 @@ ALLOWED: dict[float, str] = {
          "have used. Stated as a derivation because the ratio has no registry key "
          "of its own, and the 4.6 this replaces was 388/8,472 -- the matcher count "
          "from before the scan learnt PromQL's other two string forms",
-    3.6: "unregistered (nb 03): the bottom share",
     2.7: "unregistered (nb 01): PromQL queries the first six features complete",
     1.68: "unregistered (nb 02): worst relative error under a reset",
     1.4: "unregistered (nb 03): points of kappa the disjunction rule closed",
@@ -268,9 +267,14 @@ SCALAR_ONLY: set[float] = {
 # entry would license the stale value *anywhere* -- and a stale kappa in the abstract is
 # exactly the bug this file exists to catch. The value and the place are both the claim.
 ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
-    578: ("the five misclassified episodes, less the overlap between two of them:\n"
-          "348 + 124 + 70 + 36, where the four disjunctions are a residue of the 124.\n"
-          "Was 542 until Remark rem:fill returned the zero-fills as well",
+    648: ("the eight misclassified episodes, less the overlap between two of them:\n"
+          "348 + 124 + 70 + 36 + 31 + 34 + 5, where the four disjunctions are a\n"
+          "residue of the 124. Was 542 until rem:fill returned the zero-fills, then\n"
+          "578 until LABEL_NAME_GLOB, PHI_QUANTILE and SCOPE_EMPTY_VALUE left the\n"
+          "expressiveness set and emptied it",
+          {"08_discussion.tex"}),
+    7.4: ("those 648 as a share of the corpus: 648 / 8,770. The six points it\n"
+          "replaces was 578 / 8,770",
           {"08_discussion.tex"}),
     348: ("refusals under the commutation argument",
           {"01_introduction.tex", "05_translation.tex", "07_evaluation.tex",

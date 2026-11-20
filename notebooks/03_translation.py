@@ -224,7 +224,7 @@ print(gaps[["gap", "occurrences", "distinct"]].to_string(index=False))
 # there and no PromQL term says it. `.weighted()` used to head this set and left it
 # entirely when E9 measured the modifier as the identity.
 # Empty, as of the eleventh pass. Every refusal this emitter raises is unfinished work
-# or missing context; none is a property of either language. The five that left, and why:
+# or missing context; none is a property of either language. The six that left, and why:
 #
 #   .weighted()        E9 measured the modifier as the identity, so there was nothing
 #                      to express (70 occurrences).
