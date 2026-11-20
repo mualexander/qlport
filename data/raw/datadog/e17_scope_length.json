@@ -1,0 +1,134 @@
+{
+ "collected_at": "2026-11-20T02:58:32+00:00",
+ "metric": "qlport.e12.wild",
+ "tag_key": "probe",
+ "window_seconds": 300.0,
+ "alphabet_size": 41,
+ "max_union_claimed": 1681,
+ "control_metric": "qlport.ar.r1794863577.cnt",
+ "controls": [
+  {
+   "control": "bare-scope-present",
+   "expected": "series",
+   "got": "series",
+   "holds": true,
+   "query_bytes": 38,
+   "detail": ""
+  },
+  {
+   "control": "bare-scope-absent",
+   "expected": "empty",
+   "got": "empty",
+   "holds": true,
+   "query_bytes": 40,
+   "detail": ""
+  },
+  {
+   "control": "long-list-including",
+   "expected": "series",
+   "got": "series",
+   "holds": true,
+   "query_bytes": 8448,
+   "detail": ""
+  },
+  {
+   "control": "long-list-excluding",
+   "expected": "empty",
+   "got": "empty",
+   "holds": true,
+   "query_bytes": 8445,
+   "detail": ""
+  },
+  {
+   "control": "malformed-unclosed",
+   "expected": "refused",
+   "got": "refused",
+   "holds": true,
+   "query_bytes": 45,
+   "detail": "query failed: Error parsing query: unable to parse avg:qlport.ar.r1794863577.cnt{probe IN (a, b}: Rule 'rparen' didn't match at '}' (line 1, column 45)."
+  },
+  {
+   "control": "malformed-operator",
+   "expected": "refused",
+   "got": "refused",
+   "holds": true,
+   "query_bytes": 44,
+   "detail": "query failed: Error parsing query: unable to parse avg:qlport.ar.r1794863577.cnt{probe QUX (a)}: Rule 'or_op' didn't match at 'QUX (a)}' (line 1, column 37)."
+  }
+ ],
+ "boundary": null,
+ "rows": [
+  {
+   "n": 1,
+   "url_bytes": 120,
+   "accepted": true,
+   "series": 0,
+   "dd_status": "ok",
+   "seconds": 0.33
+  },
+  {
+   "n": 41,
+   "url_bytes": 404,
+   "accepted": true,
+   "series": 0,
+   "dd_status": "ok",
+   "seconds": 0.31
+  },
+  {
+   "n": 100,
+   "url_bytes": 861,
+   "accepted": true,
+   "series": 0,
+   "dd_status": "ok",
+   "seconds": 0.32
+  },
+  {
+   "n": 256,
+   "url_bytes": 2013,
+   "accepted": true,
+   "series": 0,
+   "dd_status": "ok",
+   "seconds": 0.32
+  },
+  {
+   "n": 512,
+   "url_bytes": 3831,
+   "accepted": true,
+   "series": 0,
+   "dd_status": "ok",
+   "seconds": 0.35
+  },
+  {
+   "n": 1000,
+   "url_bytes": 7377,
+   "accepted": true,
+   "series": 0,
+   "dd_status": "ok",
+   "seconds": 0.36
+  },
+  {
+   "n": 1681,
+   "url_bytes": 12208,
+   "accepted": true,
+   "series": 0,
+   "dd_status": "ok",
+   "seconds": 0.57
+  },
+  {
+   "n": 2000,
+   "url_bytes": 16555,
+   "accepted": true,
+   "series": 0,
+   "dd_status": "ok",
+   "seconds": 0.58
+  },
+  {
+   "n": 4096,
+   "url_bytes": 35241,
+   "accepted": true,
+   "series": 0,
+   "dd_status": "ok",
+   "seconds": 0.82
+  }
+ ]
+}
