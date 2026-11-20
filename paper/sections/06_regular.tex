@@ -199,62 +199,62 @@ union of them.}
 \end{table}
 \iffull\input{sections/moved/reg_examples_table}\fi
 
-Table~\ref{tab:regex-glob-reasons} is the part this section can be held to, and it has
-to be read against the target of \S\ref{sec:glob-unions} rather than against a single
-glob. Three constructs account for every refusal, and each is an instance of
-Corollary~\ref{cor:no-glob} \emph{or} of one of two facts that generalise it
-(\apref{app:proofs}): a single-character
-wildcard such as \texttt{5..} would need a
-glob for $\Sigma$, which part~(1) forbids; \texttt{.+} would need one for $\Sigma^{+}$,
-forbidden by part~(2); and \texttt{5[0-9]+} would need a star that never admits a
-non-digit, forbidden by Corollary~\ref{cor:absent-char} --- not by part~(3), which is
-about $A^{+}$ itself and which \texttt{5[0-9]+} is not, its shortest word having three
-characters where $A^{+}$ has words of one.
+Every equivalence in this section is decided over an alphabet, and for eleven passes the
+section did not say which. The question is not a formality. ``Does this regular
+expression denote the same set as that glob'' has two readings, and on this corpus they
+differ by $238$ matcher occurrences. Over all strings \texttt{.+} is no finite union of
+globs at all, so the $21$ patterns that contain it are refused; over the strings a
+Datadog tag value may contain, \texttt{.+} is the union of $c$\texttt{*} for each
+character $c$ --- $41$ branches --- and a scope can say every one of them. The second is the right
+universe, and not as a convenience --- a string that is not a legal tag value cannot
+appear on either side of the equivalence, so admitting it compares two languages on
+words neither will ever be asked about. It is also the universe \S\ref{sec:glob-unions}
+was already assuming when it counted one branch per alphabet character.
+
+Datadog documents that set --- lower-case letters, digits, underscores, minuses, colons,
+periods and slashes, with the value lower-cased on ingest --- which is $41$ characters,
+and Remark~\ref{rem:glob-constructs} is the reason to take the documentation at its word
+on a question of this shape rather than to assume it. The corpus is censused rather than
+trusted: every distinct tag value in the instantiated corpus, read through this paper's
+own Datadog parser, uses only those $41$ characters, and every one of the $41$ is written
+somewhere in it. The second direction is the one worth checking, because it is what
+would catch an alphabet quietly widened until a pattern decided.
+
+With $\Sigma$ that set, Table~\ref{tab:regex-glob-reasons} is the part this section can
+be held to, and it has to be read against the target of \S\ref{sec:glob-unions} rather
+than against a single glob. Two constructs account for every refusal, and neither is a
+single-character wildcard: \texttt{5..} is the union of $|\Sigma|^{2}$ globs, one per
+pair of characters, and \texttt{.+} the union of $|\Sigma|$ of them, and a scope can be
+made to say either. The three impossibility results are untouched as theorems. They are
+about a \emph{single} glob, and Table~\ref{tab:regex-glob} is the measurement of how
+little of this corpus a single glob reaches; what they no longer do, against a union
+target over a finite alphabet, is refuse a corpus pattern on their own.
+
+What refuses is each of them together with something else. Four patterns need more
+branches than the bound admits: \texttt{2..|5..} is two free positions twice over at
+$3{,}362$ branches against a bound of $41^{2}$, and the two that carry $71$ of those
+$74$ occurrences are alternations over device names, each branch of which ends in
+\texttt{.+} and costs $41$. Those refusals rest on a number this paper chose and states,
+and they decide if the number is raised --- into a scope with thousands of branches in
+it, which is the sense in which the bound is about maintenance rather than about
+language.
+\texttt{5[0-9]+} would need a star that never admits a non-digit, forbidden by
+Corollary~\ref{cor:absent-char} --- not by part~(3), which is about $A^{+}$ itself and
+which \texttt{5[0-9]+} is not, its shortest word having three characters where $A^{+}$
+has words of one.
 
 
 \iffull\input{sections/moved/reg_corollary_reach}\fi
 
-The three are not equally final, and saying so costs less than leaving it implied. The
-target here is a union of at most $B$ globs, and the first two constructs \emph{are}
-finite unions: $\Sigma^{+}$ is $\bigcup_{c\in\Sigma}L(c*)$ and $\Sigma$ is the union of
-its one-character words, so each needs one branch per alphabet character, or
-$|\Sigma|^{2}$ of them for \texttt{5..}. Those refusals therefore rest on the bound as
-well as on the corollary, and on $|\Sigma|>B$ --- which is false.
+The two are not equally final, and saying so costs less than leaving it implied.
+$\Sigma^{+}$ is $\bigcup_{c\in\Sigma}L(c\texttt{*})$ and $\Sigma$ is the union of its
+one-character words, so a pattern built from them needs one branch per alphabet
+character, or $|\Sigma|^{2}$ of them for two free positions. A refusal of that kind is a
+statement about $B$ and about the width of the pattern, not about the languages.
 
-% TO FINISH: this subsection is mid-revision, and what is left is prose rather than
-% figures. The cross-check has been re-run and every number in this section now comes
-% from data/processed/regex_glob.csv, the crosscheck cache and the registry, which
-% agree: 184 concrete distinct patterns over 1,041 occurrences, split 61/116/7 distinct
-% and 309/648/84 by occurrence, so a glob exists for 957 (91.9%) and 84 (8.1%) are
-% refused -- 74 on the union bound and 10 on Corollary absent-char. Those are in the
-% prose above and in Table 5.
-%
-% The argument still to write: Definition 14 never said what Sigma was; over all
-% strings `.+` is no finite union of globs and 218 corpus occurrences are inexpressible
-% (see the comment above TAG_ALPHABET in src/qlport/regular.py); over the 41 characters
-% a tag value may contain it is a union of 41 globs, and the finite reading is the
-% correct one because a string that is not a legal tag value cannot appear on either
-% side of the equivalence.
-%
-% Three passages still describe the unpinned reading and cannot be fixed by changing a
-% numeral, because their premise moved rather than their count:
-%   1. The enumeration below -- "Three constructs account for every refusal", with
-%      `5..` needing a glob for Sigma and `.+` one for Sigma^+. Two constructs account
-%      for the refusals now, and neither is a single-character wildcard: `5..` is a
-%      union of 1,681 globs and `.+` one of 41. The corollaries are unaffected as
-%      theorems; what changed is that they no longer refuse any corpus pattern on
-%      their own, and the section should say which results carry which refusals.
-%   2. sections/moved/reg_star_empty.tex, whose "238 occurrences refused as `.+`" are
-%      no longer refused at all. The E5 sensitivity argument survives -- the reading of
-%      `*` decides whether `.+` or `.*` is the expressible one -- and should be put as
-%      a question about which globs exist rather than about which refusals stand.
-%   3. sections/moved/reg_glob_constructs.tex, where E12's finding carried 140 refused
-%      occurrences "which is 13 points of the 37.3% the abstract quotes". No refusal
-%      rests on Definition 14 now; what rests on it is the single/union classification
-%      (with `?` a glob wildcard, `5..` would be the single glob `5??`), which is the
-%      larger claim and the one to make. The abstract quotes no percentage at all.
-Only part~(3) is unconditional: an infinite language needs a star, a glob's star admits
-every character, and no union of finitely many such globs confines it to the digits. So
+Only the second kind is unconditional: an infinite language needs a star, a glob's star
+admits every character, and no union of finitely many such globs confines it to the
+digits. So
 $74$ of the $84$ occurrences are refused by a theorem about single globs plus a bound
 this paper chose, and $10$ by a theorem about globs outright. For
 the single-glob question we can also say it the other way round, by measurement rather
@@ -267,16 +267,21 @@ and all $116$ unions. Nothing is left undecided: no pattern exceeds the search's
 candidate bound, so the agreement is over the whole population rather than over a
 reachable part of it.
 
-One of these refusals rests on something Datadog does not document. The $238$
-occurrences refused as \texttt{.+}, or as a pattern containing it, are refused by
-Corollary~\ref{cor:no-glob}(2) --- and that part of the corollary assumed \texttt{*}
-matches the empty string. The two readings cannot both hold: a glob has exactly one
-wildcard, which either requires a character or does not, so under one reading
-\texttt{.+} has no glob and under the other \texttt{.*} has none. The corpus writes
-\texttt{.+} $133$ times and \texttt{.*} $9$ times, so the reading is worth $124$
-occurrences either way. It was put to a real account rather than guessed, and the
-wildcard does match the empty string, so the figures above stand as computed
-(\texttt{scripts\slash trial\_checks.py e5}; \apref{app:experiments}).
+Every figure above rests on something Datadog does not document.
+Corollary~\ref{cor:no-glob}(2) assumed a glob's \texttt{*} matches the empty string, and
+the two readings cannot both hold: a glob has exactly one wildcard, which either
+requires a character or does not. That is not a detail about two patterns. Re-deciding
+the corpus with the constant flipped --- a measurement of this paper's procedure under
+the other reading, not of what that reading makes expressible, since
+Proposition~\ref{prop:decidable}'s search assumes the reading taken --- refuses $599$ of
+the $1{,}041$ concrete occurrences where the reading taken refuses $84$. Of the $184$
+patterns, $72$ change classification and $515$ occurrences with them, every one of them
+toward refusal, because a star that cannot stand for nothing cannot stand for the
+\texttt{.*} most of these patterns are built from. It was put to a real account rather
+than guessed, and the wildcard does match the empty string, so the figures above stand
+as computed (\texttt{scripts\slash trial\_checks.py e5}; \apref{app:experiments}), and
+the counterfactual is itself recorded
+(\texttt{scripts\slash star\_reading\_check.py}).
 
 \iffull\input{sections/moved/reg_crosscheck_timing}\fi
 \iffull\input{sections/moved/reg_complete_dialect}\fi
@@ -284,11 +289,15 @@ wildcard does match the empty string, so the figures above stand as computed
 \iffull\input{sections/moved/reg_star_empty}\fi
 
 \inlineonly{\noindent}%
-The practical conclusion for the reverse direction is narrower than
-Table~\ref{tab:regex-glob} suggests on its own. A Datadog scope cannot say what
-\texttt{5..} says, and cannot say what \texttt{.+} says under the reading taken here, in
-any scope a person would maintain; both are ordinary things to write in PromQL. That is
-the kind of gap this paper set out to distinguish from the other kind, and in this
-corner of the problem no refusal is unfinished work: each is either a theorem about
-globs or that theorem together with the branch bound, and neither is removed by
-building more.
+The practical conclusion for the reverse direction is wider than
+Table~\ref{tab:regex-glob} suggests on its own, and narrower than the refusal count
+suggests. A Datadog scope reaches $91.9\%$ of what this corpus's concrete matchers say,
+but two thirds of that is reached only as a union, and a union of $41$ branches is a
+scope somebody has to maintain --- expressible and unpleasant are different properties,
+and only the first is what a theorem decides. What is left over is small and of two
+kinds. \texttt{2..|5..} is refused by the branch bound, which this paper chose; raise
+the bound and it decides, at the price of a scope nobody would write. \texttt{5[0-9]+}
+is refused by a theorem, and no bound removes it. That second kind is the gap this
+paper set out to distinguish from unfinished work, and in this corner of the problem
+there is no unfinished work at all: every refusal is a theorem about globs, or that
+theorem together with a bound this paper states.

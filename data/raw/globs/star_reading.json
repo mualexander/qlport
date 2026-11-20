@@ -1,0 +1,1341 @@
+{
+ "moved": {
+  "by_transition": {
+   "single->none": {
+    "distinct": 36,
+    "occurrences": 250
+   },
+   "union->none": {
+    "distinct": 36,
+    "occurrences": 265
+   }
+  },
+  "distinct": 72,
+  "occurrences": 515
+ },
+ "other": {
+  "none": {
+   "distinct": 79,
+   "occurrences": 599
+  },
+  "single": {
+   "distinct": 25,
+   "occurrences": 59
+  },
+  "union": {
+   "distinct": 80,
+   "occurrences": 383
+  }
+ },
+ "provenance": {
+  "collected_at": "2026-11-20T23:37:20+00:00",
+  "occurrences": 1041,
+  "patterns": 184,
+  "reading": "a glob's star requires at least one character",
+  "recorded_reading": "a glob's star matches the empty string"
+ },
+ "rows": [
+  {
+   "occurrences": 133,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": ".+",
+   "taken": "union"
+  },
+  {
+   "occurrences": 60,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "^k8s_.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 49,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": "(/dev/)?(mmcblk.p.+|nvme.+|rbd.+|sd.+|vd.+|xvd.+|dm-.+|md.+|dasd.+)",
+   "taken": "none"
+  },
+  {
+   "occurrences": 41,
+   "other": "union",
+   "other_reason": "",
+   "regex": "LIST|GET",
+   "taken": "union"
+  },
+  {
+   "occurrences": 40,
+   "other": "union",
+   "other_reason": "",
+   "regex": "5..",
+   "taken": "union"
+  },
+  {
+   "occurrences": 36,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*external-dns.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 34,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "ext.*|xfs",
+   "taken": "union"
+  },
+  {
+   "occurrences": 32,
+   "other": "union",
+   "other_reason": "",
+   "regex": "proxy|attach|log|exec|portforward",
+   "taken": "union"
+  },
+  {
+   "occurrences": 27,
+   "other": "union",
+   "other_reason": "",
+   "regex": "POST|PUT|PATCH|DELETE",
+   "taken": "union"
+  },
+  {
+   "occurrences": 24,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*pod.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 22,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": "mmcblk.p.+|nvme.+|rbd.+|sd.+|vd.+|xvd.+|dm-.+|dasd.+",
+   "taken": "none"
+  },
+  {
+   "occurrences": 22,
+   "other": "single",
+   "other_reason": "",
+   "regex": "rootfs",
+   "taken": "single"
+  },
+  {
+   "occurrences": 16,
+   "other": "union",
+   "other_reason": "",
+   "regex": "ext.?|xfs",
+   "taken": "union"
+  },
+  {
+   "occurrences": 16,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "xfs|ext.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 14,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 14,
+   "other": "union",
+   "other_reason": "",
+   "regex": "1(\\.0)?",
+   "taken": "union"
+  },
+  {
+   "occurrences": 13,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "(openshift-.*|kube-.*|default|logging)",
+   "taken": "union"
+  },
+  {
+   "occurrences": 13,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "5.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 13,
+   "other": "union",
+   "other_reason": "",
+   "regex": "source|waypoint",
+   "taken": "union"
+  },
+  {
+   "occurrences": 11,
+   "other": "union",
+   "other_reason": "",
+   "regex": "2..",
+   "taken": "union"
+  },
+  {
+   "occurrences": 11,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "ztunnel-.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 10,
+   "other": "union",
+   "other_reason": "",
+   "regex": "4..",
+   "taken": "union"
+  },
+  {
+   "occurrences": 10,
+   "other": "union",
+   "other_reason": "",
+   "regex": "discovery|istio-proxy",
+   "taken": "union"
+  },
+  {
+   "occurrences": 10,
+   "other": "union",
+   "other_reason": "",
+   "regex": "idle|iowait|steal",
+   "taken": "union"
+  },
+  {
+   "occurrences": 10,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "promtail.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 9,
+   "other": "union",
+   "other_reason": "",
+   "regex": "3..",
+   "taken": "union"
+  },
+  {
+   "occurrences": 9,
+   "other": "union",
+   "other_reason": "",
+   "regex": "GitRepository|HelmRepository|Bucket",
+   "taken": "union"
+  },
+  {
+   "occurrences": 9,
+   "other": "union",
+   "other_reason": "",
+   "regex": "Kustomization|HelmRelease",
+   "taken": "union"
+  },
+  {
+   "occurrences": 9,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "loki.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 9,
+   "other": "union",
+   "other_reason": "",
+   "regex": "mixer|istio-proxy",
+   "taken": "union"
+  },
+  {
+   "occurrences": 8,
+   "other": "union",
+   "other_reason": "",
+   "regex": "Pending|Running",
+   "taken": "union"
+  },
+  {
+   "occurrences": 8,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": "dm-.+",
+   "taken": "union"
+  },
+  {
+   "occurrences": 8,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "istio-ingressgateway-.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 8,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "istio-telemetry-.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 7,
+   "other": "union",
+   "other_reason": "",
+   "regex": "30(\\.0)?",
+   "taken": "union"
+  },
+  {
+   "occurrences": 7,
+   "other": "union",
+   "other_reason": "",
+   "regex": "5(\\.0)?",
+   "taken": "union"
+  },
+  {
+   "occurrences": 7,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "istiod-.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 7,
+   "other": "union",
+   "other_reason": "",
+   "regex": "resource|",
+   "taken": "union"
+  },
+  {
+   "occurrences": 6,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*prom.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 6,
+   "other": "union",
+   "other_reason": "",
+   "regex": "fail|error",
+   "taken": "union"
+  },
+  {
+   "occurrences": 6,
+   "other": "union",
+   "other_reason": "",
+   "regex": "istio-telemetry|istio-policy",
+   "taken": "union"
+  },
+  {
+   "occurrences": 6,
+   "other": "single",
+   "other_reason": "",
+   "regex": "success",
+   "taken": "single"
+  },
+  {
+   "occurrences": 5,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "[4-5].*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 5,
+   "other": "none",
+   "other_reason": "unbounded-character-class",
+   "regex": "[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+",
+   "taken": "none"
+  },
+  {
+   "occurrences": 5,
+   "other": "single",
+   "other_reason": "",
+   "regex": "active",
+   "taken": "single"
+  },
+  {
+   "occurrences": 5,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "istio-pilot-.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 4,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*(serviceaccount|proc|sys).*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 4,
+   "other": "union",
+   "other_reason": "",
+   "regex": "LIST|GET|POST|PUT|PATCH|DELETE",
+   "taken": "union"
+  },
+  {
+   "occurrences": 4,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "^amazon.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 4,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "commit|rollback|savepoint.*|prepare",
+   "taken": "union"
+  },
+  {
+   "occurrences": 4,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": "lo|veth.+",
+   "taken": "union"
+  },
+  {
+   "occurrences": 4,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "pvc.*.ctrl.*|pvc.*.rep.*|pvc.*.target.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 4,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "shr.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 3,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*irq",
+   "taken": "single"
+  },
+  {
+   "occurrences": 3,
+   "other": "union",
+   "other_reason": "",
+   "regex": "404|499",
+   "taken": "union"
+  },
+  {
+   "occurrences": 3,
+   "other": "union",
+   "other_reason": "",
+   "regex": "<none>|Job",
+   "taken": "union"
+  },
+  {
+   "occurrences": 3,
+   "other": "union",
+   "other_reason": "",
+   "regex": "CONNECT|WATCH",
+   "taken": "union"
+  },
+  {
+   "occurrences": 3,
+   "other": "none",
+   "other_reason": "unbounded-character-class",
+   "regex": "cassandra-\\d+",
+   "taken": "none"
+  },
+  {
+   "occurrences": 3,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": "cloudnative-pg-operator.+|cnpg-controller-manager.+",
+   "taken": "union"
+  },
+  {
+   "occurrences": 3,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "istio-policy-.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 3,
+   "other": "union",
+   "other_reason": "",
+   "regex": "istio-policy|istio-telemetry",
+   "taken": "union"
+  },
+  {
+   "occurrences": 3,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "node.kubernetes.io.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 3,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "otelcol_process_uptime.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 3,
+   "other": "union",
+   "other_reason": "",
+   "regex": "scheduledbackup|scheduled-backup",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "single",
+   "other_reason": "",
+   "regex": "",
+   "taken": "single"
+  },
+  {
+   "occurrences": 2,
+   "other": "union",
+   "other_reason": "",
+   "regex": "(Error|Failed)",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "(veth|azv|lxc).*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "(veth|azv|lxc|lo).*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*.dashboard.*|.*.dns.*|kube.*|.*.calico.*|.*.flannel.*|.*.etcd.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*.scope",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*Virtual.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "/api/datasources/proxy/:id.*|/api/ds/query|/api/tsdb/query",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "union-too-large",
+   "regex": "2..|5..",
+   "taken": "none"
+  },
+  {
+   "occurrences": 2,
+   "other": "single",
+   "other_reason": "",
+   "regex": "33-PCI 1 Zone",
+   "taken": "single"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "unbounded-character-class",
+   "regex": "5[0-9]+",
+   "taken": "none"
+  },
+  {
+   "occurrences": 2,
+   "other": "union",
+   "other_reason": "",
+   "regex": "5\\d\\d|4\\d\\d",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "union",
+   "other_reason": "",
+   "regex": "error|warn",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "union",
+   "other_reason": "",
+   "regex": "grafanacloud_org_logs_bill_fraction|grafanacloud_org_logs_process_bill_fraction|grafanacloud_org_logs_query_bill_fraction",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "union",
+   "other_reason": "",
+   "regex": "grafanacloud_org_logs_overage|grafanacloud_org_logs_process_overage|grafanacloud_org_logs_query_overage",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "union",
+   "other_reason": "",
+   "regex": "grafanacloud_org_metrics_bill_fraction|grafanacloud_org_metrics_query_bill_fraction",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "union",
+   "other_reason": "",
+   "regex": "grafanacloud_org_metrics_overage|grafanacloud_org_metrics_query_overage",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "guest.*|idle|iowait",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": "java:lang:garbagecollector:.+:lastgcinfo:duration",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": "java:lang:memory:.+:(committed|max|used)",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "single",
+   "other_reason": "",
+   "regex": "kong_process_events",
+   "taken": "single"
+  },
+  {
+   "occurrences": 2,
+   "other": "union",
+   "other_reason": "",
+   "regex": "kube_deployment_metadata_generation|kube_daemonset_metadata_generation|kube_statefulset_metadata_generation",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "single",
+   "other_reason": "",
+   "regex": "lo",
+   "taken": "single"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "org:apache:cassandra:metrics:droppedmessage:.*:oneminuterate",
+   "taken": "single"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "org:apache:cassandra:metrics:threadpools:.*:completedtasks:value",
+   "taken": "single"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": "org:apache:cassandra:metrics:threadpools:.+:pendingtasks:value",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": "org:apache:cassandra:metrics:threadpools:.+:totalblockedtasks:count",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "union",
+   "other_reason": "",
+   "regex": "resident|virtual",
+   "taken": "union"
+  },
+  {
+   "occurrences": 2,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "spiffe.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 2,
+   "other": "union",
+   "other_reason": "",
+   "regex": "usw|udm|udmp",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "(1|2).*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "(Lost)",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "(MemoryPressure|DiskPressure|PIDPressure)",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "(Pending|Lost)",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "(cpu|requests.cpu)",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "(memory|requests.memory)",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "(unhealthy|dns_error)",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*config.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*fluentbit.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*fluentd.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*node.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*otelcol_processor_.+accepted_log_records.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*otelcol_processor_.+accepted_metric_points.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*otelcol_processor_.+accepted_spans.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*otelcol_processor_.+dropped_log_records.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*otelcol_processor_.+dropped_metric_points.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*otelcol_processor_.+dropped_spans.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*otelcol_processor_.+refused_log_records.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*otelcol_processor_.+refused_metric_points.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": ".*otelcol_processor_.+refused_spans.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "/kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-.*",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "01-Inlet Ambient",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "02-CPU 1|03-CPU 2",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "04-P1 DIMM 1-6|05-P1 DIMM 7-12|06-P2 DIMM 1-6|07-P2 DIMM 7-12|08-P1 Mem Zone|09-P1 Mem Zone|10-P2 Mem Zone|11-P2 Mem Zone",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "12-HD Max|13-Chipset 1|14-Chipset1 Zone",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "15-P/S 1 Inlet|17-P/S 2 Inlet|16-P/S 1 Zone|18-P/S 2 Zone",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "2",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "2.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "20.",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "200",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "21-VR P1|22-VR P2|23-VR P1 Mem|25-VR P2 Mem|42-SuperCap Max|31-HD Controller|32-HD Cntlr Zone",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "3.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "30.",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "33-PCI 1 Zone|36-PCI 2 Zone|23-VR P1 Mem|24-VR P1 Mem|34-PCI 1 Zone",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "37-System Board|38-System Board|39-Sys Exhaust|40-Sys Exhaust|41-Sys Exhaust",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "4.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "40.",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "404",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "50.",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "503",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "CVE.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "ContainerCreating",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "ErrImagePull|ImagePullBackOff|CrashLoopBackOff",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "Error|Failed",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "Failed|Pending",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "PIDPressure",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "Pending|Unknown",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "Pod|",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "Running|Succeeded",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "SERVFAIL|REFUSED",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "union-too-large",
+   "regex": "ToBeDeletedByClusterAutoscaler|cloud.google.com/impending-node-termination|aws-node-termination-handler/spot-itn",
+   "taken": "none"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "UP|DOWN",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "^node_load.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": "^vmbackupmanager.+",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "active|reading|writing|waiting",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "app_.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "aws-node|kube-proxy|kube-prometheus-stack-prometheus-node-exporter",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "canceled",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "cnpg_pg_stat_(bgwriter_checkpoint|checkpointer)_sync_time",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "cnpg_pg_stat_(bgwriter_checkpoint|checkpointer)_write_time",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "cnpg_pg_stat_(bgwriter|checkpointer)_checkpoints_req",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "cnpg_pg_stat_(bgwriter|checkpointer)_checkpoints_timed",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "created",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "disableDaily|disableHourly|disableWeekly|disableMonthly",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "eth_con_spec.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "failed",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "failed|canceled",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "http|https",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "idle|idle in transaction|idle in transaction (aborted)",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "idle|iowait",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "keep(.*)",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "kube-dns|coredns",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "limits.cpu",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "limits.memory",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "manual",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "pending",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "preparing",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "rabbitmqcli.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "requests.cpu|cpu",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "requests.memory|memory",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "rootfs|tmpfs",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "running",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "scheduled",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "skipped",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "success|running|failed|canceled",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "star-requires-a-character",
+   "regex": "template.*",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "none",
+   "other_reason": "proposal-not-equivalent",
+   "regex": "veth.+",
+   "taken": "union"
+  },
+  {
+   "occurrences": 1,
+   "other": "single",
+   "other_reason": "",
+   "regex": "waiting_for_resource",
+   "taken": "single"
+  },
+  {
+   "occurrences": 1,
+   "other": "union",
+   "other_reason": "",
+   "regex": "warning|critical",
+   "taken": "union"
+  }
+ ],
+ "taken": {
+  "none": {
+   "distinct": 7,
+   "occurrences": 84
+  },
+  "single": {
+   "distinct": 61,
+   "occurrences": 309
+  },
+  "union": {
+   "distinct": 116,
+   "occurrences": 648
+  }
+ }
+}

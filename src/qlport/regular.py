@@ -49,19 +49,23 @@ STAR_MATCHES_EMPTY = True
 #
 # §6 asked whether a PromQL matcher and a Datadog scope denote the same set, and left
 # "the same set of what?" unstated for eleven passes. The two readings are not close.
-# Over all strings, `.+` is no finite union of globs and 218 corpus occurrences are
-# inexpressible; over the strings a Datadog tag value may contain, `.+` is the union of
-# `c*` for the 41 characters below and those occurrences are a union the bound admits.
+# Over all strings, `.+` is no finite union of globs, so the 21 corpus patterns that
+# contain it -- 238 occurrences -- are inexpressible; over the strings a Datadog tag
+# value may contain, `.+` is the union of `c*` for the 41 characters below and every one
+# of those occurrences is a union the bound admits.
 # The second is the right universe --- a value that is not a legal tag value cannot
 # appear on either side --- and it is the one §6.4's own arithmetic already assumed
 # when it spoke of "one branch per alphabet character".
 #
 # Datadog documents the set: lower-case letters, digits, underscores, minuses, colons,
 # periods and slashes, with the whole value lower-cased on ingest. The corpus agrees
-# exactly: a census of all 419 distinct tag values in the instantiated corpus, taken
-# through this project's own Datadog parser, finds these same 41 characters and no
-# others. E12 is the reason to trust the documentation here, having put the adjacent
-# claim about glob constructs to the account and had it confirmed.
+# exactly, and is censused rather than trusted: `test_the_alphabet_is_the_one_the_corpus
+# _writes` takes every distinct tag value in the instantiated corpus through this
+# project's own Datadog parser and asserts the two character sets equal in both
+# directions -- no value outside these 41, and none of the 41 unwritten. The second
+# direction is the one that would catch an alphabet widened to make a pattern decide.
+# E12 is the reason to trust the documentation here, having put the adjacent claim
+# about glob constructs to the account and had it confirmed.
 TAG_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789_:./-"
 # greenery's parser wants the hyphen escaped and not final inside a class. Kept as the
 # written form of the alphabet; the decider substitutes a Charclass rather than parsing
@@ -71,7 +75,7 @@ _SIGMA_CLASS = r"[a-z0-9_:.\-/]"
 # How many globs a union may contain, and how large an intermediate product may get,
 # before the conversion gives up. A union is emitted as `IN (...)` in a scope, so the
 # bound is about how much text someone will maintain rather than about expressibility:
-# at no bound at all, 162 of the 172 refused occurrences become exact unions.
+# at no bound at all, 74 of the 84 refused occurrences become exact unions.
 #
 # The bound is two unconstrained character positions. What makes that the choice rather
 # than an arbitrary number is the corpus's own distribution: the sizes actually needed

@@ -3,10 +3,17 @@ Definition~\ref{def:glob} is the premise of every negative result in
 \S\ref{sec:regular}, and until the eleventh pass it was a sentence from Datadog's
 documentation. That is the shape of error this paper's method note is about: a rule read
 in a manual and never put to the system. It is also load-bearing in the reverse
-direction --- Table~\ref{tab:regex-glob-reasons} refuses $140$ matcher occurrences on
-the ground that no glob denotes a single arbitrary character, which is $13$ points of
-the $37.3\%$ the abstract quotes --- so if the documentation were incomplete, that row
-would be the paper's largest single error.
+direction, though not where an earlier draft said it was. No refusal in
+Table~\ref{tab:regex-glob-reasons} rests on the absence of a single-character wildcard:
+over the $41$ characters a tag value may contain, \texttt{5..} is a union of $41^{2}$
+globs and is admitted. What rests on Definition~\ref{def:glob} is the \emph{shape} of
+the answer, which is the larger claim. With \texttt{?} a glob wildcard, \texttt{5..}
+would be the single glob \texttt{5??} rather than $1{,}681$ branches, and
+\texttt{2..|5..} would be two globs rather than a refusal; with a character class, the
+three patterns Corollary~\ref{cor:absent-char} refuses would each have to be asked
+again. So the definition does not decide one row of that table --- it decides which
+column most of Table~\ref{tab:regex-glob} falls in, and whether the scopes this section
+calls expressible are ones a person could write.
 
 Three series were submitted to the trial account, tagged \texttt{probe:web-1},
 \texttt{probe:web-12} and \texttt{probe:web-a}, with a control query carrying no glob to
@@ -32,9 +39,9 @@ errors} --- \texttt{Rule 'or\_op' didn't match at '?'}, and the same at \texttt{
 at \texttt{|}. That is a better answer than the one the experiment was designed to get.
 A construct that is accepted and selects nothing would be a literal, and a literal is
 still a fact about matching that a future Datadog release could change quietly; a
-construct the query grammar refuses to parse is absent from the language. Definition~14
-is now a measurement, and the $140$ occurrences rest on it rather than on
-\citet{ddfilter}.
+construct the query grammar refuses to parse is absent from the language. Definition~\ref{def:glob}
+is now a measurement, and the three-way split of Table~\ref{tab:regex-glob} rests on it
+rather than on \citet{ddfilter}.
 
 Two limits worth stating. This is one account on one site on one date, and Datadog
 versions its query grammar silently, so the reading is of the service as it behaved

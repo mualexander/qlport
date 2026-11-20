@@ -168,6 +168,19 @@ ALLOWED: dict[float, str] = {
     1760: "E7: avg_over_time of the running totals at the end of the run",
     0.994: "E7: the relative difference after half an hour",
     0.5: "E7: the relative difference at the start of the run",
+    # --- §6's own measurements, each pinned to a cache by tests/test_regular.py -------
+    599: "the occurrences this paper's procedure refuses under the other reading of a\n"
+         "         glob's star, against 84 under the reading E5 settled. Read off\n"
+         "         data/raw/globs/star_reading.json and pinned to it by\n"
+         "         test_the_other_reading_costs_what_the_section_says_it_costs",
+    515: "and the occurrences that change classification between the two readings,\n"
+         "         over 72 patterns, every one of them toward refusal. Same cache",
+    72: "the patterns behind those 515 occurrences; also, separately, nothing else",
+    1681: "41 squared: MAX_UNION, the branch bound, and so the branch count of `5..`.\n"
+          "          test_the_bound_is_the_square_of_the_alphabet pins the relation",
+    3362: "twice that, which is what `2..|5..` would need",
+    71: "of the 74 occurrences the branch bound refuses, the share carried by the two\n"
+        "        device-name alternations: 49 + 22 from data/processed/regex_glob.csv",
     # --- corpus figures from notebooks 00, 01, 04, 05: unregistered -------------------
     5389: "unregistered (test_corpus): distinct Datadog metric names",
     723: "unregistered (test_corpus): distinct grouping keys",
@@ -175,8 +188,10 @@ ALLOWED: dict[float, str] = {
     # a union of 41 globs over a tag alphabet of 41 characters. They survive only in
     # reg_star_empty.tex, which the TO FINISH note in §6.4 lists for rewriting; 378 and
     # 344 are gone from the prose, and test_the_allowlist_has_no_dead_entries says so.
-    388: "superseded (nb 04): refused occurrences under the unpinned alphabet, now 84",
-    238: "superseded (nb 04): refusals that were .+ or contained it, now none",
+    # What the alphabet question is worth: the 21 patterns containing `.+`, which are
+    # inexpressible over all strings and a 41-branch union over a tag value's own
+    # alphabet. Derivable from data/processed/regex_glob.csv.
+    238: "nb 04: occurrences of the patterns containing `.+`",
     221: "unregistered (nb 01): PromQL queries the first six features complete",
     184: "distinct concrete regexes the complete procedure re-decides, all reached",
     168: "superseded: how many it reached under the 2,400 s budget, named in §6 as the "
@@ -187,12 +202,10 @@ ALLOWED: dict[float, str] = {
     176: "the slowest single pattern in it, seconds, timed uncontended",
     91: "and the fastest of that same four-pattern family",
     139: "three different quantities of this magnitude: nb00.top_occurrences, which\n         is registered and bound in \u00a77 and concl_evidence; the PromQL alerting\n         rules of \u00a77.1; and the \u00a74 grammar-gap count. Only the first is a\n         registry figure, so the other two ride here",
-    133: "unregistered (nb 04): occurrences of .+",
     96: "unregistered (nb 00): PromQL recording rules",
     93: "unregistered (nb 01): queries needing a bare metric name",
     70: "unregistered (nb 03): .weighted() occurrences; also the second share "
         "in the discussion's hypothetical illustration",
-    49: "unregistered (nb 04): occurrences of the most elaborate regex",
     36: "unregistered (nb 03): FILL_INTERPOLATION occurrences",
     22: "unregistered (nb 00): per_second() occurrences",
     9: "unregistered (nb 04): occurrences of .*",
@@ -246,7 +259,7 @@ ALLOWED: dict[float, str] = {
 # made on magnitude alone. A share and a count are different claims; a checker that
 # cannot tell them apart launders one into the other.
 SCALAR_ONLY: set[float] = {
-    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 49, 103, 110, 111, 133, 139, 221, 238, 388, 723, 897, 1760, 8102, 5231, 5389, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 0.628, 0.667, 887, 335, 1.4,
+    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 103, 110, 111, 139, 221, 238, 723, 897, 1760, 8102, 5231, 5389, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 1681, 3362, 599, 515, 71, 72, 0.628, 0.667, 887, 335, 1.4,
 }
 
 
@@ -282,8 +295,8 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
          {"eval_weighted.tex", "eval_language_use.tex"}),
     45: ("the queries the first six Datadog features complete, an nb-00 staircase\n         quantity. The reason recorded here until the tenth pass described nb 04's\n         refusals, which the cross-check now reports as all 7 of 184",
          {"eval_staircase.tex"}),
-    21: ("a superseded harness run: the shapes a single global 60 s bucket grid broke\n         by comparing a .rollup(sum, 300) bucket against a window covering a fifth\n         of it. The grid is per shape now and the count cannot be recomputed, which\n         is what makes rem:harness-failures a record rather than a measurement",
-         {"eval_harness_failures.tex"}),
+    21: ("a superseded harness run: the shapes a single global 60 s bucket grid broke\n         by comparing a .rollup(sum, 300) bucket against a window covering a fifth\n         of it. The grid is per shape now and the count cannot be recomputed, which\n         is what makes rem:harness-failures a record rather than a measurement.\n         And, separately, the corpus patterns containing `.+`, which carry the 238\n         occurrences the alphabet question is worth",
+         {"eval_harness_failures.tex", "06_regular.tex"}),
     76.2: ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
     6381: ("the occurrences that share carried", {"tr_gauge.tex"}),
     31: ("LABEL_NAME_GLOB's occurrences. The code left the catalogue when\n"

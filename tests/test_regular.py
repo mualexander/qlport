@@ -754,3 +754,134 @@ def test_the_widened_alphabet_really_was_wider(widened):
     for row in widened["rows"]:
         assert row["extra_characters"], row
         assert row["alphabet_size"] == 41 + len(row["extra_characters"]), row
+
+
+# --- the alphabet ---------------------------------------------------------------------
+
+def test_the_alphabet_is_the_one_the_corpus_writes():
+    """$\\Sigma$ is the universe every equivalence in this module is decided over.
+
+    Which makes it a claim rather than a constant, and the most load-bearing one here:
+    over all strings `.+` is no finite union of globs and 218 corpus occurrences are
+    inexpressible, while over the strings a tag value may contain it is the union of
+    `c*` for each character and a scope can say it. §6.4 argues the second universe is
+    the right one because a string that is not a legal tag value cannot appear on either
+    side -- and that argument is only as good as the alphabet being the one Datadog
+    accepts and the corpus writes.
+
+    So the corpus is censused rather than trusted. The documentation's set and the
+    corpus's are asserted equal in both directions: no value uses a character outside
+    `TAG_ALPHABET`, and no character of `TAG_ALPHABET` goes unused, which is the half
+    that would catch an alphabet quietly widened to make a pattern decide.
+
+    `*` is set aside because it is the glob wildcard rather than a character of a
+    value; `rem:glob-constructs` is the measurement that Datadog's filter grammar has
+    no other wildcard to confuse it with.
+    """
+    import collections
+
+    import pandas as pd
+
+    from qlport import corpus as c
+    from qlport.parse import parse
+    from qlport.regular import TAG_ALPHABET
+
+    root = Path(__file__).resolve().parent.parent
+    queries = [q for q in c.read_queries(root / "data" / "corpus" / "queries.jsonl")
+               if q.lang == "datadog"]
+    assert queries, "no Datadog queries in the corpus"
+    norm = pd.Series([c.normalise("datadog", q.text) for q in queries]).value_counts()
+
+    values: set[str] = set()
+    for text in norm.index:
+        if not c.parse_outcome("datadog", text).ok:
+            continue                      # the six that do not parse carry no scope
+        for token in parse("datadog", text).scan_values(lambda _: True):
+            if getattr(token, "type", "") != "TAG":
+                continue
+            body = str(token)
+            body = body[1:] if body.startswith("!") else body
+            if ":" in body:               # `k:v`; a bare key carries no value
+                values.add(body.split(":", 1)[1])
+
+    assert len(values) > 300, len(values)
+    used = collections.Counter("".join(values).replace("*", ""))
+    assert set(used) == set(TAG_ALPHABET), {
+        "outside the alphabet": sorted(set(used) - set(TAG_ALPHABET)),
+        "in the alphabet but unwritten": sorted(set(TAG_ALPHABET) - set(used)),
+    }
+
+
+# --- what the undocumented reading of a glob's star is worth ---------------------------
+
+STAR_READING = (Path(__file__).resolve().parent.parent / "data" / "raw" / "globs"
+                / "star_reading.json")
+
+
+@pytest.fixture(scope="module")
+def star_reading() -> dict:
+    if not STAR_READING.exists():            # pragma: no cover - the cache is committed
+        pytest.skip(f"{STAR_READING} missing; run scripts/star_reading_check.py")
+    return json.loads(STAR_READING.read_text())
+
+
+def test_the_reading_the_corpus_was_decided_under_is_the_measured_one():
+    """E5 asked a real account and the wildcard matches the empty string.
+
+    The constant is the only place that answer lives, so a change to it silently
+    rewrites every figure in §6. `rem:star-empty` says how much: this is the assertion
+    that the section's numbers were computed under the reading the experiment settled.
+    """
+    from qlport.regular import STAR_MATCHES_EMPTY
+
+    assert STAR_MATCHES_EMPTY is True
+
+
+def test_the_other_reading_costs_what_the_section_says_it_costs(star_reading):
+    """§6.4 and `rem:star-empty` quote the counterfactual; this is where it comes from.
+
+    What the cache measures is this paper's procedure under the other reading, not that
+    reading's own expressibility -- the complete search of `prop:decidable` declines to
+    run without the reading taken. That is the right scope for the claim, because what
+    is at stake is every figure the section computes, and it is why the numbers below
+    are about classification rather than about globs existing.
+    """
+    taken, other = star_reading["taken"], star_reading["other"]
+    assert star_reading["provenance"]["patterns"] == 184
+    assert star_reading["provenance"]["occurrences"] == 1041
+
+    # The reading taken, which must still be the split notebook 04 reports.
+    assert {k: v["distinct"] for k, v in taken.items()} == {
+        "single": 61, "union": 116, "none": 7}
+    assert {k: v["occurrences"] for k, v in taken.items()} == {
+        "single": 309, "union": 648, "none": 84}
+
+    # And the other one: 599 refused where the reading taken refuses 84.
+    assert other["none"]["occurrences"] == 599
+    assert other["none"]["distinct"] == 79
+    assert star_reading["moved"]["distinct"] == 72
+    assert star_reading["moved"]["occurrences"] == 515
+    # Every move is toward refusal, which is the asymmetry the remark turns on: a star
+    # that cannot stand for nothing cannot stand for the `.*` these patterns are built
+    # from, so nothing is gained anywhere to offset it.
+    assert set(star_reading["moved"]["by_transition"]) == {"single->none", "union->none"}
+    assert all(t["distinct"] == 36
+               for t in star_reading["moved"]["by_transition"].values())
+
+
+def test_the_counterfactual_rows_add_up_to_its_tallies(star_reading):
+    """The tallies are a reduction of the rows, so they are derived here, not read."""
+    import collections
+
+    rows = star_reading["rows"]
+    assert len(rows) == 184
+    for key in ("taken", "other"):
+        got: dict[str, dict[str, int]] = collections.defaultdict(
+            lambda: {"distinct": 0, "occurrences": 0})
+        for r in rows:
+            got[r[key]]["distinct"] += 1
+            got[r[key]]["occurrences"] += r["occurrences"]
+        assert dict(got) == star_reading[key], key
+    moved = [r for r in rows if r["taken"] != r["other"]]
+    assert len(moved) == star_reading["moved"]["distinct"]
+    assert sum(r["occurrences"] for r in moved) == star_reading["moved"]["occurrences"]
