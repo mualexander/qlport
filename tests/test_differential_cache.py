@@ -4,8 +4,8 @@
 translations checked against Datadog rather than merely emitted. Every other vendor
 cache in this project is regression-tested; this one was not, and it is the largest.
 
-Two things could rot silently without it. The figures the paper quotes -- 332 shapes,
-329 compared, 22,608 bucket comparisons, 8,334 occurrences -- could drift from the
+Two things could rot silently without it. The figures the paper quotes -- 333 shapes,
+330 compared, 22,692 bucket comparisons, 8,365 occurrences -- could drift from the
 table that reports them. And, worse, a change to the lowering or the emitter could
 alter what those shapes translate to, which would detach the cached verification from
 the code it verified while leaving every other test green: the cache would still say
@@ -31,15 +31,19 @@ ROLLUP = 60.0
 def _with_queries(run: dict) -> list[dict]:
     """The rows that record a representative query.
 
-    Four of the 333 do not: two whose rollup interval the run window cannot hold
-    twice, one whose filters no synthetic series satisfies, and the shape the
-    normaliser fix added, which came back `unmatched` because `dd_keys` was blind to a
-    hyphen. Each records only why it could not be compared, so there is nothing to
-    re-translate. The fourth is expected to compare once the differential is re-run
-    with the parse-tree mapping, which will make this 330.
+    Three of the 333 do not: two whose rollup interval the run window cannot hold
+    twice, and one whose filters no synthetic series satisfies. Each records only why
+    it could not be compared, so there is nothing to re-translate.
+
+    It was four, and the fourth is why `dd_keys` now reads the parse tree. That shape
+    came back `unmatched` -- both systems returned data and no bucket could be paired,
+    because the harness submitted the synthetic tags under their normalised spelling
+    while asking Datadog to group by the query's own, which it mapped for dotted keys
+    and not for hyphenated ones. With the mapping taken off the parse tree it compares
+    and agrees, which is what this count rising to 330 records.
     """
     rows = [r for r in run["rows"] if "datadog" in r]
-    assert len(rows) == 329, len(rows)
+    assert len(rows) == 330, len(rows)
     return rows
 
 
@@ -53,17 +57,22 @@ def run() -> dict:
 def test_the_run_matches_the_figures_the_paper_reports(run):
     """These are the numbers in tab:differential and in §7's prose.
 
-    The second run of the experiment, on the corpus after `corpus._TMPL` was fixed and
-    with a fresh set of synthetic series. It reproduces the first run's 329 of 329 over
-    the same 22,608 buckets -- the independent replication §7.6 said it did not have --
-    and carries one more shape and one more uncompared status than the first did.
+    The third run of the experiment, and the one with nothing left unexplained: the
+    `unmatched` status is gone, because the harness now maps group keys off the parse
+    tree rather than a hyphen-blind regex. 330 shapes compared and 330 agreed, over
+    22,692 buckets, standing for 8,365 of the 8,370 translated single-query
+    occurrences; the five that remain are the three shapes below.
+
+    Two earlier runs agreed on every shape they reached, so the agreement itself is
+    replicated three times over on three sets of synthetic series. What this run adds
+    is that no shape in the corpus is now uncompared for a reason internal to the rig.
     """
     assert len(run["rows"]) == 333
     assert run["status_counts"] == {
-        "compared": 329, "no-data": 1, "unmatched": 1, "window-too-short": 2}
-    assert run["shapes_compared"] == 329 and run["shapes_exact"] == 329
-    assert run["occurrences_compared"] == 8364 and run["occurrences_exact"] == 8364
-    assert sum(r.get("buckets", 0) for r in run["rows"]) == 22608
+        "compared": 330, "no-data": 1, "window-too-short": 2}
+    assert run["shapes_compared"] == 330 and run["shapes_exact"] == 330
+    assert run["occurrences_compared"] == 8365 and run["occurrences_exact"] == 8365
+    assert sum(r.get("buckets", 0) for r in run["rows"]) == 22692
 
 
 def test_every_compared_shape_agreed(run):
@@ -102,8 +111,8 @@ def test_the_rows_are_still_one_per_shape(run):
         lowered = lower_all(parse("datadog", r["datadog"], "v2"))
         if len(lowered) == 1 and not isinstance(lowered[0], Bottom):
             shapes.append(shape(lowered[0]))
-    assert len(shapes) == 329, len(shapes)
-    assert len(set(shapes)) == 329, f"{len(shapes) - len(set(shapes))} collisions"
+    assert len(shapes) == 330, len(shapes)
+    assert len(set(shapes)) == 330, f"{len(shapes) - len(set(shapes))} collisions"
 
 
 # --- the declared-metric-type join --------------------------------------------------

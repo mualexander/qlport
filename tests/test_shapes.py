@@ -54,9 +54,31 @@ def test_a_negated_matcher_is_satisfied_by_absence():
 
 
 def test_an_unsatisfiable_regex_is_refused_not_guessed():
-    got = instantiate(rolled(sel((ir.Matcher("k", "=~", "[0-9]{3}"),))))
+    """No glob denotes it, so no value is invented for it.
+
+    `[a-z]+` is refused by Corollary 5(3): a glob's star admits every character and no
+    finite union of globs confines it to part of the alphabet. That is a fact about the
+    two languages, and it is why the harness can say it has nothing rather than guess.
+    """
+    got = instantiate(rolled(sel((ir.Matcher("k", "=~", "[A-Z]+"),))))
     assert not got.ok
     assert "cannot satisfy" in got.reason
+
+
+def test_a_regex_beyond_the_bound_is_also_refused_but_for_another_reason():
+    """The distinction the union bound makes, which this test used to blur.
+
+    It asked `[0-9]{3}` for an unsatisfiable regex, and `[0-9]{3}` is satisfied by
+    `000` -- it was refused only because its 1,000 branches exceeded a bound of 64.
+    Raising the bound to 41 squared admits it, which is the point of raising it, and
+    left the old assertion testing nothing it claimed to. A regex with no value and a
+    regex with more values than a scope will carry are different refusals, so both are
+    named here.
+    """
+    assert instantiate(rolled(sel((ir.Matcher("k", "=~", "[0-9]{3}"),)))).ok
+    beyond = instantiate(rolled(sel((ir.Matcher("k", "=~", "[0-9]{4}"),))))
+    assert not beyond.ok
+    assert "cannot satisfy" in beyond.reason
 
 
 def test_grouping_produces_several_series_so_aggregation_has_work():
