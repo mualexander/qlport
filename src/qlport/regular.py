@@ -44,12 +44,6 @@ __all__ = [
 # Whether a Datadog `*` matches the empty string. Undocumented; see the module docstring.
 STAR_MATCHES_EMPTY = True
 
-# How many globs a union may contain, and how large an intermediate product may get,
-# before the conversion gives up. A union is emitted as `IN (...)` in a scope, so a
-# thousand-branch union is not a translation anyone wants even when it is exact.
-MAX_UNION = 64
-MAX_PRODUCT = 4096
-
 # The alphabet a Datadog tag value is drawn from, which is the universe every
 # equivalence in this module is decided over.
 #
@@ -73,6 +67,22 @@ TAG_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789_:./-"
 # written form of the alphabet; the decider substitutes a Charclass rather than parsing
 # this, because parsing it was never the slow part and intersecting with it was.
 _SIGMA_CLASS = r"[a-z0-9_:.\-/]"
+
+# How many globs a union may contain, and how large an intermediate product may get,
+# before the conversion gives up. A union is emitted as `IN (...)` in a scope, so the
+# bound is about how much text someone will maintain rather than about expressibility:
+# at no bound at all, 162 of the 172 refused occurrences become exact unions.
+#
+# The bound is two unconstrained character positions. What makes that the choice rather
+# than an arbitrary number is the corpus's own distribution: the sizes actually needed
+# are five patterns between 82 and 206, then nothing at all until $41^{2}$, which is the
+# signature of two free positions. Any bound in that gap admits exactly the same
+# patterns, so 64, 128 and 256 are the same decision; $41^{2}$ is the next different one.
+# It is written as the square so it moves with the alphabet. Four patterns still exceed
+# it --- 1,683, 1,968, 3,362 and 4,018 branches --- and `MAX_PRODUCT` is the separate
+# guard on the intermediate product, which binds before a third free position can.
+MAX_UNION = len(TAG_ALPHABET) ** 2
+MAX_PRODUCT = 4096
 
 
 def glob_to_regex(g: str) -> str:
@@ -119,9 +129,10 @@ def _globs_for_comparison(globs) -> str:
 
 
 def _factor_alphabet_expansion(globs: tuple[str, ...] | list[str]) -> str | None:
-    r"""One regex for a glob family that differs only by ranging over $\Sigma$.
+    r"""One regex for a glob family that is a product of $\Sigma$ at some positions.
 
-    `.+` is proposed as $41$ globs differing in a single character position, and
+    `.+` is proposed as $41$ globs differing in a single character position, `5..` as
+    $41^{2}$ differing in two, and
     `_globs_for_comparison` renders that as a $41$-branch alternation --- $41$ copies of
     the surrounding context. The automata involved are tiny: the regex
     `.*otelcol_processor_.+refused_spans.*` and its union both minimise to $34$ states.
@@ -132,7 +143,8 @@ def _factor_alphabet_expansion(globs: tuple[str, ...] | list[str]) -> str | None
     equivalence itself is under a millisecond.
 
     Factoring $\bigcup_i P c_i S = P (\bigcup_i c_i) S = P \Sigma S$ when the $c_i$
-    exhaust $\Sigma$ is distributivity of concatenation over union. Two things keep this
+    exhaust $\Sigma$ is distributivity of concatenation over union, applied once per
+    varying position. Two things keep this
     from weakening §6's gate. It reads the emitted globs rather than the parse tree they
     came from, so a proposer that emits the wrong literals is still caught --- the gate
     exists because a structural proposal cancelled against a structural check once
@@ -140,17 +152,35 @@ def _factor_alphabet_expansion(globs: tuple[str, ...] | list[str]) -> str | None
     ranging over exactly `TAG_ALPHABET`, in which case the alternation is used as
     before.
     """
-    if len(globs) != len(TAG_ALPHABET) or len({len(g) for g in globs}) != 1:
+    globs = tuple(globs)
+    if not globs or len({len(g) for g in globs}) != 1:
         return None
     first = globs[0]
+    alphabet = set(TAG_ALPHABET)
     varying = [i for i in range(len(first)) if len({g[i] for g in globs}) != 1]
-    if len(varying) != 1:
+    if not varying or len(globs) != len(alphabet) ** len(varying):
         return None
-    (i,) = varying
-    if {g[i] for g in globs} != set(TAG_ALPHABET):
+    if any({g[i] for g in globs} != alphabet for i in varying):
         return None
-    return (_glob_for_comparison(first[:i]) + _SIGMA_CLASS
-            + _glob_for_comparison(first[i + 1:]))
+    # Full projections are not enough: a set of $41^{2}$ pairs can cover both positions
+    # without being the product of them, and factoring such a set would widen the
+    # language. So the product is checked for, not inferred.
+    spread = set(varying)
+    fixed = [(i, c) for i, c in enumerate(first) if i not in spread]
+    if any(any(g[i] != c for i, c in fixed) for g in globs):
+        return None
+    if {tuple(g[i] for i in varying) for g in globs} != set(
+            itertools.product(sorted(alphabet), repeat=len(varying))):
+        return None
+    out, run = [], ""
+    for i, c in enumerate(first):
+        if i in spread:
+            out += [_glob_for_comparison(run), _SIGMA_CLASS]
+            run = ""
+        else:
+            run += c
+    out.append(_glob_for_comparison(run))
+    return "".join(out)
 
 
 def _comparison_regex(globs: tuple[str, ...] | list[str]) -> str:

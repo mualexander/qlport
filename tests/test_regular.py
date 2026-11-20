@@ -121,10 +121,11 @@ def test_a_union_is_found_where_one_glob_cannot_serve(regex, globs):
 # `single-character-wildcard` and `.+` as a `nonempty-wildcard`, both on the reading
 # that the alphabet was unbounded; over the 41 characters a Datadog tag value may
 # contain, each is a union the bound admits, and `test_a_full_class_is_a_finite_union`
-# below pins what they return instead. `5..` is still refused, but for its size rather
-# than its kind: 41 squared is 1,681 branches against a bound of 64.
+# below pins what they return instead. `5..` left the list when the bound was raised to
+# 41 squared, which is exactly the two free positions it needs; `2..|5..` is twice that
+# and is the smallest corpus pattern the bound still refuses.
 @pytest.mark.parametrize("regex,reason", [
-    ("5..", "union-too-large"),
+    ("2..|5..", "union-too-large"),
     ("[a-z]+", "unbounded-character-class"),
     ("cassandra-\\d+", "unbounded-character-class"),
     ("(ab)*", "repeated-group"),
@@ -247,12 +248,32 @@ def test_every_returned_glob_set_denotes_the_regex_it_came_from():
 
 def test_a_union_wider_than_the_bound_is_refused_with_the_bound_named():
     # The dichotomy does not forbid it; the bound does, because a scope is text someone
-    # maintains. `[a-z][a-z]` is 676 literals.
-    got = regex_to_globs("[a-z][a-z]")
+    # maintains. `2..|5..` is two free positions twice over, 3,362 literals against a
+    # bound of 41 squared -- and `[a-z][a-z]`, which this test used while the bound was
+    # 64, is now admitted at 676, so the bound has to be named by something larger.
+    got = regex_to_globs("2..|5..")
     assert got.kind == "none"
     assert got.reason in {"union-too-large", "too-many-combinations",
                           "character-class-too-wide"}
-    assert MAX_UNION == 64
+    assert MAX_UNION == 1681
+
+
+def test_the_bound_is_the_square_of_the_alphabet():
+    """Two unconstrained character positions, which is what the corpus's gap implies.
+
+    The sizes the refused patterns need are five between 82 and 206 and then nothing
+    until 41 squared, so every bound in that gap admits the same patterns and only the
+    square is a different decision. Pinning the relation rather than the number is what
+    keeps the two in step if the alphabet is ever remeasured.
+    """
+    from qlport.regular import TAG_ALPHABET
+
+    assert MAX_UNION == len(TAG_ALPHABET) ** 2
+    # One free position is well inside it; three are outside, and the intermediate
+    # product is guarded separately so they never reach the union bound at all.
+    assert regex_to_globs(".").kind == "union"
+    assert regex_to_globs("5..").kind == "union"
+    assert regex_to_globs("5...").kind == "none"
 
 
 def test_globs_are_returned_sorted_and_deduplicated():
