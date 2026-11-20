@@ -118,6 +118,46 @@ def _globs_for_comparison(globs) -> str:
     return "|".join(f"(?:{p})" for p in parts) if len(parts) > 1 else parts[0]
 
 
+def _factor_alphabet_expansion(globs: tuple[str, ...] | list[str]) -> str | None:
+    r"""One regex for a glob family that differs only by ranging over $\Sigma$.
+
+    `.+` is proposed as $41$ globs differing in a single character position, and
+    `_globs_for_comparison` renders that as a $41$-branch alternation --- $41$ copies of
+    the surrounding context. The automata involved are tiny: the regex
+    `.*otelcol_processor_.+refused_spans.*` and its union both minimise to $34$ states.
+    What is expensive is building them. greenery unions two automata by a product
+    construction and minimises afterwards, which costs about twelve seconds a branch
+    over a $41$-symbol alphabet, so a nine-pattern family did not finish in four hours.
+    Against the factored form the same decision takes twenty-five seconds, of which the
+    equivalence itself is under a millisecond.
+
+    Factoring $\bigcup_i P c_i S = P (\bigcup_i c_i) S = P \Sigma S$ when the $c_i$
+    exhaust $\Sigma$ is distributivity of concatenation over union. Two things keep this
+    from weakening §6's gate. It reads the emitted globs rather than the parse tree they
+    came from, so a proposer that emits the wrong literals is still caught --- the gate
+    exists because a structural proposal cancelled against a structural check once
+    already. And it returns `None` unless the family really is one varying position
+    ranging over exactly `TAG_ALPHABET`, in which case the alternation is used as
+    before.
+    """
+    if len(globs) != len(TAG_ALPHABET) or len({len(g) for g in globs}) != 1:
+        return None
+    first = globs[0]
+    varying = [i for i in range(len(first)) if len({g[i] for g in globs}) != 1]
+    if len(varying) != 1:
+        return None
+    (i,) = varying
+    if {g[i] for g in globs} != set(TAG_ALPHABET):
+        return None
+    return (_glob_for_comparison(first[:i]) + _SIGMA_CLASS
+            + _glob_for_comparison(first[i + 1:]))
+
+
+def _comparison_regex(globs: tuple[str, ...] | list[str]) -> str:
+    """The regex §6's gate decides the proposal against."""
+    return _factor_alphabet_expansion(globs) or _globs_for_comparison(globs)
+
+
 def _sigma_charclass():
     """`TAG_ALPHABET` as a greenery character class."""
     from greenery import Charclass
@@ -406,7 +446,7 @@ def regex_to_globs(r: str) -> GlobConversion:
     if not globs:
         return GlobConversion(r, reason="empty-language")
     try:
-        ok = equivalent(body, _globs_for_comparison(globs))
+        ok = equivalent(body, _comparison_regex(globs))
     except Exception:
         # Anything the decision raises is recorded as undecided rather than as a gap,
         # because a decision this module could not take is not a fact about the two

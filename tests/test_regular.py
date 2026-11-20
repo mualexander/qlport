@@ -399,3 +399,79 @@ def test_the_gate_passes_a_correct_proposal_through(monkeypatch):
     monkeypatch.setattr(R, "_pattern_globs", lambda pattern: ["ab*"])
     got = R.regex_to_globs("ab.*")
     assert got.verified and got.exact and got.globs == ("ab*",)
+
+
+# --- the factored comparison -----------------------------------------------------------
+# `.+` is proposed as 41 globs differing in one character position, and rendering that as
+# a 41-branch alternation duplicates the surrounding context 41 times. greenery unions
+# automata pairwise by a product construction, at roughly twelve seconds a branch over a
+# 41-symbol alphabet, so nine corpus patterns did not decide in four hours. The gate now
+# decides against a factored regex instead. These tests are what stop that factoring from
+# quietly becoming a way of agreeing with the proposer.
+
+
+def test_the_factored_regex_denotes_the_union_it_replaces(monkeypatch):
+    """Factoring is distributivity, so the two renderings must agree as languages.
+
+    Checked over a three-character alphabet, because the comparison this test makes is
+    the expensive one the factoring exists to avoid: at $41$ characters the alternation
+    costs about twelve seconds a branch, which is twenty-five minutes for the three
+    shapes below. Distributivity does not depend on the alphabet's size, and the sizes
+    are exercised separately -- the corpus patterns themselves run at $41$.
+    """
+    import qlport.regular as R
+
+    monkeypatch.setattr(R, "TAG_ALPHABET", "abc")
+    monkeypatch.setattr(R, "_SIGMA_CLASS", "[abc]")
+    for prefix, suffix in (("x", "y"), ("*ab", "ba*"), ("", "*")):
+        globs = tuple(f"{prefix}{c}*{suffix}" for c in sorted("abc"))
+        factored = R._factor_alphabet_expansion(globs)
+        assert factored is not None, (prefix, suffix)
+        assert R.equivalent(factored, R._globs_for_comparison(globs)), (prefix, suffix)
+
+
+@pytest.mark.parametrize("globs", [
+    ("a*", "b*"),                                   # not the whole alphabet
+    ("ab", "cd"),                                   # two positions vary
+    ("x", "y", "z"),                                # wrong cardinality
+])
+def test_a_family_that_is_not_an_alphabet_expansion_is_not_factored(globs):
+    """Anything else must fall back to the alternation rather than be collapsed."""
+    from qlport.regular import _factor_alphabet_expansion
+    assert _factor_alphabet_expansion(globs) is None
+
+
+def test_the_right_sized_family_over_the_wrong_characters_is_not_factored():
+    """41 globs varying in one position, but not over the alphabet, must not factor."""
+    from qlport.regular import TAG_ALPHABET, _factor_alphabet_expansion
+    wrong = tuple(f"x{c}*" for c in sorted(TAG_ALPHABET.replace("z", "Z")))
+    assert len(wrong) == len(TAG_ALPHABET)
+    assert _factor_alphabet_expansion(wrong) is None
+
+
+def test_the_gate_still_catches_a_wrong_proposal_that_factors(monkeypatch):
+    """The case the factoring could have hidden.
+
+    A proposal shaped like an alphabet expansion takes the cheap path, so the cheap path
+    has to be the one that refuses a wrong one. Here the literal is wrong -- `spans`
+    where the regex says `spams` -- which no amount of factoring should forgive.
+    """
+    import qlport.regular as R
+
+    monkeypatch.setattr(R, "_pattern_globs",
+                        lambda pattern: [f"*proc_{c}*spans*" for c in sorted(R.TAG_ALPHABET)])
+    got = R.regex_to_globs(".*proc_.+spams.*")
+    assert got.reason == "proposal-not-equivalent", got
+    assert not got.exact and not got.verified
+
+
+def test_an_alphabet_expansion_decides_in_seconds_and_is_verified():
+    """The nine-pattern family that did not finish in four hours, as one case."""
+    from qlport.regular import TAG_ALPHABET
+
+    got = regex_to_globs(".*otelcol_processor_.+refused_spans.*")
+    assert got.kind == "union" and got.verified and got.exact
+    assert len(got.globs) == len(TAG_ALPHABET)
+    # Every branch is the regex's own literals with one alphabet character between them.
+    assert set(got.globs) == {f"*otelcol_processor_{c}*refused_spans*"
+                              for c in TAG_ALPHABET}
