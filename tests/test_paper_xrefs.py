@@ -201,3 +201,84 @@ def test_the_paper_has_no_placeholders_left():
         for match in _PLACEHOLDER.finditer(_strip(path.read_text())):
             left.setdefault(match.group(0), []).append(path.name)
     assert not left, f"placeholder left in the paper: {left}"
+
+
+# --- the experiments, and whether the paper spends them -------------------------------
+
+RAW = ROOT / "data" / "raw"
+
+# Every vendor or server measurement this project has run, as the cache it wrote and
+# the string the paper cites it by. The citation is not uniform, and that is the point
+# of writing it down: some are named in a remark title (`[E13: ...]`), some by the
+# script that ran them (`trial_checks.py e5`, `as_rate_order`), and E7 only by its
+# figures. A reader cannot tell which experiments exist, so this file can.
+EXPERIMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("datadog/e1.json", ("E1",)),
+    ("datadog/e1_fast.json", ("E1",)),
+    ("datadog/e2.json", (r"trial\_checks.py e2",)),
+    ("datadog/e3.json", (r"trial\_checks.py e3",)),
+    ("datadog/e4.json", (r"trial\_checks.py e4",)),
+    ("datadog/e5.json", (r"trial\_checks.py e5",)),
+    ("datadog/as_rate_order.json", (r"as\_rate\_order",)),
+    # E7 is cited by its figures rather than by a name: 1,760 and 0.994 in the history
+    # of how the metric-type assumption was measured.
+    ("datadog/e7.json", ("1{,}760",)),
+    ("datadog/e8.json", (r"binop\_matching",)),
+    ("datadog/e9.json", (r"weighted\_semantics",)),
+    ("gap_rows/e10_fill.json", ("E10",)),
+    ("gap_rows/e11_label_name.json", ("E11",)),
+    ("datadog/e12.json", ("E12",)),
+    ("datadog/e13.json", ("E13",)),
+    ("datadog/e14.json", ("E14",)),
+    ("datadog/e15.json", ("E15",)),
+    ("datadog/e16.json", ("E16",)),
+)
+
+# Run, cached, and not yet written up. An experiment costs a live account and a window
+# in which to use it, so one that reaches no section bought nothing -- the same argument
+# `test_every_generated_artifact_is_in_the_paper` makes about a table. These two are
+# owed a block in the appendix: E17 found the scope-length limit (6,656 literals
+# accepted, 7,168 refused, HTTP 431 from the front end rather than the query language),
+# and E18 the rollup span.
+UNWRITTEN: frozenset[str] = frozenset({
+    "datadog/e17_scope_length.json",
+    "datadog/e18.json",
+})
+
+
+def test_every_experiment_the_paper_cites_was_actually_run():
+    missing = [cache for cache, _ in EXPERIMENTS if not (RAW / cache).exists()]
+    assert not missing, f"cited but no cache: {missing}"
+
+
+def test_every_experiment_that_ran_reaches_the_paper():
+    """A measurement nobody cites is a cost with nothing bought.
+
+    What this catches is the experiment added late and never written up, which is
+    exactly where E17 and E18 are. They are listed rather than hidden, so the list
+    shrinks as they are written and fails when a new one joins them unnoticed.
+    """
+    text = "\n".join(_strip(p.read_text()) for p in TEX)
+    uncited = []
+    for cache, citations in EXPERIMENTS:
+        if not any(c in text for c in citations):
+            uncited.append(f"  {cache} is cited by none of {citations}")
+    assert not uncited, "\n".join(uncited)
+
+
+def test_the_unwritten_experiments_are_the_ones_recorded_as_unwritten():
+    """Every cache is either cited by the paper or on the list of what is owed."""
+    on_disk = {
+        f"{d}/{p.name}"
+        for d in ("datadog", "gap_rows")
+        for p in sorted((RAW / d).glob("*.json"))
+    }
+    # These three are not experiments: a vendor metadata join and two probe fixtures
+    # the experiments above read rather than results of their own.
+    not_an_experiment = {"datadog/type_declared.json", "datadog/top.json",
+                         "datadog/scope_empty_tag.json"}
+    accounted = {cache for cache, _ in EXPERIMENTS} | UNWRITTEN | not_an_experiment
+    assert on_disk - accounted == set(), \
+        f"a cache that is neither cited nor recorded as owed: {sorted(on_disk - accounted)}"
+    assert all((RAW / c).exists() for c in UNWRITTEN), \
+        "UNWRITTEN names a cache that is not there"

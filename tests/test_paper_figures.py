@@ -722,3 +722,28 @@ def test_the_baseline_names_no_gap_the_catalogue_has_dropped():
         code = key[len("oo.gap_"):].upper().replace(".", "_")
         assert code.replace("_", r"\_") in catalogue, \
             f"{key} names a gap code the catalogue no longer lists"
+
+
+def test_the_coverage_staircase_is_a_staircase():
+    """The 29 cumulative shares §7.3 draws its argument from, as a shape.
+
+    The claim there is not any one of these numbers; it is that the curve is a
+    staircase -- flat for six features, then a jump of 28 points, then a long shallow
+    climb -- which is why coverage cannot be bought incrementally. Nothing checked the
+    shape. A step lost to a renamed key, or a cumulative share that went down, would
+    leave 29 individually plausible figures and no staircase, and the only reader who
+    would notice is one holding the figure up to the prose.
+    """
+    reg = json.loads(REGISTRY.read_text())
+    steps = [(i, reg[f"nb00.ceiling_{i}_features_pct"]) for i in range(100)
+             if f"nb00.ceiling_{i}_features_pct" in reg]
+    assert [i for i, _ in steps] == list(range(len(steps))), \
+        f"the staircase has a gap: {[i for i, _ in steps]}"
+    # One step per feature, plus the empty set at the foot of it.
+    assert len(steps) == reg["nb00.datadog_features"] + 1, steps
+    falls = [(a, b) for (_, a), (_, b) in zip(steps, steps[1:]) if b < a]
+    assert not falls, f"cumulative coverage fell: {falls}"
+    assert steps[-1][1] == 100.0, steps[-1]
+    # And the jump that makes it a staircase rather than a curve is still there, or
+    # §7.3's argument is about a different shape than the one the registry holds.
+    assert max(b - a for (_, a), (_, b) in zip(steps, steps[1:])) > 20
