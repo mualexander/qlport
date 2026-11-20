@@ -128,34 +128,18 @@ def _globs_for_comparison(globs) -> str:
     return "|".join(f"(?:{p})" for p in parts) if len(parts) > 1 else parts[0]
 
 
-def _factor_alphabet_expansion(globs: tuple[str, ...] | list[str]) -> str | None:
-    r"""One regex for a glob family that is a product of $\Sigma$ at some positions.
-
-    `.+` is proposed as $41$ globs differing in a single character position, `5..` as
-    $41^{2}$ differing in two, and
-    `_globs_for_comparison` renders that as a $41$-branch alternation --- $41$ copies of
-    the surrounding context. The automata involved are tiny: the regex
-    `.*otelcol_processor_.+refused_spans.*` and its union both minimise to $34$ states.
-    What is expensive is building them. greenery unions two automata by a product
-    construction and minimises afterwards, which costs about twelve seconds a branch
-    over a $41$-symbol alphabet, so a nine-pattern family did not finish in four hours.
-    Against the factored form the same decision takes twenty-five seconds, of which the
-    equivalence itself is under a millisecond.
+def _factor_one_product(globs: tuple[str, ...]) -> str | None:
+    r"""One regex for globs that are a product of $\Sigma$ at some positions.
 
     Factoring $\bigcup_i P c_i S = P (\bigcup_i c_i) S = P \Sigma S$ when the $c_i$
     exhaust $\Sigma$ is distributivity of concatenation over union, applied once per
-    varying position. Two things keep this
-    from weakening §6's gate. It reads the emitted globs rather than the parse tree they
-    came from, so a proposer that emits the wrong literals is still caught --- the gate
-    exists because a structural proposal cancelled against a structural check once
-    already. And it returns `None` unless the family really is one varying position
-    ranging over exactly `TAG_ALPHABET`, in which case the alternation is used as
-    before.
+    varying position. A lone glob is its own rendering and needs no factoring.
     """
-    globs = tuple(globs)
     if not globs or len({len(g) for g in globs}) != 1:
         return None
     first = globs[0]
+    if len(globs) == 1:
+        return _glob_for_comparison(first)
     alphabet = set(TAG_ALPHABET)
     varying = [i for i in range(len(first)) if len({g[i] for g in globs}) != 1]
     if not varying or len(globs) != len(alphabet) ** len(varying):
@@ -181,6 +165,55 @@ def _factor_alphabet_expansion(globs: tuple[str, ...] | list[str]) -> str | None
             run += c
     out.append(_glob_for_comparison(run))
     return "".join(out)
+
+
+def _factor_alphabet_expansion(globs: tuple[str, ...] | list[str]) -> str | None:
+    r"""One regex for a union of $\Sigma$-expansions, factored group by group.
+
+    `_globs_for_comparison` renders a union as an alternation, which is one copy of the
+    surrounding context per branch. The automata are tiny --- the regex
+    `.*otelcol_processor_.+refused_spans.*` and its union both minimise to $34$ states
+    --- but greenery unions two of them by a product construction and minimises
+    afterwards, at about twelve seconds a branch over a $41$-symbol alphabet. Nine
+    corpus patterns did not decide in four hours because of it. Against a factored
+    regex the same equivalence returns in under a millisecond.
+
+    A pattern can hold more than one expansion. `pvc.*.ctrl.*|pvc.*.rep.*|pvc.*.target.*`
+    is three shapes each carrying its own $41$ branches, $123$ globs in all, and the
+    single-product test refuses the lot --- which cost the cross-check more than four
+    hours on that one pattern. The globs separate by length, so each group is factored
+    on its own and the alternation is taken over the factored forms: three branches
+    instead of $123$. Distributivity again, one level up, since the groups partition the
+    union.
+
+    Two things keep this from weakening §6's gate. It reads the emitted globs rather
+    than the parse tree they came from, so a proposer that emits the wrong literals is
+    still caught --- the gate exists because a structural proposal cancelled against a
+    structural check once already. And a group that is not a product of $\Sigma$ makes
+    the whole thing return `None`, so an ordinary union such as `xfs|ext.*` is still
+    decided against its own alternation and nothing about it changes.
+    """
+    globs = tuple(globs)
+    if not globs:
+        return None
+    by_length: dict[int, list[str]] = {}
+    for g in globs:
+        by_length.setdefault(len(g), []).append(g)
+    parts, expansions = [], 0
+    for _, group in sorted(by_length.items()):
+        one = _factor_one_product(tuple(sorted(group)))
+        if one is None:
+            return None
+        if len(group) > 1:
+            expansions += 1
+        parts.append(one)
+    # Nothing was actually expanded, so this is an ordinary union of literals and the
+    # alternation it would otherwise be compared against is already that cheap.
+    if not expansions:
+        return None
+    if len(parts) == 1:
+        return parts[0]
+    return "|".join(f"(?:{p})" for p in parts)
 
 
 def _comparison_regex(globs: tuple[str, ...] | list[str]) -> str:

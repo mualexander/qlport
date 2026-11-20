@@ -496,3 +496,73 @@ def test_an_alphabet_expansion_decides_in_seconds_and_is_verified():
     # Every branch is the regex's own literals with one alphabet character between them.
     assert set(got.globs) == {f"*otelcol_processor_{c}*refused_spans*"
                               for c in TAG_ALPHABET}
+
+
+# --- factoring a union of several expansions -------------------------------------------
+# A pattern can carry more than one expansion. `pvc.*.ctrl.*|pvc.*.rep.*|pvc.*.target.*`
+# is three shapes each with its own 41 branches, and the single-product test refused the
+# lot -- which cost the cross-check over four hours on that one pattern. The globs
+# separate by length, so each group is factored on its own.
+
+
+def test_a_union_of_several_expansions_is_factored_per_group(monkeypatch):
+    """Three shapes, three groups, three branches instead of one per glob.
+
+    Over a three-character alphabet, because the comparison this test makes against the
+    unfactored alternation is the expensive one the factoring exists to avoid.
+    """
+    import qlport.regular as R
+
+    monkeypatch.setattr(R, "TAG_ALPHABET", "abc")
+    monkeypatch.setattr(R, "_SIGMA_CLASS", "[abc]")
+    globs = tuple(f"pvc*{c}*{tail}*" for tail in ("ctrl", "rep", "target")
+                  for c in sorted("abc"))
+    assert len(globs) == 9
+    factored = R._factor_alphabet_expansion(globs)
+    assert factored is not None
+    assert factored.count("|") == 2, factored          # three branches, not nine
+    assert R.equivalent(factored, R._globs_for_comparison(globs))
+
+
+def test_an_expansion_beside_a_lone_literal_still_factors(monkeypatch):
+    """A singleton group is its own rendering, so a mixed union is not refused."""
+    import qlport.regular as R
+
+    monkeypatch.setattr(R, "TAG_ALPHABET", "abc")
+    monkeypatch.setattr(R, "_SIGMA_CLASS", "[abc]")
+    globs = tuple(sorted({f"x{c}*" for c in "abc"} | {"zzzz"}))
+    factored = R._factor_alphabet_expansion(globs)
+    assert factored is not None
+    assert R.equivalent(factored, R._globs_for_comparison(globs))
+
+
+def test_an_ordinary_union_is_not_factored_and_so_is_unchanged():
+    """`xfs|ext.*` has no expansion in it, so the gate must decide it as it always did."""
+    from qlport.regular import _factor_alphabet_expansion
+
+    for globs in (("ext*", "xfs"), ("GET", "LIST"), ("", "resource")):
+        assert _factor_alphabet_expansion(globs) is None, globs
+
+
+def test_the_gate_catches_a_wrong_proposal_in_one_group_of_several(monkeypatch):
+    """The case per-group factoring could hide.
+
+    Two groups, one right and one wrong: the `rep` branch is proposed where the regex
+    says `reps`. A gate that factored each group and compared only the shapes, rather
+    than the languages, would pass this.
+    """
+    import qlport.regular as R
+
+    globs = [f"pvc*{c}*ctrl*" for c in sorted(R.TAG_ALPHABET)]
+    globs += [f"pvc*{c}*rep*" for c in sorted(R.TAG_ALPHABET)]
+    monkeypatch.setattr(R, "_pattern_globs", lambda pattern: globs)
+    got = R.regex_to_globs("pvc.*.ctrl.*|pvc.*.reps.*")
+    assert got.reason == "proposal-not-equivalent", got
+    assert not got.exact and not got.verified
+
+
+def test_the_multi_shape_union_decides_quickly_and_is_verified():
+    """The corpus pattern that cost the cross-check four hours, as one case."""
+    got = regex_to_globs("pvc.*.ctrl.*|pvc.*.rep.*|pvc.*.target.*")
+    assert got.kind == "union" and got.verified and got.exact
+    assert len(got.globs) == 123
