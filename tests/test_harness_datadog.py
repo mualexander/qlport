@@ -17,8 +17,9 @@ from pathlib import Path
 import pytest
 
 from qlport.harness.datadog import (
-    COUNT, GAUGE, RATE, UNSPECIFIED, Credentials, bucket_of, count_payload, credentials,
-    interpret_closure, interpret_default_aggregator, pointlist, reported_interval,
+    COUNT, GAUGE, RATE, RETRYABLE_STATUS, UNSPECIFIED, Credentials, QueryHTTPError,
+    bucket_of, count_payload, credentials, echoed_scopes, interpret_closure,
+    interpret_default_aggregator, pointlist, reported_interval, scope_term_survived,
 )
 
 
@@ -919,3 +920,247 @@ def test_the_run_was_isolated_from_earlier_runs(top_run):
     assert str(prov["t0"]) in prov["metric"], prov["metric"]
     for case in top_run["cases"]:
         assert prov["metric"] in case["expr"], case["expr"]
+
+
+# --- the echo: whether the query that ran is the query that was asked -------------
+#
+# E14's first run read back points and reasoned from them. The points were right and the
+# reasoning was one observation short: a scope term the parser discards returns exactly
+# what a term matching everything returns. The expression Datadog reports evaluating
+# separates them and was in every response all along, unread.
+
+
+def _series(*expressions: str | None) -> dict:
+    return {"series": [{"expression": e} if e is not None else {} for e in expressions]}
+
+
+def test_the_echoed_expression_is_read_from_each_series():
+    assert echoed_scopes(_series("sum:m{a:1}", "sum:m{a:2}")) == \
+        ["sum:m{a:1}", "sum:m{a:2}"]
+
+
+def test_a_response_with_no_series_echoes_nothing():
+    assert echoed_scopes({"series": []}) == []
+    assert echoed_scopes({}) == []
+
+
+def test_a_series_carrying_no_expression_is_skipped_not_guessed():
+    assert echoed_scopes(_series("sum:m{a:1}", None)) == ["sum:m{a:1}"]
+
+
+def test_a_term_present_in_the_echo_survived_the_parse():
+    assert scope_term_survived("!rig:zzz", _series("sum:m{run:r1,!rig:zzz}")) is True
+
+
+def test_a_term_absent_from_the_echo_did_not():
+    # The measurement E14 turns on: `!*` is not in what Datadog evaluated.
+    assert scope_term_survived("!*", _series("sum:m{run:r1}")) is False
+
+
+def test_a_term_must_survive_into_every_series_not_merely_one():
+    grouped = _series("sum:m{k:a,!rig:zzz}", "sum:m{k:b}")
+    assert scope_term_survived("!rig:zzz", grouped) is False
+
+
+def test_nothing_echoed_is_inconclusive_rather_than_absent():
+    """A scope that selects nothing echoes nothing, which is not evidence of dropping.
+
+    E14's two exclusion controls return no series at all, so the only honest reading of
+    their echo is that there is none -- and `False` here would have turned a working
+    control into a second finding.
+    """
+    assert scope_term_survived("!rig:b", {"series": []}) is None
+
+
+def test_the_comparison_ignores_the_case_the_echo_imposes():
+    # E13's echo comes back `(aa:x OR (aa:y AND bb:1))` from a query that asked `or`.
+    assert scope_term_survived("aa:x or aa:y",
+                               _series("sum:m{(AA:X OR AA:Y)}")) is True
+
+
+E14 = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog" / "e14.json"
+
+
+@pytest.fixture(scope="module")
+def e14() -> dict:
+    if not E14.exists():  # pragma: no cover - run scripts/trial_checks.py e14
+        pytest.skip("e14.json not recorded; run scripts/trial_checks.py e14")
+    return json.loads(E14.read_text())
+
+
+def test_the_negated_match_all_was_dropped_before_evaluation(e14):
+    """What Remark 14 now rests on: `!*` is not in the expression Datadog ran.
+
+    The first run concluded that `!*` does not exclude, from a series coming back. True,
+    but inferred -- and the inference had a second branch it never ruled out, that the
+    term was understood and vacuous. The echo rules it out by reading.
+    """
+    assert e14["term_survived_the_parse"]["match-all-and-negated"] is False
+    assert e14["term_survived_the_parse"]["negated-alone"] is False
+    for name in ("match-all-and-negated", "negated-alone"):
+        echoed = e14["responses"][name]["echoed"]
+        assert echoed and all("!*" not in e for e in echoed), echoed
+
+
+def test_a_negation_datadog_does_understand_survives_it(e14):
+    """Without this the finding above is about negation, not about `!*`.
+
+    `!rig:zzz` selects the series and stays in the echoed expression; `!*` selects the
+    series and does not. One contrast, two conclusions: negation is supported, and this
+    spelling of it is not.
+    """
+    assert e14["term_survived_the_parse"]["negated-absent-value"] is True
+    assert e14["selected_points"]["negated-absent-value"] == 1
+
+
+def test_exclusion_was_expressible_in_the_window_that_was_measured(e14):
+    """"Selects the series" means nothing until something has failed to.
+
+    A value the series does not carry, and a negation of one it does, both return
+    nothing over the same metric and window. So the two terms above returning a series
+    is a fact about the terms rather than about the rig.
+    """
+    assert e14["selected_points"]["absent-value"] == 0
+    assert e14["selected_points"]["negated-present-value"] == 0
+    assert all(e14["controls"].values()), e14["controls"]
+
+
+def test_the_scope_terms_still_select_the_series(e14):
+    # The original measurement, unchanged: both spellings return the stored point.
+    assert e14["stored_points"] == 1
+    assert e14["selected_points"]["match-all-and-negated"] == 1
+    assert e14["selected_points"]["negated-alone"] == 1
+    assert e14["rejected"] == {}
+
+
+def test_the_e14_run_was_isolated_from_earlier_runs(e14):
+    # E2's lesson, applied here: a shared metric name lets one run read another's point.
+    run = e14["provenance"]["run"]
+    for name, entry in e14["responses"].items():
+        assert f"run:{run}" in entry["query"], (name, entry["query"])
+
+
+def test_every_e14_response_carries_the_expression_that_ran(e14):
+    """The annotation is unconditional, so the next probe cannot repeat the omission."""
+    for name, entry in e14["responses"].items():
+        assert "echoed" in entry, name
+
+
+# --- which HTTP statuses are answers --------------------------------------------
+
+
+def test_a_query_http_error_is_still_a_runtime_error():
+    """Every caller written before the status was kept must keep working."""
+    exc = QueryHTTPError(431, "431 Request Header Fields Too Large: ...")
+    assert isinstance(exc, RuntimeError)
+    assert exc.status == 431
+    assert "431" in str(exc)
+
+
+def test_a_status_about_the_request_is_an_answer():
+    # 431 is E17's measurement: the request was too large. Retrying cannot change it.
+    assert 431 not in RETRYABLE_STATUS
+    assert 400 not in RETRYABLE_STATUS
+
+
+def test_a_status_about_the_server_is_not_an_answer():
+    """E17 bisected to a boundary of exactly 4,096 literals on the strength of a 408.
+
+    It had accepted 5,096 in an earlier run, so the refusal was never about length. A
+    408 "request header timeout" and a socket timeout are the same non-answer, and the
+    only thing that distinguishes them is which side noticed first.
+    """
+    assert {408, 429, 502, 503, 504} <= RETRYABLE_STATUS
+
+
+# --- E17: how many literals one scope's IN list may carry ------------------------
+
+E17 = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog" / \
+    "e17_scope_length.json"
+BOUND = 41 ** 2                    # the union bound §6 raised MAX_UNION to
+
+
+@pytest.fixture(scope="module")
+def e17() -> dict:
+    if not E17.exists():  # pragma: no cover - run scripts/probe_scope_length.py
+        pytest.skip("e17_scope_length.json not recorded; run probe_scope_length.py")
+    return json.loads(E17.read_text())
+
+
+def _rung(e17: dict, n: int) -> dict:
+    rows = [r for r in e17["rows"] if r["n"] == n]
+    assert len(rows) == 1, f"expected one rung at n={n}, got {len(rows)}"
+    return rows[0]
+
+
+def test_the_ladder_and_its_controls_asked_the_same_metric(e17):
+    """The failure the second run made: controls on a metric that exists, ladder on one
+    that does not. Both held and neither measured anything."""
+    assert e17["metric"].startswith("qlport.")
+    for r in e17["rows"]:
+        for half in ("including", "excluding"):
+            assert r[half]["url_bytes"] > 0
+    assert all(c["holds"] for c in e17["controls"]), e17["controls"]
+
+
+def test_an_accepted_rung_means_the_list_was_applied_not_merely_parsed(e17):
+    """Every rung asks twice, and acceptance is the conjunction.
+
+    A list containing the value the metric carries must return a series; the same list
+    without it must not. Truncation fails the first, a dropped scope fails the second,
+    and `status: ok` with no series -- what the first two runs measured -- fails both.
+    """
+    for r in e17["rows"]:
+        if r["accepted"] is not True:
+            continue
+        assert r["including"]["series"] >= 1, r
+        assert r["excluding"]["series"] == 0, r
+
+
+def test_the_bound_the_paper_needs_is_accepted_and_applied(e17):
+    r = _rung(e17, BOUND)
+    assert r["accepted"] is True
+    assert (r["including"]["series"], r["excluding"]["series"]) == (1, 0)
+
+
+def test_the_whole_list_reached_the_engine_at_the_bound(e17):
+    """The echo is the anti-truncation control: a list cut short comes back short.
+
+    Each value is three characters and a separator, so an intact list of $41^2$ cannot
+    echo in fewer than $4 \\times 1681$ bytes however the engine reformats it.
+    """
+    assert _rung(e17, BOUND)["including"]["echo_bytes"] >= 4 * BOUND
+
+
+def test_a_limit_exists_and_it_is_the_request_line_not_the_query_language(e17):
+    """`No limit is reached` was wrong, and wrong because the ladder stopped too low.
+
+    What refuses is HTTP 431 -- the request was too large -- from a GET whose scope
+    travels in the URL. Datadog's query language never gets to see it.
+    """
+    refused = [r for r in e17["rows"] if r["accepted"] is False]
+    assert refused, "the ladder found no refusal; it did not climb far enough"
+    assert all(r["including"]["status"] == 431 for r in refused), refused
+
+
+def test_the_limit_is_far_above_the_bound_the_paper_relies_on(e17):
+    b = e17["boundary"]
+    assert b is not None
+    assert "contradicted_by_accepted_above" not in b, b
+    assert b["largest_accepted"] > 3 * BOUND, b
+    assert b["smallest_refused"] > b["largest_accepted"]
+
+
+def test_a_server_side_status_was_not_recorded_as_a_refusal(e17):
+    """The artefact this probe produced before `RETRYABLE_STATUS` existed.
+
+    A 408 at $4{,}096$ bisected to a boundary of exactly $4{,}096$, a power of two that
+    looked like a finding, in a run that had already accepted $5{,}096$. Anything the
+    server said about itself is now retried and then left inconclusive.
+    """
+    for r in e17["rows"]:
+        for half in ("including", "excluding"):
+            status = r[half].get("status")
+            if status in RETRYABLE_STATUS:
+                assert r[half]["parsed"] is None, r
+                assert r[half]["attempts"] > 1, r

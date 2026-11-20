@@ -36,9 +36,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from qlport.harness.datadog import (  # noqa: E402
-    COUNT, RATE, Credentials, count_payload, credentials, interpret_closure,
-    interpret_default_aggregator, pointlist, query, reported_interval, submit,
-    write_raw,
+    COUNT, RATE, Credentials, count_payload, credentials, echoed_scopes,
+    interpret_closure, interpret_default_aggregator, pointlist, query,
+    reported_interval, scope_term_survived, submit, write_raw,
 )
 
 OUT = Path(__file__).resolve().parent.parent / "data" / "raw" / "datadog"
@@ -128,6 +128,24 @@ def _await_points(creds: Credentials, q: str, start: float, end: float, *,
 
 def _defined(raw: dict) -> dict[float, float]:
     return {t: v for t, v in pointlist(raw).items() if v is not None}
+
+
+def _record_echoes(result: dict) -> None:
+    """Write the expression Datadog evaluated beside the one each experiment asked.
+
+    Applied to every experiment, not only to the one that needed it. The field is in
+    each response already and costs nothing to keep; E14 shows what it costs not to.
+    `echo_differs` is a flag for a reader, not a verdict: the echo is not verbatim even
+    when nothing was dropped, so a difference is a prompt to look rather than a failure.
+    """
+    for entry in (result.get("responses") or {}).values():
+        if not isinstance(entry, dict) or "raw" not in entry:
+            continue
+        echoes = echoed_scopes(entry["raw"] if isinstance(entry["raw"], dict) else {})
+        entry["echoed"] = echoes
+        asked = entry.get("query")
+        if asked and echoes:
+            entry["echo_differs"] = any(e != asked for e in echoes)
 
 
 # ------------------------------------------------------------------ E2
@@ -614,6 +632,20 @@ def e14(creds: Credentials, *, dry: bool) -> dict:
     every unimplemented occurrence to be genuinely reachable. If Datadog *rejects* the
     scope rather than returning nothing, these belong in the fourth refusal kind that
     Remark~11 calls possible and empty here.
+
+    The first run of this asked three queries and read back their points. That is one
+    observation short of an answer, twice over. It could not tell a term that selects
+    everything from a term the parser discards, and it could not tell "this scope
+    selects the series" from "no scope could have failed to", because nothing in the run
+    ever made the series disappear. Both gaps are closed here without a second metric.
+
+    The echo closes the first. Every response names the expression Datadog evaluated,
+    and if `!*` is absent from it the term did not survive parsing. The three negation
+    controls close the second: `rig:zzz` is a value the series does not carry, `!rig:b`
+    negates a value it does carry, and `!rig:zzz` negates one it does not. The first two
+    must return nothing and the third must return the series, which together show that
+    exclusion is expressible in this window, that negation in particular works, and so
+    that `!*` returning the series is a fact about `!*` and not about the rig.
     """
     t_star = _grid(_now() - SETTLE)
     run = f"r{int(t_star)}"
@@ -622,15 +654,20 @@ def e14(creds: Credentials, *, dry: bool) -> dict:
     acks = _submit_all(creds, payloads, dry=dry)
 
     control = f"sum:{metric}{{run:{run}}}"
+    # (query, the term whose survival the echo is read for, what it should select)
     asked = {
-        "match-all-and-negated": f"sum:{metric}{{*,!*,run:{run}}}",
-        "negated-alone": f"sum:{metric}{{!*,run:{run}}}",
+        "match-all-and-negated": (f"sum:{metric}{{*,!*,run:{run}}}", "!*", None),
+        "negated-alone": (f"sum:{metric}{{!*,run:{run}}}", "!*", None),
+        "absent-value": (f"sum:{metric}{{rig:zzz,run:{run}}}", "rig:zzz", "nothing"),
+        "negated-present-value": (f"sum:{metric}{{!rig:b,run:{run}}}", "!rig:b", "nothing"),
+        "negated-absent-value": (f"sum:{metric}{{!rig:zzz,run:{run}}}", "!rig:zzz", "series"),
     }
     start, end = t_star - 900, t_star + 900
     if dry:
         print(f"# then query  {control}  (control)")
-        for name, q in asked.items():
-            print(f"# then query  {q}  ({name})")
+        for name, (q, term, expect) in asked.items():
+            print(f"# then query  {q}  ({name}; echo must keep {term!r}"
+                  + (f"; expect {expect})" if expect else ")"))
         return {}
 
     deadline = _now() + POLL_TIMEOUT
@@ -638,27 +675,51 @@ def e14(creds: Credentials, *, dry: bool) -> dict:
     while not _defined(raws["control"]) and _now() < deadline:
         time.sleep(POLL_EVERY)
         raws["control"] = query(creds, control, start, end)
-    rejected, points = {}, {}
-    for name, q in asked.items():
+    rejected, points, survived = {}, {}, {}
+    for name, (q, term, _expect) in asked.items():
         try:
             raws[name] = query(creds, q, start, end)
             points[name] = len(_defined(raws[name]))
+            survived[name] = scope_term_survived(term, raws[name])
         except ValueError as exc:
             rejected[name] = str(exc)
 
     stored = len(_defined(raws["control"]))
+    # A control holds when it selected what a scope Datadog understands must select.
+    controls = {name: (points.get(name, 0) > 0) == (expect == "series")
+                for name, (_q, _t, expect) in asked.items() if expect}
+    # The two questions. A term absent from the echo was discarded before evaluation,
+    # whatever the points say; `None` means the response carried no expression to read.
+    verdicts = {}
+    for name, (_q, term, expect) in asked.items():
+        if expect or name in rejected:
+            continue
+        if survived.get(name) is False:
+            verdicts[name] = f"{term} dropped: not in the expression Datadog evaluated"
+        elif survived.get(name) is None:
+            verdicts[name] = "inconclusive: no expression echoed"
+        else:
+            verdicts[name] = ("selects the series" if points.get(name)
+                              else "accepted, selects nothing")
+
+    conclusive = bool(stored) and all(controls.values()) and not any(
+        v.startswith("inconclusive") for v in verdicts.values())
     return {
         "provenance": _provenance(creds, experiment="e14", t_star=t_star, run=run),
         "submitted": payloads, "acks": acks,
-        "responses": {k: {"query": control if k == "control" else asked.get(k),
+        "responses": {k: {"query": control if k == "control" else asked[k][0],
                           "from": start, "to": end, "raw": v}
                       for k, v in raws.items()},
         "stored_points": stored, "selected_points": points, "rejected": rejected,
+        "term_survived_the_parse": survived,
+        "controls": controls,
         "interpretation": (
-            {"all": "inconclusive: the control stored nothing"} if not stored else
-            {**{n: "rejected by the query parser" for n in rejected},
-             **{n: ("selects the series" if k else "accepted, selects nothing")
-                for n, k in points.items()}}),
+            {"conclusive": False, "all": "inconclusive: the control stored nothing"}
+            if not stored else
+            {"conclusive": conclusive,
+             "controls_hold": all(controls.values()),
+             **{n: "rejected by the query parser" for n in rejected},
+             **verdicts}),
     }
 
 
@@ -908,6 +969,7 @@ def main(argv: list[str] | None = None) -> int:
     result = EXPERIMENTS[args.experiment](creds, dry=args.dry_run)
     if args.dry_run:
         return 0
+    _record_echoes(result)
 
     path = write_raw(OUT / f"{args.experiment}.json", result)
     interp = result.get("interpretation", {})

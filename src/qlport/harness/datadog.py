@@ -137,6 +137,25 @@ def count_payload(metric: str, points: list[tuple[float, float]], *,
     return {"series": [series]}
 
 
+class QueryHTTPError(RuntimeError):
+    """An HTTP status from a query endpoint, with the status kept as a number.
+
+    A `RuntimeError` subclass so that every caller written before it keeps working. The
+    status matters because not all of them are answers: a 431 says the request was too
+    large, which is a measurement, while a 408 or a 503 says the server gave up, which
+    is the same non-answer as a socket timeout and must be retried rather than recorded.
+    E17 bisected its way to a boundary of exactly 4,096 literals on the strength of one
+    408, having already accepted 5,096 in an earlier run.
+    """
+
+    def __init__(self, status: int, message: str) -> None:
+        super().__init__(message)
+        self.status = status
+
+
+RETRYABLE_STATUS = frozenset({408, 425, 429, 500, 502, 503, 504})
+
+
 def _post(url: str, body: bytes, headers: dict[str, str], timeout: float) -> dict:
     req = urllib.request.Request(url, data=body, headers=headers, method="POST")
     try:
@@ -172,7 +191,10 @@ def query(creds: Credentials, q: str, start: float, end: float,
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = json.loads(resp.read())
     except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"{exc.code} {exc.reason}: {exc.read()[:400].decode(errors='replace')}") from None
+        raise QueryHTTPError(
+            exc.code,
+            f"{exc.code} {exc.reason}: {exc.read()[:400].decode(errors='replace')}",
+        ) from None
     if raw.get("status") == "error":
         raise ValueError(f"query failed: {raw.get('error')}")
     return raw
@@ -213,6 +235,42 @@ def reported_interval(raw: dict) -> int | None:
     """
     s = _one_series(raw)
     return None if s is None or s.get("interval") is None else int(s["interval"])
+
+
+def echoed_scopes(raw: dict) -> list[str]:
+    """The expression Datadog says it evaluated, one entry per returned series.
+
+    Every `/api/v1/query` response carries this and nothing in this repository read it
+    until E14 was audited. It is the cheapest control there is, because it answers a
+    question none of the other fields can: whether the query that ran is the query that
+    was asked. A scope term the parser does not understand is dropped silently, and the
+    response is then indistinguishable from a term that matched everything -- same
+    status, same series, same points. E14 asked what `!*` selects, read back a series
+    and concluded it does not exclude; the echo shows `!*` was not in the expression
+    evaluated at all, which is the same conclusion reached by reading rather than by
+    inference, and it is only the second that could have been wrong.
+
+    Not a verbatim echo, so do not compare it for equality. A `by {k}` query comes back
+    once per group with that group's own value substituted into the scope, and a scope
+    using `or` comes back reassociated and upper-cased. What it does preserve is the
+    terms: `scope_term_survived` is the question worth asking of it.
+    """
+    return [s["expression"] for s in (raw.get("series") or [])
+            if isinstance(s, dict) and s.get("expression")]
+
+
+def scope_term_survived(term: str, raw: dict) -> bool | None:
+    """Did `term` reach the expression Datadog reports having evaluated?
+
+    `None` when the response carries no expression to read -- no series, so nothing was
+    echoed -- which is not evidence either way and must not be read as `False`. Matching
+    is case-insensitive because the echo upper-cases `or` and `and`; it is a substring
+    test because the echo reorders and reassociates everything around the term.
+    """
+    echoes = echoed_scopes(raw)
+    if not echoes:
+        return None
+    return all(term.casefold() in e.casefold() for e in echoes)
 
 
 # --- E2: which bucket does an instant belong to, and which edge is it labelled by? ---

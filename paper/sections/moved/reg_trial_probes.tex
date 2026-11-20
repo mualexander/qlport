@@ -25,14 +25,32 @@ asked.
 It is false. On the account, both \texttt{\{*,!*\}} and \texttt{\{!*\}} select the
 series. Whatever \texttt{!*} does to a scope, it is not exclusion, and the nine
 occurrences are not a request for the empty set. They stay in the unimplemented column,
-where they already were, but for a different and much duller reason: the term can be
-dropped. The entry in \S\ref{sec:gaps} that called them an empty selection was reasoning
-about a construct nobody had run.
+where they already were, but for a different and much duller reason: the term is
+discarded. The entry in \S\ref{sec:gaps} that called them an empty selection was
+reasoning about a construct nobody had run.
+
+That reading was one observation short, and the shortfall is worth recording because it
+is the same shape as the error it corrects. A series coming back is consistent with two
+readings --- the term was understood and excluded nothing, or the term was never
+evaluated --- and points alone cannot separate them. Every \texttt{/api/v1/query}
+response names the expression Datadog evaluated, and in both cases that expression is
+\texttt{sum:qlport.e14.negall\{run:\ldots\}}: the term is absent. It did not match
+everything. It was dropped before evaluation.
+
+Three controls make that a contrast rather than a lone observation, because
+\emph{selects the series} says nothing until something has failed to. Over the same
+metric and window, a value the series does not carry selects nothing, and a negation of
+a value it does carry selects nothing --- so exclusion is expressible here. And
+\texttt{!rig:zzz}, a negation of an absent value, selects the series \emph{and survives
+into the echoed expression}. Negation works and is reported; this spelling of it is
+neither.
 
 This is the kind of error that costs nothing in any number the paper reports and would
 have cost a reader everything: a translation of those nine queries built on the
 catalogue's reading would have emitted an expression returning no data where Datadog
-returns a series.
+returns a series. The instrument that settles it was free, present in every response the
+harness had already cached, and read for the first time in the audit that produced this
+paragraph; it is now recorded for every probe the harness runs.
 \end{remark}
 
 \begin{remark}[E15: whether a \texttt{rate} metric passes through $\phi_\rho$ unchanged]\label{rem:rate-identity}

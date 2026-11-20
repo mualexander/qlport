@@ -1,11 +1,11 @@
 {
- "collected_at": "2026-11-20T02:58:32+00:00",
- "metric": "qlport.e12.wild",
+ "collected_at": "2026-11-20T15:51:55+00:00",
+ "metric": "qlport.ar.r1794863577.cnt",
  "tag_key": "probe",
- "window_seconds": 300.0,
+ "tag_value": "a",
+ "window_seconds": 604800.0,
  "alphabet_size": 41,
  "max_union_claimed": 1681,
- "control_metric": "qlport.ar.r1794863577.cnt",
  "controls": [
   {
    "control": "bare-scope-present",
@@ -21,22 +21,6 @@
    "got": "empty",
    "holds": true,
    "query_bytes": 40,
-   "detail": ""
-  },
-  {
-   "control": "long-list-including",
-   "expected": "series",
-   "got": "series",
-   "holds": true,
-   "query_bytes": 8448,
-   "detail": ""
-  },
-  {
-   "control": "long-list-excluding",
-   "expected": "empty",
-   "got": "empty",
-   "holds": true,
-   "query_bytes": 8445,
    "detail": ""
   },
   {
@@ -56,79 +40,422 @@
    "detail": "query failed: Error parsing query: unable to parse avg:qlport.ar.r1794863577.cnt{probe QUX (a)}: Rule 'or_op' didn't match at 'QUX (a)}' (line 1, column 37)."
   }
  ],
- "boundary": null,
+ "boundary": {
+  "largest_accepted": 6656,
+  "smallest_refused": 7168
+ },
  "rows": [
   {
    "n": 1,
-   "url_bytes": 120,
+   "url_bytes": 128,
    "accepted": true,
-   "series": 0,
-   "dd_status": "ok",
-   "seconds": 0.33
+   "applied": true,
+   "including": {
+    "url_bytes": 128,
+    "parsed": true,
+    "series": 1,
+    "dd_status": "ok",
+    "echo_bytes": 38,
+    "echo_head": "avg:qlport.ar.r1794863577.cnt{probe:a}",
+    "attempts": 1,
+    "seconds": 0.35
+   },
+   "excluding": {
+    "url_bytes": 130,
+    "parsed": true,
+    "series": 0,
+    "dd_status": "ok",
+    "echo_bytes": 0,
+    "echo_head": null,
+    "attempts": 1,
+    "seconds": 0.34
+   },
+   "failure": null,
+   "detail": null
   },
   {
    "n": 41,
-   "url_bytes": 404,
+   "url_bytes": 412,
    "accepted": true,
-   "series": 0,
-   "dd_status": "ok",
-   "seconds": 0.31
+   "applied": true,
+   "including": {
+    "url_bytes": 412,
+    "parsed": true,
+    "series": 1,
+    "dd_status": "ok",
+    "echo_bytes": 203,
+    "echo_head": "avg:qlport.ar.r1794863577.cnt{probe IN (5--,5-.,5-/,5-0,5-1,5-2,5-3,5-4,5-5,5-6,5-7,5-8,5-9,5-:,5-_,5-a,5-b,5-c,5-d,5-e,",
+    "attempts": 1,
+    "seconds": 0.58
+   },
+   "excluding": {
+    "url_bytes": 414,
+    "parsed": true,
+    "series": 0,
+    "dd_status": "ok",
+    "echo_bytes": 0,
+    "echo_head": null,
+    "attempts": 1,
+    "seconds": 0.6
+   },
+   "failure": null,
+   "detail": null
   },
   {
    "n": 100,
-   "url_bytes": 861,
+   "url_bytes": 867,
    "accepted": true,
-   "series": 0,
-   "dd_status": "ok",
-   "seconds": 0.32
+   "applied": true,
+   "including": {
+    "url_bytes": 867,
+    "parsed": true,
+    "series": 1,
+    "dd_status": "ok",
+    "echo_bytes": 439,
+    "echo_head": "avg:qlport.ar.r1794863577.cnt{probe IN (5--,5-.,5-/,5-0,5-1,5-2,5-3,5-4,5-5,5-6,5-7,5-8,5-9,5-:,5-_,5-a,5-b,5-c,5-d,5-e,",
+    "attempts": 1,
+    "seconds": 0.36
+   },
+   "excluding": {
+    "url_bytes": 871,
+    "parsed": true,
+    "series": 0,
+    "dd_status": "ok",
+    "echo_bytes": 0,
+    "echo_head": null,
+    "attempts": 1,
+    "seconds": 0.35
+   },
+   "failure": null,
+   "detail": null
   },
   {
    "n": 256,
-   "url_bytes": 2013,
+   "url_bytes": 2021,
    "accepted": true,
-   "series": 0,
-   "dd_status": "ok",
-   "seconds": 0.32
+   "applied": true,
+   "including": {
+    "url_bytes": 2021,
+    "parsed": true,
+    "series": 1,
+    "dd_status": "ok",
+    "echo_bytes": 1063,
+    "echo_head": "avg:qlport.ar.r1794863577.cnt{probe IN (5--,5-.,5-/,5-0,5-1,5-2,5-3,5-4,5-5,5-6,5-7,5-8,5-9,5-:,5-_,5-a,5-b,5-c,5-d,5-e,",
+    "attempts": 1,
+    "seconds": 0.5
+   },
+   "excluding": {
+    "url_bytes": 2023,
+    "parsed": true,
+    "series": 0,
+    "dd_status": "ok",
+    "echo_bytes": 0,
+    "echo_head": null,
+    "attempts": 1,
+    "seconds": 0.61
+   },
+   "failure": null,
+   "detail": null
   },
   {
    "n": 512,
-   "url_bytes": 3831,
+   "url_bytes": 3839,
    "accepted": true,
-   "series": 0,
-   "dd_status": "ok",
-   "seconds": 0.35
+   "applied": true,
+   "including": {
+    "url_bytes": 3839,
+    "parsed": true,
+    "series": 1,
+    "dd_status": "ok",
+    "echo_bytes": 2087,
+    "echo_head": "avg:qlport.ar.r1794863577.cnt{probe IN (5--,5-.,5-/,5-0,5-1,5-2,5-3,5-4,5-5,5-6,5-7,5-8,5-9,5-:,5-_,5-a,5-b,5-c,5-d,5-e,",
+    "attempts": 1,
+    "seconds": 0.39
+   },
+   "excluding": {
+    "url_bytes": 3841,
+    "parsed": true,
+    "series": 0,
+    "dd_status": "ok",
+    "echo_bytes": 0,
+    "echo_head": null,
+    "attempts": 1,
+    "seconds": 0.52
+   },
+   "failure": null,
+   "detail": null
   },
   {
    "n": 1000,
-   "url_bytes": 7377,
+   "url_bytes": 7385,
    "accepted": true,
-   "series": 0,
-   "dd_status": "ok",
-   "seconds": 0.36
+   "applied": true,
+   "including": {
+    "url_bytes": 7385,
+    "parsed": true,
+    "series": 1,
+    "dd_status": "ok",
+    "echo_bytes": 4039,
+    "echo_head": "avg:qlport.ar.r1794863577.cnt{probe IN (5--,5-.,5-/,5-0,5-1,5-2,5-3,5-4,5-5,5-6,5-7,5-8,5-9,5-:,5-_,5-a,5-b,5-c,5-d,5-e,",
+    "attempts": 1,
+    "seconds": 0.43
+   },
+   "excluding": {
+    "url_bytes": 7387,
+    "parsed": true,
+    "series": 0,
+    "dd_status": "ok",
+    "echo_bytes": 0,
+    "echo_head": null,
+    "attempts": 1,
+    "seconds": 0.43
+   },
+   "failure": null,
+   "detail": null
   },
   {
    "n": 1681,
-   "url_bytes": 12208,
+   "url_bytes": 12216,
    "accepted": true,
-   "series": 0,
-   "dd_status": "ok",
-   "seconds": 0.57
+   "applied": true,
+   "including": {
+    "url_bytes": 12216,
+    "parsed": true,
+    "series": 1,
+    "dd_status": "ok",
+    "echo_bytes": 6763,
+    "echo_head": "avg:qlport.ar.r1794863577.cnt{probe IN (5--,5-.,5-/,5-0,5-1,5-2,5-3,5-4,5-5,5-6,5-7,5-8,5-9,5-:,5-_,5-a,5-b,5-c,5-d,5-e,",
+    "attempts": 1,
+    "seconds": 0.62
+   },
+   "excluding": {
+    "url_bytes": 13899,
+    "parsed": true,
+    "series": 0,
+    "dd_status": "ok",
+    "echo_bytes": 0,
+    "echo_head": null,
+    "attempts": 1,
+    "seconds": 0.68
+   },
+   "failure": null,
+   "detail": null
   },
   {
    "n": 2000,
-   "url_bytes": 16555,
+   "url_bytes": 16562,
    "accepted": true,
-   "series": 0,
-   "dd_status": "ok",
-   "seconds": 0.58
+   "applied": true,
+   "including": {
+    "url_bytes": 16562,
+    "parsed": true,
+    "series": 1,
+    "dd_status": "ok",
+    "echo_bytes": 10038,
+    "echo_head": "avg:qlport.ar.r1794863577.cnt{probe IN (5---,5--.,5--/,5--0,5--1,5--2,5--3,5--4,5--5,5--6,5--7,5--8,5--9,5--:,5--_,5--a,",
+    "attempts": 1,
+    "seconds": 0.74
+   },
+   "excluding": {
+    "url_bytes": 16565,
+    "parsed": true,
+    "series": 0,
+    "dd_status": "ok",
+    "echo_bytes": 0,
+    "echo_head": null,
+    "attempts": 1,
+    "seconds": 1.17
+   },
+   "failure": null,
+   "detail": null
   },
   {
    "n": 4096,
-   "url_bytes": 35241,
+   "url_bytes": 35246,
    "accepted": true,
-   "series": 0,
-   "dd_status": "ok",
-   "seconds": 0.82
+   "applied": true,
+   "including": {
+    "url_bytes": 35246,
+    "parsed": true,
+    "series": 1,
+    "dd_status": "ok",
+    "echo_bytes": 20518,
+    "echo_head": "avg:qlport.ar.r1794863577.cnt{probe IN (5---,5--.,5--/,5--0,5--1,5--2,5--3,5--4,5--5,5--6,5--7,5--8,5--9,5--:,5--_,5--a,",
+    "attempts": 1,
+    "seconds": 0.93
+   },
+   "excluding": {
+    "url_bytes": 35251,
+    "parsed": true,
+    "series": 0,
+    "dd_status": "ok",
+    "echo_bytes": 0,
+    "echo_head": null,
+    "attempts": 1,
+    "seconds": 0.9
+   },
+   "failure": null,
+   "detail": null
+  },
+  {
+   "n": 8192,
+   "url_bytes": 70638,
+   "accepted": false,
+   "applied": false,
+   "including": {
+    "url_bytes": 70638,
+    "parsed": false,
+    "failure": "http",
+    "status": 431,
+    "detail": "431 Request Header Fields Too Large: Request Header Fields Too Large",
+    "attempts": 1,
+    "seconds": 0.45
+   },
+   "excluding": {
+    "url_bytes": 70641,
+    "parsed": false,
+    "failure": "http",
+    "status": 431,
+    "detail": "431 Request Header Fields Too Large: Request Header Fields Too Large",
+    "attempts": 1,
+    "seconds": 0.49
+   },
+   "failure": "http",
+   "detail": "431 Request Header Fields Too Large: Request Header Fields Too Large"
+  },
+  {
+   "n": 16384,
+   "url_bytes": 137794,
+   "accepted": false,
+   "applied": false,
+   "including": {
+    "url_bytes": 137794,
+    "parsed": false,
+    "failure": "http",
+    "status": 431,
+    "detail": "431 Request Header Fields Too Large: Request Header Fields Too Large",
+    "attempts": 1,
+    "seconds": 0.47
+   },
+   "excluding": {
+    "url_bytes": 137797,
+    "parsed": false,
+    "failure": "http",
+    "status": 431,
+    "detail": "431 Request Header Fields Too Large: Request Header Fields Too Large",
+    "attempts": 1,
+    "seconds": 0.52
+   },
+   "failure": "http",
+   "detail": "431 Request Header Fields Too Large: Request Header Fields Too Large"
+  },
+  {
+   "n": 6144,
+   "url_bytes": 53890,
+   "accepted": true,
+   "applied": true,
+   "including": {
+    "url_bytes": 53890,
+    "parsed": true,
+    "series": 1,
+    "dd_status": "ok",
+    "echo_bytes": 30758,
+    "echo_head": "avg:qlport.ar.r1794863577.cnt{probe IN (5---,5--.,5--/,5--0,5--1,5--2,5--3,5--4,5--5,5--6,5--7,5--8,5--9,5--:,5--_,5--a,",
+    "attempts": 1,
+    "seconds": 1.33
+   },
+   "excluding": {
+    "url_bytes": 53893,
+    "parsed": true,
+    "series": 0,
+    "dd_status": "ok",
+    "echo_bytes": 0,
+    "echo_head": null,
+    "attempts": 1,
+    "seconds": 1.28
+   },
+   "failure": null,
+   "detail": null
+  },
+  {
+   "n": 7168,
+   "url_bytes": 62264,
+   "accepted": false,
+   "applied": false,
+   "including": {
+    "url_bytes": 62264,
+    "parsed": false,
+    "failure": "http",
+    "status": 431,
+    "detail": "431 Request Header Fields Too Large: Request Header Fields Too Large",
+    "attempts": 1,
+    "seconds": 0.45
+   },
+   "excluding": {
+    "url_bytes": 62267,
+    "parsed": false,
+    "failure": "http",
+    "status": 431,
+    "detail": "431 Request Header Fields Too Large: Request Header Fields Too Large",
+    "attempts": 1,
+    "seconds": 0.45
+   },
+   "failure": "http",
+   "detail": "431 Request Header Fields Too Large: Request Header Fields Too Large"
+  },
+  {
+   "n": 6656,
+   "url_bytes": 58036,
+   "accepted": true,
+   "applied": true,
+   "including": {
+    "url_bytes": 58036,
+    "parsed": true,
+    "series": 1,
+    "dd_status": "ok",
+    "echo_bytes": 33318,
+    "echo_head": "avg:qlport.ar.r1794863577.cnt{probe IN (5---,5--.,5--/,5--0,5--1,5--2,5--3,5--4,5--5,5--6,5--7,5--8,5--9,5--:,5--_,5--a,",
+    "attempts": 1,
+    "seconds": 1.97
+   },
+   "excluding": {
+    "url_bytes": 58041,
+    "parsed": true,
+    "series": 0,
+    "dd_status": "ok",
+    "echo_bytes": 0,
+    "echo_head": null,
+    "attempts": 1,
+    "seconds": 6.23
+   },
+   "failure": null,
+   "detail": null
+  },
+  {
+   "n": 6912,
+   "url_bytes": 60192,
+   "accepted": null,
+   "applied": null,
+   "including": {
+    "url_bytes": 60192,
+    "parsed": null,
+    "failure": "http",
+    "status": 500,
+    "detail": "500 Internal Server Error: ",
+    "attempts": 4,
+    "seconds": 13.92
+   },
+   "excluding": {
+    "url_bytes": 60195,
+    "parsed": null,
+    "failure": "http",
+    "status": 500,
+    "detail": "500 Internal Server Error: ",
+    "attempts": 4,
+    "seconds": 13.92
+   },
+   "failure": "http",
+   "detail": "500 Internal Server Error: "
   }
  ]
 }
