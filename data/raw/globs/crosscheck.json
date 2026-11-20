@@ -37,12 +37,12 @@
    "structural": null
   },
   "(cpu|requests.cpu)": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   "(memory|requests.memory)": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -77,12 +77,12 @@
    "structural": null
   },
   ".*.dashboard.*|.*.dns.*|kube.*|.*.calico.*|.*.flannel.*|.*.etcd.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   ".*.scope": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -122,47 +122,47 @@
    "structural": "*node*"
   },
   ".*otelcol_processor_.+accepted_log_records.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   ".*otelcol_processor_.+accepted_metric_points.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   ".*otelcol_processor_.+accepted_spans.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   ".*otelcol_processor_.+dropped_log_records.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   ".*otelcol_processor_.+dropped_metric_points.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   ".*otelcol_processor_.+dropped_spans.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   ".*otelcol_processor_.+refused_log_records.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   ".*otelcol_processor_.+refused_metric_points.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   ".*otelcol_processor_.+refused_spans.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -177,7 +177,7 @@
    "structural": "*prom*"
   },
   ".+": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -187,12 +187,12 @@
    "structural": null
   },
   "/kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   "/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -211,8 +211,8 @@
    "search": null,
    "structural": null
   },
-  "1(\\\\.0)?": {
-   "outcome": "none",
+  "1(\\.0)?": {
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -237,7 +237,7 @@
    "structural": "2*"
   },
   "2..": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -247,7 +247,7 @@
    "structural": null
   },
   "20.": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -267,17 +267,17 @@
    "structural": "3*"
   },
   "3..": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
-  "30(\\\\.0)?": {
-   "outcome": "none",
+  "30(\\.0)?": {
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   "30.": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -302,12 +302,12 @@
    "structural": "4*"
   },
   "4..": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   "40.": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -321,8 +321,8 @@
    "search": null,
    "structural": null
   },
-  "5(\\\\.0)?": {
-   "outcome": "none",
+  "5(\\.0)?": {
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -332,12 +332,12 @@
    "structural": "5*"
   },
   "5..": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   "50.": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -351,7 +351,7 @@
    "search": null,
    "structural": null
   },
-  "5\\\\d\\\\d|4\\\\d\\\\d": {
+  "5\\d\\d|4\\d\\d": {
    "outcome": "union",
    "search": null,
    "structural": null
@@ -482,7 +482,7 @@
    "structural": "node_load*"
   },
   "^vmbackupmanager.+": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -511,13 +511,13 @@
    "search": "canceled",
    "structural": "canceled"
   },
-  "cassandra-\\\\d+": {
+  "cassandra-\\d+": {
    "outcome": "none",
    "search": null,
    "structural": null
   },
   "cloudnative-pg-operator.+|cnpg-controller-manager.+": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -562,7 +562,7 @@
    "structural": null
   },
   "dm-.+": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -582,7 +582,7 @@
    "structural": null
   },
   "ext.?|xfs": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -682,12 +682,12 @@
    "structural": "istiod-*"
   },
   "java:lang:garbagecollector:.+:lastgcinfo:duration": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   "java:lang:memory:.+:(committed|max|used)": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -712,12 +712,12 @@
    "structural": null
   },
   "limits.cpu": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   "limits.memory": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -732,7 +732,7 @@
    "structural": "loki*"
   },
   "lo|veth.+": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -752,7 +752,7 @@
    "structural": null
   },
   "node.kubernetes.io.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -767,12 +767,12 @@
    "structural": "org:apache:cassandra:metrics:threadpools:*:completedtasks:value"
   },
   "org:apache:cassandra:metrics:threadpools:.+:pendingtasks:value": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   "org:apache:cassandra:metrics:threadpools:.+:totalblockedtasks:count": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -802,7 +802,7 @@
    "structural": null
   },
   "pvc.*.ctrl.*|pvc.*.rep.*|pvc.*.target.*": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -812,12 +812,12 @@
    "structural": "rabbitmqcli*"
   },
   "requests.cpu|cpu": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
   "requests.memory|memory": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -897,7 +897,7 @@
    "structural": null
   },
   "veth.+": {
-   "outcome": "none",
+   "outcome": "union",
    "search": null,
    "structural": null
   },
@@ -924,15 +924,15 @@
  },
  "provenance": {
   "budget_seconds": Infinity,
-  "collected_at": "2026-11-18T01:27:08+00:00",
-  "elapsed_seconds": 4725.2,
-  "max_union": 64,
+  "collected_at": "2026-11-20T08:27:50+00:00",
+  "elapsed_seconds": 2998.2,
+  "max_union": 1681,
   "n_concrete_regexes": 184,
   "star_matches_empty": true
  },
  "tally": {
-  "agree:none": 50,
+  "agree:none": 7,
   "agree:single": 61,
-  "agree:union": 73
+  "agree:union": 116
  }
 }

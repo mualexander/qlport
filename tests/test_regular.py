@@ -313,14 +313,18 @@ def test_the_cross_check_reached_every_pattern(crosscheck):
     A floor of 150 with a positive count per outcome would have passed while the
     cross-check silently degraded by eighteen patterns.
 
-    It now reaches all of them. The earlier run stopped at 168 of 183 because it was
-    given a 2,400 s budget; three patterns of one family cost 100-170 s each and the
-    clock ran out in the middle of them. Unbudgeted it takes 4,725 s and nothing is
-    left unreached -- and nothing exceeds the search's own candidate bound either, so
-    there is no undecided residue to disclose.
+    It now reaches all of them, in 2,998 s unbudgeted, and nothing exceeds the search's
+    own candidate bound either, so there is no undecided residue to disclose.
+
+    The tally has moved twice and neither move was a language changing. Pinning the
+    alphabet at 41 characters made `.` and `.+` finite unions rather than refusals, and
+    raising the bound to 41 squared admitted twelve more patterns whose branch counts sit
+    at or below two free positions. So 43 patterns walked from `none` to `union`, and what
+    is left in `none` is four refused by the bound and three by Corollary 5(3) -- the only
+    part of it that refuses anything over this alphabet.
     """
     assert crosscheck["tally"] == {
-        "agree:single": 61, "agree:union": 73, "agree:none": 50,
+        "agree:single": 61, "agree:union": 116, "agree:none": 7,
     }, crosscheck["tally"]
     assert crosscheck["tally"].get("not-reached", 0) == 0
     assert crosscheck["tally"].get("search-too-large", 0) == 0

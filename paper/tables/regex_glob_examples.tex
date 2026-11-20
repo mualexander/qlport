@@ -5,11 +5,11 @@ PromQL regex & Datadog scope value & Occurrences \\
 \texttt{\textasciicircum{}k8s\_.*} & \texttt{k8s\_*} & 60 \\
 \texttt{.*external-dns.*} & \texttt{*external-dns*} & 36 \\
 \texttt{.*pod.*} & \texttt{*pod*} & 24 \\
+\texttt{.+} & \texttt{-*, .*, /*, 0*, 1*, 2*, 3*, 4*, 5\dots{}} & 133 \\
 \texttt{LIST|GET} & \texttt{GET, LIST} & 41 \\
-\texttt{ext.*|xfs} & \texttt{ext*, xfs} & 34 \\
-\texttt{proxy|attach|log|exec|portforward} & \texttt{attach, exec, log, portforward, p\dots{}} & 32 \\
-\texttt{.+} & $\bot$ No non-empty wildcard & 133 \\
-\texttt{(/dev/)?(mmcblk.p.+|nvme.+|rbd.+|\dots{}} & $\bot$ No non-empty wildcard & 49 \\
-\texttt{5..} & $\bot$ No single-character wildcard & 40 \\
+\texttt{5..} & \texttt{5--, 5-., 5-/, 5-0, 5-1, 5-2, 5-3\dots{}} & 40 \\
+\texttt{(/dev/)?(mmcblk.p.+|nvme.+|rbd.+|\dots{}} & $\bot$ More branches than the bound $B$ admits & 49 \\
+\texttt{mmcblk.p.+|nvme.+|rbd.+|sd.+|vd.+\dots{}} & $\bot$ More branches than the bound $B$ admits & 22 \\
+\texttt{[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0\dots{}} & $\bot$ No bounded alphabet under a star & 5 \\
 \bottomrule
 \end{tabular}
