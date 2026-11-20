@@ -18,6 +18,7 @@ labels, and only a reader knows which one the sentence meant. Nothing mechanical
 """
 from __future__ import annotations
 
+import collections
 import re
 from pathlib import Path
 
@@ -63,9 +64,35 @@ def refs() -> dict[str, set[str]]:
     return _scan(_REF)
 
 
-def test_every_label_is_defined_once(labels):
+def _count(pattern: re.Pattern[str]) -> collections.Counter[str]:
+    """Occurrences rather than files, which is the distinction `_scan` cannot make."""
+    found: collections.Counter[str] = collections.Counter()
+    for path in TEX:
+        for match in pattern.finditer(_strip(path.read_text())):
+            captured = next((g for g in match.groups() if g is not None), "")
+            for item in captured.split(","):
+                found[item.strip()] += 1
+    return found
+
+
+@pytest.fixture(scope="module")
+def label_counts() -> collections.Counter[str]:
+    return _count(_LABEL)
+
+
+def test_every_label_is_defined_once(labels, label_counts):
+    r"""Twice in one file is the case this did not see.
+
+    `_scan` keys by file, so two `\label{fig:x}` in the same section collapsed into one
+    entry and passed. LaTeX takes the last definition and warns, in one line of a build
+    that prints hundreds, and every `\ref` to it then points wherever that last one
+    landed -- which is the failure this file exists to catch, arriving by the one route
+    it was blind to.
+    """
     repeated = {name: sorted(files) for name, files in labels.items() if len(files) > 1}
     assert not repeated, f"defined in more than one file: {repeated}"
+    twice = {name: n for name, n in sorted(label_counts.items()) if n > 1}
+    assert not twice, f"defined more than once in one file: {twice}"
 
 
 def test_every_reference_resolves(labels, refs):

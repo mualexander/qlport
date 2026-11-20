@@ -25,6 +25,10 @@ from qlport.lower.datadog import lower_all
 from qlport.parse import parse
 
 CACHE = Path(__file__).resolve().parent.parent / "data" / "raw" / "shapes" / "differential.json"
+ROOT = CACHE.parents[3]
+REGISTRY = ROOT / "paper" / "quoted_figures.json"
+TABLE = ROOT / "paper" / "tables" / "differential.tex"
+PROSE = ROOT / "paper" / "sections" / "07_evaluation.tex"
 ROLLUP = 60.0
 
 
@@ -73,6 +77,51 @@ def test_the_run_matches_the_figures_the_paper_reports(run):
     assert run["shapes_compared"] == 330 and run["shapes_exact"] == 330
     assert run["occurrences_compared"] == 8365 and run["occurrences_exact"] == 8365
     assert sum(r.get("buckets", 0) for r in run["rows"]) == 22692
+
+
+def test_the_paper_states_the_figures_this_cache_derives(run):
+    """The join the test above cannot make: from the cache to the paper, by derivation.
+
+    These figures are written down twice -- as literals in the test above, and as
+    literals in the prose and the generated table -- and until now nothing connected the
+    two. That is not hypothetical: the third run landed in the cache, this file was
+    updated to its counts, and §7.4 went on reporting the second run's $329$ of $22{,}608$
+    for a further two commits, with every test green. Each copy was self-consistent and
+    nothing compared them.
+
+    So the figures are derived from the rows and then looked for where the paper puts
+    them: the registry notebook 05 writes, the table §7.4 inputs, and the sentences that
+    state the ones no table carries.
+    """
+    rows = run["rows"]
+    compared = [r for r in rows if r["status"] == "compared"]
+    agreed = [r for r in compared if r["exact"] == 1.0]
+    buckets = sum(int(r["buckets"]) for r in compared)
+    occ_cmp = sum(int(r["occurrences"]) for r in compared)
+    occ_ok = sum(int(r["occurrences"]) for r in agreed)
+    bit_identical = sum(1 for r in compared
+                        if r.get("bit_identical") in (1.0, True))
+    worst = max(r["max_d"] for r in compared)
+
+    reg = json.loads(REGISTRY.read_text())
+    assert reg["nb05.shapes"] == len(rows) == run["provenance"]["shapes"]
+    assert reg["nb05.bucket_comparisons"] == buckets
+    assert reg["nb05.bit_identical_shapes"] == bit_identical
+    assert reg["nb05.synthetic_series"] == run["provenance"]["series"]
+
+    # The table carries the shape and occurrence counts; `tabular` writes them with a
+    # thousands comma, which is also how the prose spells a four-digit figure.
+    table = TABLE.read_text()
+    for value in (len(compared), len(agreed), occ_cmp, occ_ok):
+        assert f"{value:,}" in table, (value, table)
+    assert f"& {len(compared) - len(agreed)} & {occ_cmp - occ_ok} " in table, table
+
+    # And the two figures no table holds: the occurrence weight of the agreement, and
+    # the largest deviation among the shapes that agreed. One significant figure in
+    # units of 1e-14 is how §7.4 writes the second.
+    prose = PROSE.read_text()
+    assert f"${occ_ok:,}$".replace(",", "{,}") in prose, occ_ok
+    assert f"${worst / 1e-14:.1f}" + r"\times10^{-14}$" in prose, worst
 
 
 def test_every_compared_shape_agreed(run):

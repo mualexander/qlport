@@ -276,6 +276,36 @@ def test_the_bound_is_the_square_of_the_alphabet():
     assert regex_to_globs("5...").kind == "none"
 
 
+def test_the_product_bound_guards_the_expansion_the_union_bound_cannot():
+    """`MAX_PRODUCT` is the second bound, and it is the one that binds first.
+
+    `MAX_UNION` bounds what gets emitted, which cannot bound what builds it: the
+    expansion is a Cartesian product, and three free positions are $41^{3}$ globs before
+    anything is there to count them. So §6 carries two bounds, and the product one is
+    what keeps a third free position from ever reaching the union bound. Nothing tested
+    it, and all three places the product is taken refuse in their own words -- which is
+    how a refused pattern says which bound refused it.
+    """
+    from qlport.regular import MAX_PRODUCT
+
+    assert MAX_PRODUCT == 4096
+    # Above the union bound, so a product the guard admits is still not emittable: the
+    # product guard exists to stop the expansion, not to choose what the scope may say.
+    assert MAX_PRODUCT > MAX_UNION
+    # A concatenation of free positions: 41 cubed.
+    assert regex_to_globs("5...").reason == "too-many-combinations"
+    # A bounded character class: ten to the fourth.
+    assert regex_to_globs("[0-9]{4}").reason == "character-class-too-wide"
+    # A bounded group: four branches to the seventh.
+    assert regex_to_globs("(a|b|c|d){7}").reason == "repeated-group-too-wide"
+    # The guard is on exceeding the bound, not on reaching it: a product of exactly
+    # MAX_PRODUCT is built, and then refused by the union bound in its own words.
+    assert 4 ** 6 == MAX_PRODUCT
+    assert regex_to_globs("(a|b|c|d){6}").reason == "union-too-large"
+    # And a product inside both bounds decides.
+    assert regex_to_globs("[0-9]{3}").kind == "union"
+
+
 def test_globs_are_returned_sorted_and_deduplicated():
     # greenery holds alternation branches in a set, so order has to come from here.
     got = regex_to_globs("b|a|b")
@@ -426,6 +456,53 @@ def test_the_gate_passes_a_correct_proposal_through(monkeypatch):
     assert got.verified and got.exact and got.globs == ("ab*",)
 
 
+# --- deciding under a deadline ---------------------------------------------------------
+# The two tests below are the only ones here that assert a cost rather than a result,
+# and their names say "in seconds" and "quickly" while nothing bounded either. The
+# regression they exist to catch is a return to the unfactored alternation, which did
+# not finish in four hours -- so a bare elapsed-time assertion cannot report it: the
+# suite would hang rather than fail. The decision runs in a child process that is killed
+# at the deadline, and the overrun is the failure.
+#
+# The ceilings are loose on purpose. On the development machine the first decides in
+# about 26 s and the second in under a second; what the deadline has to separate is
+# seconds from hours, not one run from the next.
+
+DEADLINE = 240.0
+
+
+def _decide_in_child(regex: str, out) -> None:    # pragma: no cover - child process
+    try:
+        from qlport.regular import regex_to_globs
+        got = regex_to_globs(regex)
+        out.put(("ok", got.kind, got.verified, got.exact, sorted(got.globs)))
+    except BaseException as exc:                  # noqa: BLE001 - reported, not handled
+        import traceback
+        out.put(("raised", traceback.format_exc() or repr(exc)))
+
+
+def _decided_within(regex: str, seconds: float = DEADLINE) -> dict:
+    """`regex_to_globs(regex)` in a child process, killed if it overruns `seconds`."""
+    import multiprocessing as mp
+    import queue as _queue
+
+    out: mp.Queue = mp.Queue()
+    child = mp.Process(target=_decide_in_child, args=(regex, out), daemon=True)
+    child.start()
+    try:
+        try:
+            got = out.get(timeout=seconds)
+        except _queue.Empty:
+            pytest.fail(f"{regex!r} did not decide within {seconds:g}s")
+    finally:
+        child.terminate()
+        child.join(10)
+    if got[0] == "raised":
+        pytest.fail(f"{regex!r} raised in the child:\n{got[1]}")
+    _, kind, verified, exact, globs = got
+    return {"kind": kind, "verified": verified, "exact": exact, "globs": globs}
+
+
 # --- the factored comparison -----------------------------------------------------------
 # `.+` is proposed as 41 globs differing in one character position, and rendering that as
 # a 41-branch alternation duplicates the surrounding context 41 times. greenery unions
@@ -491,15 +568,18 @@ def test_the_gate_still_catches_a_wrong_proposal_that_factors(monkeypatch):
 
 
 def test_an_alphabet_expansion_decides_in_seconds_and_is_verified():
-    """The nine-pattern family that did not finish in four hours, as one case."""
+    """The nine-pattern family that did not finish in four hours, as one case.
+
+    Run under `DEADLINE`, so the four hours are what fails rather than what happens.
+    """
     from qlport.regular import TAG_ALPHABET
 
-    got = regex_to_globs(".*otelcol_processor_.+refused_spans.*")
-    assert got.kind == "union" and got.verified and got.exact
-    assert len(got.globs) == len(TAG_ALPHABET)
+    got = _decided_within(".*otelcol_processor_.+refused_spans.*")
+    assert got["kind"] == "union" and got["verified"] and got["exact"]
+    assert len(got["globs"]) == len(TAG_ALPHABET)
     # Every branch is the regex's own literals with one alphabet character between them.
-    assert set(got.globs) == {f"*otelcol_processor_{c}*refused_spans*"
-                              for c in TAG_ALPHABET}
+    assert set(got["globs"]) == {f"*otelcol_processor_{c}*refused_spans*"
+                                 for c in TAG_ALPHABET}
 
 
 # --- factoring a union of several expansions -------------------------------------------
@@ -566,10 +646,14 @@ def test_the_gate_catches_a_wrong_proposal_in_one_group_of_several(monkeypatch):
 
 
 def test_the_multi_shape_union_decides_quickly_and_is_verified():
-    """The corpus pattern that cost the cross-check four hours, as one case."""
-    got = regex_to_globs("pvc.*.ctrl.*|pvc.*.rep.*|pvc.*.target.*")
-    assert got.kind == "union" and got.verified and got.exact
-    assert len(got.globs) == 123
+    """The corpus pattern that cost the cross-check four hours, as one case.
+
+    Under the same deadline, for the same reason: without one, a regression here is a
+    suite that never finishes rather than a test that fails.
+    """
+    got = _decided_within("pvc.*.ctrl.*|pvc.*.rep.*|pvc.*.target.*")
+    assert got["kind"] == "union" and got["verified"] and got["exact"]
+    assert len(got["globs"]) == 123
 
 
 def test_a_repeated_glob_does_not_pass_the_cardinality_test(monkeypatch):

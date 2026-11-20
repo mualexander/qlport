@@ -154,6 +154,63 @@ def _run(name: str) -> dict:
     return json.loads(path.read_text())
 
 
+EXACT_TOL = 1e-12          # the float64 bound every exactness column in this paper uses
+
+
+def _summary(name: str) -> dict:
+    """The summary the tests below read, recomputed from the rows it reduces.
+
+    `summary` is an aggregate the recording script wrote beside the rows: a share of
+    buckets within tolerance, a median, a maximum. The rows hold both systems' readings
+    for every bucket, so none of it needs to be taken on trust -- and the deviation is
+    `metrics.reldiff` of the pair, which is the definition §3.1 states rather than
+    whatever the script happened to compute.
+
+    What this closes is the same hole the differential cache had: a stored exactness of
+    1.0 would keep reading as "exact on every bucket" after a change to the comparison
+    that produced it, because nothing else in the file looked at the pairs.
+    """
+    import collections
+
+    from qlport.metrics import reldiff
+
+    run = _run(name)
+    assert run["rows"], name
+    by: dict[tuple[str, str], list[float]] = collections.defaultdict(list)
+    for r in run["rows"]:
+        d = reldiff(r["datadog"], r["promql"])
+        assert d == pytest.approx(r["d"], abs=1e-15, rel=1e-12), r
+        by[(r["instant"], r["candidate"])].append(d)
+    derived = {
+        f"{inst} | {cand}": {
+            "buckets": len(ds),
+            "exact": sum(1 for x in ds if x <= EXACT_TOL) / len(ds),
+            "bit_identical": sum(1 for x in ds if x == 0) / len(ds),
+            "median_d": float(np.median(ds)),
+            "max_d": float(np.max(ds)),
+        }
+        for (inst, cand), ds in by.items()
+    }
+    stored = run["summary"]
+    assert set(derived) == set(stored), (sorted(derived), sorted(stored))
+    for key, got in derived.items():
+        for field in ("buckets", "median_d", "max_d"):
+            assert got[field] == pytest.approx(stored[key][field]), (name, key, field)
+        # `exact` is the one field these runs predate. They were recorded before the
+        # tolerance fix, so the stored share is bit-identity -- which agrees with the
+        # tolerance share in eleven of the twelve cells and differs in the twelfth. A
+        # re-recording with today's script stores the tolerance share under `exact` and
+        # bit-identity beside it, so both shapes are accepted and both are checked.
+        if "bit_identical" in stored[key]:
+            assert stored[key]["exact"] == pytest.approx(got["exact"]), (name, key)
+            assert stored[key]["bit_identical"] == pytest.approx(
+                got["bit_identical"]), (name, key)
+        else:
+            assert stored[key]["exact"] == pytest.approx(
+                got["bit_identical"]), (name, key)
+    return derived
+
+
 @pytest.mark.parametrize("name", ["unaligned", "aligned"])
 def test_both_exact_forms_agree_with_real_datadog(name):
     """The dual-write test: one stream, two systems, compared bucket by bucket.
@@ -163,7 +220,7 @@ def test_both_exact_forms_agree_with_real_datadog(name):
     model of it. Both exact forms must be exact on every bucket, evaluated where §3.1
     says to evaluate them.
     """
-    summary = _run(name)["summary"]
+    summary = _summary(name)
     for cand in ("x - x offset D", "increase(x[D] anchored)"):
         got = summary[f"inside | {cand}"]
         assert got["exact"] == 1.0, (name, cand, got)
@@ -177,7 +234,7 @@ def test_rate_is_only_epsilon_sound_on_real_traffic(name):
     Synthetic steady traffic hides this -- §3.1's steady workload has it at 100%. Real
     request traffic does not.
     """
-    got = _run(name)["summary"][f"inside | rate(x[D]) * D"]
+    got = _summary(name)[f"inside | rate(x[D]) * D"]
     assert got["exact"] < 0.5, got
     assert got["max_d"] > 0
 
@@ -189,17 +246,44 @@ def test_the_closure_convention_is_invisible_on_an_unaligned_scrape():
     bucket edge agrees with evaluating inside it. Real scrapes are jittered, so this is
     the ordinary case -- and it is the one in which the error cannot be seen.
     """
-    s = _run("unaligned")["summary"]
+    s = _summary("unaligned")
     for cand in ("x - x offset D", "increase(x[D] anchored)"):
         assert s[f"inside | {cand}"]["exact"] == s[f"on the edge | {cand}"]["exact"] == 1.0
 
 
 def test_the_closure_convention_decides_the_answer_on_an_aligned_scrape():
     """And why it matters anyway. With samples on the boundaries, the edge is wrong."""
-    s = _run("aligned")["summary"]
+    s = _summary("aligned")
     for cand in ("x - x offset D", "increase(x[D] anchored)"):
         assert s[f"inside | {cand}"]["exact"] == 1.0, cand
         assert s[f"on the edge | {cand}"]["exact"] < 0.5, cand
+
+
+def test_the_exactness_the_paper_states_is_the_one_the_rows_support():
+    r"""The cell where bit-identity and the paper's tolerance disagree, pinned.
+
+    Every exactness column in this paper admits a relative deviation of $10^{-12}$,
+    because a float64 sum of the same numbers in a different order is not the same
+    float. `replay_dualwrite.py` scored bit-identity instead when these two runs were
+    recorded, and in one cell -- the aligned grid, `rate` evaluated inside the bucket --
+    that counted a bucket reading $236.0$ against $235.99999999999997$ as a
+    disagreement. One bucket in $84$ is $1.2$ points, which is the whole discrepancy.
+
+    Notebook 02 re-derives from the rows, so Table 2 and §3.1 already state $20.2\%$;
+    the stored summary still says $19.0\%$. Nothing joined the two until this file
+    re-derived as well, and a cell that disagrees with its own rows is exactly what a
+    stored verdict is for.
+    """
+    rows = _summary("aligned")["inside | rate(x[D]) * D"]
+    stored = _run("aligned")["summary"]["inside | rate(x[D]) * D"]
+    assert rows["buckets"] == 84
+    assert round(rows["exact"] * 100, 1) == 20.2
+    assert round(rows["bit_identical"] * 100, 1) == 19.0
+    assert stored["exact"] == pytest.approx(rows["bit_identical"])
+    # The figure the paper states is the derived one, in the table notebook 02 writes.
+    table = (Path(__file__).resolve().parent.parent / "paper" / "tables"
+             / "replay_dualwrite.tex").read_text()
+    assert r"20.2\%" in table and r"19.0\%" not in table
 
 
 @pytest.mark.parametrize("name", ["unaligned", "aligned"])

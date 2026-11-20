@@ -292,11 +292,29 @@ def test_top_is_expressible_in_promql(topk_run):
     instant. They are different operators, so this could have been a language gap -- and
     139 occurrences moving to that column would invert §8's comparison. It is not: the
     `@`-pinned construction reproduces the ranking exactly.
+
+    The prediction is recomputed here from `harness/ranking.py` and compared against the
+    selections the server returned at each probe instant. `matches_model` is the
+    recording script's own arithmetic over those same selections, so it is checked
+    against the re-derivation rather than read as the result: a stored verdict cannot
+    carry a conclusion the recorded selections do not support. The Datadog half of this
+    comparison is pinned the same way in `test_harness_datadog.py`.
     """
+    from qlport.harness.ranking import model_rank
+
     assert topk_run["cases"], "no ranking cases recorded"
     for case in topk_run["cases"]:
-        assert case["matches_model"], case
-        assert case["constant"], case
+        want = model_rank(case["by"], case["n"], case["direction"])
+        assert case["model"] == want, case
+        selections = case["selected"]
+        assert selections, case
+        for label, got in selections.items():
+            assert got == want, (label, got, want, case)
+        assert case["matches_model"] is True, case
+        # The same selection at every probe instant. The equality above already forces
+        # it; this states the property the cache records under its own name.
+        assert len({tuple(v) for v in selections.values()}) == 1, case
+        assert case["constant"] is True, case
 
 
 def test_every_ranking_function_was_covered(topk_run):
@@ -331,11 +349,21 @@ def test_the_workload_is_the_one_the_vendor_was_shown(topk_run):
 
 
 def test_the_pinned_ranking_is_constant_while_the_naive_one_is_not(topk_run):
-    """Why the `@` modifier is load-bearing rather than decorative."""
-    assert all(c["constant"] for c in topk_run["cases"])
+    """Why the `@` modifier is load-bearing rather than decorative.
+
+    Constancy is derived from the recorded selections on both sides, and the flag the
+    script stored is then required to agree with the derivation. The flag is what makes
+    this measurement readable; the selections are what make it a measurement.
+    """
+    def constant(case: dict) -> bool:
+        return len({tuple(v) for v in case["selected"].values()}) == 1
+
+    assert all(constant(c) for c in topk_run["cases"])
     # At least one naive case must drift, or the workload fails to separate the two
     # operators and the comparison above proves nothing.
-    assert any(not c["constant"] for c in topk_run["naive"]), topk_run["naive"]
+    assert any(not constant(c) for c in topk_run["naive"]), topk_run["naive"]
+    for case in topk_run["cases"] + topk_run["naive"]:
+        assert case["constant"] == constant(case), case
 
 
 def test_the_expression_needs_a_range_and_an_anchor(topk_run):

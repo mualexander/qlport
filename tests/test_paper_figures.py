@@ -483,6 +483,17 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb04.glob_exists_pct", "06_regular.tex"),
     ("nb03.shapes", "concl_evidence.tex"),
     ("nb03.shapes_for_95pct", "eval_shape_reduction.tex"),
+    # The differential run's scale and its agreement bound. §7.4 quoted the second
+    # run's counts for two commits after the third run landed in the cache, because
+    # the cache test and the prose each held their own literals and nothing compared
+    # them. `test_differential_cache.py` now derives these from the rows; this is the
+    # other end of that join.
+    ("nb05.shapes", "07_evaluation.tex"),
+    ("nb05.shapes", "eval_shape_reduction.tex"),
+    ("nb05.synthetic_series", "07_evaluation.tex"),
+    ("nb05.synthetic_series", "eval_shape_reduction.tex"),
+    ("nb05.bucket_comparisons", "07_evaluation.tex"),
+    ("nb05.bit_identical_shapes", "07_evaluation.tex"),
     # `top(...)`'s occurrence count decides which column the largest unimplemented entry
     # belongs in, and the two counts beside it are what the measurement covers: 134 was
     # the reach of the claim before `bottomk` was probed, and 111 is how often the corpus
