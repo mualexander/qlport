@@ -803,8 +803,93 @@ def e16(creds: Credentials, *, dry: bool) -> dict:
     }
 
 
+# ------------------------------------------------------------------ E18
+
+
+def e18(creds: Credentials, *, dry: bool) -> dict:
+    r"""The automatic rollup interval for every time span the corpus actually uses.
+
+    E4 asked this for five ranges and found the interval is a function of the query
+    range: 1s at a minute, 2s at five, 20s at an hour, 60s at four hours, 300s at a day.
+    \S\ref{sec:threats} then says the 60s default behind `ROLLUP_DEFAULT` is
+    "systematic rather than arbitrary" --- but 60s is the four-hour row, and the Datadog
+    dashboards in the corpus declare their own span: 460 `live_span` values across 197
+    files, of which four hours is 28.3 per cent and one hour, the modal value, is 38.3.
+    So the default is wrong wherever a widget says something else, and five of the ten
+    spans the corpus uses were never measured at all.
+
+    This measures all ten, which turns `ROLLUP_DEFAULT` from an assumption into a
+    lookup. E4's five are re-asked rather than taken on trust: they are the control, and
+    a run where they do not reproduce says the instrument moved and is reported
+    inconclusive rather than merged with E4's numbers.
+
+    Same shape and same billing as E4 --- one custom metric, one series, an hour of
+    points at 10s --- because the interval depends on the range and not on the data, so
+    an hour of backfill is enough to ask about a month. The far buckets come back null,
+    and a null bucket still carries the interval Datadog chose.
+    """
+    now = _grid(_now() - 60)
+    metric = "qlport.e18.spans"
+    spacing, span = 10, 3500
+    points = [(now - span + i * spacing, 1.0)
+              for i in range(span // spacing + 1)]
+    payloads = [count_payload(metric, points[i:i + 100], tags=TAGS)
+                for i in range(0, len(points), 100)]
+    # Every `live_span` the corpus's Datadog dashboards declare, in seconds. E4 measured
+    # the five marked below; the rest are why this experiment exists.
+    ranges = {"1m": 60, "5m": 300, "10m": 600, "15m": 900, "30m": 1800,
+              "1h": 3600, "4h": 14400, "1d": 86400, "1w": 604800, "1mo": 2592000}
+    e4_measured = {"1m": 1, "5m": 2, "1h": 20, "4h": 60, "1d": 300}
+
+    acks = _submit_all(creds, payloads, dry=dry)
+    if dry:
+        print(f"# {len(points)} points every {spacing}s over {span}s, "
+              f"in {len(payloads)} request(s)")
+        for name, width in ranges.items():
+            seen = "E4" if name in e4_measured else "new"
+            print(f"# then query  sum:{metric}{{*}}  over {name} ({width}s)  [{seen}]")
+        return {}
+
+    _await_points(creds, f"sum:{metric}{{*}}", now - 3600, now, want=3)
+
+    out: dict = {"provenance": _provenance(creds, experiment="e18", spacing=spacing,
+                                           span=span, n_points=len(points), anchor=now),
+                 "submitted_request_count": len(payloads), "acks": acks,
+                 "responses": {}}
+    for name, width in ranges.items():
+        q = f"sum:{metric}{{*}}"
+        raw = query(creds, q, now - width, now)
+        ts = sorted(pointlist(raw))
+        gaps = [round(b - a, 3) for a, b in zip(ts, ts[1:])]
+        out["responses"][name] = {
+            "query": q, "range_seconds": width, "raw": raw,
+            "reported_interval": reported_interval(raw),
+            "n_points": len(ts),
+            "observed_spacing": statistics.mode(gaps) if gaps else None,
+        }
+
+    reported = {k: v["reported_interval"] for k, v in out["responses"].items()}
+    # The control: E4's five must come back as E4 found them, or the two runs cannot be
+    # read as one table.
+    replicated = {k: (reported.get(k), v) for k, v in e4_measured.items()}
+    disagreed = {k: got for k, (got, want) in replicated.items() if got != want}
+    unreadable = [k for k, v in reported.items() if v is None]
+    out["interpretation"] = {
+        "reported_by_range": reported,
+        "observed_by_range": {k: v["observed_spacing"]
+                              for k, v in out["responses"].items()},
+        "e4_expected": e4_measured,
+        "e4_disagreed": disagreed,
+        "intervals_unreadable": unreadable,
+        "spans_whose_interval_is_60s": [k for k, v in reported.items() if v == 60],
+        "conclusive": not disagreed and not unreadable,
+    }
+    return out
+
+
 EXPERIMENTS = {"e1": e1, "e2": e2, "e3": e3, "e4": e4, "e5": e5, "e12": e12,
-               "e13": e13, "e14": e14, "e15": e15, "e16": e16}
+               "e13": e13, "e14": e14, "e15": e15, "e16": e16,
+               "e18": e18}
 
 
 def main(argv: list[str] | None = None) -> int:
