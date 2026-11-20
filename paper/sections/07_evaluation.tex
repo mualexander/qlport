@@ -285,7 +285,7 @@ rollup, which aggregation, which matcher shapes --- so two queries differing onl
 metric they name are one experiment rather than two. Abstracting away the identifiers and
 nothing else, keeping everything a representative would emit differently, collapses the
 $8{,}370$ translated occurrences that are a single query to \textbf{$333$ distinct
-shapes}, instantiated as $885$ synthetic series in all --- a scale one trial account
+shapes}, instantiated as $888$ synthetic series in all --- a scale one trial account
 sustains, which is why the experiment turned out not to need a reconstruction of
 somebody's production estate. The reduction is sound only if every query in a class
 translates the same way, and that is checked rather than argued: emitting all of them and
@@ -294,38 +294,43 @@ stands for its class (\apref{app:eval}).
 
 \iffull\input{sections/moved/eval_shape_reduction}\fi
 
-Table~\ref{tab:differential} reports the outcome. Of the $332$ shapes, $329$ could be
-compared, and all $329$ agreed with Datadog on every one of $22{,}608$ bucket
+Table~\ref{tab:differential} reports the outcome. Of the $333$ shapes, $330$ could be
+compared, and all $330$ agreed with Datadog on every one of $22{,}692$ bucket
 comparisons --- to float64 precision rather than bit-identity, since two engines summing
 the same values in a different order differ in the last bit, and the bound is the one the
 model-versus-server check of Section~\ref{sec:ingestion} already uses; the largest
-deviation over all $329$ is $2.1\times10^{-14}$ and $136$ of them are bit-identical.
-Weighted by the corpus queries those shapes stand for, that is $8{,}364$ of the
-$8{,}370$ translated single-query occurrences. So all but six of $\kappa$'s single-query
+deviation over all $330$ is $3.5\times10^{-14}$ and $137$ of them are bit-identical.
+Weighted by the corpus queries those shapes stand for, that is $8{,}365$ of the
+$8{,}370$ translated single-query occurrences. So all but five of $\kappa$'s single-query
 occurrences are now translations checked against the vendor rather than merely emitted,
 which is a claim this paper could not previously make at all.
 
-This is the second run of the experiment, and that matters more than the agreement does.
+This is the third run of the experiment, and that matters more than the agreement does.
 The first was made on the corpus before \texttt{corpus.\_TMPL} was fixed, and
 \S\ref{sec:threats} concedes that a rig which has been wrong three times in the
 agreement-flattering direction reports $329$ of $329$ in the version that passes. The
-re-run is on a corrected corpus with a fresh set of synthetic series, and returns the
+second was on a corrected corpus with a fresh set of synthetic series, and returned the
 same $329$ of $329$ over the same $22{,}608$ buckets with a bound an order of magnitude
-tighter. An independent replication was the thing \S\ref{sec:threats} asked for and did
-not have.
+tighter. This one draws a third independent set of series and carries the grouping-key
+fix described below, and returns $330$ of $330$ over $22{,}692$ buckets. Independent
+replication was the thing \S\ref{sec:threats} asked for and did not have; there are now
+two, and neither changed a verdict --- the second moved one shape out of the uncompared
+column, which is the only movement three runs have produced.
 
-Four shapes of the $333$ are not compared, and the fourth is the interesting one. Two
-carry a rollup interval the run window cannot hold and one returned no data on either
-side; those three were in the first run too. The fourth is the shape the normaliser fix
-created, and it came back \emph{unmatched} --- both systems returned data and no bucket
+Three shapes of the $333$ are not compared: two carry a rollup interval the run window
+cannot hold and one returned no data on either side, and all three were in the first run
+too. A fourth was uncompared in the second run, and resolving it is why there is a third.
+It came back \emph{unmatched} --- both systems returned data and no bucket
 could be paired, because Datadog had grouped by \texttt{host} alone where the emitted
 PromQL grouped by all four keys the query names. That was not a translation defect: it
 was \texttt{shape\_differential} submitting the synthetic tags under their normalised
 spelling while asking Datadog to group by the query's own, which the harness maps for
 dotted keys and did not for hyphenated ones. The mapping now comes off the parse tree
-rather than a regex, and the shape is expected to compare on the next run; until then it
-is the one shape in the corpus whose translation has never been checked against either
-system, and the $8{,}364$ above excludes it.
+rather than a regex, and on this run the shape compares: $84$ buckets, every one of them
+bit-identical. It is no longer the one shape in the corpus whose translation has never
+been checked against either system, and the $8{,}365$ above includes it. The prediction
+that it would compare was made before the run and is the only thing here that could have
+come out otherwise.
 
 \iffull\input{sections/moved/eval_differential_fixes}\fi
 
@@ -366,13 +371,13 @@ agreement rate is.
 \iffull\input{sections/moved/eval_harness_failures}\fi
 \iffull\input{sections/moved/eval_differential_limits}\fi
 
-The run leaves three of the $332$ shapes uncompared and its series are synthetic, both
+The run leaves three of the $333$ shapes uncompared and its series are synthetic, both
 of which \apref{app:eval} sets out. The sharper limit is which hypotheses the run can
 reach, and it is the two that matter most. The harness submits each metric under the kind the \emph{translator inferred}
 from the query text, and fixes a four-hour query range precisely because E4 measured
 four hours as the $60$\,s the emitter assumes. So hypotheses (2) and (3) of
 Theorem~\ref{thm:kernel} --- the interval and the metric type, carried by $97.0\%$ and
-$100\%$ of translations --- hold by construction in all $329$ compared shapes. That is
+$100\%$ of translations --- hold by construction in all $330$ compared shapes. That is
 the right design for testing the rules, since a run in which the assumptions were
 already wrong would measure the assumptions rather than the arithmetic. But it means
 the agreement reported here is agreement \emph{given} the two conditions
