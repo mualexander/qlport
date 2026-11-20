@@ -206,21 +206,39 @@ tabular("llr", ["PromQL regex", "Datadog scope value", "Occurrences"], ex_rows,
         TABLES / "regex_glob_examples.tex")
 
 # %% [markdown]
-# ### Figures §6 quotes that the tables do not hold
-# The three-way split is in `regex_glob.tex`; these are the roll-ups §6 states in prose.
+# ### Figures §6 quotes
+# The three-way split is in `regex_glob.tex`, and a figure that is only in a table is
+# accounted for by being there — but `test_a_bound_figure_still_matches_its_source` can
+# only pin a figure that has a registry key, and the split's own cells are the ones §6
+# states in prose. They had none, so the prose kept the figures of the run before the
+# alphabet was pinned: `62.7%` where a glob now exists for `91.9%`, and a third of the
+# concrete occurrences refused where it is now one in twelve. Each cell is registered
+# here, including the counts too small to bind, so that every numeral in that paragraph
+# has a source rather than an allowlist entry.
 
 # %%
 _QF = ROOT / "paper" / "quoted_figures.json"
 _existing = json.loads(_QF.read_text()) if _QF.exists() else {}
+_concrete_o = sum(concrete.values())
 _glob_exists_d = share("single")[0] + share("union")[0]
 _glob_exists_o = share("single")[1] + share("union")[1]
 _existing.update({
     "nb04.matchers": int(sum(occurrences.values())),
     "nb04.template_pct": round(sum(template.values()) / sum(occurrences.values()) * 100, 1),
-    "nb04.concrete_occurrences": int(sum(concrete.values())),
+    "nb04.concrete_distinct": int(len(concrete)),
+    "nb04.concrete_occurrences": int(_concrete_o),
+    "nb04.glob_exists_distinct": int(_glob_exists_d),
     "nb04.glob_exists_occurrences": int(_glob_exists_o),
-    "nb04.glob_exists_pct": round(_glob_exists_o / sum(concrete.values()) * 100, 1),
+    "nb04.glob_exists_pct": round(_glob_exists_o / _concrete_o * 100, 1),
 })
+for _kind, _name in (("single", "glob_single"), ("union", "glob_union"),
+                     ("none", "no_glob")):
+    _d, _o = share(_kind)
+    _existing.update({
+        f"nb04.{_name}_distinct": int(_d),
+        f"nb04.{_name}_occurrences": int(_o),
+        f"nb04.{_name}_pct": round(_o / _concrete_o * 100, 1),
+    })
 _QF.write_text(json.dumps(_existing, indent=1, sort_keys=True) + "\n")
 print(f"wrote {_QF.relative_to(ROOT)}")
 for _k in sorted(k for k in _existing if k.startswith("nb04.")):

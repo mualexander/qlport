@@ -183,10 +183,10 @@ literature is for~\citep{felleisen1991} --- not ``our converter did not manage i
 criterion, which asks whether a construct can be eliminated by a local rewriting and
 presupposes two languages of equal power. Here one class of languages simply does not
 contain the other. Every refusal in
-Table~\ref{tab:regex-glob-reasons} --- $37.3\%$ of the matcher occurrences whose
+Table~\ref{tab:regex-glob-reasons} --- $8.1\%$ of the matcher occurrences whose
 pattern is concrete --- is an instance of one of them or of the generalisation
 Corollary~\ref{cor:absent-char} states, though \S\ref{sec:glob-corpus}
-separates the ten occurrences no union of globs reaches from the $378$ that a union
+separates the ten occurrences no union of globs reaches from the $74$ that a union
 reaches only by spending one branch per alphabet character. Neither kind is removed by
 building more, and only the first is non-expressibility in the strict sense.
 
@@ -224,11 +224,11 @@ sub-problem of the reverse direction --- tag filtering --- and not a $\kappa$ fo
 And \S\ref{sec:regular} measures only what \emph{this} corpus writes, which is a corpus
 of PromQL written by people who were not thinking about globs.
 
-The units differ on the two sides of the comparison. The $37.3\%$ is a share of concrete
-regex \emph{matcher occurrences} --- by distinct pattern the same refusals are $27.2\%$
+The units differ on the two sides of the comparison. The $8.1\%$ is a share of concrete
+regex \emph{matcher occurrences} --- by distinct pattern the same refusals are $3.8\%$
 (Table~\ref{tab:regex-glob}) --- while $\kappa$'s $3.6\%$ is a share of whole queries. A
 query carries several matchers and fails if any one of them does, so the per-query
-reverse refusal rate is not $37.3\%$ and is not measured here; the conjunctive structure
+reverse refusal rate is not $8.1\%$ and is not measured here; the conjunctive structure
 that makes \S\ref{sec:staircase}'s staircase would push it up, and nothing in this
 paper says by how much.
 

@@ -171,11 +171,12 @@ ALLOWED: dict[float, str] = {
     # --- corpus figures from notebooks 00, 01, 04, 05: unregistered -------------------
     5389: "unregistered (test_corpus): distinct Datadog metric names",
     723: "unregistered (test_corpus): distinct grouping keys",
-    388: "unregistered (nb 04): refused patterns",
-    378: "of those, the two constructs that are finite unions exceeding the bound "
-         "(238 + 140 from the reasons table), leaving 10 refused outright",
-    344: "unregistered (nb 04): patterns needing a union",
-    238: "unregistered (nb 04): refusals that are .+ or contain it",
+    # 388 and 238 are the unpinned reading's refusal counts, now 84 and none: `.+` is
+    # a union of 41 globs over a tag alphabet of 41 characters. They survive only in
+    # reg_star_empty.tex, which the TO FINISH note in §6.4 lists for rewriting; 378 and
+    # 344 are gone from the prose, and test_the_allowlist_has_no_dead_entries says so.
+    388: "superseded (nb 04): refused occurrences under the unpinned alphabet, now 84",
+    238: "superseded (nb 04): refusals that were .+ or contained it, now none",
     221: "unregistered (nb 01): PromQL queries the first six features complete",
     184: "distinct concrete regexes the complete procedure re-decides, all reached",
     168: "superseded: how many it reached under the 2,400 s budget, named in §6 as the "
@@ -246,7 +247,7 @@ ALLOWED: dict[float, str] = {
 # made on magnitude alone. A share and a count are different claims; a checker that
 # cannot tell them apart launders one into the other.
 SCALAR_ONLY: set[float] = {
-    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 49, 103, 110, 111, 133, 139, 221, 238, 344, 388, 723, 897, 1760, 8102, 5231, 5389, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 0.628, 0.667, 887, 335, 1.4,
+    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 49, 103, 110, 111, 133, 139, 221, 238, 388, 723, 897, 1760, 8102, 5231, 5389, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 0.628, 0.667, 887, 335, 1.4,
 }
 
 
@@ -280,8 +281,10 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
          {"eval_weighted.tex"}),
     56: ("E9: the superseded count of distinct forms carrying .weighted(), now 52 ---\n         and, separately, the share of Datadog queries using by {...}",
          {"eval_weighted.tex", "eval_language_use.tex"}),
-    45: ("the queries the first six Datadog features complete, an nb-00 staircase\n         quantity. The reason recorded here until the tenth pass described nb 04's\n         refusals, which the cross-check now reports as all 50 of 184",
+    45: ("the queries the first six Datadog features complete, an nb-00 staircase\n         quantity. The reason recorded here until the tenth pass described nb 04's\n         refusals, which the cross-check now reports as all 7 of 184",
          {"eval_staircase.tex"}),
+    21: ("a superseded harness run: the shapes a single global 60 s bucket grid broke\n         by comparing a .rollup(sum, 300) bucket against a window covering a fifth\n         of it. The grid is per shape now and the count cannot be recomputed, which\n         is what makes rem:harness-failures a record rather than a measurement",
+         {"eval_harness_failures.tex"}),
     76.2: ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
     6381: ("the occurrences that share carried", {"tr_gauge.tex"}),
     87: ("the implementation-order figure contrasted with the kernel's reach, and\n"
@@ -481,6 +484,21 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb04.matchers", "06_regular.tex"),
     ("nb04.template_pct", "06_regular.tex"),
     ("nb04.glob_exists_pct", "06_regular.tex"),
+    # §6's three-way split, each cell to its own key. The paragraph stating them kept
+    # the figures of the run before the tag alphabet was pinned -- 62.7% where a glob
+    # now exists for 91.9%, and a third of concrete occurrences refused where it is one
+    # in twelve -- and passed, because a stale figure in the registry's own magnitude
+    # range matches something. `nb04.no_glob_occurrences` is 84 and so cannot be bound;
+    # it is carried by Table 5 and by the caption that counts it.
+    ("nb04.concrete_occurrences", "06_regular.tex"),
+    ("nb04.glob_exists_occurrences", "06_regular.tex"),
+    ("nb04.glob_single_occurrences", "06_regular.tex"),
+    ("nb04.glob_single_pct", "06_regular.tex"),
+    ("nb04.glob_union_occurrences", "06_regular.tex"),
+    ("nb04.glob_union_pct", "06_regular.tex"),
+    ("nb04.no_glob_pct", "01_introduction.tex"),
+    ("nb04.no_glob_pct", "08_discussion.tex"),
+    ("nb04.no_glob_pct", "09_conclusion.tex"),
     ("nb03.shapes", "concl_evidence.tex"),
     ("nb03.shapes_for_95pct", "eval_shape_reduction.tex"),
     # The differential run's scale and its agreement bound. §7.4 quoted the second

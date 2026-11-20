@@ -1,3 +1,27 @@
+% TO FINISH: this paragraph is a revision behind, and the figures are settled rather
+% than in doubt. data/processed/translations.csv now reads 8,770 occurrences as 8,475
+% translated (96.6%), 287 refused (3.3%) and 8 unparsed (0.1%); nb03's EXPRESSIVENESS
+% set is deliberately empty, so the language gap is 0 occurrences and 0.0%, which is
+% what nb03.language_gap_pct says and what §1, §3b and §9 already state. The ceiling is
+% therefore nb03.ceiling_pct = 99.9%, and the 0.1% below it is the 8 queries that do
+% not parse -- not a language barrier.
+%
+% So the sentence below cannot be fixed by changing its numerals: its three
+% beyond-reach codes have each left the class for a reason nb03 records above
+% EXPRESSIVENESS. PHI_QUANTILE's 34 are refused on seeing `pNN:` without checking the
+% corollary's hypothesis, and none of their metrics is a distribution. LABEL_NAME_GLOB's
+% 31 were `corpus._TMPL` truncating `$cluster-location` at the hyphen, and E16 confirms
+% Datadog's parser rejects the string that was fabricated. SCOPE_EMPTY_VALUE's 5 have
+% an exact translation: drop the term, as rem:empty-tag already excused for `k:*`. What
+% this paragraph should now report is that the beyond-reach class is empty on this
+% corpus -- a stronger version of the asymmetry, and the one §8 should argue from.
+%
+% Every site quoting the old figures needs reading individually, because three
+% different quantities share these magnitudes: `0.8%` is also what .weighted() closed
+% of the ceiling, and `70` is also oo.dropped_weighted in the baseline comparison.
+% The sites are 04_grammars:169, 07_evaluation:54,57 and :429,440, 08_discussion:16,
+% 27, 31, 46, 54, 111, 150, 207, 01_introduction:192, concl_evidence:58,
+% eval_differential_fixes:13, eval_shape_reduction:12, eval_weighted:3,27 and this file.
 \paragraph{How much of the $3.6\%$ is beyond reach.}
 Separating the kinds of refusal is the point of having codes at all, and on this
 corpus the split is lopsided. Three kinds arise and the catalogue keeps them apart:
