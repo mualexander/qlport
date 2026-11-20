@@ -194,7 +194,6 @@ ALLOWED: dict[float, str] = {
         "in the discussion's hypothetical illustration",
     49: "unregistered (nb 04): occurrences of the most elaborate regex",
     36: "unregistered (nb 03): FILL_INTERPOLATION occurrences",
-    31: "unregistered (nb 03): LABEL_NAME_GLOB occurrences",
     22: "unregistered (nb 00): per_second() occurrences",
     9: "unregistered (nb 04): occurrences of .*",
     8: "unregistered (nb 03): unparsed occurrences",
@@ -287,6 +286,12 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
          {"eval_harness_failures.tex"}),
     76.2: ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
     6381: ("the occurrences that share carried", {"tr_gauge.tex"}),
+    31: ("LABEL_NAME_GLOB's occurrences. The code left the catalogue when\n"
+         "corpus._TMPL stopped truncating $cluster-location at its hyphen, so this is\n"
+         "a historical figure: the sections entitled to it are the ones telling that\n"
+         "story, plus the two the ceiling rewrite still has to reach",
+         {"07_evaluation.tex", "08_discussion.tex", "eval_baseline.tex",
+          "eval_beyond_reach.tex", "eval_rows_fill_glob.tex", "reg_trial_probes.tex"}),
     87: ("the implementation-order figure contrasted with the kernel's reach, and\n"
          "separately the scope-only template share it was once confused with",
          {"07_evaluation.tex", "gr_template_shares.tex", "tr_two_figures.tex"}),
@@ -564,3 +569,156 @@ def test_every_binding_names_a_distinctive_value():
         and float(reg[key]) == int(reg[key]) and int(reg[key]) < 100
     })
     assert not weak, f"bound to a value too common to mean anything: {weak}"
+
+
+# --- the registry's own arithmetic ----------------------------------------------------
+# Everything above asks whether the paper still says what the registry says. Nothing
+# asked whether the registry is self-consistent, and a share is the figure where that
+# matters: it is a claim about a numerator and a denominator, and the denominator is the
+# half a reader never sees. §5 once quoted $87\%$ for the kernel's reach when $87\%$ was
+# the implementation-order figure -- two correct numbers, one of them answering the wrong
+# question. A binding catches a stale copy of the answer. Only the question catches this,
+# so the triples below record it: each share, what it counts, and what it counts out of.
+#
+# A share whose numerator is not itself registered cannot appear here, which is a reason
+# to register one. `oo.substantive_note` was added for exactly that.
+
+SHARES: tuple[tuple[str, tuple[str, ...], str], ...] = (
+    ("nb00.datadog_with_variable_pct", ("nb00.datadog_with_variable",),
+     "nb03.corpus_occurrences"),
+    ("nb00.promql_window_from_variable_pct", ("nb00.promql_window_from_variable",),
+     "nb00.promql_with_range"),
+    # The caveat shares are over what was translated, not over the corpus: a caveat is
+    # carried by a translation, so a query that never translated cannot carry one.
+    ("nb03.caveat_counter_reset_pct", ("nb03.caveat_counter_reset_occurrences",),
+     "nb03.kappa_occurrences"),
+    ("nb03.caveat_metric_type_unknown_pct",
+     ("nb03.caveat_metric_type_unknown_occurrences",), "nb03.kappa_occurrences"),
+    ("nb03.caveat_phi_series_start_pct", ("nb03.caveat_phi_series_start_occurrences",),
+     "nb03.kappa_occurrences"),
+    ("nb03.caveat_rollup_alignment_pct", ("nb03.caveat_rollup_alignment_occurrences",),
+     "nb03.kappa_occurrences"),
+    ("nb03.caveat_rollup_default_pct", ("nb03.caveat_rollup_default_occurrences",),
+     "nb03.kappa_occurrences"),
+    ("nb03.caveat_tag_presence_empty_pct",
+     ("nb03.caveat_tag_presence_empty_occurrences",), "nb03.kappa_occurrences"),
+    # The same count over both bases, which is the pair §5 confused once already.
+    ("nb03.closure_pct_corpus", ("nb03.closure_occurrences",), "nb03.corpus_occurrences"),
+    ("nb03.closure_pct_translated", ("nb03.closure_occurrences",),
+     "nb03.kappa_occurrences"),
+    ("nb03.kernel_pct_corpus", ("nb03.kernel_occurrences",), "nb03.corpus_occurrences"),
+    ("nb03.kernel_pct_translated", ("nb03.kernel_occurrences",),
+     "nb03.kappa_occurrences"),
+    ("nb03.kappa_pct", ("nb03.kappa_occurrences",), "nb03.corpus_occurrences"),
+    ("nb03.language_gap_pct", ("nb03.language_gap_occurrences",),
+     "nb03.corpus_occurrences"),
+    ("nb03.not_implemented_pct", ("nb03.not_implemented_occurrences",),
+     "nb03.corpus_occurrences"),
+    # The ceiling is what implementing the unimplemented set would reach, so it is the
+    # translated and the unimplemented together -- and the distance to 100% is the
+    # queries that do not parse, not a language barrier.
+    ("nb03.ceiling_pct", ("nb03.kappa_occurrences", "nb03.not_implemented_occurrences"),
+     "nb03.corpus_occurrences"),
+    ("nb03.type_decidable_pct", ("nb03.type_decidable_occurrences",),
+     "nb03.kappa_occurrences"),
+    # And the one share in this group taken over the decidable set rather than either
+    # of the two obvious bases, which is why it is written down here.
+    ("nb03.type_wrong_pct", ("nb03.type_wrong_occurrences",),
+     "nb03.type_decidable_occurrences"),
+    ("nb03.type_wrong_pct_of_corpus", ("nb03.type_wrong_occurrences",),
+     "nb03.corpus_occurrences"),
+    ("nb04.glob_exists_pct", ("nb04.glob_exists_occurrences",),
+     "nb04.concrete_occurrences"),
+    ("nb04.glob_single_pct", ("nb04.glob_single_occurrences",),
+     "nb04.concrete_occurrences"),
+    ("nb04.glob_union_pct", ("nb04.glob_union_occurrences",),
+     "nb04.concrete_occurrences"),
+    ("nb04.no_glob_pct", ("nb04.no_glob_occurrences",), "nb04.concrete_occurrences"),
+    ("oo.cosmetic_note_only_pct", ("oo.cosmetic_note_only",), "oo.emits"),
+    ("oo.invented_window_pct", ("oo.invented_window",), "oo.emits"),
+    ("oo.substantive_note_pct", ("oo.substantive_note",), "oo.emits"),
+)
+
+# Parts that must exhaust a whole. Each is a partition the notebooks assert while they
+# run; the registry is what survives the run, and these say the same thing about it.
+PARTITIONS: tuple[tuple[str, tuple[str, ...], str], ...] = (
+    ("the three-way glob split, by occurrence",
+     ("nb04.glob_single_occurrences", "nb04.glob_union_occurrences",
+      "nb04.no_glob_occurrences"), "nb04.concrete_occurrences"),
+    ("the three-way glob split, by distinct pattern",
+     ("nb04.glob_single_distinct", "nb04.glob_union_distinct", "nb04.no_glob_distinct"),
+     "nb04.concrete_distinct"),
+    ("a glob exists, by occurrence",
+     ("nb04.glob_single_occurrences", "nb04.glob_union_occurrences"),
+     "nb04.glob_exists_occurrences"),
+    ("a glob exists, by distinct pattern",
+     ("nb04.glob_single_distinct", "nb04.glob_union_distinct"),
+     "nb04.glob_exists_distinct"),
+    ("the declared type is wrong in one of two directions",
+     ("nb03.type_wrong_gauge_occurrences", "nb03.type_wrong_counter_occurrences"),
+     "nb03.type_wrong_occurrences"),
+    ("every query the baseline emits for carries a note of one kind or none",
+     ("oo.cosmetic_note_only", "oo.substantive_note", "oo.no_note"), "oo.emits"),
+)
+
+
+def test_every_recorded_share_is_its_own_numerator_over_its_own_denominator():
+    """A share must equal the count it names, over the base it names.
+
+    This is the check the registry could not make about itself. A notebook computing a
+    share against the wrong population writes a number that is correct arithmetic about
+    a quantity nobody asked for, and every other test here passes: the prose matches the
+    key, the key is in the registry, and the registry was written by the notebook.
+    """
+    reg = json.loads(REGISTRY.read_text())
+    wrong = []
+    for share, numerators, denominator in SHARES:
+        for key in (share, denominator, *numerators):
+            assert key in reg, f"{key} is named by SHARES but not in the registry"
+        got = round(sum(reg[k] for k in numerators) / reg[denominator] * 100, 1)
+        if got != reg[share]:
+            wrong.append(f"  {share} = {reg[share]}, but "
+                         f"{' + '.join(numerators)} / {denominator} = {got}")
+    assert not wrong, "\n".join(wrong)
+
+
+def test_the_registry_parts_add_up_to_their_totals():
+    """A split that does not exhaust its whole has lost a class or double-counted one."""
+    reg = json.loads(REGISTRY.read_text())
+    wrong = []
+    for name, parts, total in PARTITIONS:
+        got = sum(reg[p] for p in parts)
+        if got != reg[total]:
+            wrong.append(f"  {name}: {' + '.join(parts)} = {got}, "
+                         f"but {total} = {reg[total]}")
+    assert not wrong, "\n".join(wrong)
+
+
+def test_the_two_note_shares_are_not_complements():
+    """The trap in the pair above, written down so that nobody closes it.
+
+    `oo.cosmetic_note_only` and `oo.substantive_note` both require a note, so the
+    queries carrying none are in neither and the two shares sum to $99.9\\%$ rather
+    than to $100\\%$. Reading either as `100 - the other` is off by those ten, which is
+    the kind of arithmetic that looks like a rounding error and is not one.
+    """
+    reg = json.loads(REGISTRY.read_text())
+    assert reg["oo.no_note"] > 0
+    assert reg["oo.cosmetic_note_only_pct"] + reg["oo.substantive_note_pct"] < 100.0
+
+
+def test_the_baseline_names_no_gap_the_catalogue_has_dropped():
+    """A registry key outlives the quantity it measured, because the writers merge.
+
+    `oo.gap_label_name_glob` recorded 31 occurrences of a gap code that left the
+    catalogue when `corpus._TMPL` stopped truncating a template variable at a hyphen.
+    The script stopped writing it; the key stayed, and went on licensing the numeral
+    $31$ in the prose. The registry is append-only in practice, so the figures it holds
+    have to be tied to something that shrinks.
+    """
+    reg = json.loads(REGISTRY.read_text())
+    catalogue = (ROOT / "paper" / "tables" / "gap_catalogue.tex").read_text()
+    for key in sorted(k for k in reg if k.startswith("oo.gap_")):
+        code = key[len("oo.gap_"):].upper().replace(".", "_")
+        assert code.replace("_", r"\_") in catalogue, \
+            f"{key} names a gap code the catalogue no longer lists"

@@ -182,9 +182,16 @@ def main() -> int:
     for name, v in list(fig.items()):
         if name in ("oo.invented_window", "oo.cosmetic_note_only"):
             fig[name + "_pct"] = round(100 * v / n, 1)
-    fig["oo.substantive_note_pct"] = round(
-        100 * occ(lambda r, o: bool(o["notes"])
-                  and any("dots converted" not in x for x in o["notes"])) / n, 1)
+    # Registered as a count as well as a share, so the share can be checked against
+    # its own numerator. It is not the complement of `oo.cosmetic_note_only`: both
+    # require a note, and a query carrying none is in neither, so the two shares do
+    # not sum to 100 and reading either as `100 - the other` is off by the note-free
+    # queries.
+    fig["oo.substantive_note"] = occ(
+        lambda r, o: bool(o["notes"])
+        and any("dots converted" not in x for x in o["notes"]))
+    fig["oo.no_note"] = occ(lambda r, o: not o["notes"])
+    fig["oo.substantive_note_pct"] = round(100 * fig["oo.substantive_note"] / n, 1)
 
     # Which of our gap codes they emit for anyway.
     by_gap: dict[str, int] = {}

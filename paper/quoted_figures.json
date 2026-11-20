@@ -146,7 +146,6 @@
  "oo.emits": 8653,
  "oo.emits_where_we_refuse": 275,
  "oo.gap_fill_interpolation": 36,
- "oo.gap_label_name_glob": 31,
  "oo.gap_phi_quantile": 34,
  "oo.gap_scope_disjunction": 4,
  "oo.gap_scope_empty_value": 5,
@@ -156,10 +155,12 @@
  "oo.invalid_matchall": 235,
  "oo.invented_window": 1844,
  "oo.invented_window_pct": 21.3,
+ "oo.no_note": 10,
  "oo.ours_emits": 8370,
  "oo.ours_parses": 8370,
  "oo.ours_refuses": 275,
  "oo.parses": 8196,
  "oo.passthrough": 346,
+ "oo.substantive_note": 2706,
  "oo.substantive_note_pct": 31.3
 }

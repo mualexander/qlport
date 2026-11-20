@@ -44,13 +44,21 @@ Our code & Occurrences they emit for \\
 \texttt{UNSUPPORTED\_FUNCTION} & $196$ \\
 \texttt{FILL\_INTERPOLATION} & $36$ \\
 \texttt{PHI\_QUANTILE} & $34$ \\
-\texttt{LABEL\_NAME\_GLOB} & $31$ \\
 \texttt{SCOPE\_EMPTY\_VALUE} & $5$ \\
 \texttt{SCOPE\_DISJUNCTION} & $4$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 
+% TO FINISH: the LABEL_NAME_GLOB row is gone from the table above, because the code
+% left the catalogue and the baseline script stops emitting a figure for it. The five
+% rows that remain sum to oo.emits_where_we_refuse = 275, which the row broke.
+% The sentence below is the ceiling cluster's, not this remark's: nb03's EXPRESSIVENESS
+% set is empty, so none of these rows is a language gap now -- FILL_INTERPOLATION left
+% it when E10 read `m or (last_over_time(m[W]) * 0)` off a real server, and
+% PHI_QUANTILE's corollary assumes a distribution metric that none of its 34
+% occurrences has. The contrast to draw here is between a translator that refuses and
+% one that emits, which the table makes on its own, not between taste and proof.
 \noindent
 The first of those is
 the one where their behaviour is most defensible and ours most conservative: much of that
