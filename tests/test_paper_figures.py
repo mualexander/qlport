@@ -538,6 +538,160 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("nb00.top_occurrences", "concl_evidence.tex"),
     ("nb00.top_desc_occurrences", "eval_top.tex"),
     ("nb00.top_rank_mean_calls", "eval_top.tex"),
+    # Everything below was generated from where the figures stood when the guard was
+    # tightened: every registry key the prose quotes, bound to each section that quotes
+    # it. Before this, 46 keys were in the registry and in the paper and joined to it
+    # only by magnitude -- `test_every_prose_figure_is_accounted_for` would accept
+    # `$491$` in §8 because *some* key is 491, not because §8's 491 is that key. The
+    # per-section grain is deliberate: §7.4 kept the second differential run's counts
+    # for two commits while the rest of the paper moved on, and one binding per key
+    # would not have caught it.
+    ("nb00.ceiling_0_features_pct", "04_grammars.tex"),
+    ("nb00.ceiling_0_features_pct", "eval_language_use.tex"),
+    ("nb00.ceiling_0_features_pct", "eval_staircase.tex"),
+    ("nb00.ceiling_25_features_pct", "07_evaluation.tex"),
+    ("nb00.ceiling_26_features_pct", "07_evaluation.tex"),
+    ("nb00.ceiling_28_features_pct", "01_introduction.tex"),
+    ("nb00.ceiling_28_features_pct", "05_translation.tex"),
+    ("nb00.ceiling_28_features_pct", "07_evaluation.tex"),
+    ("nb00.ceiling_28_features_pct", "08_discussion.tex"),
+    ("nb00.ceiling_28_features_pct", "eval_beyond_reach.tex"),
+    ("nb00.ceiling_28_features_pct", "eval_type_caveat.tex"),
+    ("nb00.ceiling_28_features_pct", "ing_replay.tex"),
+    ("nb00.ceiling_28_features_pct", "tr_gauge.tex"),
+    ("nb00.ceiling_2_features_pct", "07_evaluation.tex"),
+    ("nb00.ceiling_2_features_pct", "eval_empty_tag.tex"),
+    ("nb00.datadog_with_variable_pct", "01_introduction.tex"),
+    ("nb00.datadog_with_variable_pct", "04_grammars.tex"),
+    ("nb00.datadog_with_variable_pct", "07_evaluation.tex"),
+    ("nb00.datadog_with_variable_pct", "08_discussion.tex"),
+    ("nb00.datadog_with_variable_pct", "09_conclusion.tex"),
+    ("nb00.datadog_with_variable_pct", "body.tex"),
+    ("nb00.formula_arith_pct", "eval_held_aside.tex"),
+    ("nb00.formula_bare_ref_pct", "eval_held_aside.tex"),
+    ("nb00.formula_const_pct", "eval_held_aside.tex"),
+    ("nb00.formula_func_pct", "eval_held_aside.tex"),
+    ("nb00.formulas", "07_evaluation.tex"),
+    ("nb00.formulas", "eval_held_aside.tex"),
+    ("nb00.formulas_distinct", "eval_held_aside.tex"),
+    ("nb00.non_metric_formula_bare_ref_pct", "eval_held_aside.tex"),
+    ("nb00.non_metric_formulas", "eval_held_aside.tex"),
+    ("nb00.promql_parse_range_vars_only_pct", "07_evaluation.tex"),
+    ("nb00.promql_window_from_variable", "08_discussion.tex"),
+    ("nb00.promql_window_from_variable_pct", "01_introduction.tex"),
+    ("nb00.promql_window_from_variable_pct", "08_discussion.tex"),
+    ("nb00.promql_window_from_variable_pct", "09_conclusion.tex"),
+    ("nb00.promql_window_from_variable_pct", "body.tex"),
+    ("nb00.promql_with_range", "08_discussion.tex"),
+    ("nb00.promql_with_variable_pct", "01_introduction.tex"),
+    ("nb00.promql_with_variable_pct", "04_grammars.tex"),
+    ("nb00.promql_with_variable_pct", "07_evaluation.tex"),
+    ("nb00.promql_with_variable_pct", "08_discussion.tex"),
+    ("nb00.promql_with_variable_pct", "09_conclusion.tex"),
+    ("nb00.promql_with_variable_pct", "body.tex"),
+    ("nb03.caveat_rollup_alignment_occurrences", "05_translation.tex"),
+    ("nb03.caveat_rollup_alignment_occurrences", "08_discussion.tex"),
+    ("nb03.caveat_rollup_alignment_occurrences", "eval_type_caveat.tex"),
+    ("nb03.caveat_rollup_alignment_occurrences", "tr_gauge.tex"),
+    ("nb03.caveat_rollup_alignment_occurrences", "tr_type_measured.tex"),
+    ("nb03.caveat_rollup_alignment_pct", "01_introduction.tex"),
+    ("nb03.caveat_rollup_alignment_pct", "05_translation.tex"),
+    ("nb03.caveat_rollup_alignment_pct", "07_evaluation.tex"),
+    ("nb03.caveat_rollup_alignment_pct", "08_discussion.tex"),
+    ("nb03.caveat_rollup_alignment_pct", "eval_beyond_reach.tex"),
+    ("nb03.caveat_rollup_alignment_pct", "eval_type_caveat.tex"),
+    ("nb03.caveat_rollup_alignment_pct", "ing_replay.tex"),
+    ("nb03.caveat_rollup_alignment_pct", "tr_gauge.tex"),
+    ("nb03.caveat_rollup_default_occurrences", "08_discussion.tex"),
+    ("nb03.caveat_tag_presence_empty_occurrences", "01_introduction.tex"),
+    ("nb03.caveat_tag_presence_empty_occurrences", "07_evaluation.tex"),
+    ("nb03.caveat_tag_presence_empty_occurrences", "08_discussion.tex"),
+    ("nb03.caveat_tag_presence_empty_occurrences", "eval_empty_tag.tex"),
+    ("nb03.caveat_tag_presence_empty_occurrences", "eval_rows_fill_glob.tex"),
+    ("nb03.caveat_tag_presence_empty_pct", "07_evaluation.tex"),
+    ("nb03.caveat_tag_presence_empty_pct", "eval_empty_tag.tex"),
+    ("nb03.closure_pct_corpus", "01_introduction.tex"),
+    ("nb03.closure_pct_corpus", "05_translation.tex"),
+    ("nb03.closure_pct_corpus", "07_evaluation.tex"),
+    ("nb03.closure_pct_corpus", "08_discussion.tex"),
+    ("nb03.closure_pct_corpus", "09_conclusion.tex"),
+    ("nb03.closure_pct_corpus", "body.tex"),
+    ("nb03.closure_pct_corpus", "eval_beyond_reach.tex"),
+    ("nb03.closure_pct_corpus", "eval_rows_fill_glob.tex"),
+    ("nb03.closure_pct_translated", "01_introduction.tex"),
+    ("nb03.closure_pct_translated", "05_translation.tex"),
+    ("nb03.closure_pct_translated", "07_evaluation.tex"),
+    ("nb03.closure_pct_translated", "08_discussion.tex"),
+    ("nb03.closure_pct_translated", "eval_beyond_reach.tex"),
+    ("nb03.closure_pct_translated", "eval_type_caveat.tex"),
+    ("nb03.closure_pct_translated", "ing_replay.tex"),
+    ("nb03.closure_pct_translated", "tr_gauge.tex"),
+    ("nb03.distinct_after_instantiation", "07_evaluation.tex"),
+    ("nb03.feature_ceiling_pct", "07_evaluation.tex"),
+    ("nb03.kernel_per_second_occurrences", "05_translation.tex"),
+    ("nb03.type_decidable_occurrences", "05_translation.tex"),
+    ("nb03.type_decidable_occurrences", "eval_type_caveat.tex"),
+    ("nb03.type_decidable_occurrences", "tr_type_measured.tex"),
+    ("nb03.type_decidable_pct", "01_introduction.tex"),
+    ("nb03.type_decidable_pct", "05_translation.tex"),
+    ("nb03.type_decidable_pct", "07_evaluation.tex"),
+    ("nb03.type_decidable_pct", "08_discussion.tex"),
+    ("nb03.type_decidable_pct", "concl_evidence.tex"),
+    ("nb03.type_decidable_pct", "eval_type_caveat.tex"),
+    ("nb03.type_decidable_pct", "tr_type_measured.tex"),
+    ("nb03.type_rate_occurrences", "eval_top.tex"),
+    ("nb03.type_rate_occurrences", "reg_trial_probes.tex"),
+    ("nb03.type_rate_occurrences", "tr_type_measured.tex"),
+    ("nb03.type_undeclared_occurrences", "07_evaluation.tex"),
+    ("nb03.type_undeclared_occurrences", "09_conclusion.tex"),
+    ("nb03.type_undeclared_occurrences", "tr_type_measured.tex"),
+    ("nb03.type_wrong_counter_occurrences", "05_translation.tex"),
+    ("nb03.type_wrong_counter_occurrences", "eval_type_caveat.tex"),
+    ("nb03.type_wrong_counter_occurrences", "tr_type_measured.tex"),
+    ("nb03.type_wrong_gauge_occurrences", "05_translation.tex"),
+    ("nb03.type_wrong_gauge_occurrences", "eval_type_caveat.tex"),
+    ("nb03.type_wrong_gauge_occurrences", "tr_type_measured.tex"),
+    ("nb03.type_wrong_occurrences", "01_introduction.tex"),
+    ("nb03.type_wrong_occurrences", "05_translation.tex"),
+    ("nb03.type_wrong_occurrences", "07_evaluation.tex"),
+    ("nb03.type_wrong_occurrences", "08_discussion.tex"),
+    ("nb03.type_wrong_occurrences", "09_conclusion.tex"),
+    ("nb03.type_wrong_occurrences", "body.tex"),
+    ("nb03.type_wrong_occurrences", "concl_evidence.tex"),
+    ("nb03.type_wrong_occurrences", "eval_type_caveat.tex"),
+    ("nb03.type_wrong_occurrences", "tr_type_measured.tex"),
+    ("nb03.type_wrong_pct", "01_introduction.tex"),
+    ("nb03.type_wrong_pct", "05_translation.tex"),
+    ("nb03.type_wrong_pct", "07_evaluation.tex"),
+    ("nb03.type_wrong_pct", "08_discussion.tex"),
+    ("nb03.type_wrong_pct", "09_conclusion.tex"),
+    ("nb03.type_wrong_pct", "body.tex"),
+    ("nb03.type_wrong_pct", "concl_evidence.tex"),
+    ("nb03.type_wrong_pct", "eval_type_caveat.tex"),
+    ("nb03.type_wrong_pct", "tr_type_measured.tex"),
+    ("nb03.type_wrong_pct_of_corpus", "05_translation.tex"),
+    ("nb03.type_wrong_pct_of_corpus", "eval_type_caveat.tex"),
+    ("nb03.type_wrong_pct_of_corpus", "tr_type_measured.tex"),
+    ("nb04.concrete_distinct", "06_regular.tex"),
+    ("nb04.concrete_distinct", "07_evaluation.tex"),
+    ("nb04.concrete_distinct", "reg_complete_dialect.tex"),
+    ("nb04.concrete_distinct", "reg_star_empty.tex"),
+    ("nb04.glob_union_distinct", "06_regular.tex"),
+    ("nb04.glob_union_distinct", "07_evaluation.tex"),
+    ("nb04.glob_union_distinct", "eval_type_caveat.tex"),
+    ("oo.emits", "07_evaluation.tex"),
+    ("oo.emits_where_we_refuse", "01_introduction.tex"),
+    ("oo.emits_where_we_refuse", "07_evaluation.tex"),
+    ("oo.emits_where_we_refuse", "eval_baseline.tex"),
+    ("oo.held_out_multi", "07_evaluation.tex"),
+    ("oo.held_out_multi", "eval_baseline.tex"),
+    ("oo.ours_emits", "07_evaluation.tex"),
+    ("oo.ours_emits", "eval_shape_reduction.tex"),
+    ("oo.ours_parses", "07_evaluation.tex"),
+    ("oo.ours_parses", "eval_shape_reduction.tex"),
+    ("oo.ours_refuses", "01_introduction.tex"),
+    ("oo.ours_refuses", "07_evaluation.tex"),
+    ("oo.ours_refuses", "eval_baseline.tex"),
 )
 
 
@@ -1033,7 +1187,7 @@ def test_the_coincidence_list_has_no_dead_entries():
 # figure whose only accountant is a sentence in ALLOWED is a figure nothing recomputes,
 # and three of those were found wrong in one afternoon. It was 81 before the
 # derivations above; the ratchet keeps it from climbing back.
-UNCHECKED_CEILING = 49
+UNCHECKED_CEILING = 38
 
 
 def test_the_unchecked_figures_do_not_multiply():
@@ -1045,7 +1199,7 @@ def test_the_unchecked_figures_do_not_multiply():
             reg.add(("pct" if share else "num", round(float(value), 4)))
     tables = {k for k, _ in _table_only().items()} | {
         k for k in _accounted() if k in reg} - reg
-    derived = {round(float(v), 4) for v, _, _ in DERIVED}
+    derived = {round(float(v), 4) for v, _, _ in (*DERIVED, *CORPUS_DERIVED)}
     unchecked = sorted(
         k for k in _prose_figures()
         if k not in reg and k not in _accounted() and k[1] not in derived)
@@ -1055,3 +1209,97 @@ def test_the_unchecked_figures_do_not_multiply():
     assert len(unchecked) >= UNCHECKED_CEILING - 4, (
         f"only {len(unchecked)} are unchecked now; lower UNCHECKED_CEILING to "
         f"{len(unchecked)} so the ratchet keeps holding")
+
+
+# --- figures the corpus itself settles -------------------------------------------------
+# The entries these replace said "unregistered (nb 00)" and "unregistered (test_corpus)",
+# which locates a figure without checking it: a notebook that no longer computes the
+# quantity, or a test that renamed its assertion, leaves the sentence here reading
+# exactly as it did. The corpus is committed, so the question is decidable from it.
+
+_CORPUS: list = []
+
+
+def _queries() -> list:
+    if not _CORPUS:
+        from qlport import corpus as c
+
+        _CORPUS.extend(c.read_queries(ROOT / "data" / "corpus" / "queries.jsonl"))
+    return _CORPUS
+
+
+def _promql_kept() -> list[str]:
+    from qlport import corpus as c
+
+    return [q.text for q in _queries() if q.lang == "promql" and c.is_promql(q.text)]
+
+
+def _counts(lang: str, which: str, texts) -> "object":
+    import collections
+
+    from qlport import corpus as c
+
+    fn = c.function_names if which == "function" else c.aggregation_ops
+    total: collections.Counter = collections.Counter()
+    for text in texts:
+        total += fn(lang, text)
+    return total
+
+
+CORPUS_DERIVED: tuple[tuple[float, str, object], ...] = (
+    (22903, "query strings the extraction yields", lambda: len(_queries())),
+    (22894, "and what remains once the nine LogQL panels leave",
+     lambda: len(_queries()) - (sum(1 for q in _queries() if q.lang == "promql")
+                                - len(_promql_kept()))),
+    (96, "PromQL recording rules",
+     lambda: sum(1 for q in _queries() if q.lang == "promql" and q.kind == "record")),
+    (7867, "and panel queries, once the LogQL ones are gone",
+     lambda: sum(1 for q in _queries()
+                 if q.lang == "promql" and q.kind == "panel")
+     - (sum(1 for q in _queries() if q.lang == "promql") - len(_promql_kept()))),
+    (5231, "PromQL function occurrences over those expressions",
+     lambda: sum(_counts("promql", "function", _promql_kept()).values())),
+    (69, "of which rate and irate together are this per cent",
+     lambda: round((lambda f: (f["rate"] + f["irate"]) / sum(f.values()) * 100)(
+         _counts("promql", "function", _promql_kept())))),
+    (0.3, "and offset appears in this share of them",
+     lambda: round(sum(1 for t in _promql_kept()
+                       if re.search(r"(?<![\w:])offset\s", t))
+                   / len(_promql_kept()) * 100, 1)),
+    (95, "Datadog space aggregators that are sum or avg, per cent",
+     lambda: round((lambda a: (a["sum"] + a["avg"]) / sum(a.values()) * 100)(
+         _counts("datadog", "aggregator",
+                 [q.text for q in _queries() if q.lang == "datadog"])))),
+    (6.6, "and how many times .as_count outnumbers .as_rate",
+     lambda: round((lambda f: f[".as_count"] / f[".as_rate"])(
+         _counts("datadog", "function",
+                 [q.text for q in _queries() if q.lang == "datadog"])), 1)),
+    # §5's mangling denominators. `test_corpus.py` asserts both when it measures the
+    # collision rate; the derivation is shared rather than copied, so the two files
+    # cannot drift into asserting different populations of the same name.
+    (5389, "distinct Datadog metric names before mangling",
+     lambda: len(__import__("test_corpus")._corpus_identifiers()[0])),
+    (723, "and distinct grouping keys",
+     lambda: len(__import__("test_corpus")._corpus_identifiers()[1])),
+    (3.15, "the Prometheus the measurements were taken against",
+     lambda: float(".".join(
+         _cache("topk/ranking.json")["provenance"]["prometheus_version"]
+         .split(".")[:2]))),
+)
+
+
+def test_every_corpus_figure_still_comes_out_of_the_corpus():
+    wrong = []
+    for value, note, derive in CORPUS_DERIVED:
+        got = derive()
+        if round(float(got), 4) != round(float(value), 4):
+            wrong.append(f"  {value} ({note}) derives as {got}")
+    assert not wrong, "\n".join(wrong)
+
+
+def test_every_corpus_figure_is_still_quoted():
+    prose = {v for _, v in _prose_figures()}
+    missing = [f"  {v} ({note})" for v, note, _ in CORPUS_DERIVED
+               if round(float(v), 4) not in prose]
+    assert not missing, "derived from the corpus but no longer in the paper:\n" + \
+        "\n".join(missing)
