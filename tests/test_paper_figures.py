@@ -312,8 +312,8 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
          "a historical figure: the sections entitled to it are the ones telling that\n"
          "story, plus the two the ceiling rewrite still has to reach",
          {"01_introduction.tex", "07_evaluation.tex", "08_discussion.tex",
-          "eval_baseline.tex", "eval_beyond_reach.tex", "eval_rows_fill_glob.tex",
-          "reg_trial_probes.tex"}),
+          "eval_baseline.tex", "eval_beyond_reach.tex", "eval_differential_fixes.tex",
+          "eval_rows_fill_glob.tex", "reg_trial_probes.tex"}),
     87: ("the implementation-order figure contrasted with the kernel's reach, and\n"
          "separately the scope-only template share it was once confused with",
          {"07_evaluation.tex", "gr_template_shares.tex", "tr_two_figures.tex"}),
