@@ -227,7 +227,6 @@ ALLOWED: dict[float, str] = {
     99.9: "unregistered (nb 01): Datadog instantiated parse rate, v2",
     99.1: "unregistered (nb 01): PromQL instantiated parse rate",
     95: "unregistered (nb 00): share of Datadog space aggregators that are sum/avg;\n        also the coverage level \u00a7C.2's shape reduction reports 107 shapes reaching,\n        and a round level in \u00a74 -- three uses, one magnitude",
-    92.6: "unregistered (nb 01): Datadog instantiated parse rate, v1",
     71.2: "unregistered (nb 01): PromQL raw parse rate",
     69: "unregistered (nb 00): share of PromQL functions that are rate/irate",
     34: "unregistered: percentile-aggregator occurrences (nb 03), and the union share (nb 04)",
@@ -1151,7 +1150,8 @@ TABLE_COINCIDENCE: frozenset[tuple[str, float]] = frozenset({
     ("num", 1766), ("num", 7546), ("num", 7799), ("num", 8102), ("num", 8365),
     ("pct", 0.1), ("pct", 3.8), ("pct", 5.3), ("pct", 11.8), ("pct", 20.2),
     ("pct", 27.4), ("pct", 71.2), ("pct", 80), ("pct", 83.6), ("pct", 91.4),
-    ("pct", 94.7), ("pct", 96.5), ("pct", 96.7), ("pct", 98.3), ("pct", 99.1),
+    ("pct", 92.9), ("pct", 94.7), ("pct", 96.5), ("pct", 96.7), ("pct", 98.3),
+    ("pct", 99.1),
 })
 
 
