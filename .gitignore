@@ -25,3 +25,4 @@ data/processed/*
 # downloaded dashboard trees: ~40 MB, re-fetchable from the commits pinned in
 # data/corpus/SOURCES.md. data/corpus/queries.jsonl is what the notebooks read.
 data/corpus/sources/
+data/heldout/sources/

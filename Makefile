@@ -41,7 +41,9 @@ notebooks: install
 # pass the flag by hand when a figure is meant to move. dash0_claims.py writes nothing at
 # all -- it re-checks the cached README against its sha256 and re-reads the two figures
 # section 2 attributes to that converter.
-DATA_SCRIPTS := scripts/rollup_span_join.py scripts/promtool_parse.py scripts/dash0_claims.py
+DATA_SCRIPTS := scripts/rollup_span_join.py scripts/promtool_parse.py \
+                scripts/dash0_claims.py scripts/heldout_split.py \
+                scripts/heldout_eval.py
 
 data: install
 	@for s in $(DATA_SCRIPTS); do \

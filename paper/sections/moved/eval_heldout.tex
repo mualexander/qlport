@@ -1,0 +1,125 @@
+\subsection{What is held out, and what still is not}
+\label{sec:heldout}
+
+\S\ref{sec:threats} concedes that three things were fitted to this corpus: grammar v2's
+productions, the translator's feature vocabulary, and \S\ref{sec:staircase}'s
+implementation order. Two of them are functions of the corpus and can therefore be
+refitted --- take part of it, recompute the thing from that part alone, score it on the
+rest. The third cannot. No script can produce the grammar we would have written had we
+read half these dashboards, because those productions were added by hand in response to
+what the corpus showed: that fit lives in the authors and not in a procedure. So the
+vocabulary and the order are cross-validated here, and the grammar is tested the only way
+it can be, on dashboards nobody involved in this work has read.
+
+\paragraph{The vocabulary saturates long before the corpus ends.}
+Splitting is by dashboard and never by query: queries inside one dashboard share a house
+style, and letting them straddle the boundary would leak that style across it and flatter
+every number below. Over $200$ replicates at each size, a vocabulary read off $28$ of the
+$283$ Datadog dashboards holds $25.4$ of the corpus's $28$ features and already covers
+$97.5\%$ ($\pm2.0$) of the queries in the $255$ it did not read; past $60\%$ of the
+dashboards no replicate misses a feature at all. The PromQL side behaves the same way,
+from a tenth of its $240$ dashboards to $21.3$ of $24$ features and $98.0\%$.
+Figure~\ref{fig:heldout} is both curves. So the ceiling is not the artefact that paragraph
+feared. \emph{Which features dashboards use} is answered by a small fraction of this
+corpus, and the rest of it keeps confirming the answer rather than extending it --- which
+is a fact about how few syntactic features dashboards draw on, and the same fact that
+makes the staircase steep.
+
+\paragraph{The build order survives being scored on dashboards it was not chosen from.}
+Recomputing the greedy order on half the dashboards and scoring it on the other half
+gives $89.9\%$ at sixteen features where the order's own half gives $90.9\%$ --- a gap of
+one point. \S\ref{sec:discussion} calls the staircase the practical result of this paper,
+and it is a claim about effort against coverage that survives the effort being spent in
+an order chosen from somewhere else.
+
+\paragraph{The grammar, on $497$ dashboards it has never seen.}
+The corpus took the $200$ most-downloaded Prometheus dashboards from a catalogue that
+now lists $5{,}904$ (\S\ref{sec:corpus}); the rest were never listed, downloaded or read.
+\texttt{scripts/heldout\_fetch.py} takes every dashboard down to rank $700$ that the
+corpus does not already hold, which is $500$ dashboards, $497$ of them carrying PromQL:
+$16{,}569$ queries against the in-sample $7{,}286$, and $13{,}960$ distinct strings
+against $6{,}040$. Table~\ref{tab:heldout} reports both beside each other. The in-sample
+row is the Grafana part of the corpus alone, because comparing against
+Table~\ref{tab:parse-coverage}'s PromQL row would confound the holdout with a change of
+source: that row also carries kube-prometheus's jsonnet-compiled queries, which no
+hand-built dashboard resembles. Measuring the Grafana part on its own reproduces that
+table's whole PromQL residual of $58$, which is a check that this comparator is the
+paper's own pipeline restricted and not a second one.
+
+Dashboard-level disjointness is not string-level disjointness. A popular query recurs
+across dashboards, so $1{,}438$ of the held-out strings are strings the corpus also
+holds, and those are not held out in any sense that bears on a grammar; the rate that
+belongs in this paper is the one on the $12{,}522$ whose instantiated form appears
+nowhere in the corpus. There, frozen grammar v2 parses $99.6\%$, against $99.0\%$ on the
+dashboards it was built from. It does not do worse out of sample. What does shrink is the
+fit: v2 beats v1 by $1.2$ points in sample and by $0.8$ out of it, so about a third of
+what the corpus-driven productions bought was specific to this corpus and about two
+thirds of it was a gap in PromQL as people write it. That is the most precise statement
+we can make about the largest of the three fits on the side where it can be tested, and
+it is smaller than the paragraph it replaces assumed without saying.
+
+The vocabulary result repeats out of sample exactly as the cross-validation predicts: the
+$24$ features cover $100.0\%$ of those $16{,}569$ occurrences with none outside them, on
+a population twice the corpus's size.
+
+\paragraph{What the residual is, and why it is not cleaned up.}
+Fifty distinct strings of $13{,}960$ defeat v2, and they are worth decomposing because
+most of them are not PromQL. Two are Loki panels that \S\ref{sec:corpus}'s LogQL filter
+failed to catch, six are VictoriaMetrics \texttt{WITH} templates, and $27$ use Grafana's
+older \texttt{[[variable]]} interpolation, which \texttt{corpus.normalise} does not
+instantiate because nothing in the corpus needed it --- an instantiation gap of ours
+rather than a grammar gap. That leaves $15$ strings, about one in a thousand, that are
+PromQL this grammar cannot parse. We report the rate as measured and do not remove the
+other $35$ from it. Filtering a held-out population after seeing what it costs is how a
+held-out set stops being one, and the dirt is itself a finding: a corpus of community
+dashboards filed under one datasource contains several query languages, which the
+curated $200$ understated.
+
+\paragraph{The Datadog side is held out honestly and is almost powerless.}
+\S\ref{sec:threats} named a second remedy --- a later commit of the same repository ---
+and on this side it is the only one available, because no second public body of Datadog
+dashboards exists to draw a disjoint set from. In the week between the corpus commit and
+\texttt{c6cac33b42ac}, three dashboards changed in a way that produced $99$ distinct query
+strings the corpus does not contain. Frozen grammar v2 parses all $99$, and the frozen
+translator translates all $111$ of their occurrences with no refusal.
+
+That is a clean reading and nearly no evidence. One hundred and eleven occurrences drawn
+from three dashboards cannot estimate a rate reported to a tenth of a point, and they are
+clustered besides; what the run establishes is that a week of upstream change contained
+nothing this pipeline refuses, which is a check against breakage rather than a
+measurement of $\kappa$. It is reported because it is what the named remedy yields today
+and because re-running it costs nothing: the same script against a commit a year from now
+is the measurement this one is too early to be.
+
+\paragraph{Where that leaves the threat.}
+Of the three fitted things, two generalise and are now measured doing so, and the third
+generalises on the PromQL side on a population twice the corpus's size. What has no
+well-powered holdout is the Datadog grammar's extension --- $92.9\%$ to $99.9\%$, the
+largest of the three fits --- and with it $\kappa$, because testing either would need a
+corpus of Datadog dashboards that does not publicly exist. So the resubstitution worry is
+not answered; it is narrowed to one channel on one side of one language pair, with the
+others measured instead of argued. That is a better position than \S\ref{sec:threats}
+could claim before, and it is still not a held-out $\kappa$.
+
+\begin{figure}[htbp]\centering
+\includegraphics[width=0.92\linewidth]{figures/heldout_vocabulary}
+\caption{Refitting the two things that are functions of the corpus. Left: a feature
+vocabulary read off a sample of the dashboards, scored on the dashboards it did not read;
+the band is the $5$th to $95$th percentile over $200$ replicates. Right: the greedy
+implementation order recomputed on half the dashboards, scored on both halves. Neither
+panel is a held-out $\kappa$ --- they bound the ceiling and the build order, which are
+the parts of the fit a script can undo.}
+\label{fig:heldout}
+\end{figure}
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/heldout_coverage}
+\caption{The frozen grammars inside and outside the corpus. ``Raw'' is the share of
+distinct queries that parse as shipped; the v1 and v2 columns are after template
+instantiation, as in Table~\ref{tab:parse-coverage}, and the residual is what v2 still
+cannot parse. The indented row restricts the held-out Grafana set to the strings whose
+instantiated form the corpus does not hold, which is the comparison the text quotes. The
+last row is the later commit of \texttt{integrations-core}: zero leakage and, at $99$
+distinct queries, almost no power.}
+\label{tab:heldout}
+\end{table}

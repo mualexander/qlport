@@ -56,6 +56,16 @@ nothing to read rather than by disagreeing with anything. `make data` needs `doc
 `node`, which is why it is not a dependency of `make test`: a machine without them can
 still run the suite against data it already has.
 
+Two steps reach the network and are therefore not in any target. `scripts/fetch_corpus.py`
+downloads the corpus and writes `data/corpus/queries.jsonl`, which is committed;
+`scripts/heldout_fetch.py` does the same for the held-out set in `data/heldout/`, taking
+community dashboards past the rank the corpus stopped at and `integrations-core` at a
+later commit. Both pin what they fetched in a manifest beside the queries, and neither
+needs to run again to reproduce anything in the paper --- `make data` scores the committed
+held-out queries with `scripts/heldout_eval.py` and cross-validates the committed corpus
+with `scripts/heldout_split.py`. Re-running `heldout_fetch.py` replaces the held-out set
+with a later one, which is a new experiment rather than a reproduction of this one.
+
 `make paper` runs `pdflatex` three times, not twice. The table of contents has a length
 of its own and that length moves every page number after it, so a two-pass build
 typesets a contents page from the pass before it finished --- correct on disk, wrong in

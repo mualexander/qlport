@@ -1,0 +1,30 @@
+{
+ "grafana": {
+  "api": "grafana.com/api/dashboards",
+  "available": 5904,
+  "dashboards": 500,
+  "dashboards_with_promql": 500,
+  "downloaded": 500,
+  "fetched": "2026-11-21",
+  "filter": "dataSourceSlugIn=prometheus, orderBy=downloads desc",
+  "listed_to_rank": 700,
+  "name": "grafana",
+  "overlap_with_corpus": 200,
+  "queries_promql": 16620,
+  "requested": 500
+ },
+ "integrations-core": {
+  "commit": "c6cac33b42ac12ef5f0e84008a7f008068e3bbbb",
+  "corpus_commit": "452093828d8d91fae1a7be29b62d9197a20b1aa0",
+  "dashboards": 525,
+  "distinct_held_out": 99,
+  "fetched": "2026-11-21",
+  "files": 534,
+  "name": "integrations-core",
+  "queries_datadog_at_commit": 14794,
+  "queries_datadog_held_out": 111,
+  "ref": "master",
+  "repo": "DataDog/integrations-core",
+  "unreadable": 9
+ }
+}

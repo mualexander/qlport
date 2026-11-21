@@ -71,6 +71,7 @@ is solving a different problem from the one its users have.
 \iffull\input{sections/moved/eval_held_aside}\fi
 \iffull\input{sections/moved/eval_language_use}\fi
 \iffull\input{sections/moved/eval_staircase}\fi
+\iffull\input{sections/moved/eval_heldout}\fi
 \subsection{Coverage \texorpdfstring{$\kappa$}{kappa}}
 
 Table~\ref{tab:translation-coverage} reports the outcome of lowering and emitting every
@@ -559,7 +560,8 @@ about how often it fails on the metrics this repository never mentions --- $736$
 occurrences, which Remark~\ref{rem:type-measured} counts but cannot check.
 
 \paragraph{The grammar and the implementation order were fitted to this corpus.}
-Nothing here is held out, and the three places it matters should be named together.
+Three places it matters should be named together, and then separated, because they are
+not all fitted in the same way and two of them turn out to be testable.
 Grammar v2 is v1 plus every production the corpus showed was missing
 (\S\ref{sec:datadog-inference}), and Table~\ref{tab:parse-coverage} measures the size of
 that fit rather than hiding it: $92.9\%$ of distinct instantiated Datadog queries parsed
@@ -575,12 +577,26 @@ precision out of sample.
 It bears on \S\ref{sec:baseline} hardest, and in the direction that favours this paper:
 OpenObserve's translator never saw this corpus, while this paper's grammar was extended
 until it parsed it, so the $96.7\%$ against $94.7\%$ of that comparison is an in-sample
-number beside an out-of-sample one. The remedy is a held-out split --- a disjoint set of
-dashboards, or a later commit of the same repository, with the grammar and the translator
-frozen --- and it is the obvious next measurement rather than one this paper makes. What
-can be said without it is that the gap codes name structural constructs, which do not
-look like the kind of thing a second corpus would eliminate, and that the $0.1\%$
-residual is one undocumented construct rather than a tail of them.
+number beside an out-of-sample one.
+
+\S\ref{sec:heldout} takes the two remedies this paragraph used to defer --- a disjoint
+set of dashboards, and a later commit of the same repository, with the grammar and the
+translator frozen --- and reports what they show. The short form: the feature vocabulary
+and the implementation order are functions of the corpus, so they can be refitted on part
+of it and scored on the rest, and both generalise, the vocabulary saturating after a
+tenth of the dashboards and the build order losing one point out of sample. The grammar
+is not refittable by any script, so it was run instead against $497$ community dashboards
+the corpus never listed: on the $12{,}522$ distinct strings there whose instantiated form
+the corpus does not hold, v2 parses $99.6\%$ against $99.0\%$ in sample, and its margin
+over v1 falls from $1.2$ points to $0.8$ --- a third of that fit was this corpus, two
+thirds of it was PromQL. What survives all of that is the Datadog grammar's own
+extension, $92.9\%$ to $99.9\%$, and with it $\kappa$: the later commit yields $99$
+distinct queries, which the frozen pipeline translates without refusal and which are far
+too few to estimate a rate. So this threat is narrowed to one channel on one side rather
+than answered, and what could already be said without any of it still holds --- the gap
+codes name structural constructs, which do not look like the kind of thing a second
+corpus would eliminate, and the $0.1\%$ residual is one undocumented construct rather
+than a tail of them.
 
 \paragraph{Everything here is about the query layer.}
 What we measure is the cost of rewriting saved queries, and \S\ref{sec:discussion}'s

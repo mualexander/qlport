@@ -387,3 +387,170 @@ def test_the_dash0_claim_is_read_from_the_cached_readme(reg):
     man = json.loads((ROOT / "data" / "raw" / "dash0" / "MANIFEST.json").read_text())
     assert man["branch"] and len(man["commit"]) == 40
     assert man["retrieved"] == "2026-11-21"
+
+
+# --- the held-out split ---------------------------------------------------------------
+def _cv() -> dict:
+    return _derived("heldout_cv.json")
+
+
+def _ho() -> dict:
+    return _derived("heldout_eval.json")
+
+
+def test_the_cross_validated_greedy_is_the_staircase_of_notebook_00(reg):
+    """The split experiment must refit the paper's instrument, not a near neighbour.
+
+    `scripts/heldout_split.py` reimplements notebook 00's greedy maximum-coverage order,
+    because it has to run it hundreds of times on subsamples and the notebook runs it
+    once on everything. A reimplementation that broke ties differently would still
+    produce a plausible staircase and would silently measure the optimism of a build
+    order nobody followed. So its order, run on the whole corpus, has to reproduce every
+    ceiling the notebook recorded.
+    """
+    full = _cv()["full_staircase"]["datadog"]
+    assert len(full) == 29, f"28 Datadog features and a zero point, got {len(full)}"
+    for k, got in enumerate(full):
+        want = reg[f"nb00.ceiling_{k}_features_pct"]
+        assert abs(got - want) < 0.051, f"at {k} features: {got} vs notebook 00's {want}"
+
+
+def test_the_vocabulary_ceiling_saturates_well_inside_the_corpus(reg):
+    """§7's second fitted channel, refitted: it costs almost nothing out of sample.
+
+    If the ceiling were a fit to this corpus, a vocabulary read off a sample of the
+    dashboards would miss features the rest use, and coverage of the rest would fall.
+    It does not fall far even from a tenth of the dashboards, and past a point no
+    replicate misses anything at all --- which is the claim the prose makes.
+    """
+    rows = {r["fraction"]: r for r in _cv()["datadog"]["vocabulary"]}
+    tenth, half = rows[0.1], rows[0.5]
+    assert tenth["occ_mean"] == pytest.approx(reg["cv.dd_tenth_coverage_pct"], abs=0.05)
+    assert half["occ_mean"] == pytest.approx(reg["cv.dd_half_coverage_pct"], abs=0.05)
+    assert tenth["occ_mean"] > 95, "a tenth of the dashboards should already nearly do it"
+    assert half["occ_mean"] > tenth["occ_mean"], "more dashboards cannot read worse"
+
+    complete = reg["cv.dd_complete_at_pct"] / 100
+    assert rows[complete]["novel_max"] == 0, (
+        "cv.dd_complete_at_pct names a sample size at which no replicate missed a "
+        "feature, and this one did")
+    below = [f for f in rows if f < complete]
+    assert below and max(rows[f]["novel_max"] for f in below) > 0, (
+        "if nothing is missed at any smaller size either, the figure is not the "
+        "saturation point it is quoted as")
+
+
+def test_the_staircase_survives_being_scored_on_dashboards_it_was_not_built_from(reg):
+    """§8 calls the staircase the paper's practical result, so it must not be a fit."""
+    s = _cv()["datadog"]["staircase"]
+    train, test = s["train"][16], s["test"][16]
+    assert train == pytest.approx(reg["cv.dd_stair_train_16_pct"], abs=0.05)
+    assert test == pytest.approx(reg["cv.dd_stair_test_16_pct"], abs=0.05)
+    assert train - test == pytest.approx(reg["cv.dd_stair_gap_16_pct"], abs=0.05)
+    assert 0 <= train - test < 5, (
+        "a build order chosen on one half should not be worth much less on the other")
+    assert s["train"][0] < s["train"][8] < s["train"][16], "the staircase should rise"
+
+
+def test_the_held_out_set_is_disjoint_from_the_corpus():
+    """The premise of the whole exercise, checked against the two committed files.
+
+    Both `data/corpus/queries.jsonl` and `data/heldout/queries.jsonl` are committed, so
+    this needs no network and no `make data`: it is the one claim that cannot be taken
+    on trust, because every rate in the held-out table is worthless if a query appears
+    on both sides.
+    """
+    import sys
+
+    sys.path.insert(0, str(ROOT / "src"))
+    from qlport import corpus as c
+
+    train = c.read_queries(ROOT / "data" / "corpus" / "queries.jsonl")
+    held = c.read_queries(ROOT / "data" / "heldout" / "queries.jsonl")
+    assert held, "nothing is held out"
+
+    seen_ids = {q.origin.split()[0] for q in train if q.source == "grafana"}
+    held_ids = {q.origin.split()[0] for q in held if q.source == "grafana"}
+    assert held_ids and not (held_ids & seen_ids), "a held-out dashboard is in the corpus"
+
+    seen_dd = {c.normalise("datadog", q.text)
+               for q in train if q.source == "integrations-core"}
+    held_dd = [q for q in held if q.source == "integrations-core"]
+    assert held_dd
+    leaked = [q.text for q in held_dd
+              if c.normalise("datadog", q.text) in seen_dd]
+    assert not leaked, f"{len(leaked)} held-out Datadog queries are in the corpus"
+
+
+def test_the_held_out_rate_is_reported_on_the_strings_the_corpus_does_not_hold(reg):
+    """Dashboard-level disjointness is not string-level disjointness.
+
+    A popular PromQL query recurs across dashboards, so some strings in a held-out
+    dashboard are strings the corpus also holds, and those are not held out in any sense
+    that bears on a grammar. The table carries both rates and the prose quotes the
+    narrower one; this checks the two populations decompose and that the distinction is
+    not vacuous.
+    """
+    g = _ho()["grafana"]
+    assert g["shared_distinct"] + g["novel_distinct"] == g["distinct"]
+    assert g["shared_distinct"] > 0, (
+        "no overlap at all would mean the stricter population is the same as the "
+        "looser one, and the paper should stop distinguishing them")
+    assert g["novel_distinct"] == reg["ho.gf_novel_distinct"]
+    assert g["novel_v2_pct"] == reg["ho.gf_novel_v2_pct"]
+    assert g["novel_v2_pct"] <= g["v2_pct"], (
+        "the strings the corpus also holds cannot be the harder ones")
+    # The Datadog side is built by excluding corpus strings, so it is all novel.
+    assert _ho()["integrations-core"]["shared_distinct"] == 0
+
+
+def test_the_held_out_table_says_what_the_registry_says(reg):
+    """The generated table and the figures the prose quotes, against each other."""
+    body = rows("heldout_coverage")[1:]           # drop the header row
+    by_label = {r[0]: r for r in body}
+    insample = next(r for lab, r in by_label.items() if "corpus's" in lab)
+    assert num(insample[1]) == reg["ho.gf_in_sample_queries"]
+    assert num(insample[5]) == reg["ho.gf_in_sample_v2_pct"]
+    assert num(insample[6]) == reg["ho.gf_in_sample_residual"]
+    gf = next(r for lab, r in by_label.items() if "never saw" in lab)
+    assert num(gf[1]) == reg["ho.gf_queries"]
+    assert num(gf[2]) == reg["ho.gf_distinct"]
+    assert num(gf[4]) == reg["ho.gf_v1_pct"]
+    assert num(gf[5]) == reg["ho.gf_v2_pct"]
+    assert num(gf[6]) == reg["ho.gf_residual"]
+    sub = next(r for lab, r in by_label.items() if lab.startswith(r"\quad"))
+    assert num(sub[2]) == reg["ho.gf_novel_distinct"]
+    assert num(sub[5]) == reg["ho.gf_novel_v2_pct"]
+    assert num(insample[5]) < num(sub[5]), (
+        "the text says the frozen grammar does no worse out of sample; if that stops "
+        "being true the paragraph has to change, not this assertion")
+    dd = next(r for lab, r in by_label.items() if "integrations-core" in lab)
+    assert num(dd[1]) == reg["ho.dd_queries"]
+    assert num(dd[2]) == reg["ho.dd_distinct"]
+
+
+def test_the_temporal_holdout_names_both_commits_and_its_own_size(reg):
+    """A later commit of the same repository is only a holdout if it is a later commit.
+
+    One week of upstream change is what it gave, and the resulting set is small enough
+    that the paper reports it as a check rather than an estimate. Both facts have to
+    stay attached to the number: the two commits that bracket it, and the count.
+    """
+    man = json.loads((ROOT / "data" / "heldout" / "MANIFEST.json").read_text())
+    ic = man["integrations-core"]
+    assert len(ic["commit"]) == 40 and len(ic["corpus_commit"]) == 40
+    assert ic["commit"] != ic["corpus_commit"], "that is the same commit"
+
+    corpus_md = (ROOT / "data" / "corpus" / "SOURCES.md").read_text()
+    section = corpus_md.split("## integrations-core", 1)[1]
+    assert ic["corpus_commit"] in section, (
+        "the held-out manifest names a base commit the corpus was not extracted from")
+
+    assert reg["ho.dd_kappa_occurrences"] == reg["ho.dd_queries"] == ic[
+        "queries_datadog_held_out"], (
+        "the manifest counts the formula layer too, so these agree only while the week "
+        "of upstream change added no formula queries; if it ever does, the evaluation "
+        "and the manifest are counting different populations")
+    assert reg["ho.dd_kappa_occurrences"] < 1000, (
+        "if the temporal holdout ever gets big enough to estimate kappa, the prose "
+        "that calls it underpowered has to be rewritten")

@@ -29,7 +29,7 @@ make and had not --- with a real Prometheus~3.15.0 already running in six of its
 experiments, which made the omission harder to defend the longer it stood. It has now been
 made. \texttt{scripts/promtool\_parse.py} puts every expression either translator emits
 --- $14{,}555$ distinct, standing for $17{,}128$ occurrences, ours over the whole corpus
-and theirs over the held-out set --- through \texttt{promtool check rules} on that same
+and theirs over the single-query widgets this comparison is restricted to --- through \texttt{promtool check rules} on that same
 build, which runs the reference parser and reports a position for each failure. The two
 instruments agree exactly: the $386$ distinct expressions \S\ref{sec:grammars}'s grammar
 rejects are the $386$ Prometheus rejects, all $7{,}272$ of ours are accepted by both, and
