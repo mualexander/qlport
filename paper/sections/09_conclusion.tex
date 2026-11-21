@@ -66,8 +66,9 @@ other.
 \noindent
 What each of those answers rests on --- what is proved, what is verified against a real
 server, what is measured against the vendor, and what is still assumed --- is set out
-\apin{app:experiments}. Three of the nine vendor measurements contradicted what this
-paper had assumed before asking.
+\apin{app:experiments}. Three of the eleven vendor measurements contradicted what this
+paper had assumed before asking, and a fourth confirmed the vendor's behaviour while
+refuting the use this paper had made of it.
 
 \iffull\input{sections/moved/concl_evidence}\fi
 
@@ -80,11 +81,13 @@ outside it.
 
 \paragraph{The answer.}
 Is the switching cost a language-design artefact? Partly, and not where we expected. In
-the direction teams travel it is mostly engineering --- a finding this paper five times
+the direction teams travel it is mostly engineering --- a finding this paper eight times
 nearly got wrong in the more quotable direction, through a structural error in the
 translator, a rule it had not implemented, a modifier it never asked the vendor about, a
-classification that contradicted its own text, and an impossibility claim that rested on
-having tried a single candidate expression. The artefact in that direction is
+classification that contradicted its own text, an impossibility claim that rested on
+having tried a single candidate expression, a construct its own normaliser had
+manufactured, a corollary applied where its hypothesis fails, and a barrier that decides
+the translation rather than blocking it. The artefact in that direction is
 subtler than an expressiveness gap and is not a property of either language on its own: a
 dashboard query does not say what it means, so every translation we emit is exact only
 relative to context that arrives from the layer above both languages. The expressiveness

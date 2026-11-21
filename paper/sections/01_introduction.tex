@@ -90,7 +90,7 @@ although it came first in the work.
 Going from Datadog to PromQL, $96.6\%$ of query occurrences translate, and the shortfall
 is \emph{all} unfinished work: nothing in the corpus is beyond reach, and the
 $3.3\%$ that does not translate is code this translator has not written, with a ceiling
-of $99.9\%$ once it is. Reaching an empty column took five retractions, so
+of $99.9\%$ once it is. Reaching an empty column took six retractions, so
 \S\ref{sec:discussion} treats the zero as the least certain number here rather than the
 most. That ceiling carries a condition it usually travels without: $139$ of
 those $287$ occurrences are \texttt{top(...)}, whose PromQL form needs the dashboard's
@@ -129,7 +129,7 @@ it is paid by a different decision at a different time.
 \paragraph{Contributions.}
 \begin{enumerate}
 \item \textbf{What a dashboard query does not say (\S\ref{sec:caveats},
-\S\ref{sec:dashboard-layer}).} The paper's main result, and the one the other six were
+\S\ref{sec:dashboard-layer}).} The paper's main result, and the one the other seven were
 built to reach without knowing it. Every translation carries the preconditions it rests
 on, so the share depending on context the query omits is counted rather than conceded:
 $97.0\%$ on a rollup interval, $100\%$ on a metric type, against $55.6\%$ of PromQL
@@ -182,7 +182,7 @@ percentiles among them.
 
 \paragraph{A note on method.}
 One discipline runs through all of it and is worth stating in advance, because this paper
-got it wrong five times. A translator's refusal looks like a fact about the languages and
+got it wrong eight times. A translator's refusal looks like a fact about the languages and
 is in the first instance a fact about the translator. Separating the two takes something
 independent: a proof that no target expression exists, a decision procedure that agrees,
 or an implementation that removes the refusal and so demonstrates it was never a gap.
@@ -192,14 +192,19 @@ disjunctive scopes as a language gap when $120$ of them were a single regex matc
 a third called \texttt{.weighted()} inexpressible for $70$ occurrences when the modifier
 turns out to compute nothing at all; a fourth counted the four disjunctions no
 single key covers as beyond PromQL two paragraphs from the sentence explaining how
-PromQL says them; and a fifth called $36$ zero-fills inexpressible on the strength of
+PromQL says them; a fifth called $36$ zero-fills inexpressible on the strength of
 one candidate expression, when a real server supplies the value per series for another
-(Remark~\ref{rem:fill}). All five
-would have produced a stronger-sounding claim, and all five erred in the same direction.
-The fifth is the one that should be least reassuring, because it was found by going
-looking: the other four surfaced while something else was being measured, and this one
-only because a reviewer asked why two rows of a column had proofs and two had
-sentences.
+(Remark~\ref{rem:fill}); a sixth filed $31$ occurrences of a construct this paper's own
+normaliser had manufactured; a seventh refused $34$ percentile queries under a corollary
+whose hypothesis none of them meets; and an eighth refused $5$ scopes for a distinction
+the target's data model defines away, which is the reason the exact translation is to
+drop the term. All eight
+would have produced a stronger-sounding claim, and all eight erred in the same direction.
+The last four are the ones that should be least reassuring. The first four surfaced
+while something else was being measured, which is luck; these four came from going
+looking --- the zero-fills because a reviewer asked why two rows of one column had
+proofs and two had sentences, and the three after them because that question was then
+put to every remaining row, and every remaining row answered it badly.
 \S\ref{sec:gaps} and \S\ref{sec:glob-corpus} report which refusals now have which
 warrant.
 

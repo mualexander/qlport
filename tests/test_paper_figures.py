@@ -281,8 +281,10 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
     348: ("refusals under the commutation argument",
           {"01_introduction.tex", "05_translation.tex", "07_evaluation.tex",
            "08_discussion.tex"}),
-    124: ("disjunctive scopes before prop:disjunction, and separately what the\n"
-           "empty-string reading of a glob star is worth",
+    124: ("disjunctive scopes before prop:disjunction. It was also, until E17's\n"
+           "counterfactual was measured, the figure this file recorded for what the\n"
+           "empty-string reading of a glob star is worth; that is 515 now, derived\n"
+           "from data/raw/globs/star_reading.json, and the prose no longer says 124",
           {"01_introduction.tex", "06_regular.tex", "07_evaluation.tex",
            "08_discussion.tex", "eval_rows_fill_glob.tex", "reg_star_empty.tex"}),
     120: ("of those, the single-key ones",
@@ -309,8 +311,9 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
          "corpus._TMPL stopped truncating $cluster-location at its hyphen, so this is\n"
          "a historical figure: the sections entitled to it are the ones telling that\n"
          "story, plus the two the ceiling rewrite still has to reach",
-         {"07_evaluation.tex", "08_discussion.tex", "eval_baseline.tex",
-          "eval_beyond_reach.tex", "eval_rows_fill_glob.tex", "reg_trial_probes.tex"}),
+         {"01_introduction.tex", "07_evaluation.tex", "08_discussion.tex",
+          "eval_baseline.tex", "eval_beyond_reach.tex", "eval_rows_fill_glob.tex",
+          "reg_trial_probes.tex"}),
     87: ("the implementation-order figure contrasted with the kernel's reach, and\n"
          "separately the scope-only template share it was once confused with",
          {"07_evaluation.tex", "gr_template_shares.tex", "tr_two_figures.tex"}),
