@@ -25,7 +25,9 @@ queries of a corpus of $22{,}894$ extracted from published dashboards, $96.6\%$ 
 occurrences translate, and \emph{none} of the shortfall is beyond reach: the $3.3\%$ that
 carries a gap code is work this translator has not done and the $0.1\%$ beside it does
 not parse, so in the direction teams travel the cost of the query layer is engineering and
-nothing else. That column emptied while this paper was being written.
+nothing else. Nothing here is held out --- the grammar and the implementation order
+were fitted to this corpus, which makes $96.6\%$ a resubstitution estimate.
+That column emptied while this paper was being written.
 Six rows left it, two of them because the instrument that read them was wrong rather
 than because Datadog was.
 That is not where the switching cost turns out to be. A dashboard query does not
@@ -50,7 +52,9 @@ Going back is different in kind --- a Datadog tag filter is a glob, glob-express
 of a regular expression is decidable, and every refusal we measure in that direction is
 a theorem about globs rather than unfinished work --- ten of them outright, and the
 rest together with a bound on union size that we chose and state. Leaving costs work;
-returning costs expressiveness.
+returning costs expressiveness --- an asymmetry between a measure over whole queries
+and one over tag-filtering sub-constructs, drawn from the other half of the corpus
+under a different template policy and with no translator built.
 \end{abstract}
 
 \input{sections/01_introduction}

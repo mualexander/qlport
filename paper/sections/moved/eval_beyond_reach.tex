@@ -20,9 +20,15 @@ Because a query is abandoned at its first obstruction (Remark~\ref{rem:one-gap})
 $99.9\%$ is an upper bound on what implementing the unimplemented set would reach rather
 than a promise: a refused query could carry a second obstruction behind the first.
 Re-reading the $287$ for the other codes' constructs finds none, so the bound is tight
-with nothing left over. What separates it from $100\%$ is not a construct at all --- it
-is the $8$ occurrences \S\ref{sec:grammars}'s grammar does not parse, which is a fact
-about this paper's instrument and not about either language. Against the $96.6\%$
+with nothing left over. What separates it from $100\%$ is the $8$ occurrences
+\S\ref{sec:grammars}'s grammar does not parse, and an earlier version of this remark
+called that ``a fact about this paper's instrument and not about either language''. That
+is more than is known. The six distinct queries behind those $8$ are all one construct,
+the conditional aggregator \texttt{count(v: v>=0):}, which is in Datadog's own dashboards
+and in none of its documentation, and this paper declines to guess its semantics --- so
+whether PromQL expresses it is not decided here. The ceiling is better stated as
+$99.9\%$ with $8$ occurrences unclassified: the instrument does not reach them, and
+nothing in this paper says a translator could. Against the $96.6\%$
 measured here, the whole distance to the ceiling is engineering, as the disjunction rule
 demonstrated by closing $1.4$ points of it and \texttt{.weighted()} by closing $0.8$
 more. That is the finding to carry into \S\ref{sec:discussion}: going this way, the

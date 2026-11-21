@@ -984,6 +984,9 @@ DERIVED: tuple[tuple[float, str, object], ...] = (
     (7867, "PromQL panel queries: the population less its alerting and recording rules",
      lambda: 8102 - 139 - 96),
     (41, "the tag alphabet", lambda: len(_alphabet())),
+    (17023, "both translators' emitted expressions, which neither has put to a "
+            "Prometheus parser at corpus scale",
+     lambda: _reg()["oo.ours_emits"] + _reg()["oo.emits"]),
     (1681, "the branch bound, which is the square of it", lambda: len(_alphabet()) ** 2),
     (3362, "and twice that, which is what `2..|5..` needs",
      lambda: 2 * len(_alphabet()) ** 2),

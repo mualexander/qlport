@@ -316,8 +316,12 @@ model-versus-server check of Section~\ref{sec:ingestion} already uses; the large
 deviation over all $330$ is $3.5\times10^{-14}$ and $137$ of them are bit-identical.
 Weighted by the corpus queries those shapes stand for, that is $8{,}365$ of the
 $8{,}370$ translated single-query occurrences. So all but five of $\kappa$'s single-query
-occurrences are now translations checked against the vendor rather than merely emitted,
-which is a claim this paper could not previously make at all.
+occurrences are now translations whose arithmetic has been run against the vendor rather
+than only emitted, which is a claim this paper could not previously make at all. It is
+worth saying precisely, since the looser version of it --- ``checked against the
+vendor'' --- claims the validation the paragraph above denies: what was run is the
+arithmetic, on idealised series, under every condition the translation could have been
+wrong about.
 
 This is the third run of the experiment, and that matters more than the agreement does.
 The first was made on the corpus before \texttt{corpus.\_TMPL} was fixed, and
@@ -389,17 +393,36 @@ agreement rate is.
 
 The run leaves three of the $333$ shapes uncompared and its series are synthetic, both
 of which \apref{app:eval} sets out. The sharper limit is which hypotheses the run can
-reach, and it is the two that matter most. The harness submits each metric under the kind the \emph{translator inferred}
-from the query text, and fixes a four-hour query range precisely because E4 measured
-four hours as the $60$\,s the emitter assumes. So hypotheses (2) and (3) of
-Theorem~\ref{thm:kernel} --- the interval and the metric type, carried by $97.0\%$ and
-$100\%$ of translations --- hold by construction in all $330$ compared shapes. That is
-the right design for testing the rules, since a run in which the assumptions were
-already wrong would measure the assumptions rather than the arithmetic. But it means
-the agreement reported here is agreement \emph{given} the two conditions
-\S\ref{sec:discussion} argues are the real switching cost, and the run is silent on
-what happens when they fail --- which Remark~\ref{rem:type-cost} measures separately,
-and measures as unbounded in the counter's age.
+reach, and the honest answer is none of them: all six of
+Theorem~\ref{thm:kernel}'s hypotheses hold by construction, and so do both of its
+side conditions. An earlier version of this paragraph named two and called them ``the
+two that matter most'', which was true of those two and silent about the other four.
+The evaluation instant is floored to a multiple of $300$\,s and read at
+$b+\Delta-\varepsilon$, so (1) holds; the query range is fixed at four hours precisely
+because E4 measured four hours as the $60$\,s the emitter assumes, so (2) holds; each
+metric is submitted under the kind the \emph{translator inferred} from the query text,
+so (3) holds; the counter values are a cumulative sum of non-negative steps and never
+reset, so (4) holds; the first bucket of the window is skipped, so every compared bucket
+has a sample before it and (5) holds; and no series carries an empty tag value, because
+the rig writes none, so (6) holds. The grid is a regular $15$\,s one with no gaps, so the lookback condition holds,
+and the identifiers are synthetic while the shape abstraction masks metric names and tag
+keys, so the three real mangling collisions of Remark~\ref{rem:mangling} cannot arise
+either.
+
+Stated in full, that is still the right design, and for the reason the shorter version
+gave: a run in which the hypotheses were already false would measure the hypotheses
+rather than the arithmetic. What it is not is a check on $\kappa$. Given
+Theorem~\ref{thm:kernel}, $330$ of $330$ is what the theorem \emph{predicts}, so the
+run's value is not the agreement but the four translator defects it found on the way to
+it --- \texttt{.as\_count().rollup(avg,60)} losing its type evidence, \texttt{.as\_rate()}
+inside the space aggregation, the \texttt{*\_over\_time} of a cumulative series, and the
+unmatched binop --- none of which the theorem predicted and each of which was a real
+error in the emitter. A differential run against a live vendor is how those were found;
+the agreement afterwards is a consistency check on the arithmetic. The conditions
+\S\ref{sec:discussion} argues are the real switching cost are exactly the ones the rig
+holds true, so the run is silent on what happens when they fail ---
+Remark~\ref{rem:type-cost} measures that separately, and measures it as unbounded in the
+counter's age.
 
 \subsection{A baseline: what another translator does}
 \label{sec:baseline}
@@ -416,7 +439,9 @@ emitter returns a list and theirs one string --- leaving $8{,}653$.
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/baseline}
 \caption{The same corpus through both translators, by occurrence. ``Parses'' is judged by
-this paper's PromQL grammar (\S\ref{sec:grammars}), which is independent of both. Our
+this paper's PromQL grammar (\S\ref{sec:grammars}), which predates both translators'
+output and is tuned to neither --- but it is this paper's own instrument rather than
+Prometheus, and neither figure has been put to a Prometheus parser at corpus scale. Our
 two rows sum to $99.9\%$ rather than $100\%$: the $8$ occurrences \S\ref{sec:grammars}'s
 Datadog grammar does not parse reach neither translator's input.}
 \label{tab:baseline}
@@ -486,6 +511,30 @@ disagreement is measured between two artefacts by the same authors. That is a st
 signal about the inference, which ought to agree with them and does not, and no evidence
 about how often it fails on the metrics this repository never mentions --- $736$
 occurrences, which Remark~\ref{rem:type-measured} counts but cannot check.
+
+\paragraph{The grammar and the implementation order were fitted to this corpus.}
+Nothing here is held out, and the three places it matters should be named together.
+Grammar v2 is v1 plus every production the corpus showed was missing
+(\S\ref{sec:datadog-inference}), and Table~\ref{tab:parse-coverage} measures the size of
+that fit rather than hiding it: $92.9\%$ of distinct instantiated Datadog queries parsed
+before the corpus was consulted and $99.9\%$ after. The translator's feature set is the
+$25$ features that appear in some query it translates. And \S\ref{sec:staircase}'s
+implementation order is a greedy maximum-coverage order computed \emph{over this
+corpus}. So $\kappa=96.6\%$ is a resubstitution estimate: it is coverage after
+development was driven by these dashboards, and the honest reading of it is ``what this
+corpus asks for, once someone has read it'' rather than ``what a dashboard estate should
+expect''. The one-decimal place is a property of the arithmetic, not a claim to that
+precision out of sample.
+
+It bears on \S\ref{sec:baseline} hardest, and in the direction that favours this paper:
+OpenObserve's translator never saw this corpus, while this paper's grammar was extended
+until it parsed it, so the $96.7\%$ against $94.7\%$ of that comparison is an in-sample
+number beside an out-of-sample one. The remedy is a held-out split --- a disjoint set of
+dashboards, or a later commit of the same repository, with the grammar and the translator
+frozen --- and it is the obvious next measurement rather than one this paper makes. What
+can be said without it is that the gap codes name structural constructs, which do not
+look like the kind of thing a second corpus would eliminate, and that the $0.1\%$
+residual is one undocumented construct rather than a tail of them.
 
 \paragraph{Everything here is about the query layer.}
 What we measure is the cost of rewriting saved queries, and \S\ref{sec:discussion}'s

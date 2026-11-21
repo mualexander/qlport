@@ -36,10 +36,17 @@ concrete --- and the fourth carries $10$ of those with no bound at all.
 the shortfall matters more than its size: coverage against implementation effort is a
 staircase rather than a curve, because a query translates only when every feature it uses
 is supported, while the popularity that would guide an implementation order is marginal.
-Half the work does not port half the estate. Set against another
+Effort and coverage are not proportional in either direction: six of $28$ features
+reach $1.6\%$ and the seventh reaches $29.8\%$, so stopping early is close to worthless
+while half the features reach $88.8\%$. Set against another
 vendor's translator on the same corpus, coverage by \emph{valid} output is $96.7\%$ to
 $94.7\%$ (\S\ref{sec:baseline}): the tool that refuses nothing emits less usable PromQL
-than the one that refuses $3.3\%$, which is the case for typed refusal in one line.
+than the one that refuses $3.3\%$, which is the case for typed refusal in one line ---
+though the comparison is this paper's grammar in sample against theirs out of it, and
+half their deficit is one construct: $235$ of the $457$ carry Datadog's match-all scope
+\texttt{\{*\}} into a language where \texttt{*} is multiplication. Both figures are
+coverage on the corpus this paper's grammar was fitted to, and both are judged by that
+grammar; neither is a held-out estimate.
 
 \textbf{RQ4.} No. A dashboard query does not determine its own meaning, and this is the
 answer we would now put first. Of the translations we emit, $97.0\%$ depend on a rollup

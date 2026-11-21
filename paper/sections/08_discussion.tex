@@ -105,6 +105,16 @@ $55.6\%$: a real difference, and a difference of degree. The categorical version
 available to be checked against this corpus from the beginning and was not, which makes
 it the one claim in this paper that went longest without the control it needed.
 
+The two halves of that comparison have different sources, and it runs one way.
+\S\ref{sec:threats} says the template-variable share is the figure most exposed to the
+Datadog half coming from one vendor's integration dashboards, and the $97.0\%$ is
+exposed to it for the same reason: a dashboard that must ship generically has a weaker
+reason to pin a rollup than a hand-tuned production one, so $97.0\%$ is better read as
+an upper estimate of what a customer estate would show. The conclusion survives the
+discount, because the load-bearing half is the other one --- the $55.6\%$ is measured
+over two independent PromQL sources, and it is what makes the difference one of degree
+however the Datadog share moves.
+
 A third instance arrived from an unrelated direction, which is what makes the pattern
 worth calling a property of the language rather than an artefact of two rules.
 \S\ref{sec:gaps} shows that \texttt{top(...)} \emph{is} expressible in PromQL, so it stays
