@@ -281,3 +281,39 @@ def test_the_unwritten_experiments_are_the_ones_recorded_as_unwritten():
         f"a cache that is neither cited nor recorded as owed: {sorted(on_disk - accounted)}"
     assert all((RAW / c).exists() for c in UNWRITTEN), \
         "UNWRITTEN names a cache that is not there"
+
+
+# --- remarks nothing points at ---------------------------------------------------------
+# `test_every_float_is_referenced` exempts anything that is not a table or a figure, on
+# the ground that a section earns its place by being in the document. A remark does not:
+# in the full build it sits inline where its hook is and the reader meets it in place,
+# but in the deferred build it is in an appendix, and a remark with no `\ref` anywhere is
+# then reachable only by reading that appendix front to back.
+#
+# Twenty-three of the fifty are in that state. That is a navigability fact rather than a
+# correctness one, so it is recorded rather than failed -- but it is recorded with a
+# ceiling, because the way it gets worse is one uncited remark at a time.
+
+UNCITED_REMARK_CEILING = 23
+
+_REMARK = re.compile(r"\\label\{(rem:[^}]*)\}")
+
+
+def test_the_remarks_nothing_points_at_do_not_multiply():
+    """A new remark should be cited from the body, or this number goes up.
+
+    Lowering the ceiling means giving one of them a pointer: in the deferred build that
+    is the difference between a remark a reader can reach from the claim it supports and
+    one they can only stumble on.
+    """
+    text = "\n".join(_strip(p.read_text()) for p in TEX)
+    labels = set(_REMARK.findall(text))
+    cited = set(_REF.findall(text))
+    uncited = sorted(labels - cited)
+    assert len(labels) >= 40, f"only {len(labels)} remarks found; the scan broke"
+    assert len(uncited) <= UNCITED_REMARK_CEILING, (
+        f"{len(uncited)} remarks are never referenced, over a ceiling of "
+        f"{UNCITED_REMARK_CEILING}:\n" + "\n".join(f"  {r}" for r in uncited))
+    assert len(uncited) >= UNCITED_REMARK_CEILING - 3, (
+        f"only {len(uncited)} are uncited now; lower UNCITED_REMARK_CEILING to "
+        f"{len(uncited)}")
