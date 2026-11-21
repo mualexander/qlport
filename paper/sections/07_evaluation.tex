@@ -230,6 +230,7 @@ query is not self-contained, so a translated query cannot be either.
 
 
 \iffull\input{sections/moved/eval_rollup_default}\fi
+\iffull\input{sections/moved/ing_rollup_spans}\fi
 
 The rest of the table is four codes and one conclusion.
 \texttt{COUNTER\_RESET} and \texttt{PHI\_SERIES\_START} each mark the same $23.7\%$ ---
@@ -498,8 +499,15 @@ and what kind each one is are properties of a configured pipeline rather than of
 ``Datadog''. A migration on a different path inherits the framework but not the constants.
 
 \paragraph{The automatic rollup interval is assumed, not derived.}
-$\kappa$ is computed with a $60$\,s default where a query states no interval. Datadog
-publishes the interval as a time-range $\times$ widget-type lookup table rather than a
-formula, so the assumption is systematic rather than arbitrary, but a translator for a
-specific dashboard should read the interval off the dashboard's time range instead. The
-$97.0\%$ figure in Table~\ref{tab:translation-caveats} is the size of the exposure.
+$\kappa$ is computed with a $60$\,s default where a query states no interval, and the
+$97.0\%$ figure in Table~\ref{tab:translation-caveats} is the size of that exposure. An
+earlier version of this paragraph called the assumption ``systematic rather than
+arbitrary'' because Datadog publishes the interval as a time-range lookup rather than a
+formula, which is true and is not a defence of the constant.
+Remark~\ref{rem:rollup-spans} measures the lookup at all ten spans the corpus's own
+widgets declare and finds $60$\,s at exactly one of them: four hours, which $28.3\%$ of
+those widgets ask for. The modal span is one hour at $38.3\%$, where the interval is
+$20$\,s, so the default is not merely unverified --- it is wrong for most of the corpus's
+widgets that say, and wrong by a factor of three for the commonest of them. A translator
+for a specific dashboard must read the interval off that dashboard's time range, and the
+same remark shows it cannot recover it from the response instead.

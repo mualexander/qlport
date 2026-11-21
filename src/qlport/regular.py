@@ -78,10 +78,13 @@ _SIGMA_CLASS = r"[a-z0-9_:.\-/]"
 # at no bound at all, 74 of the 84 refused occurrences become exact unions.
 #
 # The bound is two unconstrained character positions. What makes that the choice rather
-# than an arbitrary number is the corpus's own distribution: the sizes actually needed
-# are five patterns between 82 and 206, then nothing at all until $41^{2}$, which is the
-# signature of two free positions. Any bound in that gap admits exactly the same
-# patterns, so 64, 128 and 256 are the same decision; $41^{2}$ is the next different one.
+# than an arbitrary number is the corpus's own distribution: the union sizes actually
+# needed stop at 206 and then jump straight to 41**2, the signature of two free
+# positions, with nothing in between. So every bound from 206 to 41**2 - 1 admits
+# exactly the same patterns and the square is the next different decision. (64, 128 and
+# 256 are *not* one decision, as this comment claimed until the fourteenth pass: the
+# five sizes between 82 and 206 are 82, 123, 123, 200 and 206, so 64 refuses all five,
+# 128 admits three and 256 admits all of them. The gap is above 206, not above 64.)
 # It is written as the square so it moves with the alphabet. Four patterns still exceed
 # it --- 1,683, 1,968, 3,362 and 4,018 branches --- and `MAX_PRODUCT` is the separate
 # guard on the intermediate product, which binds before a third free position can.

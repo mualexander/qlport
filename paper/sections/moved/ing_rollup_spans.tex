@@ -1,0 +1,50 @@
+\begin{remark}[E18: the whole curve, against the spans the corpus declares]%
+\label{rem:rollup-spans}
+E4 read the automatic interval at five query ranges and
+Remark~\ref{rem:rollup-default-cost} argues from them. Five points are enough to say the
+interval is a function of the range and not enough to say which function --- and
+\S\ref{sec:threats} called the emitter's assumed $60$\,s ``systematic rather than
+arbitrary'' without asking how often it is right. It is answerable, because a Datadog
+widget records the span it is viewed over. The corpus's dashboards declare $460$ of
+them, in ten distinct values, and $60$\,s is the interval of exactly one:
+four hours, which is $28.3\%$ of them. The modal span is one hour at $38.3\%$, where the
+interval is $20$\,s and every translated rollup is therefore out by a factor of three.
+
+So all ten were measured, on one series of an hour's points at $10$\,s --- the interval
+depends on the range and not on the data, so an hour of backfill is enough to ask about
+a month. E4's five are re-asked as the control rather than taken on trust.
+
+\begin{center}\footnotesize
+\begin{tabular}{@{}lrrrrrrrrrr@{}}
+\toprule
+Range & \texttt{1m} & \texttt{5m} & \texttt{10m} & \texttt{15m} & \texttt{30m}
+      & \texttt{1h} & \texttt{4h} & \texttt{1d} & \texttt{1w} & \texttt{1mo} \\
+\midrule
+Reported (s) & $1$ & $2$ & $2$ & $5$ & $10$ & $20$ & $60$ & $300$ & $3{,}600$
+             & $14{,}400$ \\
+Observed (s) & $10$ & $10$ & $10$ & $10$ & $10$ & $20$ & $60$ & $300$ & $3{,}600$
+             & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The curve is monotone and all five of E4's values reappear, so nothing in
+Remark~\ref{rem:rollup-default-cost} moves and the two runs read as one table. What is
+new is the second row, and it is the part a translator has to care about.
+
+The interval a response \emph{reports} is not always the interval the series \emph{has}.
+These points were submitted $10$\,s apart, and at every range below an hour the reported
+interval is finer than that while the returned points stay $10$\,s apart: the field is
+the granularity the service resolved the request to, not a description of what came
+back. Recovering $\Delta$ from the response rather than from the dashboard is the
+obvious way to avoid the assumption this remark is about, and it does not work --- at a
+one-minute range it reads $1$ where the data is at $10$, and divides by it. What
+\texttt{ROLLUP\_DEFAULT} marks as missing from the query is missing from the answer too.
+
+The month column is blank because this run's series is $3{,}500$\,s long, so a
+month-wide window holds one bucket of it and no spacing can be observed. The reported
+$14{,}400$ stands unchecked against data, which is the honest state for that one cell
+and the reason the row is dashed rather than filled
+(\texttt{scripts\slash trial\_checks.py e18}).
+\end{remark}

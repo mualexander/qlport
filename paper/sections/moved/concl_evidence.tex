@@ -30,7 +30,7 @@ translator, run over this same corpus from a cached copy of its own client-side 
 somebody else's, and the only one whose artefact can change without notice, which is why
 the bundle is cached with its hash and the measurement is dated.
 
-Nine things are measured against the vendor itself rather than assumed: the bucket
+Eleven things are measured against the vendor itself rather than assumed: the bucket
 convention (left-closed and named by its start, the opposite of what this work assumed
 until it asked), the automatic rollup interval as a function of the query range, the
 default time aggregator of a bare query on a counter, whether a glob's \texttt{*} matches
@@ -38,13 +38,21 @@ the empty string, where \texttt{.as\_rate()} sits relative to the rollup and to 
 aggregation, what \texttt{.weighted()} computes, what \texttt{top(...)} ranks by and over
 which window, the reset policy --- read first from
 the agent's source and then put to a running agent, which agreed with the reading ---
-and, last and latest, whether a tag-value filter has any wildcard but \texttt{*}. Six
-of the nine confirmed what the paper had assumed. Three did not: the bucket convention;
+whether a tag-value filter has any wildcard but \texttt{*}, how long a scope the query
+API will accept, and, last and latest, that same rollup interval at every span the
+corpus's widgets declare rather than at five of them. Seven of the eleven confirmed what
+the paper had assumed. Three did not: the bucket convention;
 \texttt{.as\_rate()}, which turned out to divide the aggregated result rather than
 each series, and whose presence in a query turned out not to establish the metric's type
 at all, because Datadog accepts the modifier on a gauge and ignores it; and
 \texttt{.weighted()}, carried here as the largest single entry in the inexpressible
-column until the account was asked and returned the same number with the modifier and without it. One of the nine decides which column $139$ corpus occurrences belong in, and is the only one
+column until the account was asked and returned the same number with the modifier and without it. The eleventh is in neither class and is worth
+separating: measuring the rollup interval at all ten declared spans confirmed the
+vendor's behaviour exactly, including all five values an earlier run had read, and
+refuted what this paper had made of it --- that a $60$\,s default was ``systematic
+rather than arbitrary'' when it is the interval of one span in ten and of $28.3\%$ of
+the widgets that declare one. An experiment can confirm a behaviour and correct the
+claim resting on it. One of the eleven decides which column $139$ corpus occurrences belong in, and is the only one
 measured on both sides: over one workload, the candidate expression against a real
 Prometheus in $20$ cases and \texttt{top()} itself against Datadog in $22$, each
 agreeing with the documented rule throughout.

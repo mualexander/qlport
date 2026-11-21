@@ -38,7 +38,7 @@ from pathlib import Path
 import pandas as pd
 
 from qlport import corpus as c
-from qlport.regular import regex_to_globs
+from qlport.regular import MAX_UNION as R_MAX_UNION, regex_to_globs
 
 ROOT = Path.cwd() if (Path.cwd() / "paper").exists() else Path.cwd().parent
 CORPUS = ROOT / "data" / "corpus"
@@ -231,6 +231,12 @@ _existing.update({
     "nb04.glob_exists_occurrences": int(_glob_exists_o),
     "nb04.glob_exists_pct": round(_glob_exists_o / _concrete_o * 100, 1),
 })
+# The bound's justification in §6.2 is a gap in this distribution, so the edge of the
+# gap is a figure and not a remark: the largest union any corpus pattern needs below
+# MAX_UNION itself. Every bound between it and MAX_UNION admits the same patterns, which
+# is what makes the square a decision rather than a round number.
+_below = [int(n) for n in df[df.kind == "union"].n_globs if n < R_MAX_UNION]
+_existing["nb04.largest_union_below_the_bound"] = max(_below)
 for _kind, _name in (("single", "glob_single"), ("union", "glob_union"),
                      ("none", "no_glob")):
     _d, _o = share(_kind)

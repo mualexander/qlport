@@ -232,18 +232,17 @@ EXPERIMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("datadog/e14.json", ("E14",)),
     ("datadog/e15.json", ("E15",)),
     ("datadog/e16.json", ("E16",)),
+    ("datadog/e17_scope_length.json", ("E17",)),
+    ("datadog/e18.json", ("E18",)),
 )
 
 # Run, cached, and not yet written up. An experiment costs a live account and a window
 # in which to use it, so one that reaches no section bought nothing -- the same argument
-# `test_every_generated_artifact_is_in_the_paper` makes about a table. These two are
-# owed a block in the appendix: E17 found the scope-length limit (6,656 literals
-# accepted, 7,168 refused, HTTP 431 from the front end rather than the query language),
-# and E18 the rollup span.
-UNWRITTEN: frozenset[str] = frozenset({
-    "datadog/e17_scope_length.json",
-    "datadog/e18.json",
-})
+# `test_every_generated_artifact_is_in_the_paper` makes about a table. The list is empty:
+# E17 and E18 were the last two owed and `rem:scope-length` and `rem:rollup-spans` are
+# where they landed. A new cache that reaches no section fails the test below rather
+# than joining this set, which is the point of keeping it written down at zero.
+UNWRITTEN: frozenset[str] = frozenset()
 
 
 def test_every_experiment_the_paper_cites_was_actually_run():

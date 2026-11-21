@@ -126,6 +126,7 @@
  "nb04.glob_union_distinct": 116,
  "nb04.glob_union_occurrences": 648,
  "nb04.glob_union_pct": 62.2,
+ "nb04.largest_union_below_the_bound": 206,
  "nb04.matchers": 8587,
  "nb04.no_glob_distinct": 7,
  "nb04.no_glob_occurrences": 84,

@@ -168,6 +168,12 @@ ALLOWED: dict[float, str] = {
     1760: "E7: avg_over_time of the running totals at the end of the run",
     0.994: "E7: the relative difference after half an hour",
     0.5: "E7: the relative difference at the start of the run",
+    # --- E17's superseded run, quoted so the method's own failure is on the record ----
+    4096: "the limit an earlier run of E17 published, off one HTTP 408 in a run that\n"
+          "          had already accepted 5,096. The retry and the boundary-contradiction\n"
+          "          guard that followed are why the current run reports a range",
+    5096: "the rung that run had already accepted when it reported 4,096",
+    408: "and the status it took for a refusal",
     # --- §6's own measurements, each pinned to a cache by tests/test_regular.py -------
     599: "the occurrences this paper's procedure refuses under the other reading of a\n"
          "         glob's star, against 84 under the reading E5 settled. Read off\n"
@@ -316,10 +322,14 @@ def unexplained():
     ok = _accounted()
     allowed = {round(float(v), 4) for v in ALLOWED}
     scalar = {round(float(v), 4) for v in SCALAR_ONLY}
+    # A figure with an executable derivation is better accounted for than an
+    # allowlisted one: the reason is a function of a committed source rather than a
+    # sentence. See DERIVED and CORPUS_DERIVED below.
+    derived = {round(float(v), 4) for v, _, _ in (*DERIVED, *CORPUS_DERIVED)}
     out = {}
     for key, files in _prose_figures().items():
         kind, value = key
-        if key in ok:
+        if key in ok or value in derived:
             continue
         if value in allowed and not (kind == "pct" and value in scalar):
             continue
@@ -508,6 +518,11 @@ BOUND: tuple[tuple[str, str], ...] = (
     # in twelve -- and passed, because a stale figure in the registry's own magnitude
     # range matches something. `nb04.no_glob_occurrences` is 84 and so cannot be bound;
     # it is carried by Table 5 and by the caption that counts it.
+    # The edge of the gap the bound sits above. §6.2's justification is that nothing
+    # the corpus needs falls between this and the square, so a bound anywhere in
+    # between is the same decision -- a claim about a distribution, which is why the
+    # edge is a registered figure rather than a remark.
+    ("nb04.largest_union_below_the_bound", "06_regular.tex"),
     ("nb04.concrete_occurrences", "06_regular.tex"),
     ("nb04.glob_exists_occurrences", "06_regular.tex"),
     ("nb04.glob_single_occurrences", "06_regular.tex"),
@@ -1051,21 +1066,12 @@ def test_every_derivable_figure_still_derives():
     assert not wrong, "\n".join(wrong)
 
 
-def test_every_derivable_figure_is_still_quoted_and_still_accounted():
-    """A derivation for a figure the paper no longer states is dead weight.
-
-    And one for a figure the accounting does not recognise means the two halves of this
-    file disagree about what is being checked.
-    """
+def test_every_derivable_figure_is_still_quoted():
+    """A derivation for a figure the paper no longer states is dead weight."""
     prose = {v for _, v in _prose_figures()}
-    allowed = {round(float(v), 4) for v in ALLOWED} | {
-        round(float(v), 4) for v in ALLOWED_IN}
-    accounted = {v for _, v in _accounted()}
-    for value, note, _ in DERIVED:
-        key = round(float(value), 4)
-        assert key in prose, f"{value} ({note}) is derived but no longer in the paper"
-        assert key in allowed or key in accounted, \
-            f"{value} ({note}) is derived but nothing accounts for it"
+    missing = [f"  {v} ({note})" for v, note, _ in DERIVED
+               if round(float(v), 4) not in prose]
+    assert not missing, "derived but no longer in the paper:\n" + "\n".join(missing)
 
 
 # --- figures the paper quotes as history ----------------------------------------------
@@ -1135,9 +1141,8 @@ def test_a_historical_figure_is_not_the_figure_it_supersedes():
 # notebook, bind it with BOUND, or add it here.
 
 TABLE_COINCIDENCE: frozenset[tuple[str, float]] = frozenset({
-    ("num", 1), ("num", 2), ("num", 8), ("num", 9), ("num", 11), ("num", 12),
-    ("num", 14), ("num", 17), ("num", 19), ("num", 24), ("num", 26), ("num", 32),
-    ("num", 35), ("num", 41), ("num", 55), ("num", 60), ("num", 64), ("num", 74),
+    ("num", 1), ("num", 2), ("num", 8), ("num", 9), ("num", 11), ("num", 14), ("num", 17), ("num", 19), ("num", 24), ("num", 26), ("num", 32),
+    ("num", 35), ("num", 55), ("num", 60), ("num", 64), ("num", 74),
     ("num", 91), ("num", 93), ("num", 100), ("num", 160), ("num", 208), ("num", 262),
     ("num", 266), ("num", 300), ("num", 329), ("num", 330), ("num", 1680),
     ("num", 1766), ("num", 7546), ("num", 7799), ("num", 8102), ("num", 8365),
@@ -1160,9 +1165,10 @@ def _table_only() -> dict[tuple[str, float], tuple[list[str], list[str]]]:
             key = _norm(tok, pct)
             if key:
                 tables.setdefault(key, []).append(path.stem)
+    derived = {round(float(v), 4) for v, _, _ in (*DERIVED, *CORPUS_DERIVED)}
     out = {}
     for key, files in _prose_figures().items():
-        if key not in reg and key in tables:
+        if key not in reg and key in tables and key[1] not in derived:
             out[key] = (sorted(files), sorted(set(tables[key])))
     return out
 
@@ -1185,9 +1191,13 @@ def test_the_coincidence_list_has_no_dead_entries():
 
 # How far the checking actually reaches. The number that matters is the last one: a
 # figure whose only accountant is a sentence in ALLOWED is a figure nothing recomputes,
-# and three of those were found wrong in one afternoon. It was 81 before the
-# derivations above; the ratchet keeps it from climbing back.
-UNCHECKED_CEILING = 38
+# and three of those were found wrong in one afternoon. It was 81 before the derivations
+# above and 38 after them; writing up E17 and E18 added four historical figures that
+# cannot be derived -- the limit an earlier E17 run published, the rung it had already
+# accepted, the status it misread, and the 64 KiB the transport appears to cap at -- so
+# the ceiling is 42. The ratchet is against drift, not against putting history on the
+# record: a bump needs a reason in this comment, and a reduction needs a derivation.
+UNCHECKED_CEILING = 42
 
 
 def test_the_unchecked_figures_do_not_multiply():
@@ -1232,6 +1242,44 @@ def _promql_kept() -> list[str]:
     from qlport import corpus as c
 
     return [q.text for q in _queries() if q.lang == "promql" and c.is_promql(q.text)]
+
+
+_SPANS: dict = {}
+
+
+def _live_spans() -> "object":
+    """Every `live_span` the corpus's Datadog dashboard sources declare."""
+    import collections
+
+    if not _SPANS:
+        counts: collections.Counter = collections.Counter()
+        files = set()
+        root = ROOT / "data" / "corpus" / "sources" / "integrations-core"
+
+        def walk(obj, path):
+            if isinstance(obj, dict):
+                if isinstance(obj.get("live_span"), str):
+                    counts[obj["live_span"]] += 1
+                    files.add(path)
+                for value in obj.values():
+                    walk(value, path)
+            elif isinstance(obj, list):
+                for value in obj:
+                    walk(value, path)
+
+        for candidate in sorted(root.rglob("*.json")):
+            try:
+                walk(json.loads(candidate.read_text()), candidate)
+            except (ValueError, OSError):            # not a dashboard, or unreadable
+                continue
+        _SPANS["counts"] = counts
+        _SPANS["files"] = len(files)
+    return _SPANS["counts"]
+
+
+def _live_span_files() -> int:
+    _live_spans()
+    return _SPANS["files"]
 
 
 def _counts(lang: str, which: str, texts) -> "object":
@@ -1281,10 +1329,63 @@ CORPUS_DERIVED: tuple[tuple[float, str, object], ...] = (
      lambda: len(__import__("test_corpus")._corpus_identifiers()[0])),
     (723, "and distinct grouping keys",
      lambda: len(__import__("test_corpus")._corpus_identifiers()[1])),
+    # E17: the scope-length ladder. Every rung and both edges of the boundary come off
+    # the cache, including the HTTP statuses, because an earlier run of this experiment
+    # published a limit of exactly 4,096 off one 408 and the numbers are the evidence
+    # that the limit is the transport's rather than the query language's.
+    (6656, "the longest scope the account accepted",
+     lambda: _cache("datadog/e17_scope_length.json")["boundary"]["largest_accepted"]),
+    (7168, "and the shortest it refused",
+     lambda: _cache("datadog/e17_scope_length.json")["boundary"]["smallest_refused"]),
+    (8192, "the rung the bisection started from, which is the ladder's first refusal "
+           "rather than the smallest, since the bisection then found a smaller one",
+     lambda: next(r["n"] for r in _cache("datadog/e17_scope_length.json")["rows"]
+                  if r["accepted"] is False)),
+    (6912, "and the one inside the boundary that answered 500",
+     lambda: next(r["n"] for r in _cache("datadog/e17_scope_length.json")["rows"]
+                  if r["accepted"] is None)),
+    # The status is the head of `detail`; `failure` only says the kind of failure it
+    # was, which is a distinction worth keeping since a timeout is not a refusal.
+    (431, "the status both refusals carried",
+     lambda: int(next(r["detail"] for r in
+                      _cache("datadog/e17_scope_length.json")["rows"]
+                      if r["accepted"] is False).split()[0])),
+    (500, "and the status of the inconclusive rung",
+     lambda: int(next(r["detail"] for r in
+                      _cache("datadog/e17_scope_length.json")["rows"]
+                      if r["accepted"] is None).split()[0])),
+    (58, "the request URL at the largest accepted rung, kilobytes",
+     lambda: round(next(r["url_bytes"] for r in
+                        _cache("datadog/e17_scope_length.json")["rows"]
+                        if r["n"] == 6656) / 1000)),
+    (62, "and at the smallest refused one",
+     lambda: round(next(r["url_bytes"] for r in
+                        _cache("datadog/e17_scope_length.json")["rows"]
+                        if r["n"] == 7168) / 1000)),
+    (12, "what the bound this paper fixes needs, kilobytes",
+     lambda: round(next(r["url_bytes"] for r in
+                        _cache("datadog/e17_scope_length.json")["rows"]
+                        if r["n"] == 1681) / 1000)),
+    # E18: the interval curve. The two cells the body argues from, and the span of the
+    # series, which is why the month column is dashed.
+    (14400, "the interval reported over a month-wide range",
+     lambda: _cache("datadog/e18.json")["interpretation"]
+     ["reported_by_range"]["1mo"]),
+    (3500, "the seconds of points the run submitted",
+     lambda: _cache("datadog/e18.json")["provenance"]["span"]),
     (3.15, "the Prometheus the measurements were taken against",
      lambda: float(".".join(
          _cache("topk/ranking.json")["provenance"]["prometheus_version"]
          .split(".")[:2]))),
+    # The spans the corpus's own Datadog widgets declare, which is what decides how
+    # often the emitter's assumed 60 s is the right one. §7's threats section called
+    # that default "systematic rather than arbitrary" without asking.
+    (460, "live_span values the corpus's Datadog dashboards declare",
+     lambda: sum(_live_spans().values())),
+    (38.3, "of which one hour, the modal span, is this share",
+     lambda: round(_live_spans()["1h"] / sum(_live_spans().values()) * 100, 1)),
+    (28.3, "and four hours, the only span whose interval is the assumed 60 s",
+     lambda: round(_live_spans()["4h"] / sum(_live_spans().values()) * 100, 1)),
 )
 
 

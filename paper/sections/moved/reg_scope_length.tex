@@ -1,0 +1,32 @@
+\begin{remark}[E17: how long a scope the service will accept]\label{rem:scope-length}
+$B$ is a claim about what somebody will maintain, and the sentence above would be worth
+little if the service refused scopes well below it: the bound would then be the vendor's
+and not this paper's, and \S\ref{sec:glob-corpus}'s refusals would rest on a limit
+nobody had looked for. So it was asked. A single metric with one tag, queried as
+$k \in (v_1,\dots,v_n)$ over a ladder of $n$, each rung submitted twice --- once with a
+list containing the tag's actual value and once with a list of the same length that does
+not --- so that a rung counts as accepted only if the service parsed the scope
+\emph{and} applied it, returning the series in the first case and nothing in the second.
+
+The ladder is accepted to $n=6{,}656$ and refused from $n=7{,}168$, bisected from an
+initial refusal at $8{,}192$. Both refusals are HTTP $431$, \texttt{Request Header
+Fields Too Large}, at a request URL of about $58$ to $62$ kilobytes --- the shape of a
+front end with a $64$ KiB cap on the request line rather than of a query language with
+an opinion about disjunction. Nothing in the refusal mentions the scope. The bound this
+paper fixes needs $|\Sigma|^{2}=1{,}681$ literals and a URL of $12$ kilobytes, about a
+fifth of what the service accepted, so $B$ binds for the reason \S\ref{sec:glob-unions}
+gives and not because the vendor would have bound it first.
+
+Three readings of the result are available and only one of them is the paper's. The
+limit is on the transport, so a body-carrying request might not have it; the experiment
+did not try one, and the claim is therefore about the query API this corpus's queries
+would travel over. The $500$ returned at $n=6{,}912$, inside the bracketed boundary, is
+why the boundary is reported as a range rather than a point: a run that took it for a
+refusal would have published a limit of exactly $4{,}096$, which an earlier run of this
+same experiment did, off one HTTP $408$ in a run that had already accepted $5{,}096$.
+And the four controls are what separate a refusal for size from a refusal for syntax:
+a scope matching the stored tag returns the series, one that does not returns nothing,
+and the two malformed scopes come back as parse errors naming the rule that failed, so
+an empty answer at the top of the ladder could not have been mistaken for a limit
+(\texttt{scripts\slash probe\_scope\_length.py}).
+\end{remark}

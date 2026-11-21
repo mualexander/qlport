@@ -143,8 +143,20 @@ so boundedness is what stops the question from being trivial --- and it is not o
 matter of taste. By Corollary~\ref{cor:no-glob} no glob denotes $\Sigma^{+}$, yet
 $\bigcup_{c\in\Sigma}L(c*)=\Sigma^{+}$, so the non-empty values \emph{are} a finite union
 of globs: one for every character of the alphabet. A scope is a piece of text somebody
-maintains, so a union of a million branches is not a translation. We fix $B=64$ and
-report anything needing more as a refusal, naming the bound.
+maintains, so a union of a million branches is not a translation.
+
+We fix $B=|\Sigma|^{2}$ --- two unconstrained character positions --- and report anything
+needing more as a refusal, naming the bound. What makes that the choice rather than a
+round number is the corpus's own distribution. The union sizes this corpus actually needs
+stop at $206$ and then jump straight to $|\Sigma|^{2}$, the signature of two free
+positions; nothing in between occurs at all. So every bound from $206$ up to
+$|\Sigma|^{2}-1$ admits exactly the same patterns, and the square is the next choice that
+is a different decision rather than a different number. Writing it as the square is also
+what keeps it in step with \S\ref{sec:glob-corpus}'s alphabet. The bound is about maintenance and not about the
+service: Remark~\ref{rem:scope-length} asks a real account how long a scope it will
+accept, and the answer is about four times what $B$ needs.
+
+\iffull\input{sections/moved/reg_scope_length}\fi
 
 Whether glob-union-expressibility is decidable without a bound we leave open. The shortest-word
 argument does not transfer: each glob of a minimal union contributes its own shortest
