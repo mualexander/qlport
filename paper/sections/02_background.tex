@@ -68,15 +68,45 @@ $\bot$.
 
 Converters for this language pair in particular exist, and we have found no published
 result among them --- a negative about a literature, which is the weakest kind of claim
-this paper makes and is stated as a search rather than as a fact. Chronosphere describes the closest thing to \S\ref{sec:translation}'s method ---
+this paper makes and is stated as a search rather than as a fact
+(Remark~\ref{rem:search}). Chronosphere describes the closest thing to \S\ref{sec:translation}'s method ---
 a Datadog grammar written from scratch, queries parsed to an AST, and that AST emitted
 through the open-source Prometheus grammar --- and reports getting ``about 90\%'' of the
 way, the remainder left to hand~\citep{marcopoli2024}; what the percentage is a percentage
 of, and what a converted query is meant to preserve, are not stated. OpenObserve's
 dashboard migrator translates metric panels and metric monitors into PromQL and marks each
 object migrated, needing review, or skipped~\citep{openobserve} --- a coarse form of the
-typed failure \S\ref{sec:framework} requires, reported without counts. Neither of these is
-a criticism of the tools: a migration tool is judged by whether the dashboard comes up.
+typed failure \S\ref{sec:framework} requires, reported without counts.
+
+A third converter is closer to this paper than either, and the search behind this
+section's negative is what found it rather than a literature: a public repository,
+developed over two days in November~2026 with no accompanying publication, which
+translates Datadog dashboards and monitors into PromQL for Dash0 and reports reaching
+$92.4\%$ of $14{,}172$ distinct queries and monitors drawn from
+\texttt{DataDog/integrations-core} --- \S\ref{sec:corpus}'s own corpus
+source~\citep{dd2dash0}. Those two figures are its own and not this paper's: they are
+read out of a README cached under \texttt{data/raw/dash0/} with the commit it was taken
+from and its SHA-256, because the repository is a feature branch with open pull requests
+and a force-push would change what the live page says while changing nothing about what
+was claimed on the date recorded there. It arrives independently at three of this paper's devices. Each
+of its rules carries one of four claims --- \emph{exact}, \emph{exact-under},
+\emph{bounded}, \emph{manual} --- which is \S\ref{sec:framework}'s exactness relative to
+a stated condition in all but name; each translated item carries a ledger of the
+assumptions its claim rests on, unioned up the expression tree, which is
+\S\ref{sec:kernel-soundness}'s caveat set; and anything without a rule is refused by the
+name of the construct rather than approximated, which is \S\ref{sec:framework}'s typed
+$\bot$. It also keeps a standing list of its own rules whose only evidence is a unit
+test. That convergence is the useful part of finding it: these are not this paper's
+inventions but what the problem forces on anyone unwilling to round a translation up.
+
+What it does not publish is what leaves this paper's claims standing. There is no grammar
+for the Datadog side --- its parser is hand-written recursive descent, and the only
+published grammar it uses is Prometheus's, to check its own output --- and the
+mathematics its rule tables cite throughout, by section and theorem number, is in none of
+the repository's branches. Nor is its coverage figure comparable with $\kappa$: it counts
+output that parses, which is the one measure \S\ref{sec:baseline} reports separately for
+precisely that reason. None of these three is a criticism of the tools: a migration tool
+is judged by whether the dashboard comes up.
 It does mean the quantities this paper reports --- what is impossible rather than
 unbuilt, how often a translation rests on something the query does not say, and how
 often the resulting guess is wrong --- have no \emph{published} measurement to be set
@@ -84,6 +114,26 @@ against. They are not beyond comparison, though: OpenObserve's translator turns 
 run in the browser, so \S\ref{sec:baseline} drives it over this corpus and asks the one
 question both tools can be held to without first agreeing on semantics --- what each
 emits, and whether what it emits is PromQL.
+
+\begin{remark}[The search, since a negative about a literature is only as good as it]
+\label{rem:search}
+Run on 21~November~2026 over a general web index, in two parts: for a published grammar
+(``published grammar Datadog metrics query language formal syntax'', and variants naming
+EBNF and ANTLR), and for a published measurement of this language pair (``Datadog to
+PromQL query translation measurement coverage''). The first returned vendor and
+third-party documentation that describes query \emph{parts} in prose and examples, and no
+formal grammar for Datadog's metrics query language in any notation. The second returned
+the repository discussed above. Two limits on what that establishes. The searches that
+produced this section's other citations were made earlier in the project and their terms
+were not recorded at the time, so this is the search behind the grammar and converter
+claims and not a reconstruction of those: a search not written down is as
+free in the claim it supports as the unrecorded preconditions \S\ref{sec:discussion}
+counts, and is recoverable afterwards only by running it again, which is what happened
+here. And a general web index is not a bibliographic database: ``no
+published result'' is a statement about a search, which is why it is phrased as one
+wherever this paper makes it, in the introduction and in \S\ref{sec:grammars} and
+\S\ref{sec:conclusion} alike.
+\end{remark}
 
 The standard of proof sits in compiler verification. McCarthy and Painter proved a
 compiler for arithmetic expressions correct by relating source and target

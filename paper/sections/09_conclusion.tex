@@ -9,8 +9,8 @@
 \paragraph{The four questions.}
 \textbf{RQ1.} Both languages admit deterministic one-token-lookahead parsers, with an
 asymmetry that is itself a finding. The inferred Datadog grammar --- the first we have
-found published for that language, which is a statement about a search --- is
-conflict-free. PromQL has $2$ shift/reduce conflicts,
+found published for that language, which is a statement about a search and is reported
+as one (Remark~\ref{rem:search}) --- is conflict-free. PromQL has $2$ shift/reduce conflicts,
 both on the parenthesis that begins either a vector-matching label list or a parenthesised
 operand, and both forced by that list's optionality rather than by how we layered the
 rules; so RQ1's answer for PromQL is ``LALR(1) modulo one documented resolution'', for

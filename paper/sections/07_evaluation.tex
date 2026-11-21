@@ -466,10 +466,11 @@ emitter returns a list and theirs one string --- leaving $8{,}653$.
 \input{tables/baseline}
 \caption{The same corpus through both translators, by occurrence. ``Parses'' is judged by
 this paper's PromQL grammar (\S\ref{sec:grammars}), which predates both translators'
-output and is tuned to neither --- but it is this paper's own instrument rather than
-Prometheus, and neither figure has been put to a Prometheus parser at corpus scale. Our
-two rows sum to $99.9\%$ rather than $100\%$: the $8$ occurrences \S\ref{sec:grammars}'s
-Datadog grammar does not parse reach neither translator's input.}
+output and is tuned to neither --- and which Prometheus~3.15.0's own parser now agrees
+with on every one of the $14{,}555$ distinct expressions the two translators emit between
+them, in both directions (Remark~\ref{rem:baseline}). Our two rows sum to $99.9\%$ rather
+than $100\%$: the $8$ occurrences \S\ref{sec:grammars}'s Datadog grammar does not parse
+reach neither translator's input.}
 \label{tab:baseline}
 \end{table}
 
@@ -479,7 +480,10 @@ Their translator refuses nothing: it emits an expression for every one of the $8
 occurrences, against our $96.7\%$. But $457$ of those --- $5.3\%$ --- are not PromQL.
 $235$ carry Datadog's match-all scope \texttt{\{*\}} into a language where \texttt{*} is
 multiplication, $111$ are the Datadog text passed through unchanged, and $111$ fail for
-other reasons. Every expression we emit parses. So on the one measure both tools can be
+other reasons. Every expression we emit parses, under this paper's grammar and under
+Prometheus's: the two instruments refuse the same $386$ expressions and accept the same
+rest, so the column is not an artefact of measuring PromQL with our own ruler. So on the
+one measure both tools can be
 held to without first agreeing on semantics --- coverage by \emph{valid} output --- the
 figures are $94.7\%$ against $96.7\%$, and the translator that refuses more emits more.
 

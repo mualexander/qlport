@@ -21,12 +21,21 @@ list for those and theirs one string, so a parse check would fail ours for a rea
 is not a defect --- $117$ occurrences. And validity is judged by this paper's PromQL
 grammar, which was inferred from the Prometheus reference parser (\S\ref{sec:grammars})
 before any of this was contemplated and is not tuned to either translator's output. That
-is independence from the thing being compared and not from the thing measuring it: the
-grammar carries two conflicts resolved by preferring a shift, and neither translator's
-output has been put to a Prometheus parser at corpus scale, though a real
-Prometheus~3.15.0 is already running in six of this paper's experiments. Doing it would
-check \S\ref{sec:grammars}'s grammar against the reference implementation on $17{,}023$
-expressions, which is a measurement this paper should make and has not.
+is independence from the thing being compared and not from the thing measuring it, and an
+earlier version of this remark stopped there: it observed that the grammar carries two
+conflicts resolved by preferring a shift, that neither translator's output had been put to
+a Prometheus parser at corpus scale, and that doing so was a measurement this paper should
+make and had not --- with a real Prometheus~3.15.0 already running in six of its
+experiments, which made the omission harder to defend the longer it stood. It has now been
+made. \texttt{scripts/promtool\_parse.py} puts every expression either translator emits
+--- $14{,}555$ distinct, standing for $17{,}128$ occurrences, ours over the whole corpus
+and theirs over the held-out set --- through \texttt{promtool check rules} on that same
+build, which runs the reference parser and reports a position for each failure. The two
+instruments agree exactly: the $386$ distinct expressions \S\ref{sec:grammars}'s grammar
+rejects are the $386$ Prometheus rejects, all $7{,}272$ of ours are accepted by both, and
+no expression is accepted by one and refused by the other in either direction. The script
+asserts that agreement rather than reporting it, so a later grammar edit that drifted from
+the reference would fail the suite instead of being absorbed by it.
 
 What the comparison is not. Their tool targets OpenObserve rather than Prometheus, and
 OpenObserve's PromQL support is its own; an expression our grammar rejects might still be

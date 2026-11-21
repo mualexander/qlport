@@ -1,0 +1,11 @@
+{
+ "tool": "dash0-dashboard-migrator (dd2dash0)",
+ "repository": "https://github.com/amirgulubayli/dash0-dashboard-migrator",
+ "branch": "feature/datadog-to-dash0",
+ "commit": "db91ba976daf0dfe178c964da77cf025747be473",
+ "file": "README.md",
+ "note": "The converter's own coverage claim, quoted in paper section 2. Cached because the repository is a feature branch with open pull requests and may be force-pushed or relicensed; the figures the paper attributes to it are parsed from this file and not from the live page.",
+ "retrieved": "2026-11-21",
+ "bytes": 16136,
+ "sha256": "ecc8696fa6e3529387f7eea3bc9a2f0fad83dfe9336d0835b8a4de64d9d18546"
+}

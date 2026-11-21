@@ -294,3 +294,81 @@ def test_the_unimplemented_column_decomposes_to_its_total():
     assert sum(by_code.values()) == 287
     body = (ROOT / "paper" / "sections" / "moved" / "eval_unsupported.tex").read_text()
     assert "five codes and $287$ occurrences" in body
+
+
+# --- the two parsers, compared --------------------------------------------------------
+# §4's grammar answers "is this PromQL?" everywhere in the paper, and until the
+# fifteenth pass it answered alone. `scripts/promtool_parse.py` puts the same question
+# to Prometheus 3.15.0's own parser over every expression either translator emits. These
+# tests hold the published numbers to that cache; the agreement itself is asserted
+# inside the script, where a disagreement stops the measurement rather than being
+# reported by it.
+def _promtool() -> dict:
+    return json.loads((ROOT / "data" / "processed" / "promtool.json").read_text())
+
+
+def test_the_two_parsers_agree_on_every_expression():
+    """The claim §7.4 and rem:baseline now make. Zero is the only acceptable count."""
+    fig = _promtool()["figures"]
+    assert fig["pt.disagreements"] == 0
+    assert fig["pt.ours_rejected_exprs"] == 0
+    assert fig["pt.ours_rejected_occ"] == 0
+
+
+def test_the_checked_set_is_both_translators_whole_output(reg):
+    """A parse check over part of the output would license none of the sentences."""
+    fig = _promtool()["figures"]
+    assert fig["pt.exprs"] == fig["pt.ours_exprs"] + fig["pt.theirs_exprs"]
+    # Ours is the whole corpus: κ's own occurrence count, not the held-out subset.
+    assert fig["pt.ours_occ"] == reg["nb03.kappa_occurrences"]
+    # Theirs is the set the baseline table reports, key for key.
+    assert fig["pt.theirs_occ"] == reg["oo.emits"]
+
+
+def test_prometheus_rejects_exactly_what_the_baseline_table_calls_invalid(reg):
+    """`oo.invalid` was measured with this paper's grammar; 457 is now both verdicts.
+
+    If these ever diverge, §7.4's "not an artefact of measuring PromQL with our own
+    ruler" is false and the sentence has to go rather than be softened.
+    """
+    assert _promtool()["figures"]["pt.theirs_rejected_occ"] == reg["oo.invalid"]
+
+
+def test_the_match_all_scope_is_the_largest_single_reason():
+    """§7.4 attributes the bulk to `{*}` reaching a language where `*` multiplies."""
+    reasons = _promtool()["reasons"]
+    top, count = max(reasons.items(), key=lambda kv: kv[1])
+    assert "inside braces" in top and "'*'" in top
+    assert count == max(reasons.values()) and count > sum(reasons.values()) / 2
+
+
+def test_the_measurement_records_the_build_it_came_off():
+    """A parse verdict is a verdict of one parser version; the paper names 3.15.0."""
+    prov = _promtool()["provenance"]
+    assert prov["image"] == "prom/prometheus:v3.15.0"
+    assert prov["command"] == "promtool check rules"
+
+
+# --- another tool's figures, held to a cache ------------------------------------------
+def test_the_dash0_claim_is_read_from_the_cached_readme(reg):
+    """§2 quotes two figures this paper did not measure.
+
+    They are the converter's own, so nothing here can derive them; what can be checked
+    is that they are the ones the cached README states, and that the cache is the file
+    the manifest describes. A force-push to that branch must not be able to change what
+    the paper attributes to it, and a hand-edited cache must not pass.
+    """
+    import importlib.util
+
+    path = ROOT / "scripts" / "dash0_claims.py"
+    spec = importlib.util.spec_from_file_location("dash0_claims", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    fig = mod.figures()          # raises if the sha256 or the byte count disagrees
+    assert fig["dd0.queries_and_monitors"] == reg["dd0.queries_and_monitors"] == 14172
+    assert fig["dd0.translate_pct"] == reg["dd0.translate_pct"] == 92.4
+
+    man = json.loads((ROOT / "data" / "raw" / "dash0" / "MANIFEST.json").read_text())
+    assert man["branch"] and len(man["commit"]) == 40
+    assert man["retrieved"] == "2026-11-21"

@@ -999,9 +999,10 @@ DERIVED: tuple[tuple[float, str, object], ...] = (
     (14, "PHI_QUANTILE occurrences whose metric the repository does not declare, so "
          "the corollary's hypothesis is untested rather than shown to fail",
      lambda: 34 - 20),
-    (17023, "both translators' emitted expressions, which neither has put to a "
-            "Prometheus parser at corpus scale",
-     lambda: _reg()["oo.ours_emits"] + _reg()["oo.emits"]),
+    (17128, "both translators' emitted expressions, every one of which has now been "
+            "through Prometheus's own parser: ours over the whole corpus, theirs over "
+            "the held-out set",
+     lambda: _reg()["pt.ours_occ"] + _reg()["pt.theirs_occ"]),
     (1681, "the branch bound, which is the square of it", lambda: len(_alphabet()) ** 2),
     (3362, "and twice that, which is what `2..|5..` needs",
      lambda: 2 * len(_alphabet()) ** 2),

@@ -99,7 +99,9 @@ documentation alone; v2 adds the productions the corpus showed were missing
 collisions. Because no reference grammar is published for the language, this is a result
 and not a reproduction: the grammar of Figure~\ref{fig:productions} is, as far as we are
 aware, the first published grammar for Datadog's metrics query language, and it is
-deterministic.
+deterministic. ``As far as we are aware'' is a search and is reported as one in
+Remark~\ref{rem:search}; the converter closest to this paper parses the language with
+hand-written recursive descent and publishes no grammar for it~\citep{dd2dash0}.
 
 \subsubsection{The PromQL conflicts, and their one cause}
 \label{sec:promql-conflict}
@@ -140,9 +142,12 @@ of how far a vendor's documentation falls short of the vendor's own language.
 \subsection{Inferring the Datadog grammar}
 \label{sec:datadog-inference}
 
-PromQL has a published grammar to compare against~\citep{promql}. Datadog's metrics
-query language has none, so its grammar has to be inferred and the inference has to be
-checked. It was done in two stages and both are reported, because the gap between them
+PromQL has a published grammar to compare against~\citep{promql}, and
+\S\ref{sec:evaluation} carries the comparison out at corpus scale: over the $14{,}555$
+distinct expressions two independent translators emit, this paper's table and
+Prometheus~3.15.0's own parser accept and reject exactly the same ones
+(Remark~\ref{rem:baseline}). Datadog's metrics query language has none, so its grammar
+has to be inferred and the inference has to be checked. It was done in two stages and both are reported, because the gap between them
 is the measurement. Grammar v1 was written from the documentation and the published
 examples alone, before the corpus existed; grammar v2 is v1 plus every production the
 corpus showed was missing, each one verified twice --- the construct fails under v1 and
