@@ -198,7 +198,10 @@ ALLOWED: dict[float, str] = {
          "figure this run replaces",
     183: "superseded: the population that budgeted run was over, one pattern smaller",
     2400: "the time budget that stopped an earlier cross-check at 168 of 183, seconds",
-    4725: "what the unbudgeted cross-check took, seconds",
+    2998: "what the unbudgeted cross-check took, seconds, from the provenance of\n"
+          "          data/raw/globs/crosscheck.json. The 4,725 it replaces was an\n"
+          "          earlier unbudgeted run: the cache was re-recorded when the tag\n"
+          "          alphabet was pinned and this remark was not",
     176: "the slowest single pattern in it, seconds, timed uncontended",
     91: "and the fastest of that same four-pattern family",
     139: "three different quantities of this magnitude: nb00.top_occurrences, which\n         is registered and bound in \u00a77 and concl_evidence; the PromQL alerting\n         rules of \u00a77.1; and the \u00a74 grammar-gap count. Only the first is a\n         registry figure, so the other two ride here",
@@ -212,8 +215,6 @@ ALLOWED: dict[float, str] = {
     8: "unregistered (nb 03): unparsed occurrences",
     8102: "the PromQL population after the nine LogQL panels are dropped. It has no\n          registry key, so it is pinned instead to the generated parse-coverage table\n          by tests/test_paper_builds.py -- which is what the 8,096 this replaces\n          escaped, having been allowlisted here as though it were the live value",
     5231: "unregistered (nb 00): PromQL function occurrences, recomputed as\n          sum(corpus.function_names) over the 8,102 kept expressions. The 5,227 this\n          replaces was the pre-correction corpus; the 69% rate/irate share derived\n          from it is 69.3% either way and did not move",
-    23600: "integrations-core's declared gauge metric names, counted in §7.3 to show\n           that Corollary 2's distribution hypothesis holds for none of the 34\n           occurrences it refused. From scripts/type_declared.py's own source\n           files rather than a notebook, so it has no nb key",
-    13143: "the same census: declared count metric names",
     332: "historical: the shape count the seventh-reading fixes left, quoted in\n         rem:differential-fixes as the last step of a lineage that runs\n         325 -> 335 -> 332. The live count is 333 and the same remark now says so",
     22608: "historical: the second run's bucket comparisons, quoted beside the third\n           run's 22,692 to say the agreement did not move. The compared-occurrence\n           figure that sat here as 8,364 is now 8,365 and comes off the generated\n           table, so it no longer needs an entry",
     3.5: "unregistered: the differential's largest deviation, 3.5e-14, read off\n         data/raw/shapes/differential.json and pinned to that cache by\n         tests/test_differential_cache.py. The 2.1e-14 it replaces was the second\n         run's and went unexplained here for as long as it stood",
@@ -232,11 +233,6 @@ ALLOWED: dict[float, str] = {
         "observation of a broken run rather than a computed figure",
     11.8: "unregistered (nb 01): Datadog raw parse rate",
     6.6: "unregistered (nb 00): as_count to as_rate ratio",
-    4.5: "the glob refusals against every matcher rather than the concrete ones: "
-         "388 of nb04.matchers = 8,587, the denominator the forward direction would "
-         "have used. Stated as a derivation because the ratio has no registry key "
-         "of its own, and the 4.6 this replaces was 388/8,472 -- the matcher count "
-         "from before the scan learnt PromQL's other two string forms",
     2.7: "unregistered (nb 01): PromQL queries the first six features complete",
     1.68: "unregistered (nb 02): worst relative error under a reset",
     1.4: "unregistered (nb 03): points of kappa the disjunction rule closed",
@@ -258,7 +254,7 @@ ALLOWED: dict[float, str] = {
 # made on magnitude alone. A share and a count are different claims; a checker that
 # cannot tell them apart launders one into the other.
 SCALAR_ONLY: set[float] = {
-    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 103, 110, 111, 139, 221, 238, 723, 897, 1760, 8102, 5231, 5389, 325, 3600, 184, 2400, 4725, 168, 183, 176, 91, 1681, 3362, 599, 515, 71, 72, 0.628, 0.667, 887, 335, 1.4,
+    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 103, 110, 111, 139, 221, 238, 723, 897, 1760, 8102, 5231, 5389, 325, 3600, 184, 2400, 2998, 168, 183, 176, 91, 1681, 3362, 599, 515, 71, 72, 0.628, 0.667, 887, 335, 1.4,
 }
 
 

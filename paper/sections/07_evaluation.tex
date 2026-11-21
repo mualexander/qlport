@@ -170,8 +170,9 @@ four match-all terms and the query translates without comment.
 Corollary~\ref{cor:quantile} assumes a Datadog \emph{distribution} metric, which answers
 $\mathtt{p}NN$ from a sketch no bucketing determines. The corollary is sound and its
 hypothesis holds for none of the occurrences it refused: \texttt{integrations-core}
-declares $23{,}600$ \texttt{gauge}, $13{,}143$ \texttt{count} and $330$ \texttt{rate}
-metric names and not one \texttt{distribution}, and none of the $34$ is one. The refusal
+declares $23{,}597$ \texttt{gauge}, $13{,}140$ \texttt{count} and $330$ \texttt{rate}
+metric names, three that two integrations declare incompatibly, and not one
+\texttt{distribution}; none of the $34$ is one. The refusal
 fires on seeing \texttt{p}$NN$\texttt{:} and never tests what the corollary requires.
 \texttt{SCOPE\_EMPTY\_VALUE} ($5$) went with it: Prometheus drops an empty-valued label
 at ingest, so no database it holds --- and so no image of $\phi_\rho$ --- distinguishes
