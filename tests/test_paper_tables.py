@@ -203,3 +203,67 @@ def test_the_sources_table_accounts_for_the_whole_corpus(reg):
     # The Datadog row is the population kappa is measured over.
     datadog = next(r for r in rows("corpus_sources") if r[1] == "Datadog")
     assert num(datadog[4]) == reg["nb03.corpus_occurrences"]
+
+
+# --- the rollup-span join ---------------------------------------------------------------
+# E18's lookup and the corpus's declared spans were both on disk for some time before
+# anything joined them, which is how RQ4 came to be answered for one of its two defaults
+# and not the other. These checks are the ones the join script cannot make about itself:
+# that its two populations exhaust the code it partitions, that its factors are the
+# lookup's own arithmetic, and that the count it starts from is the one the translation
+# table reports.
+
+def _spans() -> dict:
+    return json.loads((ROOT / "data" / "processed" / "rollup_spans.json").read_text())
+
+
+def test_the_declared_and_undeclared_spans_exhaust_rollup_default(reg):
+    """The partition is the whole code, not a sample of it."""
+    s = _spans()["figures"]
+    assert s["rs.span_declared_occurrences"] + s["rs.span_undeclared_occurrences"] == \
+        s["rs.rollup_default_occurrences"]
+    assert s["rs.span_declared_right"] + s["rs.span_declared_wrong"] == \
+        s["rs.span_declared_occurrences"]
+    for key in ("rs.rollup_default_occurrences", "rs.span_declared_wrong",
+                "rs.span_declared_occurrences"):
+        assert reg[key] == s[key], key
+
+
+def test_the_rollup_default_count_is_the_one_the_translation_table_reports():
+    """8,217 has to be the weight of the code in `translations.csv`, not a re-count."""
+    import csv
+
+    path = ROOT / "data" / "processed" / "translations.csv"
+    weight = sum(
+        int(row["n"]) for row in csv.DictReader(path.open())
+        if row["outcome"] == "translated"
+        and "ROLLUP_DEFAULT" in (row["caveats"] or "").split("|"))
+    assert weight == _spans()["figures"]["rs.rollup_default_occurrences"]
+
+
+def test_only_four_hours_takes_the_emitted_interval():
+    """The whole point of the join: 60 s is one row of E18's lookup and no other.
+
+    If a second span ever reads 60 s, the paragraph in §7.6 that calls the default
+    "wrong for two in three" is measuring something else.
+    """
+    spans = _spans()
+    lookup = spans["lookup"]
+    sixty = sorted(k for k, v in lookup.items() if v == 60)
+    assert sixty == ["4h"], sixty
+    for span, row in spans["by_span"].items():
+        assert row["interval_seconds"] == lookup[span], span
+        assert row["factor"] == round(60.0 / lookup[span], 3), span
+    right = spans["by_span"]["4h"]["occurrences"]
+    assert right == spans["figures"]["rs.span_declared_right"]
+
+
+def test_the_extrapolation_is_labelled_and_is_an_upper_estimate(reg):
+    """It is the measured share carried across, and the prose must not call it measured."""
+    s = _spans()["figures"]
+    share = s["rs.span_declared_wrong"] / s["rs.span_declared_occurrences"]
+    assert s["rs.extrapolated_wrong"] == round(s["rs.rollup_default_occurrences"] * share)
+    body = (ROOT / "paper" / "sections" / "07_evaluation.tex").read_text()
+    assert "extrapolation and should not be read as a second measurement" in body
+    # And it must exceed what was measured, or it is not the thing being warned about.
+    assert s["rs.extrapolated_wrong"] > s["rs.span_declared_wrong"]

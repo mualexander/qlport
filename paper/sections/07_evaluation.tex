@@ -577,3 +577,47 @@ $20$\,s, so the default is not merely unverified --- it is wrong for most of the
 widgets that say, and wrong by a factor of three for the commonest of them. A translator
 for a specific dashboard must read the interval off that dashboard's time range, and the
 same remark shows it cannot recover it from the response instead.
+
+RQ4 asks how often a translator supplying the obvious default is wrong, and the two
+halves of that answer were on disk for some time before being joined. For the metric
+type it is $6.5\%$ and $491$ occurrences, quoted throughout this paper. For the
+interval, joining each translated occurrence to its widget's declared span and that span
+to E18's lookup gives this. Of the $8{,}217$ occurrences carrying
+\texttt{ROLLUP\_DEFAULT}, $496$ --- $6.0\%$ --- sit in a widget that pins its own span,
+and for those the emitter's $60$\,s is the interval Datadog would have used for $164$ of
+them and the wrong one for $332$, or $66.9\%$. The modal declared span is one hour,
+$205$ occurrences, where Datadog rolls up at $20$\,s and the emitted \texttt{[60s]}
+answers a question three times as wide; the declared spans run from one minute, where
+$60$\,s is $60$ times too wide, to one week, where it is a fifty-ninth of the interval
+Datadog uses. Every span the corpus declares is one E18 measured, so none of this rests
+on interpolation.
+
+The other $7{,}721$ cannot be decided, and the distinction matters. A widget that pins
+nothing takes its span from the dashboard's time selector, which is a viewer's choice at
+view time and appears nowhere in the JSON --- so for those the default is
+\emph{unverified}, which is what this paragraph claimed, rather than wrong. Carrying the
+measured share across all $8{,}217$ would give about $5{,}500$, and that number is an
+extrapolation and should not be read as a second measurement: an author who pins a span
+is doing something deliberate, most plausibly because the dashboard's default was wrong
+for that panel, so the widgets that declare are if anything enriched for disagreement
+and $5{,}500$ is an upper estimate.
+
+What this does not do is move $\kappa$. The $60$\,s is a placeholder for computing
+coverage, every occurrence that carries it is counted as translated either way, and
+Theorem~\ref{thm:kernel}'s hypothesis~(2) is stated in terms of ``the width of the
+bucket Datadog reports'' rather than in terms of $60$\,s --- so a translator that reads
+the span off the dashboard discharges the hypothesis and emits a different constant,
+without changing which queries translate. The figure is the size of the correction a
+real per-dashboard translator makes.
+
+Set beside the type default, the comparison is not the one the raw counts suggest. The
+type default is wrong for $491$ of the occurrences it can settle and the interval default
+for $332$, which look alike --- but the denominators differ by an order of magnitude. The
+type can be settled for $89.5\%$ of translated occurrences and is wrong for $6.5\%$ of
+them; the interval can be settled for $6.0\%$ and is wrong for $66.9\%$ of those. So the
+default this paper has been quoting is the one that is almost always right on a
+population that is almost always decidable, and the one it had not computed is wrong two
+times in three on a population that is almost never decidable. That is the sharper
+statement of \S\ref{sec:discussion}'s claim that the language pillar is the heavier of
+the two: not that it produces more errors, but that it is the one a translator cannot
+check.

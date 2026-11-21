@@ -174,5 +174,17 @@
  "oo.parses": 8196,
  "oo.passthrough": 346,
  "oo.substantive_note": 2706,
- "oo.substantive_note_pct": 31.3
+ "oo.substantive_note_pct": 31.3,
+ "rs.extrapolated_wrong": 5500,
+ "rs.modal_declared_span_factor": 3.0,
+ "rs.modal_declared_span_occurrences": 205,
+ "rs.rollup_default_occurrences": 8217,
+ "rs.span_declared_occurrences": 496,
+ "rs.span_declared_pct_of_rollup_default": 6.0,
+ "rs.span_declared_right": 164,
+ "rs.span_declared_right_pct": 33.1,
+ "rs.span_declared_wrong": 332,
+ "rs.span_declared_wrong_pct": 66.9,
+ "rs.span_undeclared_occurrences": 7721,
+ "rs.span_unknown_to_e18": 0
 }

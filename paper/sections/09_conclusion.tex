@@ -68,6 +68,15 @@ would drive it down; the number that is about design rather than about our infer
 the $736$ occurrences naming metrics the repository does not declare at all, where
 nothing outside the query settles the question either. $\kappa$ counts all of them as
 translations.
+
+The interval assumption is checkable far less often and wrong far more: a widget may pin
+its own span, $496$ of the $8{,}217$ occurrences carrying \texttt{ROLLUP\_DEFAULT} sit in
+one that does, and the $60$\,s a translator supplies is wrong for $332$ of those --- two
+in three, and three times too wide at the modal span. Where the type can be settled for
+$89.5\%$ of translated occurrences and is wrong for $6.5\%$, the interval can be settled
+for $6.0\%$ and is wrong for $66.9\%$. Neither moves $\kappa$, and that is the point of
+reporting both: the assumption a translator can audit is the one that is nearly always
+right, and the assumption it cannot audit is the one that is usually wrong.
 Coverage and correctness differ, by a measured amount, and no coverage number could have
 told us: a query that does not fix its own meaning parses and translates like any
 other.

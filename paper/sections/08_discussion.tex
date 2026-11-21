@@ -153,6 +153,19 @@ can or cannot say. The directional barrier of \S\ref{sec:ingestion} was argued a
 information; this is what it costs in practice, in the direction the paper calls
 cheap.
 
+The language pillar has a price too, and it is the one this section was slowest to
+compute. Joining each translated occurrence to its widget's declared span and that span
+to E18's lookup (\S\ref{sec:threats}) puts a number on the interval default where there
+had only been an exposure: of the $8{,}217$ occurrences carrying
+\texttt{ROLLUP\_DEFAULT}, $496$ sit in a widget that pins its own span, and the emitted
+$60$\,s is wrong for $332$ of those --- two in three, and three times too wide at the
+modal span of one hour. The two defaults are not alike in the way the counts suggest.
+The type can be settled for $89.5\%$ of translated occurrences and is wrong for $6.5\%$;
+the interval can be settled for $6.0\%$ and is wrong for $66.9\%$. So the ingestion
+pillar produces the errors a translator can find, and the language pillar produces the
+ones it cannot: a widget that pins no span has no span to read, and nothing in the query,
+the response or the repository supplies it.
+
 What survives is narrower than the claim this section opened with and still worth
 making: a PromQL expression names its own window where a Datadog query has nowhere to
 name one, even though half the PromQL panels here decline to use the slot. The switching cost here is therefore not that the target cannot say what the source
