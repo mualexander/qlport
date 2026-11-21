@@ -394,14 +394,27 @@ def rate_witness() -> tuple[float, float]:
 
 
 def test_rate_is_not_phi_invariant_and_here_is_why():
+    """The corollary and its appendix have to agree about the warm class.
+
+    They did not, for eleven passes: the corollary asserted invariance on
+    $\\mathcal{C}_{\\mathrm{warm}}$ while the appendix three lines later reported the
+    witness that refutes it. So this test is not only that the witness reproduces --- it
+    is that the corollary denies the warm class rather than granting it, which is the
+    half no reader of the appendix alone would have caught.
+    """
     clipped, unclipped = rate_witness()
     assert (clipped, unclipped) == (0.628, 0.667), (clipped, unclipped)
     body = _environment(SECTIONS / "03b_ingestion.tex", "corollary", "cor:rate")
-    assert "durationToZero" in body.replace("\\", "")
-    # The corollary's positive half names the class, and the remark withdraws it.
+    flat = body.replace("\\", "")
+    assert "durationToZero" in flat
+    # The corollary names the warm class to deny it, not to grant it.
     assert r"\mathcal{C}_{\mathrm{warm}}" in body
-    withdrawal = (SECTIONS / "moved" / "ing_rate_disc.tex").read_text()
-    assert "inadmissible on" in withdrawal and "0.628" in withdrawal
+    assert "either" in flat, "the corollary must refuse the warm class too"
+    # The withdrawn positive half read "It *is* phi-invariant on the class C_warm".
+    assert "invariant on the class" not in flat, "the withdrawn positive half is back"
+    witness = (SECTIONS / "moved" / "ing_rate_disc.tex").read_text()
+    assert "0.628" in witness and "durationToZero" in witness
+    assert "no series begins inside the window" in witness
 
 
 def test_the_clip_the_witness_turns_on_is_in_the_model():

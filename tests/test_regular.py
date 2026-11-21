@@ -771,8 +771,12 @@ def test_the_alphabet_is_the_one_the_corpus_writes():
 
     So the corpus is censused rather than trusted. The documentation's set and the
     corpus's are asserted equal in both directions: no value uses a character outside
-    `TAG_ALPHABET`, and no character of `TAG_ALPHABET` goes unused, which is the half
-    that would catch an alphabet quietly widened to make a pattern decide.
+    `TAG_ALPHABET`, and no character of `TAG_ALPHABET` goes unused.
+
+    This census is over *Datadog tag values*. It says nothing about the PromQL patterns
+    the module decides, 34 of which write literals outside the set -- see
+    `test_the_out_of_alphabet_patterns_are_counted`, which is the check this one was
+    wrongly credited with being for eleven passes.
 
     `*` is set aside because it is the glob wildcard rather than a character of a
     value; `rem:glob-constructs` is the measurement that Datadog's filter grammar has
@@ -885,3 +889,46 @@ def test_the_counterfactual_rows_add_up_to_its_tallies(star_reading):
     moved = [r for r in rows if r["taken"] != r["other"]]
     assert len(moved) == star_reading["moved"]["distinct"]
     assert sum(r["occurrences"] for r in moved) == star_reading["moved"]["occurrences"]
+
+
+def test_the_out_of_alphabet_patterns_are_counted():
+    """How many decided patterns write literals $\\Sigma$ does not contain.
+
+    `TAG_ALPHABET` is substituted for the class `.` denotes and nothing else, so a
+    pattern's own literals are decided as written. That is sound -- both sides of the
+    equivalence are read the same way -- but it means the universe is not $\\Sigma$ for
+    every pattern, and §6 now says so with these counts rather than implying otherwise.
+
+    The upper-case ones carry the consequence: Datadog lower-cases a tag value on
+    ingest, so the glob this module proposes for `LIST|GET` is exact as an equivalence
+    of languages and matches nothing in any Datadog database.
+    """
+    import csv
+    import string
+
+    from qlport.regular import TAG_ALPHABET
+
+    root = Path(__file__).resolve().parent.parent
+    path = root / "data" / "processed" / "regex_glob.csv"
+    rows = list(csv.DictReader(path.open()))
+    sigma = set(TAG_ALPHABET)
+    noise = set("[],' \"")
+    upper, upper_occ, other, other_occ = 0, 0, 0, 0
+    for row in rows:
+        if row["kind"] == "none":
+            continue
+        literals = set(re.sub(r"[*]", "", row["globs"] or "")) - sigma - noise
+        if not literals:
+            continue
+        if literals <= set(string.ascii_uppercase):
+            upper += 1
+            upper_occ += int(row["occurrences"])
+        else:
+            other += 1
+            other_occ += int(row["occurrences"])
+
+    assert (upper, upper_occ) == (33, 130)
+    assert (other, other_occ) == (1, 3)
+    total = sum(int(r["occurrences"]) for r in rows)
+    assert total == 1041
+    assert round(100 * (upper_occ + other_occ) / total, 1) == 12.8

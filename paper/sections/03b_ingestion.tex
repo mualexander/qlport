@@ -202,15 +202,20 @@ than \texttt{UNSUPPORTED\_FUNCTION}: an earlier draft filed them under a missing
 operator, which named the wrong obstruction and put them in the same row as work that
 had simply not been done.
 
-\begin{corollary}[\texttt{rate} is inadmissible in general]\label{cor:rate}
-PromQL \texttt{rate} is not $\phi_\rho$-invariant on $\mathcal{D}$. When a series begins
-inside the window, Prometheus limits start-of-window extrapolation using the absolute
-first sample value $v_1$ --- the documentation says only that the calculation
-extrapolates to the ends of the range~\citep{promql}; the dependence on $v_1$ is in the
-implementation, where the quantity is named \texttt{durationToZero} --- and $v_1$ is erased by
-$\phi_\rho$. It
-\emph{is} $\phi_\rho$-invariant on the class $\mathcal{C}_{\mathrm{warm}}$ of databases
-in which no counter series begins within a window being evaluated.
+\begin{corollary}[\texttt{rate} is inadmissible]\label{cor:rate}
+PromQL \texttt{rate} is not $\phi_\rho$-invariant on $\mathcal{D}$, and not on the class
+$\mathcal{C}_{\mathrm{warm}}$ of databases in which no counter series begins within a
+window being evaluated either. Prometheus limits start-of-window extrapolation by the
+point at which the counter would have reached zero, and computes that from the
+\emph{absolute} value $v_1$ of the first sample inside the window --- the documentation
+says only that the calculation extrapolates to the ends of the range~\citep{promql}; the
+dependence on $v_1$ is in the implementation, where the quantity is named
+\texttt{durationToZero} --- and $\phi_\rho$ erases absolute values. Two databases
+differing by a constant offset therefore have equal $\phi_\rho$ images and different
+\texttt{rate} readings, with no series beginning inside the window in either
+(\apref{app:proofs}). Any class on which \texttt{rate} \emph{is} invariant has to be
+defined by the absolute values $\phi_\rho$ discards, so it cannot be recognised from
+what Datadog retains.
 \end{corollary}
 \iffull\input{sections/moved/ing_rate_disc}\fi
 \subsubsection{Two exact forms}

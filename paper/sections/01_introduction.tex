@@ -51,7 +51,7 @@ no Datadog translation \emph{at all}, for reasons of information rather than syn
 
 \paragraph{What we did.}
 We inferred a grammar for each language and checked each for conflicts, finding
-Datadog's conflict-free and PromQL's LALR(1) only modulo two documented resolutions; defined an
+Datadog's conflict-free and PromQL's LALR(1) modulo one documented resolution; defined an
 intermediate representation with a denotation; built a translator that lowers Datadog
 queries into it and emits PromQL, refusing with a named gap code rather than guessing;
 proved the translations exact under stated preconditions and verified the PromQL side
@@ -88,9 +88,10 @@ is why it took all of them to find it, and why the coverage result comes second 
 although it came first in the work.
 
 Going from Datadog to PromQL, $96.6\%$ of query occurrences translate, and the shortfall
-is \emph{all} unfinished work: nothing in the corpus is beyond reach. The $3.3\%$
+is \emph{all} unfinished work: no query in the corpus is beyond reach. The $3.3\%$
 carrying a gap code is code this translator has not written and the $0.1\%$ beside it
-does not parse, with a ceiling of $99.9\%$ once the first is written. Reaching an empty column took six retractions, so
+does not parse, with a ceiling of $99.9\%$ once the first is written. Reaching an empty column took eight corrections, six of which emptied a row of the
+gap catalogue, so
 \S\ref{sec:discussion} treats the zero as the least certain number here rather than the
 most. That ceiling carries a condition it usually travels without: $139$ of
 those $287$ occurrences are \texttt{top(...)}, whose PromQL form needs the dashboard's

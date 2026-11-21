@@ -1,24 +1,28 @@
 
 \inlineonly{\noindent}%
-Corollary~\ref{cor:rate}'s positive half is weaker than an earlier version of it
-claimed, and the
-reason is worth recording because it is a fact about Prometheus rather than about
-$\phi$. The claim was that on $\mathcal{C}_{\mathrm{warm}}$ ``the remaining inputs to the
-extrapolation --- the increase over the window and the sample spacing --- all survive
-$\phi_\rho$''. They do not exhaust the inputs: when the computed increase is positive,
-\texttt{rate} derives a \texttt{durationToZero} from the \emph{absolute value} of the
-first sample inside the window, and $\phi_\rho$ erases absolute values exactly as it
-erases $v_1$. Two databases differing by a constant offset therefore have equal
-$\phi_\rho$ images and different \texttt{rate} readings. The witness is small enough to
-state: four samples $15$\,s apart inside a $60$\,s window, rising by $10$ each time, so
-$\phi_\rho$ is three deltas of $10$ wherever the counter starts. At a first value of $1$
-the \texttt{durationToZero} clip binds and the start-of-window extrapolation is cut to
-$1.5$\,s; at $4$ it does not bind and the full $5$\,s to the window edge is used. The
-readings are $0.628$ and $0.667$ --- and the dependence is confirmed against a real
-Prometheus~3.15.0 rather than against this paper's model of it. So \texttt{rate} is inadmissible on
-$\mathcal{C}_{\mathrm{warm}}$ too, and the class on which it is admissible is smaller
-than the one named here. Nothing downstream rests on it: §\ref{sec:translation} cites
-Corollary~\ref{cor:raw}, not this one, and \texttt{rate} is never emitted.
+The witness behind Corollary~\ref{cor:rate} is small enough to state, and it is worth
+stating because it is a fact about Prometheus rather than about $\phi$. Four samples
+$15$\,s apart inside a $60$\,s window, rising by $10$ each time, so $\phi_\rho$ is three
+deltas of $10$ wherever the counter starts and no series begins inside the window. At a
+first value of $1$ the \texttt{durationToZero} clip binds and the start-of-window
+extrapolation is cut to $1.5$\,s; at $4$ it does not bind and the full $5$\,s to the
+window edge is used. The readings are $0.628$ and $0.667$ --- and the dependence is
+confirmed against a real Prometheus~3.15.0 rather than against this paper's model of it.
+
+\noindent
+Two earlier versions of the corollary were wrong about this, and the second way is the
+one worth recording. The first claimed that on $\mathcal{C}_{\mathrm{warm}}$ ``the
+remaining inputs to the extrapolation --- the increase over the window and the sample
+spacing --- all survive $\phi_\rho$''. They do not exhaust the inputs, which is what the
+witness above shows. The second was this appendix: the witness was measured, written up
+here, and the conclusion drawn correctly --- and the corollary three lines above it went
+on asserting invariance on $\mathcal{C}_{\mathrm{warm}}$ for eleven further passes, so
+the paper stated a claim and its refutation on facing pages. That is the failure mode
+\S\ref{sec:discussion} catalogues, found in this paper's own prose rather than in its
+instruments: a correction is only made where it is carried to everything that rests on
+it. Nothing else rested on this one --- \S\ref{sec:translation} cites
+Corollary~\ref{cor:raw}, not this one, and \texttt{rate} is never emitted --- which is
+why it survived so long.
 
 \noindent
 Corollary~\ref{cor:rate} is worth stating carefully, because it marks the limit of what
@@ -28,4 +32,3 @@ reads an absolute value, and even where it is admissible it is not exact, since
 extrapolating to the window edges computes a different quantity from the bucket sum
 Datadog reports. Admissibility rules candidates out; exactness has to be established
 separately.
-

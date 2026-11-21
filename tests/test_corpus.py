@@ -217,6 +217,7 @@ def test_every_detectable_feature_is_documented():
         ("datadog", "max:a{*}, min:b{*}, avg:c{*}"),
         ("datadog_formula", "default_zero(query1) / query2 * 100 + $v"),
         ("datadog_formula", "query1"),
+        ("datadog_formula", "autosmooth(query1) / ewma_3(query2)"),
         ("promql", 'sum by (ns) (rate({__name__=~"a",b!~"c",d!="e",f="g"}[$__rate_interval] offset 1h)) '
                    '/ on(ns) group_left(j) count without (x) (y) > bool 3'),
         ("promql", "a / ignoring(x) b"),

@@ -38,7 +38,9 @@ from pathlib import Path
 import pandas as pd
 
 from qlport import corpus as c
-from qlport.regular import MAX_UNION as R_MAX_UNION, regex_to_globs
+from qlport.regular import (
+    MAX_UNION as R_MAX_UNION, TAG_ALPHABET as R_TAG_ALPHABET, regex_to_globs,
+)
 
 ROOT = Path.cwd() if (Path.cwd() / "paper").exists() else Path.cwd().parent
 CORPUS = ROOT / "data" / "corpus"
@@ -245,6 +247,37 @@ for _kind, _name in (("single", "glob_single"), ("union", "glob_union"),
         f"nb04.{_name}_occurrences": int(_o),
         f"nb04.{_name}_pct": round(_o / _concrete_o * 100, 1),
     })
+# How many decided patterns write literals Sigma does not contain. The decider
+# substitutes Sigma for the class `.` denotes and leaves literals as written, so these
+# are decided over Sigma plus their own literals. The verdicts are sound -- both sides
+# read the same way -- but the universe is not Sigma for all 184, which §6.4 said it
+# was for eleven passes. The upper-case ones carry the consequence: Datadog lower-cases
+# on ingest, so their globs match nothing in any Datadog database.
+import string as _string  # noqa: E402
+
+_sigma = set(R_TAG_ALPHABET)
+_noise = set("[],' \"")
+_oa_up_d = _oa_up_o = _oa_other_d = _oa_other_o = 0
+for _row in df[df.kind != "none"].itertuples():
+    _lit = set(re.sub(r"[*]", "", _row.globs or "")) - _sigma - _noise
+    if not _lit:
+        continue
+    if _lit <= set(_string.ascii_uppercase):
+        _oa_up_d += 1
+        _oa_up_o += int(_row.occurrences)
+    else:
+        _oa_other_d += 1
+        _oa_other_o += int(_row.occurrences)
+_existing.update({
+    "nb04.out_of_alphabet_distinct": _oa_up_d + _oa_other_d,
+    "nb04.out_of_alphabet_occurrences": _oa_up_o + _oa_other_o,
+    "nb04.out_of_alphabet_pct": round((_oa_up_o + _oa_other_o) / _concrete_o * 100, 1),
+    "nb04.out_of_alphabet_upper_distinct": _oa_up_d,
+    "nb04.out_of_alphabet_upper_occurrences": _oa_up_o,
+})
+print(f"{_oa_up_d + _oa_other_d} patterns / {_oa_up_o + _oa_other_o} occurrences "
+      f"write literals outside the alphabet ({_oa_up_d} upper-case only)")
+
 _QF.write_text(json.dumps(_existing, indent=1, sort_keys=True) + "\n")
 print(f"wrote {_QF.relative_to(ROOT)}")
 for _k in sorted(k for k in _existing if k.startswith("nb04.")):

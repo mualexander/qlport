@@ -293,7 +293,8 @@ supplies when it invokes this lemma.)
 \iffull\input{sections/moved/tr_mangling}\fi
 
 \begin{theorem}[Kernel soundness]\label{thm:kernel}
-Let $q\in\mathcal{K}$ with $E(L(q))=(p,C)$, and let $t$ be an evaluation time. If
+Let $q\in\Lang(G_{\mathrm{DD}})$ be a Datadog query whose lowering lands in the
+kernel, $L(q)\in\mathcal{K}$, let $E(L(q))=(p,C)$, and let $t$ be an evaluation time. If
 \begin{enumerate}
 \item $t$ is a multiple of $\Delta$, and the emitted expression is evaluated at
       $u(t)=t+\Delta-\eta$ for an $\eta$ inside Proposition~\ref{prop:offset}'s bound,
@@ -330,7 +331,7 @@ that definition the kernel is exact along $u(t)=t+\Delta-\eta$.
 \end{theorem}
 
 \noindent
-The six numbered hypotheses are exactly the elements
+The six numbered hypotheses carry exactly the seven codes
 of $C$; the injectivity and the lookback are not, and that asymmetry is worth stating rather than hiding in
 the list. Those two are conditions on the \emph{target deployment} ---
 on which identifiers collide once mangled, and on how the server is configured --- and
@@ -423,8 +424,9 @@ with it on $\overline{k}$, keeps $u$'s labels, and requires at most one such $v$
 \iffull\input{sections/moved/tr_pq_matching_pf}\fi
 
 \begin{theorem}[Arithmetic soundness]\label{thm:arith}
-Let $q\in\mathcal{A}$ with $E(L(q))=(p,C)\neq\bot$, suppose every kernel subterm of
-$q$ satisfies the hypotheses of Theorem~\ref{thm:kernel} at $t$, and suppose they all
+Let $q\in\Lang(G_{\mathrm{DD}})$ with $L(q)\in\mathcal{A}$ and
+$E(L(q))=(p,C)\neq\bot$, suppose every kernel subterm of $L(q)$
+satisfies the hypotheses of Theorem~\ref{thm:kernel} at $t$, and suppose they all
 carry the same $\Delta$. Then
 $\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,u(t))$ for the
 common $u(t)=t+\Delta-\eta$, and $C$ is

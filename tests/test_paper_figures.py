@@ -1143,7 +1143,7 @@ def test_a_historical_figure_is_not_the_figure_it_supersedes():
 # notebook, bind it with BOUND, or add it here.
 
 TABLE_COINCIDENCE: frozenset[tuple[str, float]] = frozenset({
-    ("num", 1), ("num", 2), ("num", 8), ("num", 9), ("num", 11), ("num", 14), ("num", 17), ("num", 19), ("num", 24), ("num", 26), ("num", 32),
+    ("num", 1), ("num", 2), ("num", 8), ("num", 9), ("num", 11), ("num", 14), ("num", 17), ("num", 24), ("num", 26), ("num", 32),
     ("num", 35), ("num", 55), ("num", 60), ("num", 64), ("num", 74),
     ("num", 91), ("num", 93), ("num", 100), ("num", 160), ("num", 208), ("num", 262),
     ("num", 266), ("num", 300), ("num", 329), ("num", 330), ("num", 1680),
@@ -1200,7 +1200,7 @@ def test_the_coincidence_list_has_no_dead_entries():
 # accepted, the status it misread, and the 64 KiB the transport appears to cap at -- so
 # the ceiling is 42. The ratchet is against drift, not against putting history on the
 # record: a bump needs a reason in this comment, and a reduction needs a derivation.
-UNCHECKED_CEILING = 42
+UNCHECKED_CEILING = 37
 
 
 def test_the_unchecked_figures_do_not_multiply():

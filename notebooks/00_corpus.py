@@ -445,6 +445,25 @@ _existing["nb00.formulas_distinct"] = int(_fml.text.nunique())
 for _k, _n in _ffeat.items():
     _existing[f"nb00.formula_{_k.removeprefix('FORMULA_').lower()}_pct"] = round(
         _n / len(_fml) * 100, 1)
+# The formula layer is held aside because the semantics sit in the queries, not because
+# nothing above them is inexpressible. Two counts say how far that holds: how many
+# formulas call a function at all, and how many call one PromQL has no counterpart for.
+# The second is what an earlier version of §7 asserted was zero.
+_existing["nb00.formula_calls_fn"] = int(
+    sum("FORMULA_FUNC" in c.features("datadog_formula", t) for t in _fml.text))
+_existing["nb00.formula_calls_fn_distinct"] = int(sum(
+    "FORMULA_FUNC" in c.features("datadog_formula", t) for t in _fml.text.unique()))
+_no_pq = [t for t in _fml.text if "FORMULA_NO_PROMQL" in c.features("datadog_formula", t)]
+_existing["nb00.formula_no_promql"] = len(_no_pq)
+_existing["nb00.formula_no_promql_distinct"] = len(set(_no_pq))
+# What the figure would have been with the three `offset`-expressible functions
+# counted in, which §7 states so the classification is checkable rather than
+# asserted: `week_before`, `hour_before` and `day_before` are each `offset` with a
+# fixed duration, so PromQL writes all three and they are deliberately excluded.
+_OFFSETTABLE = ("week_before", "hour_before", "day_before")
+_existing["nb00.formula_no_promql_with_offsettable"] = len(_no_pq) + int(sum(
+    any(f"{_f}(" in t for _f in _OFFSETTABLE) for t in _fml.text))
+
 # The population the filter removes, which §7 reports to say what the old shares were
 # diluted with. Recomputed from the source trees rather than from the corpus, since the
 # corpus no longer contains them.

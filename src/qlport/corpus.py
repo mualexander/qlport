@@ -418,6 +418,24 @@ def datadog_features(text: str) -> frozenset[str]:
     return frozenset(f)
 
 
+# Formula-layer functions PromQL has no counterpart for. The test applied is the one
+# §8 gives for when this paper's method applies at all --- whether the quantity is a
+# function of the database at an instant that PromQL can also write:
+#   anomalies, outliers     proprietary detectors (basic/agile/robust; DBSCAN over series)
+#   autosmooth              the service chooses the window, so the query never says it
+#   ewma_3, ewma_10         exponentially weighted means; PromQL has no EWMA
+#   calendar_shift          a DST-aware calendar offset, where `offset` takes a duration
+#   month_before            a calendar month, which is not a fixed duration
+# `forecast` is split by its second argument: the `seasonal` model has no counterpart
+# and the `linear` one is `predict_linear` up to the fitting window. `week_before`,
+# `hour_before` and `day_before` are deliberately absent --- each is `offset` with a
+# fixed duration, so PromQL writes all three.
+_NO_PROMQL_COUNTERPART = frozenset({
+    "anomalies", "outliers", "autosmooth", "ewma_3", "ewma_10",
+    "calendar_shift", "month_before",
+})
+
+
 def datadog_formula_features(text: str) -> frozenset[str]:
     """Structural features of the formula layer over named Datadog queries."""
     f: set[str] = set()
@@ -432,6 +450,10 @@ def datadog_formula_features(text: str) -> frozenset[str]:
         f.add("FORMULA_CONST")
     if TEMPLATE_VAR.search(text):
         f.add("FORMULA_VAR")
+    called = set(_DD_FUNC.findall(text))
+    if called & _NO_PROMQL_COUNTERPART or (
+            "forecast" in called and "seasonal" in text):
+        f.add("FORMULA_NO_PROMQL")
     return frozenset(f)
 
 
@@ -547,6 +569,7 @@ FEATURE_DOC: dict[str, str] = {
     "FORMULA_FUNC": "function over query references",
     "FORMULA_CONST": "numeric literal",
     "FORMULA_VAR": "template variable",
+    "FORMULA_NO_PROMQL": "calls a function PromQL has no counterpart for",
     # PromQL
     "SEL_RANGE": "range selector [d]",
     "SUBQUERY": "subquery [d:s]",

@@ -235,8 +235,33 @@ and Remark~\ref{rem:glob-constructs} is the reason to take the documentation at 
 on a question of this shape rather than to assume it. The corpus is censused rather than
 trusted: every distinct tag value in the instantiated corpus, read through this paper's
 own Datadog parser, uses only those $41$ characters, and every one of the $41$ is written
-somewhere in it. The second direction is the one worth checking, because it is what
-would catch an alphabet quietly widened until a pattern decided.
+somewhere in it.
+
+That census is over the Datadog half of the corpus, and the patterns being decided come
+from the PromQL half, which does not obey it. $34$ of the $184$ distinct patterns, $133$
+of the $1{,}041$ concrete matcher occurrences or $12.8\%$, write literal characters
+outside $\Sigma$: $33$ of them upper-case only --- \texttt{LIST|GET},
+\texttt{POST|PUT|PATCH|DELETE}, \texttt{Pending|Running} --- and \texttt{<none>|Job}
+adding angle brackets. What the decider substitutes $\Sigma$ for
+is the class \texttt{.} denotes, and it leaves literals as written, so those $34$ are
+decided over $\Sigma$ together with their own literals rather than over $\Sigma$. Both
+sides of each equivalence are read the same way, so the verdicts stand as equivalences
+of languages and Table~\ref{tab:regex-glob}'s split does not move; what does not stand
+is the sentence this paragraph used to end with, that the census in the second direction
+is what would catch an alphabet quietly widened until a pattern decided. It would not
+have, because the widening is in the literals the substitution never touches, and eleven
+passes of asking which alphabet $\Sigma$ was did not ask which alphabet the patterns
+were.
+
+The mismatch it hides is worth more than the bookkeeping. Datadog lower-cases a tag
+value on ingest, so no value in any Datadog database is \texttt{GET}, and the scope
+\texttt{k IN (GET, LIST)} that this section reports as an exact reverse translation of
+\texttt{LIST|GET} matches nothing at all. Those $130$ upper-case occurrences are
+expressible as globs and empty as queries. That is a second reverse-direction cost
+beside the refusals of Table~\ref{tab:regex-glob-reasons}, it is not a fact about globs
+--- a PromQL matcher on a mixed-case label value has no Datadog counterpart whatever the
+target construct --- and this paper does not model it: neither $\phi$ nor the matcher
+translation case-folds anything.
 
 With $\Sigma$ that set, Table~\ref{tab:regex-glob-reasons} is the part this section can
 be held to, and it has to be read against the target of \S\ref{sec:glob-unions} rather

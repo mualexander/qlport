@@ -62,10 +62,24 @@ STAR_MATCHES_EMPTY = True
 # exactly, and is censused rather than trusted: `test_the_alphabet_is_the_one_the_corpus
 # _writes` takes every distinct tag value in the instantiated corpus through this
 # project's own Datadog parser and asserts the two character sets equal in both
-# directions -- no value outside these 41, and none of the 41 unwritten. The second
-# direction is the one that would catch an alphabet widened to make a pattern decide.
+# directions -- no value outside these 41, and none of the 41 unwritten.
 # E12 is the reason to trust the documentation here, having put the adjacent claim
 # about glob constructs to the account and had it confirmed.
+#
+# That census is over *Datadog tag values*, and the patterns decided here come from the
+# PromQL half of the corpus, which does not obey it: 34 of the 184 distinct patterns,
+# 133 occurrences, write literals outside this set (33 upper-case only, `<none>|Job`
+# adding angle brackets). `_restrict_to_sigma` substitutes for the class `.` denotes and
+# leaves literals alone, so those are decided over this set *plus their own literals*.
+# Both sides of each equivalence are read the same way, so the verdicts are sound; what
+# the comment here claimed until the fifteenth pass -- that the second direction of the
+# census would catch an alphabet widened until a pattern decided -- is false, because
+# the widening is in the literals the substitution never touches.
+#
+# `test_the_out_of_alphabet_patterns_are_counted` pins the 34/133 so the share cannot
+# drift unnoticed, and §6 reports the consequence the census hid: ingest lower-cases,
+# so `k IN (GET, LIST)` matches nothing and those reverse translations are exact as
+# equivalences and empty as queries.
 TAG_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789_:./-"
 # greenery's parser wants the hyphen escaped and not final inside a class. Kept as the
 # written form of the alphabet; the decider substitutes a Charclass rather than parsing

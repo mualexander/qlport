@@ -13,8 +13,33 @@ to the queries and not to the formulas. The $11{,}628$ formulas an earlier versi
 this paragraph reported were $6{,}022$ metric ones and $5{,}606$ over log, event,
 security-signal and other requests --- and the second group is $90.1\%$ bare references,
 so it diluted every share here towards the answer the paragraph wanted. Arithmetic in the
-formula layer is nearly twice what was claimed. The conclusion survives: three quarters of
-the metric formula layer is a name, and nothing in it computes what a query cannot.
+formula layer is nearly twice what was claimed.
+
+Half the conclusion survives and half does not. Three quarters of the metric formula
+layer is a name, so the semantics do sit in the queries. What does not survive is the
+clause this paragraph used to end with --- that nothing in the formula layer computes
+what a query cannot. $834$ of the $6{,}022$ formulas, over $181$ distinct strings, call
+a function at all, and $30$ occurrences over $19$ distinct strings call one PromQL has no
+counterpart for: \texttt{anomalies} and \texttt{outliers} run proprietary detectors,
+\texttt{outliers} across series rather than within one; \texttt{autosmooth} lets the
+service choose the window, so the query does not say what it computes;
+\texttt{ewma\_3} and \texttt{ewma\_10} are exponentially weighted means, which PromQL
+has none of; and \texttt{calendar\_shift} and \texttt{month\_before} are calendar
+offsets where PromQL's \texttt{offset} takes a fixed duration. \texttt{forecast} splits
+by its second argument --- the \texttt{seasonal} model has no counterpart, the
+\texttt{linear} one is \texttt{predict\_linear} up to the fitting window. Three
+functions that look like they belong on that list do not: \texttt{week\_before},
+\texttt{hour\_before} and \texttt{day\_before} are each \texttt{offset} with a fixed
+duration, so PromQL writes all three, and counting them would have inflated the figure
+to $53$.
+
+So the formula layer is held aside because the semantics sit in the queries, which the
+shares above support, and not because nothing above them is inexpressible. $0.5\%$ of
+it is, and the reach this paper reports is a statement about the metric query language
+and not about the whole of a widget. This is the ninth correction
+\S\ref{sec:discussion} said to expect, and the first to run against the thesis rather
+than for it: the eight counted there all moved something \emph{out} of the inexpressible
+column, and this moves something in.
 
 \paragraph{What the corpus is not.}
 It is a census of \emph{published} dashboards, not of production estates. Vendor
