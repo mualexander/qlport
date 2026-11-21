@@ -29,7 +29,9 @@ v & v<u,\ \rho=\mathsf{zero}\quad\text{(restarted from $0$, as PromQL assumes)}\
 \end{cases}
 \]
 Every series that is not a counter --- a gauge, and the $\mathsf{delta}$ kind
-Definition~\ref{def:model} also admits --- maps by the identity, so $\phi_\rho$ is total
+Definition~\ref{def:model} also admits --- maps by the identity, which
+Remark~\ref{rem:rate-identity} puts to the account for the \texttt{rate} case that
+$134$ corpus occurrences rest on, so $\phi_\rho$ is total
 on $\mathcal{D}$ and the statements below may quantify over all of it.
 $\phi_\rho$ extends to databases series by series:
 $\phi_\rho(D)=\{\phi_\rho(s): s\in D\}$. The first sample is omitted. For the agent path
@@ -37,7 +39,9 @@ this paper models, that is read from the agent's source rather than from
 documentation~\citep{ddagent}, as Remark~\ref{rem:rho} describes; Datadog documents the
 same rule for its OTLP path, where a cumulative monotonic sum is differenced and the
 first point stored but omitted~\citep{ddotlp}. Every claim below names the
-$\rho$ it holds for.
+$\rho$ it holds for. One step is skipped over here and should not be: $\phi_\rho$
+differences consecutive \emph{samples} while the agent aggregates samples into the
+interval it flushes, and Remark~\ref{rem:flush} is why those coincide on this path.
 \end{definition}
 
 \iffull\input{sections/moved/ing_rho}\fi

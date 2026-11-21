@@ -41,6 +41,9 @@ in dashboards registered under a Prometheus datasource --- and are dropped rathe
 counted as PromQL the grammar fails on, leaving $22{,}894$ in three populations:
 $8{,}770$ Datadog metric queries, $8{,}102$ PromQL expressions ($7{,}867$ panels, $139$
 alerting rules, $96$ recording rules), and $6{,}022$ Datadog formula expressions.
+Three of those counts moved once the extractor was read rather than trusted, and
+Remark~\ref{rem:extraction-fixes} reports them with what the extractor still does not
+reach.
 \iffull\input{sections/moved/eval_extraction_fixes}\fi
 
 The formula population fell by nearly half for a different reason
@@ -257,12 +260,13 @@ a disagreement says the inference is wrong and not that it must be --- a dashboa
 query a metric the integration does not ship, and an operator can submit the same name as
 something else. The declaration is a sharper instrument than the query text it replaces,
 not a proof (Remark~\ref{rem:type-measured}). $\kappa$ is a coverage measure and never was
-a correctness measure, and this is the first number in the paper that says how far apart the two are
-(\apref{app:eval}).
+a correctness measure, and this is the first number in the paper that says how far apart
+the two are (Remark~\ref{rem:type-caveat}).
 
 The conclusion is the one an earlier draft of this section had backwards. That draft said
 $116$ occurrences carried \texttt{ROLLUP\_ALIGNMENT} alone and so rested on nothing but
-the evaluation grid. With \texttt{METRIC\_TYPE\_UNKNOWN} recorded the true figure is
+the evaluation grid; Remark~\ref{rem:counter-caveats} separates the two conditions that
+coincide here without being one. With \texttt{METRIC\_TYPE\_UNKNOWN} recorded the true figure is
 \emph{none} --- every one of those $116$ is an \texttt{avg} rollup --- and once the
 modifiers' evidential value is withdrawn as well, no translation in this corpus is exact
 on the strength of anything the query itself contains. That is a stronger claim than the
@@ -293,7 +297,8 @@ rollup, which aggregation, which matcher shapes --- so two queries differing onl
 metric they name are one experiment rather than two. Abstracting away the identifiers and
 nothing else, keeping everything a representative would emit differently, collapses the
 $8{,}370$ translated occurrences that are a single query to \textbf{$333$ distinct
-shapes}, instantiated as $888$ synthetic series in all --- a scale one trial account
+shapes} (Remark~\ref{rem:shape-reduction} on what the reduction is and is not),
+instantiated as $888$ synthetic series in all --- a scale one trial account
 sustains, which is why the experiment turned out not to need a reconstruction of
 somebody's production estate. The reduction is sound only if every query in a class
 translates the same way, and that is checked rather than argued: emitting all of them and
@@ -367,10 +372,12 @@ empty vector where Datadog broadcasts --- silently, since an empty result is not
 error; the two corpus occurrences now carry an explicit matching clause. None of the four
 is a gap in either language. All four are translator defects of the kind that a coverage
 number cannot see, because a wrong translation and a right one are both translations.
+What the run does not cover is Remark~\ref{rem:differential-limits}.
 
 Six systematic failures came out of this rig, three before any of those four defects was
 visible at all and three more as the run was tightened, and every one of the six was the
-harness rather than the systems: in each case a parameter was read from somewhere other
+harness rather than the systems (Remark~\ref{rem:harness-failures} lists them): in each
+case a parameter was read from somewhere other
 than the place that stated it, which is \S\ref{sec:caveats}'s sentence about a rig
 instead of a query (\apref{app:eval}). Six instrument faults to four real defects is the
 honest summary of the exercise, and a more useful lesson about differential rigs than the
@@ -443,7 +450,8 @@ under the note ``adjust interval as needed''. That is
 \S\ref{sec:dashboard-layer}'s finding reached independently by somebody who was not
 looking for it: the interval is not in the query, so a translator must be told it, record
 that it guessed, or guess quietly. Theirs guesses and mentions it in prose; ours records
-\texttt{ROLLUP\_DEFAULT} and counts it.
+\texttt{ROLLUP\_DEFAULT} and counts it. How the comparison was run, and what it is not
+evidence of, is Remark~\ref{rem:baseline}.
 
 One of the three dropped modifiers is dropped correctly. \texttt{.weighted()} computes
 nothing (Remark~\ref{rem:weighted}) --- which this paper established only after calling

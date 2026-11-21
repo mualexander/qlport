@@ -83,7 +83,8 @@ examples never show.
 Table~\ref{tab:grammar-stats} reports the constructed tables, under a strict mode the
 parser generator leaves off by default --- with it off, conflicts are resolved silently
 by preferring a shift, so a grammar that merely builds has demonstrated nothing about
-ambiguity.
+ambiguity; Remark~\ref{rem:strict-mode} also checks that the strict check is itself
+doing work.
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/grammar_stats}
@@ -104,7 +105,9 @@ deterministic.
 \label{sec:promql-conflict}
 
 \shortonly{%
-PromQL's table carries $2$ conflicts, both a shift/reduce on the left parenthesis, in
+PromQL's table carries $2$ conflicts --- two states and one cause, which
+Remark~\ref{rem:conflict-cause} separates --- both a shift/reduce on the left
+parenthesis, in
 the two states reached after \texttt{group\_left} and after \texttt{group\_right}. They
 have a single cause: the vector-matching modifiers take an \emph{optional} parenthesised
 label list, so after either of them an opening parenthesis may begin that list or may
@@ -144,8 +147,9 @@ is the measurement. Grammar v1 was written from the documentation and the publis
 examples alone, before the corpus existed; grammar v2 is v1 plus every production the
 corpus showed was missing, each one verified twice --- the construct fails under v1 and
 is explained by exactly that repair, and v2 parses the same construct with no repair at
-all. The residual, queries no combination of repairs explains, is reported rather than
-absorbed (\apref{app:proofs}).
+all. Remark~\ref{rem:inference-table} gives the repairs and how each was verified, and
+the residual --- queries no combination of them explains --- is reported rather than
+absorbed.
 
 \iffull\input{sections/moved/gr_inference_table}\fi
 
@@ -177,7 +181,7 @@ is that dashboard queries are not queries but \emph{templates} --- $88.6\%$ of D
 $82.5\%$ of PromQL query \emph{occurrences} contain at least one variable such as
 \texttt{\$host} or \texttt{\$\_\_rate\_interval}, so these two shares are counted the
 other way from the parse rates beside them, and both are the same quantity only after a
-correction (\apref{app:eval}). A translator for dashboards therefore takes a query
+correction that Remark~\ref{rem:template-shares} records. A translator for dashboards therefore takes a query
 schema, not a query, and \S\ref{sec:evaluation} measures coverage on the instantiated
 form for that reason.
 

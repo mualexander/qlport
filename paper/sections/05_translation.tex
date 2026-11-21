@@ -190,7 +190,9 @@ What the proposition rests on is where the anchors go --- Prometheus anchors an
 alternation over the whole value, which is read off a real server rather than asserted
 (\texttt{scripts\slash verify\_matchers.py}) --- and how much of the corpus the
 single-key case reaches, which turns on Datadog's \texttt{or} binding more loosely than
-its comma and on a presence branch subsuming every value (\apref{app:proofs}).
+its comma --- put to the account rather than read off the manual
+(Remark~\ref{rem:precedence}) --- and on a presence branch subsuming every value
+(\apref{app:proofs}).
 
 \iffull\input{sections/moved/tr_disjunction_detail}\fi
 
@@ -294,7 +296,9 @@ supplies when it invokes this lemma.)
 Let $q\in\mathcal{K}$ with $E(L(q))=(p,C)$, and let $t$ be an evaluation time. If
 \begin{enumerate}
 \item $t$ is a multiple of $\Delta$, and the emitted expression is evaluated at
-      $u(t)=t+\Delta-\eta$ for an $\eta$ inside Proposition~\ref{prop:offset}'s bound
+      $u(t)=t+\Delta-\eta$ for an $\eta$ inside Proposition~\ref{prop:offset}'s bound,
+      which is not the scrape interval and was once written as though it were
+      (Remark~\ref{rem:eta})
       --- not at $t$ and not at $t+\Delta$
       \hfill (\texttt{ROLLUP\_ALIGNMENT})
 \item the $\Delta$ the emitter wrote into the range selector is the width of the bucket
@@ -349,7 +353,8 @@ instance off a real server. Both are unreported either way.
 
 \inlineonly{\noindent}%
 The theorem is a statement about the \emph{kernel}, which is $95.7\%$ of the corpus and
-$99.0\%$ of what the translator emits, but not all of it. What the remainder does is
+$99.0\%$ of what the translator emits, but not all of it --- two figures rather than
+one, and Remark~\ref{rem:kernel-figures} is about the third an earlier draft quoted. What the remainder does is
 arithmetic between kernel queries, and \S\ref{sec:binop-soundness} extends the theorem
 over exactly that. The honest
 summary is that the fragment the corpus overwhelmingly uses is exact under six stated

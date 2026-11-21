@@ -204,7 +204,7 @@ reverse direction by the $62.2\%$ of occurrences a union reaches and a single gl
 not, and the construction that recovers them is the one
 Section~\ref{sec:translation} already proved for the other direction. Those counts rose late in this work, because the scanner behind them read
 only one of PromQL's three string forms and $114$ matcher occurrences sat in the other
-two (\apref{app:eval}).
+two (Remark~\ref{rem:string-forms}).
 
 \iffull\input{sections/moved/reg_string_forms}\fi
 
@@ -259,7 +259,8 @@ language.
 \texttt{5[0-9]+} would need a star that never admits a non-digit, forbidden by
 Corollary~\ref{cor:absent-char} --- not by part~(3), which is about $A^{+}$ itself and
 which \texttt{5[0-9]+} is not, its shortest word having three characters where $A^{+}$
-has words of one.
+has words of one. Remark~\ref{rem:corollary-reach} sets out how far the corollary
+reaches on its own and the two facts that carry the rest.
 
 
 \iffull\input{sections/moved/reg_corollary_reach}\fi
@@ -283,7 +284,10 @@ disagrees with the syntax-directed proposer on \emph{none} of them. It recovers 
 same glob for all $61$ of the single-glob cases, and finds no glob for all $7$ refusals
 and all $116$ unions. Nothing is left undecided: no pattern exceeds the search's own
 candidate bound, so the agreement is over the whole population rather than over a
-reachable part of it.
+reachable part of it --- though ``complete'' is relative to the dialect the search
+parses, which Remark~\ref{rem:complete-dialect} states. What the run cost, and which
+patterns cost it, is Remark~\ref{rem:crosscheck-timing}; what makes a search over
+$2^{|w|+1}$ candidates finish at all is Remark~\ref{rem:search-impl}.
 
 Every figure above rests on something Datadog does not document.
 Corollary~\ref{cor:no-glob}(2) assumed a glob's \texttt{*} matches the empty string, and
@@ -297,8 +301,8 @@ patterns, $72$ change classification and $515$ occurrences with them, every one 
 toward refusal, because a star that cannot stand for nothing cannot stand for the
 \texttt{.*} most of these patterns are built from. It was put to a real account rather
 than guessed, and the wildcard does match the empty string, so the figures above stand
-as computed (\texttt{scripts\slash trial\_checks.py e5}; \apref{app:experiments}), and
-the counterfactual is itself recorded
+as computed (\texttt{scripts\slash trial\_checks.py e5}; \apref{app:experiments}).
+Remark~\ref{rem:star-empty} gives the counterfactual in full
 (\texttt{scripts\slash star\_reading\_check.py}).
 
 \iffull\input{sections/moved/reg_crosscheck_timing}\fi

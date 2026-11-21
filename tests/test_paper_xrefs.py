@@ -290,11 +290,15 @@ def test_the_unwritten_experiments_are_the_ones_recorded_as_unwritten():
 # but in the deferred build it is in an appendix, and a remark with no `\ref` anywhere is
 # then reachable only by reading that appendix front to back.
 #
-# Twenty-three of the fifty are in that state. That is a navigability fact rather than a
-# correctness one, so it is recorded rather than failed -- but it is recorded with a
-# ceiling, because the way it gets worse is one uncited remark at a time.
+# Twenty-three of the fifty were in that state and one is now. The exception is
+# `rem:lark-priority`, which sits inside `gr_lexical` rather than beside it: a nested
+# block is included with its parent unconditionally, so it travels in both builds and a
+# reader who has reached the parent has reached it. Everything else was given a pointer
+# from the sentence making the claim it settles.
+#
+# The ceiling stays, because the way this gets worse is one uncited remark at a time.
 
-UNCITED_REMARK_CEILING = 23
+UNCITED_REMARK_CEILING = 1
 
 _REMARK = re.compile(r"\\label\{(rem:[^}]*)\}")
 
@@ -314,6 +318,8 @@ def test_the_remarks_nothing_points_at_do_not_multiply():
     assert len(uncited) <= UNCITED_REMARK_CEILING, (
         f"{len(uncited)} remarks are never referenced, over a ceiling of "
         f"{UNCITED_REMARK_CEILING}:\n" + "\n".join(f"  {r}" for r in uncited))
-    assert len(uncited) >= UNCITED_REMARK_CEILING - 3, (
+    assert len(uncited) >= UNCITED_REMARK_CEILING, (
         f"only {len(uncited)} are uncited now; lower UNCITED_REMARK_CEILING to "
         f"{len(uncited)}")
+    # And the one that is left is the nested one, not a remark that lost its pointer.
+    assert uncited == ["rem:lark-priority"], uncited
