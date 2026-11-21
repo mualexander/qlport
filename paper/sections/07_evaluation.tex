@@ -319,8 +319,8 @@ replication was the thing \S\ref{sec:threats} asked for and did not have; there 
 two, and neither changed a verdict. The second of them moved one shape out of the
 uncompared column, which is the only status any shape has changed across three runs.
 
-Three shapes of the $333$ are not compared: two carry a rollup interval the run window
-cannot hold and one returned no data on either side, and all three were in the first run
+Three shapes of the $333$ are not compared: two carry a rollup interval the run's
+half-hour of synthetic points cannot hold and one returned no data on either side, and all three were in the first run
 too. A fourth was uncompared in the second run, and resolving it is why there is a third.
 It came back \emph{unmatched} --- both systems returned data and no bucket
 could be paired, because Datadog had grouped by \texttt{host} alone where the emitted

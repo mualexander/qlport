@@ -88,9 +88,9 @@ is why it took all of them to find it, and why the coverage result comes second 
 although it came first in the work.
 
 Going from Datadog to PromQL, $96.6\%$ of query occurrences translate, and the shortfall
-is \emph{all} unfinished work: nothing in the corpus is beyond reach, and the
-$3.3\%$ that does not translate is code this translator has not written, with a ceiling
-of $99.9\%$ once it is. Reaching an empty column took six retractions, so
+is \emph{all} unfinished work: nothing in the corpus is beyond reach. The $3.3\%$
+carrying a gap code is code this translator has not written and the $0.1\%$ beside it
+does not parse, with a ceiling of $99.9\%$ once the first is written. Reaching an empty column took six retractions, so
 \S\ref{sec:discussion} treats the zero as the least certain number here rather than the
 most. That ceiling carries a condition it usually travels without: $139$ of
 those $287$ occurrences are \texttt{top(...)}, whose PromQL form needs the dashboard's
@@ -102,8 +102,8 @@ On that evidence the switching cost in the direction people travel is
 Translating is not the same as translating correctly, and the distance between them is
 measurable here. Every expression we emit assumes a metric type the query does not
 state; the repository the dashboards come from declares that type for $89.5\%$ of them,
-and our inference is wrong on $6.5\%$ of those --- $491$ occurrences, several times the
-whole inexpressible column. The translations are exact, and exact relative to context
+and our inference is wrong on $6.5\%$ of those --- $491$ occurrences, against an
+inexpressible column with nothing in it. The translations are exact, and exact relative to context
 the query omits; no coverage number can see that, which is why $\kappa$ is not this
 paper's main result (\S\ref{sec:emission}, \S\ref{sec:caveats}).
 
@@ -166,9 +166,9 @@ in both directions.
 \item \textbf{A gap catalogue, split (\S\ref{sec:gaps}).} Every refusal carries a code,
 and the catalogue separates three things most translation work runs together: what the
 target system does not \emph{hold}, what PromQL cannot \emph{say}, and what we have not
-\emph{built}. The first was the surprise: \S\ref{sec:ingestion} argues the information
-barrier runs the other way, and two Datadog constructs turn out to sit on the wrong
-side of it.
+\emph{built}. The first two were occupied for most of this paper's life and are empty at
+the end of it. Keeping them apart is what made each departure a finding rather than a
+revision, and what makes the empty column reportable at all.
 \item \textbf{Coverage on real dashboards (\S\ref{sec:evaluation}).} $\kappa$ over the
 whole corpus, by occurrence rather than by distinct string, with the implementation order
 that produced it and the features that cost the remainder.

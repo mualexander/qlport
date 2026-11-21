@@ -8,8 +8,9 @@
 
 \paragraph{The four questions.}
 \textbf{RQ1.} Both languages admit deterministic one-token-lookahead parsers, with an
-asymmetry that is itself a finding. The inferred Datadog grammar --- the first published
-grammar for that language --- is conflict-free. PromQL has $2$ shift/reduce conflicts,
+asymmetry that is itself a finding. The inferred Datadog grammar --- the first we have
+found published for that language, which is a statement about a search --- is
+conflict-free. PromQL has $2$ shift/reduce conflicts,
 both on the parenthesis that begins either a vector-matching label list or a parenthesised
 operand, and both forced by that list's optionality rather than by how we layered the
 rules; so RQ1's answer for PromQL is ``LALR(1) modulo one documented resolution'', for
@@ -21,9 +22,10 @@ Datadog query occurrences, and the soundness theorems of \S\ref{sec:kernel-sound
 \S\ref{sec:binop-soundness} between them cover every expression the translator emits, so
 nothing is shipped that is not proved. Outside the fragment, nothing is beyond reach: the
 column that held the information barriers and the expressiveness gaps is empty on this
-corpus, and all $3.3\%$ of the shortfall is work this translator has not done ---
-a ceiling of $99.9\%$, reachable, since $139$ of those occurrences are
-\texttt{top(...)}, only by a translator supplied with the dashboard's time range. In the reverse direction, on the sub-problem of tag filtering, the
+corpus, the $3.3\%$ carrying a gap code is work this translator has not done, and the
+$0.1\%$ beside it does not parse --- a ceiling of $99.9\%$, reachable, since $139$ of
+those occurrences are \texttt{top(...)}, only by a translator supplied with the
+dashboard's time range. In the reverse direction, on the sub-problem of tag filtering, the
 obstructions are theorems: a glob's language is a single word or unbounded in length,
 and with what a glob star admits three impossibility results follow, with a fourth
 generalising the last of them. With a stated bound on union size they account for
