@@ -34,6 +34,7 @@ paper:
 	@command -v pdflatex >/dev/null || { echo "pdflatex not found: sudo apt install texlive-latex-extra texlive-fonts-recommended"; exit 1; }
 	@for m in $(PAPERS); do \
 	  (cd paper && pdflatex -interaction=nonstopmode -halt-on-error $$m.tex >/dev/null \
+	    && pdflatex -interaction=nonstopmode -halt-on-error $$m.tex >/dev/null \
 	    && pdflatex -interaction=nonstopmode -halt-on-error $$m.tex >/dev/null) \
 	    || { echo "paper/$$m.tex FAILED"; exit 1; }; \
 	  echo "paper/$$m.pdf built: $$(grep -oE '[0-9]+ pages' paper/$$m.log | tail -1)"; \

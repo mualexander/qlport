@@ -50,6 +50,15 @@ expressiveness. We measure the query layer only, and the reverse direction is ev
 about tag filtering drawn from the other half of the corpus with no translator built.
 \end{abstract}
 
+% At ninety-odd pages with ten sections and three appendices, the contents are
+% navigation rather than decoration, and hyperref makes every line a link. Depth 2
+% lists sections and subsections: the paper has exactly one subsubsection, the PromQL
+% half of \S\ref{sec:promql-conflict}'s question, and it stays nested under the
+% subsection that asks it rather than appearing here as the only entry of its kind.
+\setcounter{tocdepth}{2}
+\tableofcontents
+\clearpage
+
 \input{sections/01_introduction}
 \input{sections/02_background}
 \input{sections/03_framework}

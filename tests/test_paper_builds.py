@@ -367,3 +367,26 @@ def test_the_promql_population_matches_the_parse_table():
         assert "8{,}096" not in path.read_text(), (
             f"{path.name} still quotes the pre-correction PromQL population"
         )
+
+
+@pytest.mark.parametrize("build", BUILDS)
+def test_the_build_converged(build):
+    """LaTeX's own rerun warning, which a two-pass build earns and nobody reads.
+
+    The contents pages have a length, and that length shifts every page number after
+    them. A build that typesets the contents from the pass before it finishes renders
+    numbers that predate the contents themselves --- every entry low by the length of
+    the contents, with a correct `.toc` on disk and a wrong one inside the PDF. It
+    happens only on a clean tree, which is where `make paper` runs and not where a
+    person rebuilding one section would ever see it. When this paper first gained a
+    table of contents it shipped exactly that: the contents said the introduction began
+    on page 2 and the introduction began on page 4.
+
+    LaTeX reports it in one line. This is that line, read rather than scrolled past.
+    """
+    log = _log(build)
+    stale = [m for m in ("Rerun to get", "may have changed") if m in log]
+    assert not stale, (
+        f"paper/{build}.log asks for another pass ({', '.join(stale)}): the PDF's "
+        "cross-references and table of contents are a pass behind its sources"
+    )
