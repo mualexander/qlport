@@ -760,3 +760,298 @@ def test_the_coverage_staircase_is_a_staircase():
     # And the jump that makes it a staircase rather than a curve is still there, or
     # §7.3's argument is about a different shape than the one the registry holds.
     assert max(b - a for (_, a), (_, b) in zip(steps, steps[1:])) > 20
+
+
+# --- allowlisted figures that can be derived after all --------------------------------
+# An allowlist entry records why a number is unchecked, and that is the whole of what it
+# records. It does not notice when the number stops being true. §8 said the glob
+# refusals were $4.5\%$ of every matcher for as long as the entry beside it read "388 of
+# nb04.matchers", months after the numerator became 84: the derivation was written down
+# in English, where nothing runs it. Three figures were found wrong that way in one
+# afternoon, each with an accountant sitting beside it.
+#
+# So the derivations that *can* run, do. Each entry below is the figure, a sentence, and
+# a function of something committed -- the registry, a cache under `data/raw`, a
+# generated table, or a module constant. A figure with no committed source stays in
+# ALLOWED with its reason, which is the honest state for a superseded run's count or a
+# number read off a vendor's documentation; what is not honest is leaving a division
+# there in prose.
+
+RAW = ROOT / "data" / "raw"
+
+
+def _cache(relative: str) -> dict:
+    return json.loads((RAW / relative).read_text())
+
+
+def _reg() -> dict:
+    return json.loads(REGISTRY.read_text())
+
+
+def _star_rows() -> list[dict]:
+    return _cache("globs/star_reading.json")["rows"]
+
+
+def _alphabet() -> str:
+    from qlport.regular import TAG_ALPHABET
+
+    return TAG_ALPHABET
+
+
+DERIVED: tuple[tuple[float, str, object], ...] = (
+    (7.4, "the eight misclassifications as a share of the corpus",
+     lambda: round(648 / _reg()["nb03.corpus_occurrences"] * 100, 1)),
+    (648, "and their sum, with the four disjunctions a residue of the 124",
+     lambda: 348 + 124 + 70 + 36 + 31 + 34 + 5),
+    (0.8, "points of kappa that withdrawing .weighted() closed",
+     lambda: round(70 / _reg()["nb03.corpus_occurrences"] * 100, 1)),
+    (1.4, "and points the single-key disjunction rule closed",
+     lambda: round(120 / _reg()["nb03.corpus_occurrences"] * 100, 1)),
+    (887, "translated occurrences whose declared type is not decidable",
+     lambda: _reg()["nb03.kappa_occurrences"]
+     - _reg()["nb03.type_decidable_occurrences"]),
+    (7867, "PromQL panel queries: the population less its alerting and recording rules",
+     lambda: 8102 - 139 - 96),
+    (41, "the tag alphabet", lambda: len(_alphabet())),
+    (1681, "the branch bound, which is the square of it", lambda: len(_alphabet()) ** 2),
+    (3362, "and twice that, which is what `2..|5..` needs",
+     lambda: 2 * len(_alphabet()) ** 2),
+    (3.5, "the differential's largest deviation, in units of 1e-14",
+     lambda: round(max(r["max_d"] for r in _cache("shapes/differential.json")["rows"]
+                       if r["status"] == "compared") / 1e-14, 1)),
+    (2998, "what the unbudgeted cross-check took, seconds",
+     lambda: round(_cache("globs/crosscheck.json")["provenance"]["elapsed_seconds"])),
+    (184, "the concrete patterns it re-decided",
+     lambda: _cache("globs/crosscheck.json")["provenance"]["n_concrete_regexes"]),
+    (599, "occurrences refused under the other reading of a glob's star",
+     lambda: _cache("globs/star_reading.json")["other"]["none"]["occurrences"]),
+    (515, "and occurrences that change classification between the two readings",
+     lambda: _cache("globs/star_reading.json")["moved"]["occurrences"]),
+    (72, "over this many patterns",
+     lambda: _cache("globs/star_reading.json")["moved"]["distinct"]),
+    (238, "occurrences of the patterns containing `.+`, which is what the alphabet "
+          "question is worth",
+     lambda: sum(r["occurrences"] for r in _star_rows() if ".+" in r["regex"])),
+    (21, "and how many patterns those are",
+     lambda: sum(1 for r in _star_rows() if ".+" in r["regex"])),
+    (71, "of the 74 the branch bound refuses, the two device-name alternations",
+     lambda: sum(r["occurrences"] for r in _star_rows()
+                 if r["taken"] == "none" and "mmcblk.p" in r["regex"])),
+    # E1: the scripted counter reset, read off the account rather than off the prose.
+    (103, "what Datadog stored over the reset bucket",
+     lambda: _cache("datadog/e1.json")["cases"]["to100"]["reset_bucket_observed"][0]),
+    (897, "what a raw signed difference would have stored, in magnitude",
+     lambda: -_cache("datadog/e1.json")["cases"]["to100"]
+     ["reset_bucket_predicted"]["raw"][0]),
+    (1000, "and so the counter value just before the reset",
+     lambda: _cache("datadog/e1.json")["cases"]["to100"]["reset_bucket_observed"][0]
+     - _cache("datadog/e1.json")["cases"]["to100"]["reset_bucket_predicted"]["raw"][0]),
+    (111, "the fast run's reset bucket at three samples per flush",
+     lambda: _cache("datadog/e1_fast.json")["cases"]["to100"]
+     ["reset_bucket_observed"][0]),
+    (110, "and what losing the increment sharing a flush with it would have given",
+     lambda: _cache("datadog/e1_fast.json")["cases"]["to100"]
+     ["reset_bucket_observed"][0] - 1),
+    # E7: whether a counter and a rate read alike over a window.
+    (0.5, "the relative difference at the start of the run",
+     lambda: _cache("datadog/e7.json")["summary"]["counter_first"]),
+    (0.994, "and after half an hour",
+     lambda: round(_cache("datadog/e7.json")["summary"]["counter_last"], 3)),
+    (1760, "avg_over_time of the running totals at the end of it",
+     lambda: _cache("datadog/e7.json")["summary"]["promql_counter_last"]),
+    # E9: what .weighted() computes, which is the same as what it does not.
+    (66.7, "the plain mean of the irregular series, with and without the modifier",
+     lambda: round(_cache("datadog/e9.json")["promql"]["per_series_mean"]["irregular"],
+                   1)),
+    # The declared-type census, which §7.3 once stated three too many of, twice.
+    (37070, "metric names integrations-core declares at the pinned commit",
+     lambda: sum(_cache("datadog/type_declared.json")["declared_population"].values())),
+    (23597, "of those, declared gauge",
+     lambda: _cache("datadog/type_declared.json")["declared_population"]["gauge"]),
+    (13140, "and declared count",
+     lambda: _cache("datadog/type_declared.json")["declared_population"]["count"]),
+    # The one replay bucket where the two engines differ in the last bit, which is why
+    # every exactness column in this paper has a tolerance rather than an equality.
+    (236, "the aligned replay bucket where they differ",
+     lambda: next(r["datadog"] for r in _cache("replay/dualwrite_aligned.json")["rows"]
+                  if 0 < r["d"] < 1e-12)),
+    (235.999, "and what PromQL read for it, truncated",
+     lambda: __import__("math").floor(
+         next(r["promql"] for r in _cache("replay/dualwrite_aligned.json")["rows"]
+              if 0 < r["d"] < 1e-12) * 1000) / 1000),
+)
+
+
+def test_every_derivable_figure_still_derives():
+    """A figure whose derivation can be executed must equal what it computes.
+
+    This is the check the allowlist cannot make about its own reasons. A reason is
+    prose: it can name a numerator that has moved, a denominator that has been
+    recounted, or a cache that has been re-recorded, and go on reading correctly.
+    """
+    wrong = []
+    for value, note, derive in DERIVED:
+        got = derive()
+        if round(float(got), 4) != round(float(value), 4):
+            wrong.append(f"  {value} ({note}) derives as {got}")
+    assert not wrong, "\n".join(wrong)
+
+
+def test_every_derivable_figure_is_still_quoted_and_still_accounted():
+    """A derivation for a figure the paper no longer states is dead weight.
+
+    And one for a figure the accounting does not recognise means the two halves of this
+    file disagree about what is being checked.
+    """
+    prose = {v for _, v in _prose_figures()}
+    allowed = {round(float(v), 4) for v in ALLOWED} | {
+        round(float(v), 4) for v in ALLOWED_IN}
+    accounted = {v for _, v in _accounted()}
+    for value, note, _ in DERIVED:
+        key = round(float(value), 4)
+        assert key in prose, f"{value} ({note}) is derived but no longer in the paper"
+        assert key in allowed or key in accounted, \
+            f"{value} ({note}) is derived but nothing accounts for it"
+
+
+# --- figures the paper quotes as history ----------------------------------------------
+# A historical figure is a claim about two numbers: the one that was and the one that is.
+# "$22{,}608$ buckets in the second run" is only worth printing beside the third run's
+# $22{,}692$, and it is the live half that moves. The stale half cannot go stale -- it is
+# already a record -- so nothing here could ever fail on it, which is exactly why an
+# allowlist entry for a historical value is weaker than it looks: it licenses the old
+# number for ever and says nothing about whether the sentence around it is still true.
+#
+# Each entry names the old value, the registry key holding the figure that replaced it,
+# and the file where the comparison is made. The test asks that both still appear there
+# together. If a fourth differential run moves `nb05.bucket_comparisons`, §7.4's
+# "the same $329$ of $329$ over the same $22{,}608$ buckets" becomes a comparison with
+# nothing on the other side, and this is what notices.
+
+SUPERSEDED: tuple[tuple[float, str, str], ...] = (
+    (22608, "nb05.bucket_comparisons", "07_evaluation.tex"),
+    (325, "nb05.shapes", "eval_differential_fixes.tex"),
+    (335, "nb05.shapes", "eval_differential_fixes.tex"),
+    (332, "nb05.shapes", "eval_differential_fixes.tex"),
+    (95.6, "nb03.kappa_pct", "eval_rows_fill_glob.tex"),
+    (94.2, "nb03.kappa_pct", "eval_rows_fill_glob.tex"),
+    (76.2, "nb03.caveat_metric_type_unknown_pct", "tr_gauge.tex"),
+)
+
+
+def test_every_historical_figure_is_quoted_beside_the_one_that_replaced_it():
+    reg = json.loads(REGISTRY.read_text())
+    broken = []
+    for old, key, section in SUPERSEDED:
+        assert key in reg, f"{key} supersedes {old} but is not in the registry"
+        text = _math_text(MAIN if section == "body.tex" else _section_path(section))
+        if not any(s in text for s in _spellings(old)):
+            broken.append(f"  {section} no longer states the historical {old}")
+        elif not any(s in text for s in _spellings(reg[key])):
+            broken.append(f"  {section} states {old} but not {key} = {reg[key]}, "
+                          "so the comparison has nothing on the other side")
+    assert not broken, "\n".join(broken)
+
+
+def test_a_historical_figure_is_not_the_figure_it_supersedes():
+    """A record that equals the live value is not a record of anything.
+
+    It would also pass the test above by accident, which is the failure mode worth
+    keeping out: a lineage collapses to one number and the prose still reads as though
+    it moved.
+    """
+    reg = json.loads(REGISTRY.read_text())
+    collapsed = [f"  {old} == {key}" for old, key, _ in SUPERSEDED
+                 if round(float(reg[key]), 4) == round(float(old), 4)]
+    assert not collapsed, "\n".join(collapsed)
+
+
+# --- figures accounted for by a coincidence -------------------------------------------
+# `_accounted` licenses a prose figure if any cell of any generated table carries the
+# same magnitude and the same kind. For most figures that cell is the figure's own
+# source. For these it is not: §8's $648$ misclassified occurrences were accepted
+# because `regex_glob.tex` happens to print $648$ for the occurrences a union of globs
+# covers, which is a different quantity in a different section of the paper.
+#
+# That is not a hole to close -- a table is a legitimate source and the guard cannot
+# tell which table a sentence meant -- but it is a hole to *know the size of*. These are
+# the figures whose only accountant is a table that is not about them. A new one means
+# either that a figure has lost its source or that a coincidence has been mistaken for
+# one, and both deserve a decision rather than silence: register the figure in a
+# notebook, bind it with BOUND, or add it here.
+
+TABLE_COINCIDENCE: frozenset[tuple[str, float]] = frozenset({
+    ("num", 1), ("num", 2), ("num", 8), ("num", 9), ("num", 11), ("num", 12),
+    ("num", 14), ("num", 17), ("num", 19), ("num", 24), ("num", 26), ("num", 32),
+    ("num", 35), ("num", 41), ("num", 55), ("num", 60), ("num", 64), ("num", 74),
+    ("num", 91), ("num", 93), ("num", 100), ("num", 160), ("num", 208), ("num", 262),
+    ("num", 266), ("num", 300), ("num", 329), ("num", 330), ("num", 1680),
+    ("num", 1766), ("num", 7546), ("num", 7799), ("num", 8102), ("num", 8365),
+    ("pct", 0.1), ("pct", 3.8), ("pct", 5.3), ("pct", 11.8), ("pct", 20.2),
+    ("pct", 27.4), ("pct", 71.2), ("pct", 80), ("pct", 83.6), ("pct", 91.4),
+    ("pct", 94.7), ("pct", 96.5), ("pct", 96.7), ("pct", 98.3), ("pct", 99.1),
+})
+
+
+def _table_only() -> dict[tuple[str, float], tuple[list[str], list[str]]]:
+    """Prose figures no registry key accounts for, keyed to the tables that do."""
+    reg: set[tuple[str, float]] = set()
+    for name, value in json.loads(REGISTRY.read_text()).items():
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            share = "pct" in name.rsplit(".", 1)[-1].split("_")
+            reg.add(("pct" if share else "num", round(float(value), 4)))
+    tables: dict[tuple[str, float], list[str]] = {}
+    for path in TABLES:
+        for tok, pct in _NUM.findall(re.sub(r"(?<!\\)%.*", "", path.read_text())):
+            key = _norm(tok, pct)
+            if key:
+                tables.setdefault(key, []).append(path.stem)
+    out = {}
+    for key, files in _prose_figures().items():
+        if key not in reg and key in tables:
+            out[key] = (sorted(files), sorted(set(tables[key])))
+    return out
+
+
+def test_no_new_figure_rests_on_a_table_that_is_not_about_it():
+    new = sorted(k for k in _table_only() if k not in TABLE_COINCIDENCE)
+    assert not new, "\n".join(
+        f"  {kind} {value:g} in {', '.join(_table_only()[(kind, value)][0])} "
+        f"is accounted for only by {', '.join(_table_only()[(kind, value)][1])}"
+        for kind, value in new) + (
+        "\n  Register it in a notebook, bind it with BOUND, or record the coincidence.")
+
+
+def test_the_coincidence_list_has_no_dead_entries():
+    """A figure that has since gained a source should leave this list, not sit in it."""
+    live = set(_table_only())
+    dead = sorted(k for k in TABLE_COINCIDENCE if k not in live)
+    assert not dead, f"no longer accounted for by a coincidence: {dead}"
+
+
+# How far the checking actually reaches. The number that matters is the last one: a
+# figure whose only accountant is a sentence in ALLOWED is a figure nothing recomputes,
+# and three of those were found wrong in one afternoon. It was 81 before the
+# derivations above; the ratchet keeps it from climbing back.
+UNCHECKED_CEILING = 49
+
+
+def test_the_unchecked_figures_do_not_multiply():
+    """A ratchet, not a target. Lowering it means writing another derivation."""
+    reg: set[tuple[str, float]] = set()
+    for name, value in json.loads(REGISTRY.read_text()).items():
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            share = "pct" in name.rsplit(".", 1)[-1].split("_")
+            reg.add(("pct" if share else "num", round(float(value), 4)))
+    tables = {k for k, _ in _table_only().items()} | {
+        k for k in _accounted() if k in reg} - reg
+    derived = {round(float(v), 4) for v, _, _ in DERIVED}
+    unchecked = sorted(
+        k for k in _prose_figures()
+        if k not in reg and k not in _accounted() and k[1] not in derived)
+    assert len(unchecked) <= UNCHECKED_CEILING, (
+        f"{len(unchecked)} figures rest on an allowlist sentence alone, over a ceiling "
+        f"of {UNCHECKED_CEILING}:\n" + "\n".join(f"  {k} {v:g}" for k, v in unchecked))
+    assert len(unchecked) >= UNCHECKED_CEILING - 4, (
+        f"only {len(unchecked)} are unchecked now; lower UNCHECKED_CEILING to "
+        f"{len(unchecked)} so the ratchet keeps holding")
