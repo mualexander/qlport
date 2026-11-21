@@ -42,8 +42,21 @@ scripts/           one-off fetchers (corpus download, etc.)
 
 ```
 make install     # creates .venv, editable install, registers the "qlport" Jupyter kernel
-make test        # pytest
 make notebooks   # execute every notebook end to end (regenerates figures/tables)
-make paper       # build paper/main.pdf
-make all         # test -> notebooks -> paper
+make data        # the scripts that write the rest of data/processed/
+make test        # pytest
+make paper       # build paper/main.pdf and paper/main_full.pdf
+make all         # install -> notebooks -> data -> test -> paper
 ```
+
+On a fresh checkout run them in that order. Everything under `data/processed/` is derived
+and gitignored, so a clone has none of it, and nine tests read files that `make
+notebooks` and `make data` produce between them --- run out of order they fail by having
+nothing to read rather than by disagreeing with anything. `make data` needs `docker` and
+`node`, which is why it is not a dependency of `make test`: a machine without them can
+still run the suite against data it already has.
+
+`make paper` runs `pdflatex` three times, not twice. The table of contents has a length
+of its own and that length moves every page number after it, so a two-pass build
+typesets a contents page from the pass before it finished --- correct on disk, wrong in
+the PDF. `test_the_build_converged` reads the warning LaTeX issues when that happens.

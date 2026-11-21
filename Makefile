@@ -3,7 +3,7 @@ PY      := $(VENV)/bin/python
 KERNEL  := qlport
 NOTEBOOKS := $(sort $(wildcard notebooks/[0-9]*.py))
 
-.PHONY: install test notebooks paper all clean distclean
+.PHONY: install test notebooks data paper all clean distclean
 
 # Ubuntu's system Python is "externally managed" (PEP 668), so everything runs in .venv.
 $(VENV)/.installed: pyproject.toml
@@ -25,6 +25,31 @@ notebooks: install
 	  $(PY) -m jupytext --to ipynb --set-kernel $(KERNEL) --execute "$$nb" >/dev/null || exit 1; \
 	done
 
+# Scripts that write what the tests read. data/processed/ is gitignored because it is
+# derived, so a fresh checkout has none of it: the notebooks produce most of it from the
+# corpus and these three produce the rest. Until they have run, five tests over the
+# promtool comparison and four over the rollup join have no input to read, which is a
+# failing suite on a clean clone and was so for three days before anyone noticed.
+#
+# Deliberately not a dependency of `test`. promtool_parse.py needs docker and node, and a
+# machine with neither should still be able to run the suite against data it already has
+# rather than failing at the first container. Order matters: both read
+# data/processed/translations.csv, which notebook 03 writes, so `notebooks` comes first.
+#
+# None is passed --write-registry. The registry is committed with these values in it, and
+# a reproduction run should agree with what is committed rather than quietly rewrite it;
+# pass the flag by hand when a figure is meant to move. dash0_claims.py writes nothing at
+# all -- it re-checks the cached README against its sha256 and re-reads the two figures
+# section 2 attributes to that converter.
+DATA_SCRIPTS := scripts/rollup_span_join.py scripts/promtool_parse.py scripts/dash0_claims.py
+
+data: install
+	@for s in $(DATA_SCRIPTS); do \
+	  echo "== $$s"; \
+	  $(PY) "$$s" >/dev/null || { echo "$$s FAILED"; exit 1; }; \
+	done
+	@echo "data/processed is current"
+
 # Two builds from one source: main.tex defers its apparatus to appendices, main_full.tex the
 # complete version with every appendix inline. The prose exists once and only its
 # placement differs, so the two cannot disagree.
@@ -40,7 +65,9 @@ paper:
 	  echo "paper/$$m.pdf built: $$(grep -oE '[0-9]+ pages' paper/$$m.log | tail -1)"; \
 	done
 
-all: test notebooks paper
+# A fresh checkout, in the order the dependencies actually run: the corpus becomes
+# data/processed, the scripts finish it, the suite reads it, the paper quotes it.
+all: install notebooks data test paper
 
 clean:
 	rm -f paper/*.aux paper/*.log paper/*.out paper/*.toc

@@ -213,8 +213,23 @@ def test_the_sources_table_accounts_for_the_whole_corpus(reg):
 # lookup's own arithmetic, and that the count it starts from is the one the translation
 # table reports.
 
+def _derived(name: str) -> dict:
+    """A script's cached output, insisting it is there and saying what makes it.
+
+    `data/processed/` is gitignored because everything in it is derived, so a fresh
+    checkout has none of it and these tests would otherwise fail with a
+    FileNotFoundError that names a path and no remedy. `make data` runs the scripts;
+    they read what the notebooks write, which is why both are named here.
+    """
+    path = ROOT / "data" / "processed" / name
+    assert path.exists(), (
+        f"{path.relative_to(ROOT)} is missing --- run `make notebooks && make data`"
+    )
+    return json.loads(path.read_text())
+
+
 def _spans() -> dict:
-    return json.loads((ROOT / "data" / "processed" / "rollup_spans.json").read_text())
+    return _derived("rollup_spans.json")
 
 
 def test_the_declared_and_undeclared_spans_exhaust_rollup_default(reg):
@@ -304,7 +319,7 @@ def test_the_unimplemented_column_decomposes_to_its_total():
 # inside the script, where a disagreement stops the measurement rather than being
 # reported by it.
 def _promtool() -> dict:
-    return json.loads((ROOT / "data" / "processed" / "promtool.json").read_text())
+    return _derived("promtool.json")
 
 
 def test_the_two_parsers_agree_on_every_expression():
