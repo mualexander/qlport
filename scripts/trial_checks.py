@@ -456,16 +456,24 @@ def _interpret_star(probes: dict, stored: dict, selected: dict) -> dict:
 # ------------------------------------------------------------------ E1
 
 def e1(creds: Credentials, *, dry: bool) -> dict:
-    """The reset policy. Needs Rig A (an agent container scraping a scripted endpoint).
+    """The reset policy. Lives in `scripts/reset_policy.py`, not here.
 
-    Not runnable from here, and no longer the priority: the agent source settles rho at
-    `zero` on the OpenMetrics path (docs/trial_account_checks.md, Step 0), so this is a
-    confirmation rather than a four-way discrimination. Rig A needs
-    `src/qlport/harness/expose.py` and `harness/dualwrite.py`, both still stubs.
+    E1 needs the agent in the loop, because rho is the *agent's* conversion of a
+    cumulative counter into the deltas Datadog stores: submitting deltas over
+    /api/v2/series, which every check in this file does, chooses them and so cannot
+    measure how they would have been chosen. `reset_policy.py` builds that rig -- it
+    serves its own scripted /metrics endpoint, runs a real Agent and a real Prometheus
+    against it, and writes data/raw/datadog/e1.json -- and it has been run.
+
+    This stub used to say the rig was not built and that rho rested on reading the agent
+    source. Both halves stopped being true when reset_policy.py ran, and §3.1 turns on
+    the difference: reading the agent establishes what it intends to send, not what the
+    backend stores.
     """
     raise SystemExit(
-        "e1 needs Rig A (agent + scripted /metrics endpoint), which is not built.\n"
-        "rho is settled from the agent source as `zero`; see docs/trial_account_checks.md."
+        "e1 is not run from here: it needs an agent scraping a scripted endpoint.\n"
+        "Run `.venv/bin/python scripts/reset_policy.py` instead; the cached result is\n"
+        "data/raw/datadog/e1.json and the predictions are pinned by tests/test_reset.py."
     )
 
 

@@ -166,6 +166,12 @@ invented a semantics for that string, proved something about it, and filed $31$
 occurrences as beyond the reach of any engineering. Instantiated correctly the scope is
 four match-all terms and the query translates without comment.
 
+The fix is deliberately asymmetric: in PromQL a hyphen is subtraction, so widening the
+pattern there would read \texttt{\$a-b} as one variable where it means a difference. Six
+PromQL occurrences carry the same shape and are left as written, and nothing rests on
+it --- the value sits inside a string literal, which the normaliser never enters, so
+\S\ref{sec:regular} counts all six as template-valued and never asks what they denote.
+
 \texttt{PHI\_QUANTILE} ($34$) went fifth, and it is the one that was proved.
 Corollary~\ref{cor:quantile} assumes a Datadog \emph{distribution} metric, which answers
 $\mathtt{p}NN$ from a sketch no bucketing determines. The corollary is sound and its

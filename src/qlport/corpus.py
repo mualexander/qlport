@@ -229,7 +229,10 @@ TEMPLATE_VAR = re.compile(_TMPL)
 # semantics for it, and filed 31 occurrences as beyond the reach of any engineering.
 # Every occurrence of LABEL_NAME_GLOB was this substitution. Six PromQL queries carry
 # the same shape (`$namespace-viz`); they are left alone, because there a hyphen is an
-# operator and the reading is genuinely ambiguous, and §C.1 records the residue.
+# operator and the reading is genuinely ambiguous. Nothing rests on it: all six have the
+# variable inside a string literal, which `_outside_strings` never enters, so notebook
+# 04 counts them template-valued and never asks what pattern they denote. §7.3 states
+# the asymmetry where it tells the Datadog half.
 _TMPL_DD = r"\$\{[^{}]*\}|\$[A-Za-z_][\w.-]*|\[\[[^\[\]]*\]\]"
 TEMPLATE_VAR_DD = re.compile(_TMPL_DD)
 _STRING = re.compile(r'"(?:[^"\\]|\\.)*"' r"|'(?:[^'\\]|\\.)*'")
