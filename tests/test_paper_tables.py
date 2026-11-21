@@ -267,3 +267,30 @@ def test_the_extrapolation_is_labelled_and_is_an_upper_estimate(reg):
     assert "extrapolation and should not be read as a second measurement" in body
     # And it must exceed what was measured, or it is not the thing being warned about.
     assert s["rs.extrapolated_wrong"] > s["rs.span_declared_wrong"]
+
+
+def test_the_unimplemented_column_decomposes_to_its_total():
+    """The five codes of the refused column, against the 287 the prose quotes.
+
+    The appendix described the column as "this row's 208, those four, and the 36" for as
+    long as it held three codes; the last two retractions moved their occurrences in and
+    the sentence was not updated, so the description summed to 248 against a total of
+    287. Pinned here because the error was arithmetic in prose, which no notebook reads.
+    """
+    import collections
+    import csv
+
+    rows = list(csv.DictReader(
+        (ROOT / "data" / "processed" / "translations.csv").open()))
+    by_code = collections.Counter()
+    for row in rows:
+        if row["outcome"] == "bottom":
+            by_code[row["gap"]] += int(row["n"])
+
+    assert dict(by_code) == {
+        "UNSUPPORTED_FUNCTION": 208, "FILL_INTERPOLATION": 36,
+        "PHI_QUANTILE": 34, "SCOPE_EMPTY_VALUE": 5, "SCOPE_DISJUNCTION": 4,
+    }, dict(by_code)
+    assert sum(by_code.values()) == 287
+    body = (ROOT / "paper" / "sections" / "moved" / "eval_unsupported.tex").read_text()
+    assert "five codes and $287$ occurrences" in body

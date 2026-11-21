@@ -117,8 +117,10 @@ filter is a glob, and \S\ref{sec:regular} shows a glob's language is either a si
 or unbounded in length --- from which, together with the fact that a glob star admits
 every character, it follows that no glob denotes a single arbitrary character, nor the
 non-empty values, nor a wildcard confined to part of the alphabet. A fourth result
-generalises the last of those: a language that never uses some character of the alphabet
-is no union of finitely many globs, however many branches are spent. Together with a
+generalises the last of those: an \emph{infinite} language that never uses some character
+of the alphabet is no union of finitely many globs, however many branches are spent.
+Infinite is a hypothesis and not a flourish --- a finite language omits characters and is
+a union of globs, one per word --- and this sentence dropped it for eleven passes. Together with a
 bound on union size that we choose and state, these account for every refusal in that
 section --- $8.1\%$ of the corpus's matcher occurrences whose pattern is concrete ---
 and the fourth carries $10$ of them with no bound at all.

@@ -987,6 +987,9 @@ DERIVED: tuple[tuple[float, str, object], ...] = (
     (7867, "PromQL panel queries: the population less its alerting and recording rules",
      lambda: 8102 - 139 - 96),
     (41, "the tag alphabet", lambda: len(_alphabet())),
+    (248, "what the appendix's stale three-code description of the refused column "
+          "summed to, against the 287 it was describing",
+     lambda: 208 + 4 + 36),
     (541, "tag keys only ever filtered and never grouped: what widening the census "
           "from the grouping lists to every key a matcher can name added",
      lambda: 1264 - 723),
@@ -1418,6 +1421,23 @@ CORPUS_DERIVED: tuple[tuple[float, str, object], ...] = (
     (28.3, "and four hours, the only span whose interval is the assumed 60 s",
      lambda: round(_live_spans()["4h"] / sum(_live_spans().values()) * 100, 1)),
 )
+
+
+def _vendor_dates():
+    """Every vendor cache's collection timestamp, as dates."""
+    import json
+    from datetime import datetime
+
+    out = []
+    raw = ROOT / "data" / "raw" / "datadog"
+    for path in sorted(raw.glob("*.json")):
+        doc = json.loads(path.read_text())
+        prov = doc.get("provenance") if isinstance(doc.get("provenance"), dict) else {}
+        at = prov.get("collected_at") or doc.get("collected_at")
+        if at:
+            out.append(datetime.fromisoformat(at).date())
+    assert out, "no vendor cache carries a timestamp"
+    return out
 
 
 def test_every_corpus_figure_still_comes_out_of_the_corpus():

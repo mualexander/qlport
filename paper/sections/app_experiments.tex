@@ -3,7 +3,31 @@
 Datadog does not document the behaviour several of this paper's claims rest on, so it was
 measured against a trial account and the raw responses cached under \texttt{data/raw/}.
 Each experiment below states its design, its prediction table where it has one, and what
-came back; the body cites the answers. Two of them are not API experiments:
+came back; the body cites the answers.
+
+Table~\ref{tab:vendor-provenance} says when each measurement was taken and against which
+site, generated from the caches rather than written here, because a paper measuring an
+unversioned service should date its readings: the behaviour can change without notice,
+and a reader who cannot date two figures cannot tell whether they describe one system.
+All of them fall in a five-day window, which is the argument that nothing here spans a
+change --- an argument from the dates, which is why they are printed rather than
+summarised.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/vendor_provenance}
+\caption{Every measurement taken against the vendor's API, with the cache each one
+wrote. \texttt{E7}'s second series carries a run identifier and no timestamp. The
+integration-repository census behind Remark~\ref{rem:type-measured} is not here: it reads
+published files rather than asking the account.}
+\label{tab:vendor-provenance}
+\end{table}
+
+One thing the account may itself bear on is not settled here. E4 and E18 read the
+automatic rollup interval from a single low-cardinality series, defended by the interval
+being a function of the query's time range and not of the data --- which E18 supports,
+finding the same interval at a span whether its buckets came back populated or null. But
+that is a stronger claim than one series carries, and whether a production account at
+high cardinality chooses the same intervals is not something these experiments asked. Two of them are not API experiments:
 Remark~\ref{rem:type-measured} asks the vendor's published integration repository
 instead, because what the dashboards omit is what that repository declares, and
 \S\ref{sec:replay} writes one real request trace into both systems at once. The

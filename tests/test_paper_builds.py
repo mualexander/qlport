@@ -102,11 +102,31 @@ def test_the_heading_levels_do_not_skip(build):
     assert "bookmark levels is greater than one" not in _log(build)
 
 
-def test_the_two_builds_are_the_same_length():
-    """Not a typesetting nicety: they hold the same prose, so a gap means duplication.
+def test_no_block_is_typeset_twice():
+    """What the page-count test below is a proxy for, asserted directly.
 
-    The gap was five pages when a wrapper was being pulled in twice. Allow one page for
-    the appendix headings the deferred build adds.
+    The gap it was written to catch was five pages, caused by a wrapper being pulled in
+    twice. A page count detects that only indirectly, and the indirection cost a real
+    diagnosis: as the appendices grew, the deferred build's section headings widened the
+    gap on their own and the proxy started failing on content rather than on duplication.
+    This reads the LaTeX logs instead and asserts each moved block is opened exactly
+    once per build, which is the property that actually matters.
+    """
+    import collections
+
+    for build in BUILDS:
+        opened = re.findall(r"sections/moved/([a-z0-9_]+)\.tex", _log(build))
+        assert opened, f"no moved blocks in {build}.log"
+        twice = {k: v for k, v in collections.Counter(opened).items() if v > 1}
+        assert not twice, f"{build}.pdf typesets these more than once: {twice}"
+
+
+def test_the_two_builds_are_the_same_length():
+    """A backstop on the direct check above, not the primary signal.
+
+    They hold the same prose, so the lengths should track. The deferred build promotes
+    each apparatus block to its own section, and that costs pages as the appendices
+    grow, so the bound is loose and the duplication check above is the tight one.
     """
     pages = {}
     for build in BUILDS:
@@ -114,9 +134,9 @@ def test_the_two_builds_are_the_same_length():
         assert found, f"no page count in {build}.log"
         pages[build] = int(found[-1])
     a, b = pages["main"], pages["main_full"]
-    assert abs(a - b) <= 1, (
+    assert abs(a - b) <= 3, (
         f"main.pdf is {a} pages and main_full.pdf is {b}; the same prose in both means a "
-        "gap of more than one page is something set twice, or something missing"
+        "gap this wide is something missing, or an apparatus block that moved build"
     )
 
 

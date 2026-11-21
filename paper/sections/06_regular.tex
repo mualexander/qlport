@@ -285,14 +285,21 @@ about a \emph{single} glob, and Table~\ref{tab:regex-glob} is the measurement of
 little of this corpus a single glob reaches; what they no longer do, against a union
 target over a finite alphabet, is refuse a corpus pattern on their own.
 
-What refuses is each of them together with something else. Four patterns need more
+What refuses is each of them together with something else. Four patterns are proposed a
+union of more
 branches than the bound admits: \texttt{2..|5..} is two free positions twice over at
 $3{,}362$ branches against a bound of $41^{2}$, and the two that carry $71$ of those
 $74$ occurrences are alternations over device names, each branch of which ends in
 \texttt{.+} and costs $41$. Those refusals rest on a number this paper chose and states,
 and they decide if the number is raised --- into a scope with thousands of branches in
 it, which is the sense in which the bound is about maintenance rather than about
-language.
+language. They also rest on the proposer: these are the branch counts of the union the
+syntax-directed proposal produces, and nothing below establishes that no smaller union
+denotes the same language, so ``$3{,}362$ branches'' is an upper bound on what the
+pattern costs and not a lower bound on what it needs. The paragraph on decidability
+below says the same thing in general --- a union refusal is a statement about the
+proposer --- and this sentence said ``need'' until the fifteenth pass, which claimed the
+minimality that paragraph withholds.
 \texttt{5[0-9]+} would need a star that never admits a non-digit, forbidden by
 Corollary~\ref{cor:absent-char} --- not by part~(3), which is about $A^{+}$ itself and
 which \texttt{5[0-9]+} is not, its shortest word having three characters where $A^{+}$

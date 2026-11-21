@@ -55,12 +55,23 @@ reach the ceiling below only for a translator that is told the time range, and w
 carry two more preconditions of exactly the kind \S\ref{sec:discussion} argues are the
 real switching cost.
 
-\texttt{PHI\_QUANTILE} ($34$) is one of the two information barriers this corpus raises
-in the main direction, and \S\ref{sec:ingestion} proves it rather than asserting it: a
-Datadog distribution metric answers $\mathtt{p}NN$ from a sketch of the raw observations,
-Prometheus keeps those observations bucketed with their sum and count, and no function of
-those is the quantile (Corollary~\ref{cor:quantile}). The point is not that one system is
-more precise --- a sketch is lossy too --- but that the two keep different lossy summaries
-of one stream and neither recovers the other. PromQL's \texttt{histogram\_quantile} is not
+\texttt{PHI\_QUANTILE} ($34$) is the refusal this corpus comes closest to raising as an
+information barrier in the main direction, and \S\ref{sec:ingestion} proves the
+underlying fact rather than asserting it: a Datadog distribution metric answers
+$\mathtt{p}NN$ from a sketch of the raw observations, Prometheus keeps those observations
+bucketed with their sum and count, and no function of those is the quantile
+(Corollary~\ref{cor:quantile}). The point is not that one system is more precise --- a
+sketch is lossy too --- but that the two keep different lossy summaries of one stream and
+neither recovers the other.
+
+What this remark called ``one of the two information barriers this corpus raises'' it is
+not, and the correction is \S\ref{sec:gaps}'s: the corollary's hypothesis is a
+\emph{distribution} metric, and of the $34$ occurrences $20$ name metrics the vendor's
+repository declares as something else, so the barrier does not apply to them. The
+remaining $14$ name metrics the repository does not declare at all, which leaves them
+undecided rather than blocked. So the sound reading of this refusal is a proved fact
+about sketches and bucketings, a construct that fires on \texttt{p}$NN$ without testing
+the fact's hypothesis, and $14$ occurrences where the hypothesis might hold and nothing
+here says whether it does. PromQL's \texttt{histogram\_quantile} is not
 the missing operator; it is a different approximation.
 
