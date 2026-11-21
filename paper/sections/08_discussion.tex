@@ -99,9 +99,15 @@ worth calling a property of the language rather than an artefact of two rules.
 on the engineering side of the ledger --- but the expression that denotes it needs the
 dashboard's time range twice over, once as a window and once as an \texttt{@} anchor, and
 the query states neither. That the range is load-bearing rather than cosmetic is itself
-measured: narrowing the window moves which series Datadog's own \texttt{top()} returns. Three constructs, arrived at independently, all turn out to be
-translatable only relative to context the query does not carry. Each of the three would
-be exactly self-contained in PromQL.
+measured: narrowing the window moves which series Datadog's own \texttt{top()} returns.
+
+Three constructs, arrived at independently, all turn out to be translatable only
+relative to context the query does not carry --- and the three do not line up with the
+two languages, which is the point. One is a slot Datadog's grammar does not have, one is
+a slot PromQL has and its authors fill with a variable anyway, and the third is a
+Datadog function whose PromQL form needs the same missing value twice. Each becomes
+exact the moment the dashboard supplies what the query omits, and none of the three is a
+limit on what either language can express.
 
 \texttt{METRIC\_TYPE\_UNKNOWN} is a different animal, and calling it self-containment
 double-counts a fact this paper has already banked. Neither language declares a metric's

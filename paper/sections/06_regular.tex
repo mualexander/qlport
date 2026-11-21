@@ -31,6 +31,12 @@ documentation until the eleventh pass, when it was put to the account instead --
 Remark~\ref{rem:glob-constructs} asks for all three and the query parser rejects all
 three, which is a stronger answer than selecting nothing. Write $m(g)=\sum_i|s_i|$ for
 the total literal length.
+
+Which set $\Sigma$ is matters and is deferred rather than assumed. Every language in
+this section is read over it, including the $\Sigma^{*}$ that
+Proposition~\ref{prop:glob-regex} reads \texttt{.*} as, and the two available readings
+differ on $238$ of this corpus's matcher occurrences;
+\S\ref{sec:glob-corpus} says which set and why.
 \end{definition}
 
 The main direction needs only the easy half, and gets it by construction.

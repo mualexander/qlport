@@ -219,7 +219,9 @@ observed itself needing and which the IR does not record as satisfied.
 The caveats are not a disclaimer. They are the hypotheses of
 Theorem~\ref{thm:kernel} below, collected by the only component in a position to know
 which ones a given query incurred, and \S\ref{sec:caveats} reports how often each is
-incurred. Six arise:
+incurred. Seven codes arise, over six conditions --- the fourth has a code for each of
+the two forms it chooses between, which is why Theorem~\ref{thm:kernel} has six
+hypotheses and the emitter seven codes:
 \texttt{ROLLUP\_ALIGNMENT} on every rollup, since Datadog's buckets are epoch-aligned,
 left-closed and named by their start (Remark~\ref{rem:closure}) while a PromQL window is
 right-closed and follows the evaluation step;
