@@ -36,23 +36,20 @@ measures, and the catalogue is a list of constructs rather than an estimate --- 
 remains at that point is not a construct at all. The $0.1\%$ below the ceiling is
 queries this paper's own grammar does not parse.
 
-Three constructs stood in the inexpressible column at the last count, and each left it
-for a reason worth stating, because the reasons are not alike. A wildcard over tag
-\emph{keys} rather than values ($31$) asked for a pattern where a PromQL matcher takes a
-label name, and Remark~\ref{rem:label-name} reads a real server refusing exactly that
---- but no Datadog query ever asked it: \texttt{corpus.\_TMPL} truncated
-\texttt{\$cluster-location} at its hyphen and this paper invented a semantics for the
-text left over. The percentile aggregators ($34$) read a sketch of the raw observations,
-which Prometheus does not hold --- but Corollary~\ref{cor:quantile} assumes a
-distribution metric and not one of the $34$ names one, so the refusal fired on seeing
-\texttt{pNN:} and never checked its own hypothesis. The scope separating an absent tag
-from one present with an empty value ($5$) asks for a distinction Prometheus's data
-model \emph{defines} away --- which is exactly why the exact translation is to drop the
-term, as Remark~\ref{rem:empty-tag} had already established for $120$ occurrences of
-\texttt{k:*} under the same condition. One was an instrument fault, one a corollary
-applied where its hypothesis fails, and one a barrier that turns out to decide the
-translation rather than to block it. A language-design story cannot rest on any of
-them.
+Three constructs stood in the inexpressible column at the last count, and
+\S\ref{sec:gaps} says how each of them left it. What matters here is that the three
+reasons are not alike, because a reader who hears ``the column emptied'' three times may
+take it for one kind of event. One was an instrument fault: no Datadog query ever asked
+for a wildcard over tag \emph{keys}, and the occurrences that appeared to were an
+artefact of this paper's own template substitution. One was a corollary applied where its
+hypothesis fails: the percentile refusal fired on seeing \texttt{pNN:} without checking
+whether the metric was a distribution at all, which is why those occurrences are now
+divided between wrong and undecided rather than retracted together. And one was a barrier
+that decides the translation instead of blocking it --- Prometheus's data model
+\emph{defines} away the difference between an absent tag and one present with an empty
+value, which is precisely what makes dropping the term exact rather than lossy. An
+instrument fault, a hypothesis left unchecked, and a barrier that answers the question:
+a language-design story cannot rest on any of the three.
 
 It is also worth noticing how nearly this paper reported the opposite, and how often.
 Eight times a refusal or a classification put something in the inexpressible column that
@@ -345,7 +342,11 @@ denotes a function of a database at an instant.
 
 \subsection{Threats specific to the discussion}
 
-\S\ref{sec:threats} covers the empirical threats; three concern the argument above.
+\S\ref{sec:threats} carries the threats to the measurements. The ones that bear on the
+argument of this section are of a different kind: each was an assumption about Datadog
+that the reasoning above rests on, and each has since been measured rather than left
+acknowledged. They did not all fall the same way, which is why they are worth taking one
+at a time.
 
 The rollup measurements of \S\ref{sec:ingestion} use synthetic workloads --- steady,
 Poisson, bursty, and bursty with restarts --- so the agreement figures in

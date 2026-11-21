@@ -1,10 +1,12 @@
 % ---------------------------------------------------------------------------
-% Ingestion mapping and phi-relative soundness, for the main direction
+% Ingestion mapping and phi-relative soundness: its own section (the file keeps the
+% 03b name because 04_grammars.tex already holds the one after it), for the main
+% direction
 % (Datadog -> PromQL). Requires \sem, \Lang from macros.tex.
 % Numbers come from notebook 02 and data/raw/anchored/ (scripts/verify_anchored.py).
 % ---------------------------------------------------------------------------
 
-\subsection{Ingestion and \texorpdfstring{$\phi$}{phi}-relative soundness}
+\section{Ingestion and \texorpdfstring{$\phi$}{phi}-relative soundness}
 \label{sec:ingestion}
 
 \paragraph{Scope: forward portability.}
@@ -234,7 +236,7 @@ defined by the absolute values $\phi_\rho$ discards, so it cannot be recognised 
 what Datadog retains.
 \end{corollary}
 \iffull\input{sections/moved/ing_rate_disc}\fi
-\subsubsection{Two exact forms}
+\subsection{Two exact forms}
 
 Datadog's \texttt{.as\_count()} with rollup interval $\Delta$ reports, for the bucket it
 labels $b$,

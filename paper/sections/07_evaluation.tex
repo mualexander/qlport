@@ -46,8 +46,10 @@ Remark~\ref{rem:extraction-fixes} reports them with what the extractor still doe
 reach.
 \iffull\input{sections/moved/eval_extraction_fixes}\fi
 
-The formula population fell by nearly half for a different reason
-(\apref{app:eval}).
+The formula population fell by nearly half for a different reason, and not one the
+extractor is to blame for: an earlier count had included formulas written over log, event
+and security-signal requests, which are not metric queries at all and are held aside with
+the rest of the formula layer (\apref{app:eval}).
 
 \paragraph{Instantiation.}
 Dashboard queries are not queries. A panel ships \texttt{\$pod},
@@ -99,6 +101,20 @@ one expression per series. Those two counts are by distinct query rather than by
 occurrence, because what is being checked is a property of each emitted string. That is checked as an assertion rather than reported as a rate, since the
 only acceptable number of syntactically invalid outputs is zero.
 
+\shortonly{%
+That bound has a shape, and the shape is a result in its own right. Coverage is
+conjunctive over features --- a query translates only when \emph{every} feature it uses is
+supported --- while popularity is marginal, so the coverage a fragment buys does not grow
+with the fragment. Taking Datadog's features in greedy order, the best six reach $1.6\%$
+of the corpus, of which $1.1\%$ is queries that use no feature at all; the next two,
+template-variable scopes and \texttt{sum:}, take it to $49.2\%$; and reaching $90.9\%$
+needs sixteen of the $28$. PromQL behaves the same way and slightly worse. For anyone
+building one of these translators that is the paper's practical finding --- a partial
+translator is worth almost nothing, because no prefix of the feature list buys
+proportional coverage --- and it is why the bound below is read off the translator's own
+feature set rather than off the curve. \apref{app:eval} gives both orders and both curves.
+
+}
 The feature bound of \S\ref{sec:staircase} applies to $\kappa$, and applying it correctly
 is a correction rather than a calculation. The translator's own feature set is the one to
 use: it supports $S^\star$, the $25$ features that appear in some query it translates, and
