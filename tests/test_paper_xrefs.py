@@ -323,3 +323,33 @@ def test_the_remarks_nothing_points_at_do_not_multiply():
         f"{len(uncited)}")
     # And the one that is left is the nested one, not a remark that lost its pointer.
     assert uncited == ["rem:lark-priority"], uncited
+
+
+def test_the_proof_convention_matches_the_statements():
+    r"""\S3 says how many results have a collected proof; this counts them.
+
+    The paragraph claimed "every proof is collected" with one named exception for
+    fourteen passes, and three statements had no proof environment at all -- argued in
+    the text instead, adequately, but not what the convention said. Pinned so the
+    sentence cannot drift away from the inventory again.
+    """
+    import re
+
+    sections = PAPER / "sections"
+    files = sorted(sections.glob("*.tex")) + sorted((sections / "moved").glob("*.tex"))
+    labels, proofs = {}, set()
+    for path in files:
+        text = path.read_text()
+        for m in re.finditer(
+                r"\\begin\{(theorem|lemma|proposition|corollary)\}"
+                r"(?:\[[^\]]*\])?\s*\\label\{([^}]+)\}", text, re.S):
+            labels[m.group(2)] = m.group(1)
+        for m in re.finditer(r"\\begin\{proof\}\[[^\]]*?\\ref\{([^}]+)\}", text, re.S):
+            proofs.add(m.group(1))
+
+    assert len(labels) == 19, sorted(labels)
+    unproved = {k for k in labels if k not in proofs}
+    assert unproved == {"prop:decidable", "cor:raw", "cor:rate", "prop:disjunction"}, \
+        sorted(unproved)
+    body = (PAPER / "sections" / "03_framework.tex").read_text()
+    assert "$19$ numbered results" in body and "$15$ have" in body

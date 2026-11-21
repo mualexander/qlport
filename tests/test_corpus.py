@@ -353,6 +353,15 @@ def _corpus_identifiers():
                     break
         if str(n.data) == "grouping":
             keys.update(str(c) for c in n.children[1:] if isinstance(c, Token))
+        # lem:scope's hypothesis is over the tag keys a matcher can name, which is the
+        # scopes' keys as well as the grouping list's -- for fourteen passes this census
+        # took the grouping list alone, so the measurement was narrower than the
+        # hypothesis it was cited for.
+        if str(n.data) in ("tag", "member"):
+            for c in n.children:
+                if isinstance(c, Token) and c.type in ("KEY", "TAG", "NAME", "CNAME"):
+                    keys.add(str(c))
+                    break
         for c in n.children:
             walk(c)
 
@@ -398,7 +407,7 @@ def test_the_collision_rate_is_low_enough_to_quote():
     # rather than silently date the prose.
     metrics, keys = _corpus_identifiers()
     assert len(metrics) == 5389, len(metrics)
-    assert len(keys) == 723, len(keys)
+    assert len(keys) == 1264, len(keys)
 
 
 def test_a_hyphen_in_a_label_name_cannot_be_mangled_around():

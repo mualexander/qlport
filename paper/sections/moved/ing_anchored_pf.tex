@@ -14,9 +14,32 @@ earlier draft of Theorem~\ref{thm:kernel} called it. On a decrease $v_i<v_{i-1}$
 rather than $v_i-v_{i-1}$; the proposal says only that the modifier ``deals with
 counter resets'', so that clause is taken from the readings of
 Table~\ref{tab:model-verification} and Remark~\ref{rem:rho} rather than from the text. Term by term this is exactly
-$\delta_{\mathsf{zero}}$, and by the index argument of
-Proposition~\ref{prop:offset} the terms it sums are those with
-$t_i\in[b,b+\Delta)$, so the total is $\Sigma_{\mathsf{zero},\Delta}(b)$, a function of
+$\delta_{\mathsf{zero}}$. Which terms it sums takes two cases, and an earlier version of
+this proof took one: it cited ``the index argument of Proposition~\ref{prop:offset}'',
+which is the argument that runs through $t_k$, the last sample before $b$ --- so the
+series this proposition exists to add, the ones with no such sample, were covered by a
+citation to an argument that cannot reach them.
+
+If a sample lies at or before $u-\Delta$, let $t_a$ be the last one. The window is
+$(t_a,u]$. Since $\eta\le b+\Delta-t_m$ we have $u\ge t_m$, so every sample of the bucket
+is in the window; since no sample lies in $[b-\eta,b)=[u-\Delta,b)$ and $t_a\le u-\Delta$,
+no sample outside the bucket is. The terms are those with $t_i\in[b,b+\Delta)$.
+
+If no sample lies at or before $u-\Delta$ --- which includes every series whose first
+sample falls inside the bucket, the case $\mathcal{C}_\Delta$ excludes --- there is no
+anchor, the window opens at the series' first sample $t_1$, and the summed terms are
+those with $t_i\in[t_1,u]$. Here $t_1\in[b,b+\Delta)$ and again $u\ge t_m$, so the terms
+are once more those with $t_i\in[b,b+\Delta)$ --- and the first of them contributes
+nothing, because \texttt{increase} with no extrapolation reads differences between
+consecutive samples and has no predecessor for $t_1$. That is the same omission
+Definition~\ref{def:phi} makes: $\phi_\rho$ runs from $i=2$, so $t_1$'s own value is not
+a point of $\phi_\rho(s)$ either, and the two sums agree for that reason rather than by
+accident. This half of the argument is reasoning from the proposal's text and from
+Definition~\ref{def:phi}, not a reading: \texttt{verify\_anchored.py} has no workload
+whose series begins inside a bucket, so the no-anchor case is argued here and unmeasured,
+which is the one place this proposition is weaker than its siblings.
+
+In both cases the total is $\Sigma_\Delta(b)$ at $\rho=\mathsf{zero}$, a function of
 $\phi_{\mathsf{zero}}(s)$ alone. The hypothesis that the bucket contains a sample is
 needed for the same reason Definition~\ref{def:d}'s first case is: with no sample in
 $[b,b+\Delta)$ the range selector returns nothing while $\Sigma_\Delta(b)$ is an empty

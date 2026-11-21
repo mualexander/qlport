@@ -75,7 +75,14 @@ $\phi_\rho=\mathrm{id}$.
 A PromQL expression $p$ is \emph{$\phi_\rho$-invariant on $\mathcal{C}$} if for all
 $D,D'\in\mathcal{C}$ and all $t$:
 $\phi_\rho(D)=\phi_\rho(D')\Rightarrow \sem{p}_{\mathrm{PQ}}(D,t)=\sem{p}_{\mathrm{PQ}}(D',t)$;
-that is, $\sem{p}_{\mathrm{PQ}}$ factors through $\phi_\rho$.
+that is, $\sem{p}_{\mathrm{PQ}}$ factors through $\phi_\rho$. \emph{Invariant at $t$} is
+the same condition with $t$ fixed. The distinction matters in one direction only, and
+this definition did not draw it for fifteen passes:
+Propositions~\ref{prop:offset} and~\ref{prop:anchored} establish invariance at their own
+$u$ rather than at every instant, which is all their use of invariance needs and is
+less than the unqualified predicate claims, while
+Proposition~\ref{prop:admissible} and Corollaries~\ref{cor:raw} and~\ref{cor:rate} use
+\emph{failures} of invariance and so are unaffected by the weakening.
 \end{definition}
 
 \noindent
@@ -84,10 +91,11 @@ query cannot distinguish two databases with the same $\phi_\rho$ image, so a sou
 translation must not distinguish them either.
 
 \begin{proposition}[Admissibility]\label{prop:admissible}
-Let $q$ be a Datadog query and $p=T(q)\neq\bot$. If $p$ is not $\phi_\rho$-invariant on
-$\mathcal{C}$, witnessed by $D,D'\in\mathcal{C}$ and $t$, then $T$ is not
-$\varepsilon$-sound for $\phi_\rho$ on $\mathcal{C}$ for any
-$\varepsilon<\tfrac12\,d\big(\sem{p}_{\mathrm{PQ}}(D,t),\sem{p}_{\mathrm{PQ}}(D',t)\big)$.
+Let $q$ be a Datadog query, $p=T(q)\neq\bot$, and $u$ an evaluation map whose image is
+all of $\mathbb{T}$. If $p$ is not $\phi_\rho$-invariant on $\mathcal{C}$, witnessed by
+$D,D'\in\mathcal{C}$ and an instant $t'$, then $T$ is not $\varepsilon$-sound for
+$\phi_\rho$ along $u$ on $\mathcal{C}$ for any
+$\varepsilon<\tfrac12\,d\big(\sem{p}_{\mathrm{PQ}}(D,t'),\sem{p}_{\mathrm{PQ}}(D',t')\big)$.
 \end{proposition}
 \iffull\input{sections/moved/ing_admissible_pf}\fi
 
@@ -158,9 +166,15 @@ Remark~\ref{rem:directional} dropped.
 Let $\mathcal{C}_{\mathrm{flat}}$ be the databases with no counter reset. On
 $\mathcal{C}_{\mathrm{flat}}$, shifting every sample of a series by a constant $c$ leaves
 $\phi_\rho$ unchanged while changing the value of a raw selector. Hence a bare counter
-selector (\texttt{http\_requests\_total} with no range function), and any function of
-absolute counter values, is not $\phi_\rho$-invariant, and no such expression is a sound
-translation of any Datadog query. The translator cannot emit one, and by construction
+selector (\texttt{http\_requests\_total} with no range function), and any expression
+whose value \emph{depends on} absolute counter values, is not $\phi_\rho$-invariant, and
+no such expression is a sound translation of any Datadog query. ``Depends on'' is doing
+work that ``any function of absolute counter values'' did not: that phrasing, which this
+corollary carried until the fifteenth pass, is contradicted two statements later by
+Proposition~\ref{prop:offset}, since \texttt{x - x offset $\Delta$} is a function of
+absolute counter values and is proved invariant. What fails is expressions that do not
+factor through the differences $\phi_\rho$ keeps; a constant function is the other easy
+counterexample. The translator cannot emit one, and by construction
 rather than by a runtime check: lowering wraps every selector in a rollup before the
 emitter sees it, so no input reaches a bare counter selector. The code
 \texttt{PHI\_ABSOLUTE} is reserved for the reverse direction, where the same corollary
@@ -168,8 +182,10 @@ does bite.
 \end{corollary}
 
 \begin{proposition}[A quantile is not a function of a bucketing]\label{prop:quantile}
-Let $B$ be any finite set of bucket boundaries and $0<p<1$. There are finite multisets
-$X,Y$ of observations with identical $B$-bucket counts and $q_p(X)\neq q_p(Y)$.
+Let $B$ be any finite set of bucket boundaries and $0<p<1$, and write $q_p$ for the
+$p$-th quantile under either the nearest-rank or the linear-interpolation convention.
+There are finite multisets $X,Y$ of observations with identical $B$-bucket counts,
+identical sums and identical counts, for which $q_p(X)\neq q_p(Y)$.
 \end{proposition}
 \iffull\input{sections/moved/ing_quantile_pf}\fi
 
@@ -257,29 +273,46 @@ must therefore lie strictly \emph{inside} the bucket.
 
 \begin{proposition}[Cumulative difference]\label{prop:offset}
 Let $\mathcal{C}_{\Delta}$ be the databases in which no counter series resets within
-$[b,b+\Delta)$ \emph{and every counter series has a sample before $b$}. For such a
-database write $t_m$ for the last sample in $[b,b+\Delta)$ and $t_k$ for the last sample
-before $b$, and let $\eta$ satisfy
+$[b,b+\Delta)$ \emph{and every counter series has a sample before $b$}. For a series $s$
+of such a database write $t_m(s)$ for its last sample in $[b,b+\Delta)$ and $t_k(s)$ for
+its last sample before $b$ --- both are per-series, and $\eta$ below is required to
+satisfy the bound for every series the selector reads at once, which a single $\eta$ can
+do because the bound is an upper one and the selector reads finitely many. Writing them
+without the argument, as this proposition did until the fifteenth pass, reads as though a
+database held one series, and Theorem~\ref{thm:kernel}'s hypothesis~(1) inherited the
+same elision. Let $\eta$ satisfy
 \[
-0<\eta\le\min\big(b+\Delta-t_m,\ b-t_k\big).
+0<\eta\le\min_s\min\big(b+\Delta-t_m(s),\ b-t_k(s)\big).
 \]
-Assume Prometheus's lookback covers both $u-t_m$ and $(u-\Delta)-t_k$ for
-$u=b+\Delta-\eta$. Then on $\mathcal{C}_{\Delta}$ the expression
-\texttt{x - x offset $\Delta$}, evaluated at $u$, is $\phi_\rho$-invariant and equals
-$\Sigma_\Delta(b)$ exactly.
+Assume Prometheus's lookback covers $u-t_m(s)$ and $(u-\Delta)-t_k(s)$ for every such $s$,
+with $u=b+\Delta-\eta$. Then on $\mathcal{C}_{\Delta}$ the expression
+\texttt{x - x offset $\Delta$}, evaluated at $u$, is $\phi_\rho$-invariant at $u$ and
+equals $\Sigma_\Delta(b)$ on each series, elementwise.
 \end{proposition}
 \iffull\input{sections/moved/ing_offset_pf}\fi
 
 \iffull\input{sections/moved/ing_eta}\fi
 
 \begin{proposition}[Anchored increase]\label{prop:anchored}
-Let $\rho=\mathsf{zero}$, let $t_m,t_k,\eta,u$ be as in
-Proposition~\ref{prop:offset}, and assume Prometheus's lookback covers $u-t_a$ for $t_a$
-the last sample at or before $u-\Delta$. Then
+Let $\rho=\mathsf{zero}$, write $t_m(s)$ for a series' last sample in $[b,b+\Delta)$ as
+in Proposition~\ref{prop:offset}, and let $\eta$ satisfy
+$0<\eta\le\min_s\big(b+\Delta-t_m(s)\big)$ with
+$u=b+\Delta-\eta$. Assume that no sample lies in $[b-\eta,b)$, and that Prometheus's
+lookback covers $u-t_a$ where $t_a$ is the last sample at or before $u-\Delta$ if one
+exists and the series' first sample otherwise. Then
 \texttt{increase(x[$\Delta$] anchored)} evaluated at $u$ equals
-$\Sigma_{\mathsf{zero},\Delta}(b)$ whenever the bucket contains a sample, including on
+$\Sigma_\Delta(b)$ taken at $\rho=\mathsf{zero}$ whenever the bucket contains a sample, including on
 series the second hypothesis of $\mathcal{C}_\Delta$ excludes, and is
 $\phi_{\mathsf{zero}}$-invariant.
+
+This states its own $\eta$ bound rather than importing
+Proposition~\ref{prop:offset}'s, which it did until the fifteenth pass. That bound is
+$0<\eta\le\min(b+\Delta-t_m,\,b-t_k)$ for $t_k$ the last sample \emph{before} $b$ --- and
+on exactly the series this proposition claims to add, the ones with no sample before $b$,
+$t_k$ does not exist and the bound is undefined. The hypotheses were unsatisfiable on the
+extension case they were there to cover. What the bound was doing is now said directly:
+no sample in $[b-\eta,b)$, which is what keeps a pre-bucket sample out of the anchored
+window, and which holds vacuously when there is no sample before $b$ at all.
 \end{proposition}
 \iffull\input{sections/moved/ing_anchored_pf}\fi
 

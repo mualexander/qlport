@@ -12,13 +12,32 @@ $(s-1)(t-1)\ge 0$.
 If any of the three is $0$ while another is not, every $\delta$ with a zero argument and
 a non-zero one is $1$: so if exactly one of $a,c$ is $0$ the left side is $1$ and the
 right has a term of $1$ unless $b=0$ too, in which case the other term is $1$; and if
-$a=c$ the left side is $0$. If $b$ has the sign opposite to $a$ and $c$, both right-hand
-terms are at least $1$ and the left is at most $2$. If $a$ and $c$ have opposite signs, take $|a|\ge|c|$ by symmetry,
-so $\delta(a,c)=1+|c|/|a|$, and $b$ shares a sign with one of them, say $a$. When
-$|b|\ge|c|$ the claim reduces to
+$a=c$ the left side is $0$. If $b=0$ with $a$ and $c$ both non-zero and $a\neq c$, the
+right side is $1+1=2$ and the left is at most $2$ by the bound above. If $b$ has the
+sign opposite to both $a$ and $c$, both right-hand terms are at least $1$ and the left is
+at most $2$.
+
+That leaves $a$ and $c$ of opposite signs, all three non-zero. Take $|a|\ge|c|$ by the
+symmetry of $\delta$ in its arguments, so $\delta(a,c)=1+|c|/|a|$. The symmetry is now
+spent, so both choices of which of $a,c$ shares $b$'s sign have to be treated --- an
+earlier version of this proof spent it twice, writing ``$b$ shares a sign with one of
+them, say $a$'', and the branch where $b$ shares $c$'s sign was never discharged.
+
+Say $b$ shares $a$'s sign. When $|b|\ge|c|$ the claim reduces to
 $|c|\big(\tfrac{1}{|a|}-\tfrac{1}{|b|}\big)\le\delta(a,b)$, which holds because
 $|c|\le|a|$; when $|b|<|c|$ the right-hand side is
-$\big(1-|b|/|a|\big)+\big(1+|b|/|c|\big)=2-|b|/|a|+|b|/|c|$, which exceeds $2$ because
-$|b|<|c|\le|a|$, and $2\ge 1+|c|/|a|=\delta(a,c)$. Taking a maximum over a common domain
+$\big(1-|b|/|a|\big)+\big(1+|b|/|c|\big)=2-|b|/|a|+|b|/|c|$, which is at least $2$
+because $|b|<|c|\le|a|$ --- with equality when $|c|=|a|$, which is why this reads ``at
+least'' and not ``exceeds'' --- and $2\ge 1+|c|/|a|=\delta(a,c)$.
+
+Say instead $b$ shares $c$'s sign, and write $a=A$, $c=-C$, $b=-B$ with $0<C\le A$ and
+$B>0$, so the claim is
+$1+C/A\le\tfrac{A+B}{\max(A,B)}+\tfrac{|B-C|}{\max(B,C)}$. Every sub-case reduces to
+$C\le A$. If $B\ge A$ then $\max(B,C)=B$ and the claim is $CB\le A(A+B-C)$, which follows
+from $CB\le AB$ and $AC\le A^2$. If $B<A$ and $B\ge C$ the right side is at least $B/A$
+beyond its leading $1$, and $C/A\le B/A$. If $B<A$ and $B<C$ the claim is
+$(C-B)/A\le(C-B)/C$, which is $C\le A$ again.
+
+Taking a maximum over a common domain
 preserves all three properties, and $\infty$ is absorbing.
 \end{proof}

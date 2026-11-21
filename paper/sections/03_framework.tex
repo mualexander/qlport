@@ -35,11 +35,16 @@ RQ4 below exists. It was not posed at the outset, and it is the question this pa
 ends up answering; it keeps the number it was given rather than being renumbered to the
 front, because when a question was asked is part of what its answer is worth.
 
-Two conventions for the rest of the paper. Every proof is collected
-\apin{app:proofs}, each named for the statement it discharges, because a body is read
-for its results and a proof is read when a result is doubted. One proof stays where it
-is stated: \S\ref{sec:regular}'s decision procedure, whose construction \emph{is} the
-result, so a reader who skipped it would have the theorem and not the algorithm. Remarks numbered above~3 are likewise in the appendices, which is
+Two conventions for the rest of the paper. Of the $19$ numbered results below, $15$ have
+a proof collected \apin{app:proofs}, each named for the statement it discharges, because
+a body is read for its results and a proof is read when a result is doubted. The other
+four are stated here rather than left implicit: \S\ref{sec:regular}'s decision procedure
+keeps its construction in place, because the construction \emph{is} the result and a
+reader who skipped it would have the theorem and not the algorithm; and
+Corollaries~\ref{cor:raw} and~\ref{cor:rate} and Proposition~\ref{prop:disjunction} are
+argued in the text that states them, each in a few lines, with no proof environment of
+their own. This paragraph said ``every proof'' and named one exception until the
+fifteenth pass, which was three short. Remarks numbered above~3 are likewise in the appendices, which is
 where the measurements and the apparatus live; a remark cited below by number alone is
 one of those, and \apref{app:experiments} collects what the vendor was asked.
 
@@ -71,6 +76,22 @@ rather than about parsers, and the meaning to be a function of a database and an
 \begin{definition}[Query language]\label{def:lang}
 A \emph{query language} is a pair $(G,\sem{\cdot})$ of a context-free grammar $G$ and a
 denotation $\sem{\cdot}:\Lang(G)\times\mathcal{D}\times\mathbb{T}\to\mathit{Result}$.
+One thing this framework declares and does not define, and the paper is better for
+saying so here than for leaving a reader to notice. The two denotations below are
+\emph{declared}: no definition of $\sem{\cdot}_{\mathrm{DD}}$ or
+$\sem{\cdot}_{\mathrm{PQ}}$ appears anywhere in this paper, and the only denotation
+written out is the intermediate representation's (\apref{app:proofs}). So every
+soundness statement here and in \S\ref{sec:ingestion} and \S\ref{sec:translation} is an
+equation between two functions pinned down by measurement rather than by definition ---
+Remark~\ref{rem:closure} for Datadog's bucket boundaries, Remark~\ref{rem:rho} for its
+reset handling, Lemma~\ref{lem:dd-matching} for how it pairs operands, and the published
+specification for PromQL's side. Vendor semantics have to come from somewhere and a
+measured semantics is the honest source, but Remark~\ref{rem:refusal}'s own standard
+applies to this paper's claims as much as to its refusals: the theorems are conditional
+on those measurements, and Lemma~\ref{lem:dd-matching} in particular generalises from
+four series over three groupings to a statement quantified over every term of
+$\mathcal{A}$.
+
 We write $\Lang(G_{\mathrm{DD}})$ and $\Lang(G_{\mathrm{PQ}})$ for the two languages and
 $\sem{\cdot}_{\mathrm{DD}}$, $\sem{\cdot}_{\mathrm{PQ}}$ for their denotations.
 \end{definition}

@@ -282,11 +282,16 @@ in \apref{app:proofs} treats the case.
 \begin{lemma}[Scopes and selectors agree]\label{lem:scope}
 For every Datadog scope $\sigma$ that lowering does not refuse, the matchers
 $\overline{\mu}$ it produces select the same series as $\sigma$, provided the
-name-mangling of \S\ref{sec:lowering} is injective on $D$'s label \emph{sets} and on its
-metric \emph{names}, and provided no series in $D$ carries an empty value for a tag that
-$\overline{\mu}$ tests merely for presence. (The proviso was universal over tags until the
-tenth pass, which made it strictly stronger than the hypothesis Theorem~\ref{thm:kernel}
-supplies when it invokes this lemma.)
+name-mangling of \S\ref{sec:lowering} is injective on $D$'s metric \emph{names} and on
+the tag \emph{keys} occurring in $D$ and in $\overline{\mu}$, and provided no series in
+$D$ carries an empty value for a tag that $\overline{\mu}$ tests merely for presence.
+(The proviso was universal over tags until the tenth pass, which made it strictly
+stronger than the hypothesis Theorem~\ref{thm:kernel} supplies when it invokes this
+lemma. The injectivity class is tag keys and not label \emph{sets}, which is what this
+lemma said for fourteen passes after Remark~\ref{rem:mangling} had recorded that label
+sets are the wrong class and that the one measured key collision sits outside them:
+injectivity on label sets does not stop two colliding keys \emph{within} one series from
+being merged, which is exactly the failure the proof below turns on.)
 \end{lemma}
 
 \iffull\input{sections/moved/tr_scope_pf}\fi
@@ -322,9 +327,13 @@ kernel, $L(q)\in\mathcal{K}$, let $E(L(q))=(p,C)$, and let $t$ be an evaluation 
       proviso
       \hfill (\texttt{TAG\_PRESENCE\_EMPTY})
 \end{enumerate}
-and the name mangling of \S\ref{sec:lowering} is injective on $D$'s metric names, on
-its label sets and on $q$'s grouping keys, and Prometheus's lookback covers the two
-distances Proposition~\ref{prop:offset} requires, then
+and the name mangling of \S\ref{sec:lowering} is injective on $D$'s metric names and on
+the tag keys occurring in $D$, in the emitted matchers and in $q$'s grouping list, and
+Prometheus's lookback covers the distances the
+form emitted for $\theta$ requires --- the two of
+Proposition~\ref{prop:offset} under hypothesis~(4)'s first branch, and under its second
+the single wider one of Proposition~\ref{prop:anchored}, which is of order $\Delta$ and
+is the condition a real server was measured failing --- then
 $\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,u(t))$ ---
 exactly, not within the $\varepsilon$ of Definition~\ref{def:sound}. In the language of
 that definition the kernel is exact along $u(t)=t+\Delta-\eta$.
@@ -386,15 +395,23 @@ rules, and neither rule is documented. Both are therefore measured
 \begin{definition}[Arithmetic closure]\label{def:arith}
 $\mathcal{A}$ is the smallest set of IR terms containing $\mathcal{K}$ and every
 $\mathrm{Number}(c)$, closed under $\mathrm{Scale}(c,\cdot)$ and
-$\mathrm{BinOp}(\oplus,\cdot,\cdot)$ for $\oplus\in\{+,-,\times,\div\}$.
+$\mathrm{BinOp}(\oplus,\cdot,\cdot,\overline{k})$ for $\oplus\in\{+,-,\times,\div\}$,
+written with all four of Definition~\ref{def:ir}'s arguments: the matching key list is
+the fourth, and dropping it here --- as this definition and
+Definition~\ref{def:keyset} did --- is the same arity slip the $\mathrm{Rollup}$ display
+above reports having made twice.
 \end{definition}
 
 \begin{definition}[Key set]\label{def:keyset}
 $\chi(e)$ is $\star$ for $\mathrm{Number}$; $\overline{k}$ for
 $\mathrm{Agg}(\mathit{op},\overline{k},\mathsf{by},\cdot)$; $\chi(e')$ for
-$\mathrm{Scale}(c,e')$; and for $\mathrm{BinOp}(\oplus,l,r)$ it is $\chi(r)$ when
+$\mathrm{Scale}(c,e')$; and for $\mathrm{BinOp}(\oplus,l,r,\cdot)$ it is $\chi(r)$ when
 $\chi(l)=\star$, $\chi(l)$ when $\chi(r)=\star$, and otherwise the larger of $\chi(l)$
 and $\chi(r)$ when one contains the other, and undefined when neither does.
+It is undefined on an $\mathrm{Agg}$ in $\mathsf{without}$ mode, which
+Definition~\ref{def:ir} admits and $\mathcal{A}$ does not contain: the emitter never
+reaches one, since lowering refuses the Datadog construct that would produce it, so the
+omission costs nothing and is stated rather than left to be discovered.
 \end{definition}
 
 \noindent
@@ -406,8 +423,11 @@ Let $q_1,q_2\in\mathcal{A}$ have results $r_1,r_2$ at $t$ with
 $\chi(q_i)=\overline{k_i}$, and suppose $\overline{k_2}\subseteq\overline{k_1}$. Then
 $q_1\oplus q_2$ has domain
 $\{\lambda\in\mathrm{dom}(r_1) : \pi_{\overline{k_2}}(\lambda)\in\mathrm{dom}(r_2)\}$
-and value $r_1(\lambda)\oplus r_2(\pi_{\overline{k_2}}(\lambda))$. If neither key set
-contains the other, Datadog rejects the query.
+and value $r_1(\lambda)\oplus r_2(\pi_{\overline{k_2}}(\lambda))$. The mirror holds with
+the roles exchanged when $\overline{k_1}\subseteq\overline{k_2}$, which has to be stated
+rather than left to symmetry because $-$ and $\div$ do not commute, and it is the
+orientation \apref{app:proofs}'s use of \texttt{group\_right()} appeals to. If neither
+key set contains the other, Datadog rejects the query.
 \end{lemma}
 
 \iffull\input{sections/moved/tr_dd_matching_pf}\fi
@@ -427,7 +447,7 @@ with it on $\overline{k}$, keeps $u$'s labels, and requires at most one such $v$
 Let $q\in\Lang(G_{\mathrm{DD}})$ with $L(q)\in\mathcal{A}$ and
 $E(L(q))=(p,C)\neq\bot$, suppose every kernel subterm of $L(q)$
 satisfies the hypotheses of Theorem~\ref{thm:kernel} at $t$, and suppose they all
-carry the same $\Delta$. Then
+carry the same $\Delta$ and admit a common $\eta$. Then
 $\sem{q}_{\mathrm{DD}}(\phi_{\mathsf{zero}}(D),t)=\sem{p}_{\mathrm{PQ}}(D,u(t))$ for the
 common $u(t)=t+\Delta-\eta$, and $C$ is
 the union of those subterms' caveats --- the extension introduces no caveat \emph{code}
@@ -437,7 +457,14 @@ of its own, though the shared $\Delta$ is a condition of its own and is not in $
 \noindent
 The shared $\Delta$ is a hypothesis rather than an observation, and it was missing. A
 PromQL expression is evaluated at one instant while Theorem~\ref{thm:kernel} fixes one
-per subterm, so two kernel subterms with different intervals cannot both satisfy it. For
+per subterm, so two kernel subterms with different intervals cannot both satisfy it. The
+common $\eta$ beside it was missing for the same reason and longer: hypothesis~(1) bounds
+$\eta$ by $\min(b+\Delta-t_m,\ b-t_k)$, whose two distances are properties of the
+subterm's own series, so equal $\Delta$s do not give equal $\eta$s. It costs nothing to
+supply --- the bounds are upper bounds and there are finitely many subterms, so
+$\eta=\min_i\eta_i$ satisfies every one of them --- but it has to be supplied, and the
+paragraph that congratulated itself on catching this for $\Delta$ had left it open for
+$\eta$. For
 \begin{center}\footnotesize
 \texttt{sum:a\{*\}.as\_count().rollup(sum, 60)\ /\ sum:b\{*\}.as\_count().rollup(sum, 300)}
 \end{center}

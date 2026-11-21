@@ -481,6 +481,94 @@ def test_delta_is_a_metric_and_d_is_an_extended_one():
         assert (d(r1, r2) == 0.0) == (r1 == r2)
 
 
+def test_the_quantile_witness_separates_under_both_conventions():
+    """`prop:quantile`'s witness, at every $p$ with a small denominator.
+
+    The old witness -- two observations either side of the bucket midpoint -- separated
+    only "under any convention that returns an observed value", and under linear
+    interpolation it fails at $p=1/2$ exactly. That hedge restricted the proposition,
+    not just the proof. This checks the replacement needs no hedge.
+    """
+    import math
+    from fractions import Fraction as F
+
+    def q_linear(xs, p):
+        xs = sorted(xs)
+        h = (len(xs) - 1) * p
+        lo = int(h)
+        hi = min(lo + 1, len(xs) - 1)
+        return xs[lo] + (h - lo) * (xs[hi] - xs[lo])
+
+    def q_nearest(xs, p):
+        xs = sorted(xs)
+        return xs[max(1, math.ceil(p * len(xs))) - 1]
+
+    m, r = F(10), F(1)
+    ps = [F(a, b) for b in range(2, 13) for a in range(1, b) if math.gcd(a, b) == 1]
+    assert len(ps) == 45
+    for p in ps:
+        n = 2 + math.ceil(1 / min(p, 1 - p))
+        x = ([m - (n - 1) * r] + [m + r] * (n - 1) if p <= F(1, 2)
+             else [m - r] * (n - 1) + [m + (n - 1) * r])
+        y = [m] * n
+        assert sum(x) == sum(y) == n * m, p          # same sum
+        assert len(x) == len(y) == n, p              # same count
+        for q in (q_linear, q_nearest):
+            assert q(x, p) != q(y, p), (p, n, q.__name__)
+
+    # And the old witness really does collapse at p = 1/2 under interpolation.
+    assert q_linear([m - r, m + r], F(1, 2)) == q_linear([m, m], F(1, 2))
+
+
+def test_every_branch_of_the_metric_proofs_case_split_holds():
+    """The case split `fw_metric_pf` turns on, each branch checked on its own.
+
+    The proof is almost all case analysis, and two of its cases were missing: $b=0$ with
+    $a,c$ non-zero and distinct, and -- because the $a\\leftrightarrow c$ symmetry was
+    spent twice -- the branch where $|a|\\ge|c|$, $a$ and $c$ have opposite signs, and
+    $b$ shares $c$'s sign rather than $a$'s. Both hold. Exact rationals rather than
+    floats, so a branch that held only to within a tolerance would show here.
+    """
+    import itertools
+    from fractions import Fraction as F
+
+    def delta(a, b):
+        if a == 0 and b == 0:
+            return F(0)
+        return abs(a - b) / max(abs(a), abs(b))
+
+    vals = sorted({F(0)} | {F(sign * n, den)
+                            for sign in (1, -1)
+                            for n in range(1, 9)
+                            for den in (1, 2, 3, 5)})
+    assert len(vals) == 51
+
+    # The whole inequality, exactly, over every triple.
+    for a, b, c in itertools.product(vals, repeat=3):
+        assert delta(a, c) <= delta(a, b) + delta(b, c), (a, b, c)
+
+    # The two branches the written proof did not reach, asserted non-vacuous.
+    b_zero = opposite = 0
+    for a, c in itertools.product(vals, repeat=2):
+        if a == 0 or c == 0:
+            continue
+        if a != c:
+            b_zero += 1
+            assert delta(a, c) <= delta(a, F(0)) + delta(F(0), c), (a, c)
+        if (a > 0) != (c > 0) and abs(a) >= abs(c):
+            for b in vals:
+                if b == 0 or (b > 0) == (a > 0):      # b shares c's sign
+                    continue
+                opposite += 1
+                assert delta(a, c) <= delta(a, b) + delta(b, c), (a, b, c)
+    assert b_zero == 2450 and opposite == 16250, (b_zero, opposite)
+
+    # And the strictness slip: the quantity the proof bounds reaches 2 exactly.
+    a, c, b = F(1), F(-1), F(-1, 2)
+    assert 2 - abs(b) / abs(a) + abs(b) / abs(c) == 2
+    assert delta(a, c) == 2
+
+
 def test_an_absent_reading_is_scored_against_the_translation():
     """The NaN convention §3 now states, and the direction it errs in.
 
@@ -576,11 +664,12 @@ def test_chi_is_the_function_the_definition_defines():
 def test_chi_is_undefined_where_the_definition_is_silent():
     """An aggregation that groups by exclusion has no $\\overline{k}$ to be keyed by.
 
-    Definition keyset covers `by` and says nothing about `without`, which is a PromQL
-    construct the shared IR carries and no Datadog query produces. The code returns
-    undefined rather than guessing, which is the reading that matches the definition's
-    silence -- and the one that makes `_binop` refuse instead of emitting a pairing it
-    cannot justify.
+    Definition keyset covers `by`. It used to say nothing at all about `without`, a
+    PromQL construct the shared IR carries and no Datadog query produces, and this test
+    pinned that silence -- which left a reader to discover that the definition is
+    partial. It now says so, and this checks the statement rather than the gap. The code
+    returns undefined either way, which is what makes `_binop` refuse instead of
+    emitting a pairing it cannot justify.
     """
     from qlport import ir
 
@@ -589,7 +678,7 @@ def test_chi_is_undefined_where_the_definition_is_silent():
     assert _chi(without) is None
     body = _environment(SECTIONS / "05_translation.tex", "definition", "def:keyset")
     assert r"\mathsf{by}" in body
-    assert "without" not in body
+    assert r"\mathsf{without}" in body and "undefined on an" in body
 
 
 def test_the_arithmetic_extension_adds_no_caveat_of_its_own():

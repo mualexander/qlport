@@ -15,17 +15,24 @@ The five distinct queries using the two metric pairs --- six occurrences --- are
 translated, so two distinct Datadog
 metrics are emitted as one PromQL selector. The third pair is a grouping key, and it is
 forced rather than incidental: a PromQL label name cannot contain a hyphen, so no
-mangling avoids it. That is why Lemma~\ref{lem:scope} now states injectivity over the
-identifier classes its proof consumes rather than over label sets only: the measured
-violations all sit outside the class the hypothesis used to name.
+mangling avoids it. That is why Lemma~\ref{lem:scope} states injectivity over the
+identifier classes its proof consumes --- metric names and tag keys --- rather than over
+label sets: the measured violations all sit outside the class the hypothesis used to
+name. This remark said ``now states'' for fourteen passes while the lemma still said
+label sets, so the correction was recorded here and not carried there; it is the same
+defect as the one Corollary~\ref{cor:rate} carried, and the reason \S\ref{sec:discussion}
+treats a correction as unmade until everything resting on it has moved.
 
 The hypothesis is therefore a real condition on the target database and not a formality.
 A translation of either \texttt{rabbitmq} query is exact in a database carrying one of
 the pair and wrong in a database carrying both, where the selector would sum over series
 the source query never saw. The corpus cannot say which, because a corpus of queries is
 not a database. What it can say is that the collision rate is low and non-zero: three
-pairs among $5{,}389$ metric names and $723$ grouping keys, pinned by test so the claim
-cannot drift.
+pairs among $5{,}389$ metric names and $1{,}264$ tag keys, pinned by test so the claim
+cannot drift. The key census is over every key the corpus's scopes and grouping lists
+mention, not the grouping lists alone, because the hypothesis is over the keys a matcher
+can name: widening it from $723$ to $1{,}264$ added $541$ keys that are only ever
+filtered and no further collision.
 
 Reporting it is the same discipline as Remark~\ref{rem:refusal} applied to a hypothesis
 rather than to a refusal. The assertion it replaces was checked by reading rather than by

@@ -189,7 +189,10 @@ ALLOWED: dict[float, str] = {
         "        device-name alternations: 49 + 22 from data/processed/regex_glob.csv",
     # --- corpus figures from notebooks 00, 01, 04, 05: unregistered -------------------
     5389: "unregistered (test_corpus): distinct Datadog metric names",
-    723: "unregistered (test_corpus): distinct grouping keys",
+    1264: "unregistered (test_corpus): distinct tag keys, scopes and grouping\n"
+        "        lists together -- the class lem:scope's hypothesis is over",
+    723: "unregistered (test_corpus): distinct grouping keys, the narrower census\n"
+        "        tr_mangling reports widening from",
     # 388 and 238 are the unpinned reading's refusal counts, now 84 and none: `.+` is
     # a union of 41 globs over a tag alphabet of 41 characters. They survive only in
     # reg_star_empty.tex, which the TO FINISH note in §6.4 lists for rewriting; 378 and
@@ -984,6 +987,15 @@ DERIVED: tuple[tuple[float, str, object], ...] = (
     (7867, "PromQL panel queries: the population less its alerting and recording rules",
      lambda: 8102 - 139 - 96),
     (41, "the tag alphabet", lambda: len(_alphabet())),
+    (541, "tag keys only ever filtered and never grouped: what widening the census "
+          "from the grouping lists to every key a matcher can name added",
+     lambda: 1264 - 723),
+    (37070, "declared metric names: the unambiguous ones plus the three two "
+            "integrations declare incompatibly",
+     lambda: 23597 + 13140 + 330 + 3),
+    (14, "PHI_QUANTILE occurrences whose metric the repository does not declare, so "
+         "the corollary's hypothesis is untested rather than shown to fail",
+     lambda: 34 - 20),
     (17023, "both translators' emitted expressions, which neither has put to a "
             "Prometheus parser at corpus scale",
      lambda: _reg()["oo.ours_emits"] + _reg()["oo.emits"]),
@@ -1146,7 +1158,7 @@ def test_a_historical_figure_is_not_the_figure_it_supersedes():
 # notebook, bind it with BOUND, or add it here.
 
 TABLE_COINCIDENCE: frozenset[tuple[str, float]] = frozenset({
-    ("num", 1), ("num", 2), ("num", 8), ("num", 9), ("num", 11), ("num", 14), ("num", 17), ("num", 24), ("num", 26), ("num", 32),
+    ("num", 1), ("num", 2), ("num", 8), ("num", 9), ("num", 11), ("num", 17), ("num", 24), ("num", 26), ("num", 32),
     ("num", 35), ("num", 55), ("num", 60), ("num", 64), ("num", 74),
     ("num", 91), ("num", 93), ("num", 100), ("num", 160), ("num", 208), ("num", 262),
     ("num", 266), ("num", 300), ("num", 329), ("num", 330), ("num", 1680),
@@ -1333,7 +1345,8 @@ CORPUS_DERIVED: tuple[tuple[float, str, object], ...] = (
     # cannot drift into asserting different populations of the same name.
     (5389, "distinct Datadog metric names before mangling",
      lambda: len(__import__("test_corpus")._corpus_identifiers()[0])),
-    (723, "and distinct grouping keys",
+    (1264, "and distinct tag keys -- the scopes' and the grouping lists' together, "
+           "which is the class lem:scope's injectivity hypothesis is over",
      lambda: len(__import__("test_corpus")._corpus_identifiers()[1])),
     # E17: the scope-length ladder. Every rung and both edges of the boundary come off
     # the cache, including the HTTP statuses, because an earlier run of this experiment

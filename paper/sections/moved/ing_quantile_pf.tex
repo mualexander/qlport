@@ -1,14 +1,37 @@
 \begin{proof}[Proof of Proposition~\ref{prop:quantile}]
 Let $[a,c)$ be a bucket of $B$ of positive width, which exists whenever $|B|\ge2$; for
-$|B|\le1$ take the unbounded bucket and any two distinct positive observations. Put
-$m=(a+c)/2$ and let $X=\{m-r,\,m+r\}$ for any $0<r<(c-a)/2$, and $Y=\{m,m\}$. Both put
-$2$ in $[a,c)$ and nothing elsewhere, so their bucket counts agree; and both have sum
-$2m$ and count $2$. Their medians are $m-r$ and $m$ under any convention that returns an
-observed value, so $q_p$ differs.
+$|B|\le1$ take a bucket of infinite width, of which there is always one, and work inside
+it. Put $m=(a+c)/2$, let $0<r<(c-a)/2$ so that $m\pm(n-1)r$ stays inside the bucket for
+the $n$ fixed next, and take
+\[
+n = 2+\Big\lceil \tfrac{1}{\min(p,\,1-p)} \Big\rceil .
+\]
+For $p\le\tfrac12$ let $X$ be $m-(n-1)r$ together with $n-1$ copies of $m+r$; for
+$p>\tfrac12$ let $X$ be $n-1$ copies of $m-r$ together with $m+(n-1)r$. In both cases let
+$Y$ be $n$ copies of $m$.
 
-The witness is chosen to survive more than the bucket counts, which is what the
-corollary below needs and what an earlier version of this proof did not supply. It took
-$X$ to be $n$ copies of $a$ against $n$ copies of $(a+c)/2$: those agree on bucket counts
-and differ in their \emph{sum}, so \texttt{histogram\_sum} separates them and they
-witness nothing about expressions over everything Prometheus stores.
+Every observation of either multiset lies in the chosen bucket, so the $B$-bucket counts
+agree at $n$ there and $0$ elsewhere. The sums agree: in the first case
+$m-(n-1)r+(n-1)(m+r)=nm$, in the second $(n-1)(m-r)+m+(n-1)r=nm$, and $Y$ sums to $nm$.
+The counts agree at $n$. And $q_p(Y)=m$ under either convention, while $n$ is large
+enough that the position $p$ selects in $X$ falls strictly inside the run of $n-1$ equal
+observations --- so $q_p(X)=m+r$ in the first case and $m-r$ in the second, under
+nearest-rank and under linear interpolation alike. Hence $q_p(X)\neq q_p(Y)$.
+
+Two things about this are corrections rather than presentation. The witness was
+$X=\{m-r,m+r\}$ against $Y=\{m,m\}$ for fifteen passes, separated ``under any convention
+that returns an observed value'' --- a hedge that restricted the proposition and not
+merely the proof, since under linear interpolation $q_{1/2}(X)=m=q_{1/2}(Y)$ and the
+witness fails at exactly the quantile a reader would try first. The construction above
+needs no hedge. And the proof computed medians while the statement quantifies over all
+$0<p<1$, which the choice of $n$ now answers; the $|B|\le1$ branch said ``any two
+distinct positive observations'', which may straddle the single boundary and so need not
+share a bucket at all.
+
+A third thing is not a correction but is worth keeping. The witness is chosen to survive
+more than the bucket counts, which is what the corollary below needs and what an earlier
+version did not supply. It took $X$ to be $n$ copies of $a$ against $n$ copies of
+$(a+c)/2$: those agree on bucket counts and differ in their \emph{sum}, so
+\texttt{histogram\_sum} separates them and they witness nothing about expressions over
+everything Prometheus stores.
 \end{proof}

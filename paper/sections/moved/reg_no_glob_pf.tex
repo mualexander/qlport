@@ -7,7 +7,10 @@ single literal character $c$ and at least one star. By Lemma~\ref{lem:dichotomy}
 word of $L(g)$ contains $c$, while $\Sigma^{+}$ contains the one-character words of
 $\Sigma\setminus\{c\}$, which is non-empty. (3) The same argument gives $m(g)=1$ with one
 literal $c$, which must lie in $A$ since every word of $L(g)$ contains it. A single
-literal and at least one star leaves three shapes: $c{*}$, ${*}c$ and ${*}c{*}$. In the
+literal and at least one star leaves three shapes: $c{*}$, ${*}c$ and ${*}c{*}$ ---
+three up to language equality, which is what the argument needs: a glob with adjacent
+stars such as ${*}{*}c$ or $c{*}{*}{*}$ denotes the same language as one of the three,
+since $L({*}{*})=L({*})$, so enumerating the three loses nothing. In the
 first and third $L(g)$ contains $c\sigma$ for every $\sigma\in\Sigma$; in the second it
 contains $\sigma c$ for every $\sigma$. Either way it contains a word using a
 $\sigma\notin A$, which $A^{+}$ does not, and $\Sigma\setminus A\neq\emptyset$.

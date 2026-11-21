@@ -21,7 +21,13 @@ the same commutative operation on the same multiset.
 If $\theta$ is a counter and $\mathit{op}_t=\mathsf{sum}$, Datadog reports
 $\Sigma_\Delta(t)$ and the emitted form equals it by Proposition~\ref{prop:offset}
 under (4)'s first branch and (5), or by Proposition~\ref{prop:anchored} under (4)'s
-second, which needs neither.
+second, which needs neither --- but which needs a wider lookback in their place, $u-t_a$
+for $t_a$ the anchor rather than the two short distances of
+Proposition~\ref{prop:offset}. An earlier version of this line said only ``which needs
+neither'', and the theorem's tail asked for Proposition~\ref{prop:offset}'s distances
+whichever branch was taken, so the anchored route was being granted a hypothesis
+narrower than the one it uses. The discussion after the theorem had the fact right while
+the hypothesis list did not.
 
 If $\theta$ is a counter and $\mathit{op}_t=\mathsf{avg}$, Datadog reports the mean of
 the deltas it stores in the bucket. The emitted form is
@@ -42,8 +48,28 @@ The $\mathit{per\_second}$ divisor is $\Delta$ on both sides.
 For the space reduction, Definition~\ref{def:ir-sem}'s $\mathrm{Agg}$ is what PromQL's
 $\mathit{op}_s$ \texttt{by} $(\overline{k})$ computes and what Datadog's
 $\mathit{op}_s{:}$ with \texttt{by \{$\overline{k}$\}} computes, on inputs just shown
-equal. That $C$ contains nothing further is by inspection of the emitter, which
-\texttt{tests\slash test\_paper\_formulas.py} performs rather than asserts: the seven
+equal. This is the step the grouping-key injectivity hypothesis is for, and the step at
+which it was never invoked: two of $q$'s grouping keys that mangle to one PromQL label
+name would merge two of Datadog's groups into one of PromQL's, so the two aggregations
+would not compute the same function however the inputs agree. The hypothesis is needed
+and Remark~\ref{rem:mangling} shows it is not vacuous --- \texttt{cluster-name} against
+\texttt{cluster\_name} is a measured instance --- so the gap was in the discharge and not
+in the statement.
+
+One hypothesis is stronger than this proof requires, in the other direction. Hypothesis
+(5) is stated for every form that reads a counter, and the sum case under (4)'s second
+branch does not use it: Proposition~\ref{prop:anchored} covers series with no sample
+before the bucket, which is exactly what (5) excludes. \S\ref{sec:emission} says the
+anchored form ``avoids'' \texttt{PHI\_SERIES\_START} for that reason, so the hypothesis
+list and the narrative disagree, and the list is the cautious one --- it asks for more
+than is needed, which costs a reader a condition rather than costing the theorem its
+truth. It is left as stated and flagged here, because the emitter records the code on
+those forms whether or not this proof consumes it, and $C$ is defined as what the
+emitter records.
+
+That $C$ contains nothing further is by inspection of the emitter. The inspection is
+performed rather than asserted, by
+\texttt{tests\slash test\_paper\_formulas.py}: the seven
 codes the hypotheses above name --- six hypotheses, the fourth naming two --- are the
 only ones it records anywhere.
 \end{proof}

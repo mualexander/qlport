@@ -8,6 +8,24 @@ languages and preserves the domain, so the claim follows from the hypothesis on 
 same argument covers a $\mathrm{BinOp}$ one of whose operands is a $\mathrm{Number}$,
 where $\chi$ takes the other operand's value.
 
+The induction carries a second clause, which the steps below use and an earlier
+version of this proof did not state: for every $\hat{e}\in\mathcal{A}$ the emitter
+translates, the PromQL result of $p_e$ carries exactly the labels $\chi(\hat{e})$, and
+its elements have pairwise distinct $\chi(\hat{e})$ values. It holds at each case for a
+different reason. On $\mathcal{K}$ the emitted expression is an aggregation by
+$\overline{k}$, so Lemma~\ref{lem:pq-matching}'s last clause gives the labels and the
+grouping gives distinctness. $\mathrm{Number}$ is a scalar and carries none.
+$\mathrm{Scale}$ is scalar--vector arithmetic, which preserves its operand's labels. And
+the two $\mathrm{BinOp}$ cases below preserve it, the first because an intersection on
+identical label sets does and the second because the result is keyed by
+$\overline{k_l}$, which the left operand already satisfies.
+
+Stating it matters because both steps below justified the clause by citing
+Lemma~\ref{lem:pq-matching}'s last clause directly, and that clause is about
+\emph{aggregations}: an operand of a $\mathrm{BinOp}$ in $\mathcal{A}$ need not be one,
+since it may itself be a $\mathrm{Scale}$ or a $\mathrm{BinOp}$. The citation was to a
+lemma that does not reach the operands it was invoked on.
+
 For $\mathrm{BinOp}(\oplus,l,r)$ with both operands vectors, write
 $\overline{k_l}=\chi(l)$ and $\overline{k_r}=\chi(r)$. By induction the two operand
 results agree between the systems, so it is enough that the two languages pair them the
@@ -23,9 +41,10 @@ values.
 If $\overline{k_r}\subsetneq\overline{k_l}$, the emitter emits
 $p_l \oplus \texttt{on}(\overline{k_r})\ \texttt{group\_left()}\ p_r$. By
 Lemma~\ref{lem:pq-matching} the result is keyed by $\overline{k_l}$, each element paired
-with the unique element of $p_r$ agreeing on $\overline{k_r}$ --- unique because $p_r$ is
-an aggregation by $\overline{k_r}$, so its elements have distinct $\overline{k_r}$
-values. That is term for term the first clause of Lemma~\ref{lem:dd-matching}. The
+with the unique element of $p_r$ agreeing on $\overline{k_r}$ --- unique by the
+induction's second clause, which gives $p_r$'s elements distinct $\chi(r)$ values. The
+earlier version said ``unique because $p_r$ is an aggregation by $\overline{k_r}$'',
+which is false as written whenever $r$ is a $\mathrm{BinOp}$ or a $\mathrm{Scale}$. That is term for term the first clause of Lemma~\ref{lem:dd-matching}. The
 symmetric case emits \texttt{group\_right()}. Taking $\overline{k_r}=\emptyset$ gives the
 ungrouped operand, where \texttt{on()} matches everything and the broadcast is Datadog's.
 
@@ -33,4 +52,13 @@ If neither key set contains the other, $\chi(q)$ is undefined, the emitter refus
 $q\notin\mathrm{dom}(T)$. Finally $C$ gains nothing, because the emitter attaches no
 caveat at a $\mathrm{BinOp}$ or a $\mathrm{Scale}$: the modifiers it chooses are decided
 by $\chi$, which is a function of the query text alone.
+
+One case this does not cover, and the theorem's statement of exactness should be read
+against it: a division whose right operand is zero. Both systems produce a
+non-real reading there rather than a number, and which one --- an infinity, a
+not-a-number, or an absent point --- is not compared anywhere in this paper.
+Definition~\ref{def:d} is explicit that it is undefined on a non-real reading and that
+every exactness test scores such a reading as a disagreement, so the theorem's equality
+is an equality of numbers at instants where both sides produce numbers. Where they do
+not, the claim is not that the two agree; it is that nothing here establishes they do.
 \end{proof}

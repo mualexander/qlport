@@ -139,8 +139,12 @@ corpus.}
 The division the catalogue was built for is between what the target cannot
 \emph{hold}, what it cannot \emph{say}, and what we have not \emph{built}. The division
 is still the right one and the answer it now returns is not the one this paper spent
-most of its life reporting: on this corpus, in this direction, the first two kinds are
-\emph{empty}. All $287$ refused occurrences --- $3.3\%$ --- are unwritten code.
+most of its life reporting: on this corpus, in this direction, the first two kinds hold
+nothing shown to be beyond reach. All $287$ refused occurrences --- $3.3\%$ --- are
+unwritten code, with one qualification this section states where it arises and carries
+everywhere the column is mentioned: $14$ of them are refused on a hypothesis this paper
+tests for the declared metrics and cannot test for theirs, so they are undecided rather
+than retracted.
 
 Six rows left those two columns, and the order matters because the last three are not
 findings about Datadog at all.
@@ -177,12 +181,34 @@ it --- the value sits inside a string literal, which the normaliser never enters
 
 \texttt{PHI\_QUANTILE} ($34$) went fifth, and it is the one that was proved.
 Corollary~\ref{cor:quantile} assumes a Datadog \emph{distribution} metric, which answers
-$\mathtt{p}NN$ from a sketch no bucketing determines. The corollary is sound and its
-hypothesis holds for none of the occurrences it refused: \texttt{integrations-core}
-declares $23{,}597$ \texttt{gauge}, $13{,}140$ \texttt{count} and $330$ \texttt{rate}
-metric names, three that two integrations declare incompatibly, and not one
-\texttt{distribution}; none of the $34$ is one. The refusal
-fires on seeing \texttt{p}$NN$\texttt{:} and never tests what the corollary requires.
+$\mathtt{p}NN$ from a sketch no bucketing determines. The corollary is sound, and the
+refusal fires on seeing \texttt{p}$NN$\texttt{:} without testing what the corollary
+requires --- but how often the hypothesis actually fails is settled for some of the
+occurrences and not all. \texttt{integrations-core} declares $23{,}597$ \texttt{gauge},
+$13{,}140$ \texttt{count} and $330$ \texttt{rate} metric names, three that two
+integrations declare incompatibly, and not one \texttt{distribution} among all
+$37{,}070$. $20$ of the $34$ name a metric in that set, so for those the hypothesis
+provably fails.
+
+The other $14$ name metrics the repository never declares, and an earlier version of
+this paragraph wrote ``none of the $34$ is one'', which reads the declared set as a
+census of the language. It is not one. Those $14$ are five names, all from the APM and
+LLM-observability families rather than from an integration:
+\texttt{ml\_obs.span.duration} and \texttt{data\_streams.payload\_size} at four
+occurrences each, \texttt{airbyte.metrics\_reporter.overall\_job\_runtime\ldots} at
+four, and \texttt{trace.langchain.request} and \texttt{trace.openai.request} at one
+each. A latency percentile over spans is exactly the quantity a sketch is for, so these
+are the occurrences where the corollary's hypothesis is most likely to hold, and nothing
+in the corpus or in this paper's experiments settles whether it does. They are reported
+as undecided for the same reason \S\ref{sec:conclusion} reports the $736$ occurrences
+whose type the repository does not declare: the instrument reaches the declared set and
+the population is larger than the declared set.
+
+So the surviving column is $20$ occurrences refused on a hypothesis shown to fail and
+$14$ on a hypothesis not tested either way. That is weaker than this paper claimed and
+it is the honest shape of it, and the measurement that would close it is one request per
+name to the vendor's metric-metadata endpoint, which needs an account carrying APM data
+rather than the integration dashboards this corpus came from.
 \texttt{SCOPE\_EMPTY\_VALUE} ($5$) went with it: Prometheus drops an empty-valued label
 at ingest, so no database it holds --- and so no image of $\phi_\rho$ --- distinguishes
 an absent tag from a present-empty one, and the exact translation of \texttt{!k:} is to

@@ -5,10 +5,14 @@ Proposition~\ref{prop:glob-regex}; a bare key or \texttt{key:*} is presence, whi
 \texttt{=\textasciitilde{}".+"} and not \texttt{".*"}, the latter also matching series
 carrying no such label; a single-key disjunction is
 Proposition~\ref{prop:disjunction}. Conjunction is the comma in both languages.
-Injectivity on label sets is needed because mangling sends \texttt{a.b} and \texttt{a\_b}
-to one name, and on metric names for the same reason: the selector has to pick out the
-series $\mathrm{name}(s)=m$ does, and \texttt{metric\_name} is the same mangling.
-Remark~\ref{rem:mangling} measures both.
+Injectivity on tag keys is needed because mangling sends \texttt{a.b} and \texttt{a\_b}
+to one label name, so a matcher on either selects series carrying the other, and
+injectivity on label \emph{sets} does not rule this out --- two colliding keys can sit in
+one series, whose label set is then unlike any other and collides with nothing while the
+matcher correspondence fails anyway. Injectivity on metric names is needed for the
+parallel reason: the selector has to pick out the series $\mathrm{name}(s)=m$ does, and
+\texttt{metric\_name} is the same mangling.
+Remark~\ref{rem:mangling} measures both classes.
 
 The empty-value hypothesis is the clause this lemma lacked until the eighth review pass,
 and it is the one that cannot be discharged by a condition on the target: Datadog

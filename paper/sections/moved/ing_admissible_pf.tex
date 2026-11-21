@@ -1,13 +1,22 @@
 \begin{proof}[Proof of Proposition~\ref{prop:admissible}]
+Write $t=u^{-1}(t')$, which exists because $u$ is onto $\mathbb{T}$; the paper's
+$u(t)=t+\Delta-\eta$ is a translation, so this costs nothing at any instance. An earlier
+version of this proof omitted the step and read $p$ at $t$ rather than at $u(t)$, which
+Definition~\ref{def:phi-sound} does not give --- and that definition says in the same
+breath that ``a definition quantifying one $t$ over both sides has no positive instance
+in this paper'', so the omission made the proposition a statement about a soundness
+notion nothing here instantiates. Proposition~\ref{prop:reverse}, whose proof genuinely
+does not need $u$ and says so, is where the asymmetry shows.
+
 Since $\phi_\rho(D)=\phi_\rho(D')$, the source query receives the same input in both
 cases:
 \[
 r:=\sem{q}_{\mathrm{DD}}(\phi_\rho(D),t)=\sem{q}_{\mathrm{DD}}(\phi_\rho(D'),t).
 \]
-Soundness would give $d(r,\sem{p}_{\mathrm{PQ}}(D,t))\le\varepsilon$ and
-$d(r,\sem{p}_{\mathrm{PQ}}(D',t))\le\varepsilon$. Because $d$ is a metric on results with
+Soundness along $u$ would give $d(r,\sem{p}_{\mathrm{PQ}}(D,u(t)))\le\varepsilon$ and
+$d(r,\sem{p}_{\mathrm{PQ}}(D',u(t)))\le\varepsilon$, with $u(t)=t'$. Because $d$ is a metric on results with
 matching label sets (and $\infty$ otherwise), the triangle inequality yields
 \[
-d\big(\sem{p}_{\mathrm{PQ}}(D,t),\sem{p}_{\mathrm{PQ}}(D',t)\big)\le 2\varepsilon . \qedhere
+d\big(\sem{p}_{\mathrm{PQ}}(D,t'),\sem{p}_{\mathrm{PQ}}(D',t')\big)\le 2\varepsilon . \qedhere
 \]
 \end{proof}

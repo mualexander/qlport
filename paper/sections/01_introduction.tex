@@ -88,7 +88,7 @@ is why it took all of them to find it, and why the coverage result comes second 
 although it came first in the work.
 
 Going from Datadog to PromQL, $96.6\%$ of query occurrences translate, and the shortfall
-is \emph{all} unfinished work: no query in the corpus is beyond reach. The $3.3\%$
+is \emph{all} unfinished work bar $14$ occurrences: no query in the corpus is shown to be beyond reach. The $3.3\%$
 carrying a gap code is code this translator has not written and the $0.1\%$ beside it
 does not parse --- $8$ occurrences of one undocumented construct, which this paper
 declines to classify, so the ceiling is $99.9\%$ once the first is written with those $8$
@@ -171,9 +171,11 @@ in both directions.
 \item \textbf{A gap catalogue, split (\S\ref{sec:gaps}).} Every refusal carries a code,
 and the catalogue separates three things most translation work runs together: what the
 target system does not \emph{hold}, what PromQL cannot \emph{say}, and what we have not
-\emph{built}. The first two were occupied for most of this paper's life and are empty at
-the end of it. Keeping them apart is what made each departure a finding rather than a
-revision, and what makes the empty column reportable at all.
+\emph{built}. The first two were occupied for most of this paper's life and hold, at the
+end of it, nothing this paper can show belongs there --- $14$ occurrences aside, refused
+on a hypothesis it can test for the metrics the vendor declares and not for theirs.
+Keeping the three apart is what made each departure a finding rather than a revision, and
+what makes the near-empty column reportable at all.
 \item \textbf{Coverage on real dashboards (\S\ref{sec:evaluation}).} $\kappa$ over the
 whole corpus, by occurrence rather than by distinct string, with the implementation order
 that produced it and the features that cost the remainder.

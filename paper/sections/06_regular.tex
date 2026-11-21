@@ -56,9 +56,11 @@ Section~\ref{sec:gaps} mentions globs on tag \emph{values}. The remaining direct
 the interesting one, and one structural fact decides most of it.
 
 \begin{lemma}[Dichotomy]\label{lem:dichotomy}
-For every glob $g$: if $n=0$ then $L(g)=\{s_0\}$ is a single word; and if $n\ge 1$ then
-$L(g)$ contains a word of every length $\ell\ge m(g)$, and every word of $L(g)$ contains
-each $s_i$ as a factor, in order.
+For every glob $g$ over a non-empty $\Sigma$: if $n=0$ then $L(g)=\{s_0\}$ is a single
+word; and if $n\ge 1$ then $L(g)$ contains a word of every length $\ell\ge m(g)$, and
+every word of $L(g)$ contains each $s_i$ as a factor, in order. ($\Sigma\neq\emptyset$ is
+what the middle clause needs and what this lemma did not say; the uses downstream supply
+it, Corollary~\ref{cor:no-glob} by assuming $|\Sigma|\ge2$ outright.)
 \end{lemma}
 
 \iffull\input{sections/moved/reg_glob_constructs}\fi
@@ -109,9 +111,12 @@ regular expression, is there \emph{any} glob denoting the same language? --- is 
 a single observation about shortest words.
 
 \begin{proposition}[Glob-expressibility is decidable]\label{prop:decidable}
-Let $r$ be a regular expression with $L(r)\neq\emptyset$, and read \texttt{*} as matching
-the empty string. It is decidable whether some glob $g$ has $L(g)=L(r)$, and a witness is
-produced when one exists.
+Let $r$ be a regular expression with $L(r)\neq\emptyset$, read \texttt{*} as matching
+the empty string, and read $L(r)$, the candidate globs and the automata below over one
+fixed non-empty alphabet $\Sigma$ --- the same $\Sigma$ Definition~\ref{def:glob} defers
+and \S\ref{sec:glob-corpus} fixes, which this proposition left unnamed although every step
+of it depends on the three being read together. It is decidable whether some glob $g$ has
+$L(g)=L(r)$, and a witness is produced when one exists.
 \end{proposition}
 \begin{proof}
 Suppose $L(r)=L(g)$ for $g=s_0*\cdots*s_n$. Taking every $w_i=\varepsilon$ gives the word
@@ -220,10 +225,17 @@ union of them.}
 Every equivalence in this section is decided over an alphabet, and for eleven passes the
 section did not say which. The question is not a formality. ``Does this regular
 expression denote the same set as that glob'' has two readings, and on this corpus they
-differ by $238$ matcher occurrences. Over all strings \texttt{.+} is no finite union of
-globs at all, so the $21$ patterns that contain it are refused; over the strings a
-Datadog tag value may contain, \texttt{.+} is the union of $c$\texttt{*} for each
-character $c$ --- $41$ branches --- and a scope can say every one of them. The second is the right
+differ by $238$ matcher occurrences. Over strings from an unbounded character set
+\texttt{.+} is no finite union of globs at all, so the $21$ patterns that contain it are
+refused; over the strings a Datadog tag value may contain, \texttt{.+} is the union of
+$c$\texttt{*} for each character $c$ --- $41$ branches --- and a scope can say every one
+of them. The first universe has to be read as unbounded and not merely as ``every
+string'': over any \emph{finite} alphabet $\Sigma$ the union
+$\bigcup_{c\in\Sigma}L(c\texttt{*})$ is $\Sigma^{+}$, which \S\ref{sec:glob-unions}
+constructs two pages earlier, so a sentence contrasting the tag alphabet with ``all
+strings'' would otherwise contradict this section's own arithmetic. What makes the
+$21$ refusals survive either reading is the bound rather than the impossibility: over
+Unicode the union exceeds $B$. The second is the right
 universe, and not as a convenience --- a string that is not a legal tag value cannot
 appear on either side of the equivalence, so admitting it compares two languages on
 words neither will ever be asked about. It is also the universe \S\ref{sec:glob-unions}
