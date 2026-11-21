@@ -49,6 +49,7 @@ PORT = 19090
 METRIC = "qlport_requests"
 HOUR = 3600
 RAW = ROOT / "data" / "raw" / "anchored"
+REGISTRY = ROOT / "paper" / "quoted_figures.json"
 
 # The same four workloads and two intervals as notebook 02, so the two tables are
 # directly comparable: one computed from the models, one read from a real server.
@@ -179,19 +180,139 @@ def collect(name: str, interval: float, base_url: str, t0: float, s, meta: dict)
     return path
 
 
+
+# --- the case no workload above reaches ------------------------------------------------
+# prop:anchored splits on whether a sample lies at or before u - D. Every workload above
+# starts its series at t = 0 and reads buckets from WARMUP = 600 s on, so an anchor always
+# exists and the second branch -- the series whose first sample falls *inside* the bucket
+# being read, which is the case C_D excludes and the reason the proposition exists -- was
+# argued from the proposal's text and from def:phi and never read off a server.
+#
+# This reads it. The series begins 20 s into the bucket at series-relative 0, scraped
+# every 15 s, so that bucket holds samples at 20, 35 and 50 s and nothing before them.
+# phi_zero runs from the second sample, so Sigma_60(0) counts two deltas and not the
+# first sample's own value, which is 5000 and deliberately enormous: the three outcomes
+# the measurement has to tell apart are 20 if the server agrees with the proof, 5020 if
+# it reads the first sample as a delta, and about 40 if it extrapolates a half-full
+# window to the width of the selector. Plain `increase` is queried beside the anchored
+# form for exactly that reason -- it is the control that shows what extrapolation does to
+# this series, so "no extrapolation" is a reading rather than a restatement of the
+# proposal.
+NO_ANCHOR = {
+    "interval": 60.0,
+    "scrape": 15.0,
+    "offset": 20.0,       # where the first sample sits inside the first bucket
+    "step": 10.0,         # increment per scrape
+    "start_value": 5000.0,
+    "duration": 600.0,
+}
+NO_ANCHOR_CANDIDATES = {
+    "increase(x[D] anchored)": "increase({m}[{d:g}s] anchored)",
+    "increase(x[D])": "increase({m}[{d:g}s])",
+}
+
+
+def no_anchor_series():
+    """A counter whose first sample falls strictly inside the first aligned bucket."""
+    from qlport.semantics.model import Series
+
+    c = NO_ANCHOR
+    ts = np.arange(c["offset"], c["duration"], c["scrape"], dtype=float)
+    vs = c["start_value"] + c["step"] * np.arange(len(ts), dtype=float)
+    return quantise(Series({}, ts, vs, kind="counter"))
+
+
+def bucket_sums(s, interval: float) -> dict[float, float]:
+    """Sigma_interval(b) at rho = zero, per aligned bucket, from this paper's model."""
+    from qlport.semantics.ingest import phi_series
+
+    d = phi_series(s, "zero")
+    out: dict[float, float] = {}
+    for t, v in zip(d.ts, d.vs):
+        b = float(np.floor(t / interval) * interval)
+        out[b] = out.get(b, 0.0) + float(v)
+    return out
+
+
+def collect_no_anchor(base_url: str, t0: float, s, meta: dict) -> Path:
+    interval = NO_ANCHOR["interval"]
+    sums = bucket_sums(s, interval)
+    buckets = sorted(b for b in sums if b + interval <= float(s.ts[-1]))
+    start = t0 + buckets[0] + interval - EVAL_EPSILON
+    end = t0 + buckets[-1] + interval - EVAL_EPSILON
+
+    payload = {
+        "workload": "no anchor", "interval": interval, "t0": t0, "metric": METRIC,
+        "config": NO_ANCHOR,
+        "grid": {"start": start, "end": end, "step": interval, "eps": EVAL_EPSILON,
+                 "convention": "bucket [b, b+interval); evaluated at b+interval-eps"},
+        "model_bucket_sums": {f"{b:g}": sums[b] for b in buckets},
+        "first_sample": float(s.ts[0]),
+        "series": {"ts": [float(t) for t in s.ts], "vs": [float(v) for v in s.vs]},
+        "candidates": {}, **meta,
+    }
+    for label, template in NO_ANCHOR_CANDIDATES.items():
+        expr = template.format(m=f"{METRIC}_total", d=interval)
+        raw = query_range(base_url, expr, start, end, interval)
+        got = series_from_response(raw)
+        payload["candidates"][label] = {"expr": expr, "response": raw}
+        print(f"    {label:28s} {len(got):3d} point(s)")
+    path = RAW / "no_anchor_60.json"
+    write_raw(path, payload)
+    print(f"    wrote {path.relative_to(ROOT)}")
+
+    # The comparison, printed and registered rather than left for a notebook: this file
+    # is the only evidence for prop:anchored's second branch, so the figures the proof
+    # quotes come straight off it.
+    read = {label: {round(t - t0 - interval + EVAL_EPSILON): v
+                    for t, v in series_from_response(c["response"]).items()}
+            for label, c in payload["candidates"].items()}
+    anchored = read["increase(x[D] anchored)"]
+    plain = read["increase(x[D])"]
+    exact = [b for b in buckets if abs(anchored.get(b, 1e30) - sums[b]) < 1e-9]
+    print(f"\n    {'bucket':>7} {'anchor?':>8} {'model':>7} {'anchored':>10} "
+          f"{'increase':>10}")
+    for b in buckets:
+        print(f"    {b:>7g} {'no' if b == buckets[0] else 'yes':>8} {sums[b]:>7g} "
+              f"{anchored.get(b, float('nan')):>10.6g} "
+              f"{plain.get(b, float('nan')):>10.6g}")
+    b0 = buckets[0]
+    fig = {
+        "na.buckets": len(buckets),
+        "na.buckets_exact": len(exact),
+        "na.no_anchor_bucket_sum": round(sums[b0], 6),
+        "na.no_anchor_anchored": round(anchored[b0], 6),
+        "na.no_anchor_plain": round(plain[b0], 1),
+        "na.first_value": round(float(s.vs[0]), 6),
+    }
+    print()
+    for k, v in fig.items():
+        print(f"    {k:<28} {v:g}")
+    if "--write-registry" in sys.argv:
+        reg = json.loads(REGISTRY.read_text())
+        reg.update(fig)
+        REGISTRY.write_text(json.dumps(reg, indent=1, sort_keys=True) + "\n")
+        print(f"\n    merged {len(fig)} keys into {REGISTRY.relative_to(ROOT)}")
+    return path
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", action="append", choices=sorted(WORKLOADS),
                     help="verify only these workloads")
     ap.add_argument("--keep", action="store_true",
                     help="leave the last container running for manual queries")
+    ap.add_argument("--no-anchor", action="store_true",
+                    help="verify prop:anchored's branch for a series that begins "
+                         "inside the bucket being read")
+    ap.add_argument("--write-registry", action="store_true",
+                    help="merge the no-anchor figures into paper/quoted_figures.json")
     args = ap.parse_args()
 
     if not shutil.which("docker"):
         print("docker not found; see the module docstring", file=sys.stderr)
         return 2
 
-    names = args.only or list(WORKLOADS)
+    names = [] if args.no_anchor else (args.only or list(WORKLOADS))
     base_url = f"http://localhost:{PORT}"
     digest = image_digest()
     now = int(time.time())
@@ -228,6 +349,38 @@ def main() -> int:
                                capture_output=True, text=True)
             if not args.keep:
                 shutil.rmtree(workdir, ignore_errors=True)
+    if args.no_anchor:
+        print("== no anchor")
+        s_na = no_anchor_series()
+        # A whole hour, as above, and for a sharper reason here: 60 divides 3600, so the
+        # series-relative bucket [0, 60) is an epoch-aligned bucket of the server's own
+        # grid. The first sample sits at t0 + 20, inside it, with nothing before it
+        # anywhere in the series -- which is what makes the first branch of
+        # prop:anchored unavailable and the second one the thing under test.
+        t0 = float((now - int(s_na.ts[-1]) - 600) // HOUR * HOUR)
+        workdir = Path(tempfile.mkdtemp(prefix="qlport-prom-"))
+        container = None
+        try:
+            backfill(workdir, openmetrics(s_na, METRIC, t0))
+            container = start(workdir)
+            wait_ready(base_url)
+            build = prometheus_version(base_url)
+            meta = {"image": IMAGE, "image_digest": digest,
+                    "prometheus_version": build.get("version"),
+                    "prometheus_revision": build.get("revision"),
+                    "collected_unix": now}
+            print(f"  prometheus {build.get('version')} on "
+                  f"{digest.split('@')[-1][:19]}…")
+            print(f"  first sample at t0+{s_na.ts[0]:g}s, inside the bucket "
+                  f"[t0, t0+{NO_ANCHOR['interval']:g}s)")
+            collect_no_anchor(base_url, t0, s_na, meta)
+        finally:
+            if container and not args.keep:
+                subprocess.run(["docker", "rm", "-f", container],
+                               capture_output=True, text=True)
+            if not args.keep:
+                shutil.rmtree(workdir, ignore_errors=True)
+
     print("\ndone; notebook 02 reads data/raw/anchored/")
     return 0
 

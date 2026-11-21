@@ -14,6 +14,11 @@ evaluation \emph{instant}, so the two summarised bucket sets one bucket apart --
 $\Delta=300$ a bucket wholly inside the warm-up --- and six of the twenty-four rows
 differed in a printed cell.
 
+All four workloads begin their series before any bucket they read, so none of them
+reaches Proposition~\ref{prop:anchored}'s second branch, where the series begins inside
+the bucket instead. A fifth run does, over $9$ buckets built for that purpose, and is
+reported with the proposition it is evidence for rather than here.
+
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/model_verification}
 \caption{The reference evaluators of \texttt{semantics/promql\_eval.py} against

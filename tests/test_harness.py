@@ -104,7 +104,13 @@ def test_series_from_response_refuses_more_than_one_series():
 
 
 # --- the verification, as a regression test -------------------------------------------
-RUNS = sorted(ANCHORED.glob("*.json"))
+# The four workloads, over the three candidates in MODELS. `no_anchor_60.json` is a
+# different experiment in the same directory -- prop:anchored's second branch, where the
+# series begins inside the bucket being read -- with its own two candidates and its own
+# test at the end of this section, so it is kept out of the parametrisation rather than
+# fed to tests that would look for candidates it does not carry.
+RUNS = sorted(p for p in ANCHORED.glob("*.json") if not p.stem.startswith("no_anchor"))
+NO_ANCHOR_RUN = ANCHORED / "no_anchor_60.json"
 
 
 def test_the_verification_cache_is_present():
@@ -180,6 +186,62 @@ def test_the_cache_is_valid_json_and_names_every_candidate():
     for path in RUNS:
         rec = json.loads(path.read_text())
         assert set(rec["candidates"]) == set(MODELS)
+
+
+def test_the_no_anchor_branch_reads_as_the_proposition_says():
+    """prop:anchored's second branch, which was argued and unmeasured until now.
+
+    Every workload in RUNS starts its series at zero and reads buckets from 600 s on, so
+    an anchor always exists and the branch that covers series beginning *inside* the
+    bucket was the one with nothing read off a server behind it. This holds the reading
+    that closed it.
+
+    The discrimination is the point, not the agreement. The first sample's value is
+    5000, so a form that read it as a delta would return 5020 for that bucket instead of
+    20; and plain `increase` over the same window returns about 31.7, because it scales a
+    half-full window to the width of the selector. Agreement with the model at 20 rules
+    out both, which a reading that merely matched could not.
+    """
+    assert NO_ANCHOR_RUN.exists(), (
+        "run `scripts/verify_anchored.py --no-anchor` (needs Docker)")
+    rec = read_raw(NO_ANCHOR_RUN)
+    t0, width, eps = rec["t0"], rec["interval"], rec["grid"]["eps"]
+    s = counter(rec["series"]["ts"], rec["series"]["vs"])
+
+    # The experiment is only about the second branch if the series really begins inside
+    # the first bucket it reads, with nothing before it.
+    first = float(rec["first_sample"])
+    assert 0 < first < width, f"first sample at {first}s is not inside [0, {width}s)"
+    assert float(s.ts[0]) == first
+
+    sums = {float(b): v for b, v in rec["model_bucket_sums"].items()}
+    read = {label: {round(t - t0 - width + eps): v
+                    for t, v in series_from_response(c["response"]).items()}
+            for label, c in rec["candidates"].items()}
+    anchored = read["increase(x[D] anchored)"]
+    plain = read["increase(x[D])"]
+
+    # Sigma recomputed here rather than trusted: the cache records the model's own sums,
+    # and a test that read them back would be checking the file against itself.
+    recomputed = {}
+    d = phi_series(s, "zero")
+    for t, v in zip(d.ts, d.vs):
+        b = float(np.floor(t / width) * width)
+        recomputed[b] = recomputed.get(b, 0.0) + float(v)
+    for b, v in sums.items():
+        assert abs(recomputed[b] - v) < 1e-9, f"bucket {b}: cache {v}, model {recomputed[b]}"
+
+    for b, want in sorted(sums.items()):
+        assert b in anchored, f"no anchored reading for bucket {b}"
+        assert reldiff(anchored[b], want) < 1e-12, (
+            f"bucket {b}: server {anchored[b]}, Sigma {want}")
+
+    b0 = min(sums)
+    assert float(s.vs[0]) == 5000.0                 # the delta a wrong reading reports
+    assert abs(anchored[b0] - 20.0) < 1e-9
+    assert plain[b0] > anchored[b0] + 1.0, (
+        "plain increase did not extrapolate, so this run no longer controls for it")
+    assert rec["prometheus_version"].startswith("3.15"), rec["prometheus_version"]
 
 
 # --- what a label matcher matches, as a real server answers it ------------------------

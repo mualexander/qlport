@@ -1,6 +1,12 @@
 {
  "dd0.queries_and_monitors": 14172,
  "dd0.translate_pct": 92.4,
+ "na.buckets": 9,
+ "na.buckets_exact": 9,
+ "na.first_value": 5000.0,
+ "na.no_anchor_anchored": 20.0,
+ "na.no_anchor_bucket_sum": 20.0,
+ "na.no_anchor_plain": 31.7,
  "nb00.ceiling_0_features_pct": 1.1,
  "nb00.ceiling_10_features_pct": 72.7,
  "nb00.ceiling_11_features_pct": 81.9,

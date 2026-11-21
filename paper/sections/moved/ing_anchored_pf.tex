@@ -34,10 +34,28 @@ nothing, because \texttt{increase} with no extrapolation reads differences betwe
 consecutive samples and has no predecessor for $t_1$. That is the same omission
 Definition~\ref{def:phi} makes: $\phi_\rho$ runs from $i=2$, so $t_1$'s own value is not
 a point of $\phi_\rho(s)$ either, and the two sums agree for that reason rather than by
-accident. This half of the argument is reasoning from the proposal's text and from
-Definition~\ref{def:phi}, not a reading: \texttt{verify\_anchored.py} has no workload
-whose series begins inside a bucket, so the no-anchor case is argued here and unmeasured,
-which is the one place this proposition is weaker than its siblings.
+accident.
+
+This half was reasoning from the proposal's text and from Definition~\ref{def:phi} and
+not a reading, because no workload in Table~\ref{tab:rollup-live} starts a series inside
+the bucket it reads --- so the branch that exists to cover such series was the one branch
+with nothing read off a server behind it. It has one now.
+\texttt{verify\_anchored.py~-\/-no-anchor} builds a counter whose first sample falls
+$20$\,s into an aligned $60$\,s bucket, scraped every $15$\,s. That bucket holds three
+samples and therefore two $\phi_{\mathsf{zero}}$ points, so $\Sigma_\Delta$ there is
+$20$; a real Prometheus~3.15.0 returns exactly that for
+\texttt{increase(x[60s] anchored)} evaluated inside it, and agrees with the model on all
+$9$ buckets of the series --- the first without an anchor and the remaining eight with
+one, which are the control.
+
+The reading separates the claim from both of its plausible failures rather than merely
+being consistent with it. The first sample's value is $5000$, which is what the form
+would report if it read that sample as a delta instead of skipping it for want of a
+predecessor. The second failure is extrapolation, and the control for it is in the same
+run: plain \texttt{increase} over the same window returns $31.7$, because it scales a
+half-full window up to the width of the selector. The anchored form returns the
+unextrapolated sum, which is what \citet{prom0052} promises and what this proposition
+needs.
 
 In both cases the total is $\Sigma_\Delta(b)$ at $\rho=\mathsf{zero}$, a function of
 $\phi_{\mathsf{zero}}(s)$ alone. The hypothesis that the bucket contains a sample is
