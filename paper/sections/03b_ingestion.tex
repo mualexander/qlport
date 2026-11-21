@@ -9,7 +9,9 @@
 \section{Ingestion and \texorpdfstring{$\phi$}{phi}-relative soundness}
 \label{sec:ingestion}
 
-\paragraph{Scope: forward portability.}
+\subsection{Scope, and what ingestion is}
+
+\noindent
 The goal is portability of \emph{queries going forward}: once an organization
 dual-writes (or switches) its telemetry, a translated query must mean the same thing
 as the original on the data each system receives from then on. Migrating stored history
@@ -50,7 +52,9 @@ interval it flushes, and Remark~\ref{rem:flush} is why those coincide on this pa
 
 \iffull\input{sections/moved/ing_flush}\fi
 
-\paragraph{The dual-write model.}
+\subsection{The dual-write model, and what soundness means here}
+
+\noindent
 In the migration this paper is about, one stream of counter observations reaches both
 systems. Prometheus stores the cumulative series $D$; Datadog stores $\phi_\rho(D)$. A
 Datadog query therefore reads $\phi_\rho(D)$ and its PromQL translation reads $D$. Write
@@ -91,6 +95,8 @@ Proposition~\ref{prop:admissible} and Corollaries~\ref{cor:raw} and~\ref{cor:rat
 Invariance is what makes an expression \emph{usable as a translation} here. The source
 query cannot distinguish two databases with the same $\phi_\rho$ image, so a sound
 translation must not distinguish them either.
+
+\subsection{What ingestion blocks}
 
 \begin{proposition}[Admissibility]\label{prop:admissible}
 Let $q$ be a Datadog query, $p=T(q)\neq\bot$, and $u$ an evaluation map whose image is
