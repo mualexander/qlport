@@ -510,3 +510,115 @@ def test_coverage_is_the_quotient_the_definition_writes():
     rows = (ROOT / "paper" / "tables" / "translation_coverage.tex").read_text()
     assert str(total - translated) == "295"
     assert "287" in rows and "8" in rows        # 287 refused plus 8 unparsed
+
+
+# --- the key set, and the two matching lemmas -----------------------------------------
+# §5 says of Definition keyset that ``$\chi$ is what the emitter computes, so the case
+# analysis below is the one the code performs rather than a description of it''. That
+# sentence is a claim about `_match_keys`, and this is where it is held to.
+
+def _chi(term):
+    from qlport.emit.promql import _match_keys
+
+    return _match_keys(term)
+
+
+def test_chi_is_the_function_the_definition_defines():
+    r"""Definition keyset, case by case, against `_match_keys`.
+
+    $\star$ for a number, $\overline{k}$ for an aggregation that groups, the operand's
+    own keys through a scaling, and for a binary operation: the other side when one is
+    $\star$, the larger when one contains the other, and undefined when neither does.
+    """
+    from qlport.emit.promql import _SCALAR
+    from qlport import ir
+
+    def agg(keys):
+        return ir.Agg("sum", tuple(keys), "by",
+                      ir.Rollup("sum", 60.0, ir.Select("m", (), "gauge"), False))
+
+    # Number is the scalar, which matches anything.
+    assert _chi(ir.Number(2.0)) is _SCALAR
+    # An aggregation is keyed by its by-list, and an empty list is one unlabelled series.
+    assert _chi(agg(["g", "h"])) == ("g", "h")
+    assert _chi(agg([])) == ()
+    # A scaling carries its operand's keys through unchanged.
+    assert _chi(ir.Scale(2.0, agg(["g"]))) == ("g",)
+
+    coarse, fine = agg(["g"]), agg(["g", "h"])
+    # One side scalar: the other side's keys.
+    assert _chi(ir.BinOp("+", ir.Number(1.0), fine, ())) == ("g", "h")
+    assert _chi(ir.BinOp("+", fine, ir.Number(1.0), ())) == ("g", "h")
+    # Equal, and one containing the other: the larger either way round.
+    assert _chi(ir.BinOp("/", coarse, coarse, ())) == ("g",)
+    assert _chi(ir.BinOp("/", fine, coarse, ())) == ("g", "h")
+    assert _chi(ir.BinOp("/", coarse, fine, ())) == ("g", "h")
+    # Neither containing the other: undefined, which is what Datadog itself rejects.
+    assert _chi(ir.BinOp("/", agg(["g"]), agg(["h"]), ())) is None
+    # And undefined propagates, so one incomparable pair poisons the whole term.
+    assert _chi(ir.BinOp("+", ir.BinOp("/", agg(["g"]), agg(["h"]), ()), coarse, ())) \
+        is None
+
+
+def test_chi_is_undefined_where_the_definition_is_silent():
+    """An aggregation that groups by exclusion has no $\\overline{k}$ to be keyed by.
+
+    Definition keyset covers `by` and says nothing about `without`, which is a PromQL
+    construct the shared IR carries and no Datadog query produces. The code returns
+    undefined rather than guessing, which is the reading that matches the definition's
+    silence -- and the one that makes `_binop` refuse instead of emitting a pairing it
+    cannot justify.
+    """
+    from qlport import ir
+
+    without = ir.Agg("sum", ("g",), "without",
+                     ir.Rollup("sum", 60.0, ir.Select("m", (), "gauge"), False))
+    assert _chi(without) is None
+    body = _environment(SECTIONS / "05_translation.tex", "definition", "def:keyset")
+    assert r"\mathsf{by}" in body
+    assert "without" not in body
+
+
+def test_the_arithmetic_extension_adds_no_caveat_of_its_own():
+    """Theorem arith says $C$ is the union of the subterms' caveats and nothing more.
+
+    Checked as behaviour rather than by reading: the caveats of a quotient are exactly
+    the union of the caveats of its two operands. A caveat introduced by the extension
+    would be a precondition the theorem does not carry.
+    """
+    left = _emit("sum:a{*} by {g}.as_count().rollup(sum, 60)")
+    right = _emit("sum:b{*} by {g}.as_count().rollup(sum, 60)")
+    both = _emit("sum:a{*} by {g}.as_count().rollup(sum, 60) "
+                 "/ sum:b{*} by {g}.as_count().rollup(sum, 60)")
+    union = {c.name for c in left.caveats} | {c.name for c in right.caveats}
+    assert {c.name for c in both.caveats} == union, (
+        sorted({c.name for c in both.caveats}), sorted(union))
+
+
+def test_the_two_lemmas_are_the_two_halves_e8_measured():
+    """Lemma dd-matching and lemma pq-matching, against the cached account.
+
+    The lemmas are stated as facts about two systems, and E8 is where both were asked.
+    `tests/test_harness_datadog.py` already checks that the emitted form reproduces the
+    pairing; what is checked here is the pair of *statements* --- that Datadog keys the
+    result by the larger key set and rejects incomparable ones, and that PromQL's
+    default matching returns nothing on the case Datadog broadcasts, which is the whole
+    reason the emitter writes an `on(...)` clause at all.
+    """
+    import json
+
+    cases = json.loads((ROOT / "data" / "raw" / "datadog"
+                        / "e8.json").read_text())["cases"]
+
+    # Datadog: keyed by the finer side, whichever operand it is.
+    for case in ("subset_lhs_finer", "subset_rhs_finer"):
+        assert set(cases[case]["datadog"]) == {"g=x,h=p"}, case
+    # Datadog: incomparable key sets are rejected, in the lemma's own words.
+    assert "subset" in cases["different_keys"]["datadog"]["__error__"]
+    # PromQL: default matching pairs identical label sets and drops the rest, so the
+    # broadcast case comes back empty while Datadog answers.
+    assert cases["rhs_ungrouped_default_matching"]["promql"] == {}
+    assert cases["rhs_ungrouped"]["promql"], "the on(...) form must recover it"
+    # PromQL: an aggregation drops every label outside its by list, __name__ included,
+    # which is why these results are keyed by g alone and not by the metric name.
+    assert all(key.startswith("g=") for key in cases["both_grouped_div"]["promql"])
