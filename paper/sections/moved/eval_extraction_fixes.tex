@@ -6,4 +6,24 @@ queries; a Grafana library panel keeps its model in the dashboard's \texttt{\_\_
 map rather than in \texttt{panels}, which hid four more; and \emph{two} of what had been
 eleven LogQL panels were PromQL alerting rules whose only offence was a backtick raw
 string in a matcher, which PromQL permits and a LogQL line-filter pattern matched.
+
+An eighth reading asked the question the other way round: not what the extractor got
+wrong, but what it does not reach at all. Every string in the three source trees that
+parses as a query was censused against the corpus, and three kinds sit outside it. Two
+are correct exclusions. A \texttt{fill} sub-request carries a query that the widget's
+own \texttt{q} already states, and a request's \texttt{metadata} names each component of
+a comma-separated \texttt{q} to attach an alias to it, so taking either would count the
+same query twice --- the corpus holds the comma-joined string, which is why those
+components look absent from it. Two of those metadata entries are neither: they preserve
+an earlier version of their own request's query, from before the author replaced a
+\texttt{\{*\}} scope with template variables, so the dashboard ships a stale copy of a
+query beside the one it runs. Taking it would have put a query into the corpus that no
+panel evaluates. The third is a real omission and small: $9$ Grafana
+annotation expressions, which are PromQL and are not panel targets, and $5$ more behind
+a plugin wrapper that keeps the panel model under its own key rather than in
+\texttt{panels}. Fourteen queries against the PromQL side's $8{,}102$, which is why the
+corpus is left as it is and pinned rather than re-extracted: every figure in this paper
+is computed over it, and moving the denominator by $0.2\%$ to add fourteen queries
+would cost more in re-derivation than it buys in coverage. The number is stated so that
+the population has a stated edge rather than an assumed one.
 \end{remark}

@@ -183,3 +183,117 @@ def test_the_controls_of_the_two_experiments_that_were_re_run_all_hold():
     assert all(c["holds"] for c in e17["controls"]), e17["controls"]
     assert {c["control"] for c in e17["controls"]} >= {
         "bare-scope-present", "bare-scope-absent"}
+
+
+# --- what the extractor does not reach -------------------------------------------------
+# The corpus is the layer under every figure in the paper, and the only check it had was
+# that `fetch_corpus.py --extract-only` reproduces it. That proves the extractor is
+# deterministic, not that it is complete. `rem:extraction-fixes` now states the edge of
+# the population; these are the counts it states.
+
+EXTRACTION_EDGE = {"annotations": 9, "plugin_wrapper": 5}
+
+
+def _source_strings() -> dict[str, set[str]]:
+    """Query-shaped strings in the source trees, by the path kind that holds them."""
+    import json as _json
+
+    out: dict[str, set[str]] = {k: set() for k in
+                                ("annotations", "plugin_wrapper", "fill", "metadata")}
+    for path in sorted((ROOT / "data" / "corpus" / "sources").rglob("*.json")):
+        try:
+            doc = _json.loads(path.read_text())
+        except (ValueError, OSError):
+            continue
+
+        def walk(node, trail):
+            if isinstance(node, dict):
+                for key, value in node.items():
+                    walk(value, trail + [str(key)])
+            elif isinstance(node, list):
+                for value in node:
+                    walk(value, trail + ["[]"])
+            elif isinstance(node, str) and node.strip():
+                flat = ".".join(t for t in trail if t != "[]")
+                if flat == "annotations.list.expr":
+                    out["annotations"].add(node.strip())
+                elif "CustomPanel.targets.expr" in flat:
+                    out["plugin_wrapper"].add(node.strip())
+                elif flat.endswith("requests.fill.q"):
+                    out["fill"].add(node.strip())
+                elif flat.endswith("requests.metadata.expression"):
+                    out["metadata"].add(node.strip())
+
+        walk(doc, [])
+    return out
+
+
+@pytest.fixture(scope="module")
+def corpus_texts() -> set[str]:
+    import json as _json
+
+    path = ROOT / "data" / "corpus" / "queries.jsonl"
+    return {_json.loads(line)["text"].strip() for line in path.read_text().splitlines()
+            if line.strip()}
+
+
+def test_the_two_kinds_outside_the_corpus_are_the_two_the_remark_names(corpus_texts):
+    """And at the counts it gives, so the stated edge is the measured one."""
+    found = _source_strings()
+    for kind, expected in EXTRACTION_EDGE.items():
+        missing = {q for q in found[kind] if q not in corpus_texts}
+        assert len(missing) == expected, (kind, len(missing), sorted(missing)[:3])
+    remark = (ROOT / "paper" / "sections" / "moved"
+              / "eval_extraction_fixes.tex").read_text()
+    assert "$9$ Grafana" in remark and "$5$ more behind" in remark
+
+
+def test_the_two_correct_exclusions_really_are_duplicates(corpus_texts):
+    """A `fill` sub-request restates the widget's own query, and a request's metadata
+    names each component of a comma-separated one to hang an alias on it.
+
+    Taking either would count a query twice. The first is checked outright -- every one
+    of those strings is already in the corpus. The second cannot be, because the corpus
+    holds the comma-joined string rather than its components, so what is checked is
+    that each component appears inside some corpus query.
+    """
+    found = _source_strings()
+    assert found["fill"], "no fill sub-requests found; the census broke"
+    assert all(q in corpus_texts for q in found["fill"]), sorted(
+        q for q in found["fill"] if q not in corpus_texts)[:3]
+
+    import re
+
+    joined = "\n".join(corpus_texts)
+    orphans = [q for q in found["metadata"]
+               if q not in corpus_texts and q not in joined]
+    # Two of the fifty-one are neither: they preserve an earlier version of their own
+    # request's query, from before the author replaced a `{*}` scope with template
+    # variables. The dashboard carries a stale copy of its own query, which is not a
+    # query it runs -- so the test is that each names a metric the corpus does hold.
+    assert len(orphans) <= 2, orphans[:4]
+    for q in orphans:
+        metric = re.match(r"[a-z0-9]+:([A-Za-z0-9_.]+)", q)
+        assert metric, q
+        assert metric.group(1) in joined, q
+
+
+def test_the_extractor_reproduces_the_committed_corpus():
+    """`--extract-only` over the cached sources must give back the committed file.
+
+    Determinism rather than completeness, which is the distinction the remark draws,
+    and the cheaper half of it: the counts above are what completeness costs to check.
+    """
+    import subprocess
+
+    path = ROOT / "data" / "corpus" / "queries.jsonl"
+    before = path.read_bytes()
+    proc = subprocess.run(
+        [str(ROOT / ".venv" / "bin" / "python"),
+         str(ROOT / "scripts" / "fetch_corpus.py"), "--extract-only"],
+        capture_output=True, cwd=ROOT, timeout=600)
+    try:
+        assert proc.returncode == 0, proc.stderr.decode()[-400:]
+        assert path.read_bytes() == before, "re-extraction changed the corpus"
+    finally:
+        path.write_bytes(before)

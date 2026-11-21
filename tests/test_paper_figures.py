@@ -1384,6 +1384,10 @@ CORPUS_DERIVED: tuple[tuple[float, str, object], ...] = (
      lambda: __import__("test_paper_formulas").rate_witness()[0]),
     (0.667, "and where it does not",
      lambda: __import__("test_paper_formulas").rate_witness()[1]),
+    # What the extractor does not reach, as a share of the population it builds.
+    (0.2, "the fourteen queries outside the corpus, over the PromQL side it would "
+          "have joined",
+     lambda: round(14 / len(_promql_kept()) * 100, 1)),
     (3.15, "the Prometheus the measurements were taken against",
      lambda: float(".".join(
          _cache("topk/ranking.json")["provenance"]["prometheus_version"]
