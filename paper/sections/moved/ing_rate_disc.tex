@@ -9,9 +9,13 @@ $\phi_\rho$''. They do not exhaust the inputs: when the computed increase is pos
 \texttt{rate} derives a \texttt{durationToZero} from the \emph{absolute value} of the
 first sample inside the window, and $\phi_\rho$ erases absolute values exactly as it
 erases $v_1$. Two databases differing by a constant offset therefore have equal
-$\phi_\rho$ images and different \texttt{rate} readings --- $0.628$ against $0.667$ on an
-ordinary counter --- and the dependence is confirmed against a real Prometheus~3.15.0
-rather than against this paper's model of it. So \texttt{rate} is inadmissible on
+$\phi_\rho$ images and different \texttt{rate} readings. The witness is small enough to
+state: four samples $15$\,s apart inside a $60$\,s window, rising by $10$ each time, so
+$\phi_\rho$ is three deltas of $10$ wherever the counter starts. At a first value of $1$
+the \texttt{durationToZero} clip binds and the start-of-window extrapolation is cut to
+$1.5$\,s; at $4$ it does not bind and the full $5$\,s to the window edge is used. The
+readings are $0.628$ and $0.667$ --- and the dependence is confirmed against a real
+Prometheus~3.15.0 rather than against this paper's model of it. So \texttt{rate} is inadmissible on
 $\mathcal{C}_{\mathrm{warm}}$ too, and the class on which it is admissible is smaller
 than the one named here. Nothing downstream rests on it: §\ref{sec:translation} cites
 Corollary~\ref{cor:raw}, not this one, and \texttt{rate} is never emitted.

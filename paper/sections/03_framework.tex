@@ -142,6 +142,17 @@ Differing label sets give $\infty$ rather than a large number because they are a
 different kind of error: the translation returned the wrong \emph{series}, and no
 tolerance should absorb that.
 
+\noindent
+A result maps label sets to $\mathbb{R}$, so a reading that is absent is not a value in
+a result but a label set missing from its domain, which the $\infty$ case already
+covers. An evaluator can nonetheless hand back a \texttt{NaN} --- PromQL does for a
+window with too few samples --- and \texttt{metrics.py} propagates it, so $d$ is
+\texttt{NaN} on a pair the definition does not admit. Every exactness test in this paper
+compares $d$ against a tolerance, and a \texttt{NaN} comparison is false, so such a
+bucket is scored as a disagreement rather than as agreement. That is the conservative
+direction, and it is the reason Lemma~\ref{lem:metric} is a statement about results and
+not about whatever an evaluator returns.
+
 \begin{lemma}[$d$ is a metric]\label{lem:metric}
 $\delta$ is a metric on $\mathbb{R}$, and $d$ is an extended metric on results.
 \end{lemma}

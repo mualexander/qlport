@@ -347,3 +347,166 @@ def test_the_reasons_the_corpus_refusals_carry_are_the_two_the_section_names():
     reasons = {regex_to_globs(r["regex"]).reason
                for r in rows if r["taken"] == "none"}
     assert reasons == {"union-too-large", "unbounded-character-class"}, reasons
+
+
+# --- the corollary with a witness the paper gave as two numbers -----------------------
+
+def rate_clip() -> float:
+    r"""The start-of-window extrapolation the clip cuts to, seconds.
+
+    The quantity the witness turns on: `sampled * (v_1 / increase)` at the clipped base,
+    which is what the remark states as $1.5$\,s.
+    """
+    sampled, first, increase = 990.0 - 945.0, 1.0, 30.0
+    return round(sampled * (first / increase), 3)
+
+
+def rate_witness() -> tuple[float, float]:
+    r"""Two databases with equal $\phi_\rho$ images and different `rate` readings.
+
+    Corollary rate's negative half, as a construction. The paper gave the result as
+    ``$0.628$ against $0.667$ on an ordinary counter'' and gave no witness, so the
+    reader had the conclusion and no way to it; this is the counter.
+
+    Four samples $15$\,s apart inside a $60$\,s window, rising by $10$ each time, so
+    $\phi_\rho$ is three deltas of $10$ whatever the series starts at. `rate` reads the
+    absolute first value through \texttt{durationToZero}: at a base of $1$ the clip
+    binds and the extrapolation is cut to $1.5$\,s, at a base of $4$ it does not and the
+    full $5$\,s to the window edge is used. Equal images, different readings, so the
+    expression is not $\phi_\rho$-invariant -- and the series begins inside the window,
+    which is where the corollary says to look.
+    """
+    import numpy as np
+
+    from qlport.semantics.ingest import Series, phi_series
+    from qlport.semantics.promql_eval import rate
+
+    t, width = 1000.0, 60.0
+    ts = np.array([945.0, 960.0, 975.0, 990.0])
+    readings, images = [], []
+    for base in (1.0, 4.0):
+        vs = np.array([base + 10.0 * i for i in range(4)])
+        readings.append(round(rate(ts, vs, t, width), 3))
+        phi = phi_series(Series({"svc": "a"}, ts, vs, kind="counter"), "zero")
+        images.append((tuple(phi.ts), tuple(phi.vs)))
+    assert images[0] == images[1], images      # the premise: equal phi images
+    return readings[0], readings[1]
+
+
+def test_rate_is_not_phi_invariant_and_here_is_why():
+    clipped, unclipped = rate_witness()
+    assert (clipped, unclipped) == (0.628, 0.667), (clipped, unclipped)
+    body = _environment(SECTIONS / "03b_ingestion.tex", "corollary", "cor:rate")
+    assert "durationToZero" in body.replace("\\", "")
+    # The corollary's positive half names the class, and the remark withdraws it.
+    assert r"\mathcal{C}_{\mathrm{warm}}" in body
+    withdrawal = (SECTIONS / "moved" / "ing_rate_disc.tex").read_text()
+    assert "inadmissible on" in withdrawal and "0.628" in withdrawal
+
+
+def test_the_clip_the_witness_turns_on_is_in_the_model():
+    """`durationToZero` is the mechanism, so the port has to contain it.
+
+    The corollary is explicit that the dependence is in Prometheus's implementation and
+    not in its documentation, which makes the ported line the only written statement of
+    it this paper controls.
+    """
+    import inspect
+
+    from qlport.semantics import promql_eval
+
+    source = inspect.getsource(promql_eval.rate)
+    assert "to_zero" in source
+    assert "sv[0]" in source, "the clip must read the absolute first sample"
+
+
+# --- the result distance, its three cases and the lemma that it is a metric -----------
+
+def test_the_distance_has_the_three_cases_the_definition_gives():
+    r"""Definition d, case by case, including the one the prose had to add.
+
+    The empty-domain case was in `metrics.py` before it was in the definition --- two
+    results that both select nothing agree, and a maximum over the empty set would
+    otherwise leave $d$ undefined on exactly the pairs §3b's failure modes produce.
+    """
+    import math
+
+    from qlport.metrics import d
+
+    assert d({}, {}) == 0.0
+    assert d({("a",): 1.0}, {("a",): 1.0}) == 0.0
+    assert d({("a",): 1.0}, {("a",): 2.0}) == 0.5
+    assert math.isinf(d({("a",): 1.0}, {("b",): 1.0}))
+    assert math.isinf(d({("a",): 1.0}, {}))
+    # delta(0, 0) = 0 is part of the definition, not a division to avoid.
+    assert d({("a",): 0.0}, {("a",): 0.0}) == 0.0
+
+
+def test_delta_is_a_metric_and_d_is_an_extended_one():
+    """Lemma metric, numerically. The proof is in the appendix; this is the sanity.
+
+    Not decoration, as the section says: Proposition admissible is a triangle-inequality
+    argument, so a delta that failed the inequality would take an argument with it.
+    """
+    import itertools
+
+    from qlport.metrics import d, reldiff
+
+    values = [-100.0, -3.5, -1.0, 0.0, 0.5, 1.0, 2.0, 7.25, 1e6]
+    for a, b in itertools.product(values, repeat=2):
+        assert reldiff(a, b) == reldiff(b, a)                      # symmetry
+        assert (reldiff(a, b) == 0.0) == (a == b)                   # identity
+        assert 0.0 <= reldiff(a, b) <= 2.0
+    for a, b, c in itertools.product(values, repeat=3):
+        assert reldiff(a, c) <= reldiff(a, b) + reldiff(b, c) + 1e-12, (a, b, c)
+    # And d inherits all three on results over a shared domain.
+    keys = [("x",), ("y",)]
+    results = [{k: v for k, v in zip(keys, pair)}
+               for pair in itertools.product(values[:5], repeat=2)]
+    for r1, r2 in itertools.product(results, repeat=2):
+        assert d(r1, r2) == d(r2, r1)
+        assert (d(r1, r2) == 0.0) == (r1 == r2)
+
+
+def test_an_absent_reading_is_scored_against_the_translation():
+    """The NaN convention §3 now states, and the direction it errs in.
+
+    `d` is NaN where a reading is, which is outside Definition d's range -- a result
+    maps into the reals. What matters is that every exactness test compares against a
+    tolerance, and NaN fails that comparison, so the bucket counts as a disagreement.
+    An implementation that scored it as agreement would inflate every exactness figure
+    in the paper, and this is the test that it does not.
+    """
+    import math
+
+    from qlport.metrics import d
+
+    nan = float("nan")
+    assert math.isnan(d({("a",): nan}, {("a",): 1.0}))
+    assert math.isnan(d({("a",): nan}, {("a",): nan}))
+    assert not (d({("a",): nan}, {("a",): 1.0}) <= 1e-12)
+    assert not (d({("a",): nan}, {("a",): nan}) <= 1e-12)
+    body = _environment(SECTIONS / "03_framework.tex", "definition", "def:d")
+    assert r"\mathbb{R}" in body or r"\infty" in body
+    # The convention is stated beside the definition rather than left to the code.
+    section = (SECTIONS / "03_framework.tex").read_text()
+    assert "NaN" in section and "conservative" in section
+
+
+def test_coverage_is_the_quotient_the_definition_writes():
+    """Definition kappa over the corpus, with multiplicity, against the registry.
+
+    The denominator is the multiset: a query on forty dashboards counts forty times,
+    which is why kappa is an occurrence share and why §4's parse rates, which are
+    deliberately over distinct queries, are a different kind of number.
+    """
+    import json
+
+    reg = json.loads((ROOT / "paper" / "quoted_figures.json").read_text())
+    translated = reg["nb03.kappa_occurrences"]
+    total = reg["nb03.corpus_occurrences"]
+    assert round(translated / total * 100, 1) == reg["nb03.kappa_pct"]
+    # Everything not translated is bottom by the definition, the unparsed included.
+    rows = (ROOT / "paper" / "tables" / "translation_coverage.tex").read_text()
+    assert str(total - translated) == "295"
+    assert "287" in rows and "8" in rows        # 287 refused plus 8 unparsed

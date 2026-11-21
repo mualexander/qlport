@@ -1376,6 +1376,14 @@ CORPUS_DERIVED: tuple[tuple[float, str, object], ...] = (
      ["reported_by_range"]["1mo"]),
     (3500, "the seconds of points the run submitted",
      lambda: _cache("datadog/e18.json")["provenance"]["span"]),
+    # Corollary rate's witness, constructed in tests/test_paper_formulas.py rather than
+    # copied: two databases with equal phi images whose `rate` readings differ.
+    (1.5, "the start-of-window extrapolation the clip cuts to, seconds",
+     lambda: __import__("test_paper_formulas").rate_clip()),
+    (0.628, "what rate() reads where the durationToZero clip binds",
+     lambda: __import__("test_paper_formulas").rate_witness()[0]),
+    (0.667, "and where it does not",
+     lambda: __import__("test_paper_formulas").rate_witness()[1]),
     (3.15, "the Prometheus the measurements were taken against",
      lambda: float(".".join(
          _cache("topk/ranking.json")["provenance"]["prometheus_version"]
