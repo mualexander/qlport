@@ -59,8 +59,9 @@ still run the suite against data it already has.
 Two steps reach the network and are therefore not in any target. `scripts/fetch_corpus.py`
 downloads the corpus and writes `data/corpus/queries.jsonl`, which is committed;
 `scripts/heldout_fetch.py` does the same for the held-out set in `data/heldout/`, taking
-community dashboards past the rank the corpus stopped at and `integrations-core` at a
-later commit. Both pin what they fetched in a manifest beside the queries, and neither
+community dashboards past the rank the corpus stopped at, `integrations-core` at a later
+commit, and `integrations-extras` --- a repository the corpus does not touch, which is
+where the held-out kappa comes from. Both pin what they fetched in a manifest beside the queries, and neither
 needs to run again to reproduce anything in the paper --- `make data` scores the committed
 held-out queries with `scripts/heldout_eval.py` and cross-validates the committed corpus
 with `scripts/heldout_split.py`. Re-running `heldout_fetch.py` replaces the held-out set

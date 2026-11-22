@@ -223,8 +223,16 @@ def extract_grafana() -> tuple[list[corpus.Query], dict]:
     return out, dict(dashboards=len(index), dashboards_with_promql=used)
 
 
-def extract_integrations_core() -> tuple[list[corpus.Query], dict]:
-    root = SOURCES / "integrations-core"
+def extract_integrations_core(name: str = "integrations-core") -> tuple[
+        list[corpus.Query], dict]:
+    """Datadog dashboard queries out of one `*/assets/dashboards/*.json` tree.
+
+    `name` is both the subdirectory under SOURCES and the source label, and exists so
+    that DataDog/integrations-extras --- which ships dashboards in the same layout and
+    is the held-out Datadog set of `scripts/heldout_fetch.py` --- is read by this
+    function rather than by a second copy of it.
+    """
+    root = SOURCES / name
     out: list[corpus.Query] = []
     files = unreadable = 0
     for path in sorted(root.rglob("assets/dashboards/*.json")):
@@ -235,7 +243,7 @@ def extract_integrations_core() -> tuple[list[corpus.Query], dict]:
             continue
         files += 1
         out.extend(corpus.datadog_dashboard_queries(
-            doc, source="integrations-core", origin=str(path.relative_to(root))))
+            doc, source=name, origin=str(path.relative_to(root))))
     return out, dict(dashboards=files, unreadable=unreadable)
 
 

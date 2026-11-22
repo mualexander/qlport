@@ -518,15 +518,118 @@ def test_the_held_out_table_says_what_the_registry_says(reg):
     assert num(gf[4]) == reg["ho.gf_v1_pct"]
     assert num(gf[5]) == reg["ho.gf_v2_pct"]
     assert num(gf[6]) == reg["ho.gf_residual"]
-    sub = next(r for lab, r in by_label.items() if lab.startswith(r"\quad"))
+    sub = next(r for lab, r in by_label.items() if "the corpus lacks" in lab)
     assert num(sub[2]) == reg["ho.gf_novel_distinct"]
     assert num(sub[5]) == reg["ho.gf_novel_v2_pct"]
     assert num(insample[5]) < num(sub[5]), (
         "the text says the frozen grammar does no worse out of sample; if that stops "
         "being true the paragraph has to change, not this assertion")
-    dd = next(r for lab, r in by_label.items() if "integrations-core" in lab)
+    ddin = next(r for lab, r in by_label.items() if "the corpus's $283$" in lab)
+    assert num(ddin[1]) == reg["ho.dd_in_sample_queries"]
+    assert num(ddin[2]) == reg["ho.dd_in_sample_distinct"]
+    assert num(ddin[4]) == reg["ho.dd_in_sample_v1_pct"]
+    assert num(ddin[5]) == reg["ho.dd_in_sample_v2_pct"]
+    dd = next(r for lab, r in by_label.items() if "later commit" in lab)
     assert num(dd[1]) == reg["ho.dd_queries"]
     assert num(dd[2]) == reg["ho.dd_distinct"]
+    ex = next(r for lab, r in by_label.items() if "integrations-extras" in lab)
+    assert num(ex[1]) == reg["ho.ex_queries"]
+    assert num(ex[2]) == reg["ho.ex_distinct"]
+    assert num(ex[3]) == reg["ho.ex_raw_pct"]
+    assert num(ex[4]) == reg["ho.ex_v1_pct"]
+    assert num(ex[5]) == reg["ho.ex_v2_pct"]
+    assert num(ex[6]) == reg["ho.ex_residual"]
+
+
+def test_the_in_sample_datadog_row_reproduces_the_parse_coverage_table():
+    """The held-out table's comparator is the paper's own pipeline, or it is nothing.
+
+    Section 4's table is written by notebook 00 over the corpus; this row is written by
+    `scripts/heldout_eval.py` over the same queries. They are two programs reading one
+    population, so every column has to agree --- and the residual of six is the tightest
+    of them, because it is a count and not a rate rounded to a decimal place. If this
+    fails, the held-out numbers beside it were produced by something that is not the
+    pipeline the paper describes.
+    """
+    want = next(r for r in rows("parse_coverage")[1:] if r[0] == "datadog")
+    got = next(r for r in rows("heldout_coverage")[1:] if "the corpus's $283$" in r[0])
+    for col, what in ((1, "queries"), (2, "distinct"), (3, "raw"),
+                      (4, "v1"), (5, "v2"), (6, "residual")):
+        assert num(got[col]) == num(want[col]), (
+            f"{what}: the held-out table says {got[col]}, "
+            f"tab:parse-coverage says {want[col]}")
+
+
+def test_the_disjoint_datadog_holdout_is_disjoint_and_large_enough(reg):
+    """The extras holdout is the paper's only well-powered held-out kappa.
+
+    Two things make it one, and neither may be assumed. It has to be disjoint: the
+    fetcher drops any string whose instantiated form the corpus holds, so the evaluated
+    population must be all-novel, and that is recomputed here from the two committed
+    jsonl files rather than read back out of the manifest. And it has to be big enough
+    that 96.7% means something at one decimal place, which the week-of-upstream-change
+    holdout is not.
+    """
+    import sys
+    sys.path.insert(0, str(ROOT / "src"))
+    from qlport import corpus as c
+    train = {c.normalise("datadog", q.text)
+             for q in c.read_queries(ROOT / "data" / "corpus" / "queries.jsonl")
+             if q.lang == "datadog"}
+    held = [q for q in c.read_queries(ROOT / "data" / "heldout" / "queries.jsonl")
+            if q.source == "integrations-extras" and q.lang == "datadog"]
+    leaked = [q for q in held if c.normalise("datadog", q.text) in train]
+    assert not leaked, f"{len(leaked)} of the extras queries are in the training corpus"
+    assert len(held) == reg["ho.ex_queries"] == reg["ho.ex_kappa_occurrences"]
+    assert len({q.origin for q in held}) == reg["ho.ex_dashboards"]
+    e = _ho()["integrations-extras"]
+    assert e["shared_distinct"] == 0 and e["novel_distinct"] == e["distinct"]
+    assert reg["ho.ex_kappa_occurrences"] > 1000, (
+        "below about a thousand occurrences the prose cannot call this a rate; it "
+        "would have to be reported the way the later-commit holdout is")
+
+
+def test_the_held_out_refusals_are_all_catalogued_families(reg):
+    """The claim that out-of-sample failure finds no new mode, as an assertion.
+
+    This is the one thing a held-out kappa can establish that an in-sample one cannot,
+    and section 7 leans on it: the shortfall is structural rather than specific to this
+    corpus. The evidence is containment --- every gap code the disjoint repository
+    raises is one the corpus already raises --- so if a fifth family ever appears here,
+    the paragraph is wrong and has to be rewritten rather than re-rounded.
+    """
+    ho = _ho()
+    out = set(ho["kappa_extras"]["gaps"])
+    inside = set(ho["kappa_in_sample"]["gaps"])
+    assert out <= inside, f"gap codes seen only out of sample: {sorted(out - inside)}"
+    assert len(out) == 4, f"the prose names four: {sorted(out)}"
+    for name, n in ho["kappa_extras"]["gaps"].items():
+        assert reg[f"ho.ex_gap_{name.lower()}"] == n
+    k = ho["kappa_extras"]
+    assert (k["by_outcome_occ"]["translated"] + k["by_outcome_occ"]["bottom"]
+            + k["by_outcome_occ"]["unparsed"]) == k["occurrences"]
+
+
+def test_the_held_out_kappa_is_not_worse_than_the_in_sample_one(reg):
+    """The headline comparison, with the in-sample side checked against notebook 03.
+
+    `heldout_eval.py` recomputes kappa over the corpus with the same classify() the
+    notebook uses, which makes it a control: if it does not return the notebook's
+    96.6% the held-out figure beside it was produced by a different translator.
+    """
+    assert reg["ho.kappa_in_sample_pct"] == reg["nb03.kappa_pct"]
+    assert reg["ho.kappa_in_sample_occurrences"] == reg["nb03.corpus_occurrences"]
+    assert reg["ho.ex_kappa_pct"] >= reg["ho.kappa_in_sample_pct"], (
+        "the abstract, the introduction and section 7 all say the held-out rate does "
+        "not fall; if it does, those three sentences change")
+    # The fit the Datadog grammar made to the corpus, in sample and out of it. The
+    # paper's claim is that four fifths of the climb was the language, so the
+    # out-of-sample gain has to be most of the in-sample one and not all of it.
+    assert 0 < reg["ho.ex_gain_points"] < reg["ho.dd_in_sample_gain_points"]
+    assert reg["ho.ex_v2_pct"] == reg["ho.dd_in_sample_v2_pct"]
+    # One feature beyond the 25, and it is the two strings that do not parse.
+    assert reg["ho.ex_novel_features"] == 1
+    assert reg["ho.ex_residual"] == reg["ho.ex_unparsed"] == 2
 
 
 def test_the_temporal_holdout_names_both_commits_and_its_own_size(reg):

@@ -14,6 +14,11 @@ nothing it writes can touch the training corpus.
   integrations-core The same repository at a later commit. Only query strings absent
                     from the committed corpus are held out; the dashboards that did
                     not change between the two commits *are* the training data.
+  integrations-extras DataDog/integrations-extras: the community- and partner-maintained
+                    sibling of integrations-core, same `*/assets/dashboards/*.json`
+                    layout, different authors, never read here. This is the disjoint
+                    Datadog set, and the only one of the three with enough queries in
+                    it to estimate a rate.
 
 Frozen means frozen: nothing downstream of this script may change `src/qlport/`,
 and the point of the exercise is lost if it does.
@@ -21,6 +26,7 @@ and the point of the exercise is lost if it does.
 Usage
   .venv/bin/python scripts/heldout_fetch.py --grafana-to 700
   .venv/bin/python scripts/heldout_fetch.py --integrations-core
+  .venv/bin/python scripts/heldout_fetch.py --integrations-extras
   .venv/bin/python scripts/heldout_fetch.py --all
 """
 from __future__ import annotations
@@ -43,6 +49,11 @@ from qlport import corpus  # noqa: E402
 CORPUS = ROOT / "data" / "corpus"
 HELDOUT = ROOT / "data" / "heldout"
 SOURCES = HELDOUT / "sources"
+
+# Not in fetch_corpus.REPOS, deliberately: the training fetcher must not be able to
+# reach this repository, or the held-out set stops being held out.
+EXTRAS = dict(repo="DataDog/integrations-extras", ref="master",
+              keep=("assets/dashboards/",), suffix=".json")
 
 
 def _fetch_corpus_module():
@@ -139,13 +150,16 @@ def main() -> int:
     ap.add_argument("--grafana-to", type=int, default=0,
                     help="list Prometheus dashboards down to this download rank")
     ap.add_argument("--integrations-core", action="store_true")
+    ap.add_argument("--integrations-extras", action="store_true")
     ap.add_argument("--all", action="store_true")
     args = ap.parse_args()
     if args.all:
         args.grafana_to = args.grafana_to or 700
         args.integrations_core = True
-    if not args.grafana_to and not args.integrations_core:
-        ap.error("nothing to do: pass --grafana-to N, --integrations-core or --all")
+        args.integrations_extras = True
+    if not (args.grafana_to or args.integrations_core or args.integrations_extras):
+        ap.error("nothing to do: pass --grafana-to N, --integrations-core, "
+                 "--integrations-extras or --all")
 
     HELDOUT.mkdir(parents=True, exist_ok=True)
     SOURCES.mkdir(parents=True, exist_ok=True)
@@ -181,6 +195,39 @@ def main() -> int:
               f"{len(fresh):,} absent from the corpus "
               f"({meta['distinct_held_out']:,} distinct)")
         _write(fresh, "integrations-core")
+
+    if args.integrations_extras:
+        print("integrations-extras (a disjoint repository)")
+        meta = fc.fetch_repo("integrations-extras", EXTRAS)
+        rows, st = fc.extract_integrations_core("integrations-extras")
+        _, already = seen()
+        fresh = [q for q in rows
+                 if corpus.normalise("datadog", q.text) not in already]
+        meta.update(st)
+        # Counted per language. A widget query and the formula that combines several of
+        # them are different populations in this paper, and `tab:parse-coverage` keeps
+        # them in separate rows, so the manifest does not add them together.
+        for lang in ("datadog", "datadog_formula"):
+            at = [q for q in rows if q.lang == lang]
+            out = [q for q in fresh if q.lang == lang]
+            tag = "" if lang == "datadog" else "_formula"
+            meta[f"queries{tag}_at_commit"] = len(at)
+            meta[f"queries{tag}_held_out"] = len(out)
+            meta[f"distinct{tag}_at_commit"] = len({corpus.normalise(lang, q.text)
+                                                    for q in at})
+            meta[f"distinct{tag}_held_out"] = len({corpus.normalise(lang, q.text)
+                                                   for q in out})
+            meta[f"shared{tag}_with_corpus"] = (meta[f"distinct{tag}_at_commit"]
+                                                - meta[f"distinct{tag}_held_out"])
+            meta[f"dashboards{tag}_held_out"] = len({q.origin for q in out})
+        manifest["integrations-extras"] = meta
+        print(f"  {meta['queries_at_commit']:,} Datadog widget queries in "
+              f"{st['dashboards']} dashboards at {meta['commit'][:12]}, "
+              f"{meta['queries_held_out']:,} absent from the corpus "
+              f"({meta['distinct_held_out']:,} distinct, "
+              f"{meta['shared_with_corpus']} shared) across "
+              f"{meta['dashboards_held_out']} dashboards")
+        _write(fresh, "integrations-extras")
 
     manifest_path.write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
     print(f"wrote {manifest_path.relative_to(ROOT)}")

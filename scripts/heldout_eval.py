@@ -7,12 +7,15 @@ re-derive what it would have been had it seen half the corpus --- and it is the 
 section 7 names first: grammar v2 is v1 plus every production the corpus showed was
 missing. The only honest test of that fit is a corpus the grammar was not built against.
 
-`scripts/heldout_fetch.py` provides two:
+`scripts/heldout_fetch.py` provides three:
 
   grafana           Prometheus dashboards past download rank 200, which the corpus
                     stopped at. Never listed, downloaded or read here.
   integrations-core The same repository at a later commit, restricted to query strings
                     the corpus does not contain.
+  integrations-extras A different repository: the community- and partner-maintained
+                    sibling, 209 dashboards by other authors in the same file layout.
+                    This is the one Datadog holdout with the size to estimate a rate.
 
 This script reports, on each of them, exactly the columns Table~ref{tab:parse-coverage}
 reports in sample --- raw, v1, v2, residual --- plus the feature-vocabulary ceiling and,
@@ -259,13 +262,36 @@ def main() -> int:
           f"raw {gi['raw_pct']}%  v1 {gi['v1_pct']}%  v2 {gi['v2_pct']}%  "
           f"residual {gi['residual']}")
 
+    # The matched in-sample Datadog comparator, for the same reason. This one should
+    # reproduce Table~\ref{tab:parse-coverage}'s datadog row outright, because that row
+    # is integrations-core alone; if it does not, this script is not the paper's
+    # pipeline and nothing below it means anything.
+    dd_train = [q for q in train if q.source == "integrations-core"
+                and q.lang == "datadog"]
+    res["datadog_in_sample"] = measure(dd_train, "datadog", vocab["datadog"], set())
+    di = res["datadog_in_sample"]
+    print(f"Datadog in sample: {di['queries']:,} queries, {di['distinct']:,} distinct, "
+          f"raw {di['raw_pct']}%  v1 {di['v1_pct']}%  v2 {di['v2_pct']}%  "
+          f"residual {di['residual']}")
+
     rows = [[r"Grafana, the corpus's $200$",
              f"{gi['queries']:,}", f"{gi['distinct']:,}", pct(gi["raw_pct"] / 100),
              pct(gi["v1_pct"] / 100), pct(gi["v2_pct"] / 100), f"{gi['residual']:,}"]]
     for source, lang, label in (
             ("grafana", "promql", r"Grafana, @N it never saw"),
+            ("@dd-in-sample", "datadog",
+             r"\texttt{integrations-core}, the corpus's $@N$"),
             ("integrations-core", "datadog",
-             r"\texttt{integrations-core}, later commit")):
+             r"\quad its later commit's new strings"),
+            ("integrations-extras", "datadog",
+             r"\texttt{integrations-extras}, @N others")):
+        if source == "@dd-in-sample":
+            m = di
+            rows.append([label.replace("@N", f"{m['dashboards']}"),
+                         f"{m['queries']:,}", f"{m['distinct']:,}",
+                         pct(m["raw_pct"] / 100), pct(m["v1_pct"] / 100),
+                         pct(m["v2_pct"] / 100), f"{m['residual']:,}"])
+            continue
         qs = [q for q in held if q.source == source and q.lang == lang]
         if not qs:
             print(f"\n{label}: nothing held out")
@@ -295,11 +321,20 @@ def main() -> int:
                          pct(m["novel_v1_pct"] / 100), pct(m["novel_v2_pct"] / 100),
                          "---"])
 
-    dd = [q for q in held if q.source == "integrations-core" and q.lang == "datadog"]
-    if dd:
-        res["kappa"] = kappa(dd)
-        k = res["kappa"]
-        print(f"\nfrozen translator on the later commit: kappa = {k['kappa_occ_pct']}% "
+    # kappa, in sample and on each held-out Datadog population. The in-sample run is
+    # here as a check and not as a result: it calls notebook 03's classify() over
+    # notebook 03's input, so it must return notebook 03's kappa.
+    for key, qs, what in (
+            ("kappa_in_sample", dd_train, "the corpus"),
+            ("kappa_extras",
+             [q for q in held if q.source == "integrations-extras"
+              and q.lang == "datadog"], "integrations-extras"),
+            ("kappa", [q for q in held if q.source == "integrations-core"
+                       and q.lang == "datadog"], "the later commit")):
+        if not qs:
+            continue
+        res[key] = k = kappa(qs)
+        print(f"\nfrozen translator on {what}: kappa = {k['kappa_occ_pct']}% "
               f"of {k['occurrences']:,} occurrences, {k['kappa_distinct_pct']}% of "
               f"{k['distinct']:,} distinct")
         print(f"  outcomes {k['by_outcome_occ']}")
@@ -350,6 +385,34 @@ def main() -> int:
             "ho.dd_ceiling_pct": d["ceiling_occ_pct"],
             "ho.dd_novel_features": len(d["novel_features"]),
         })
+    if "integrations-extras" in res:
+        e = res["integrations-extras"]
+        xm = manifest["integrations-extras"]
+        fig.update({
+            "ho.ex_dashboards_shipped": xm["dashboards"],
+            "ho.ex_dashboards": e["dashboards"], "ho.ex_queries": e["queries"],
+            "ho.ex_distinct": e["distinct"], "ho.ex_raw_pct": e["raw_pct"],
+            "ho.ex_v1_pct": e["v1_pct"], "ho.ex_v2_pct": e["v2_pct"],
+            "ho.ex_residual": e["residual"],
+            "ho.ex_ceiling_pct": e["ceiling_occ_pct"],
+            "ho.ex_novel_features": len(e["novel_features"]),
+            "ho.ex_shared_distinct": e["shared_distinct"],
+            "ho.ex_novel_distinct": e["novel_distinct"],
+            "ho.ex_novel_v1_pct": e["novel_v1_pct"],
+            "ho.ex_novel_v2_pct": e["novel_v2_pct"],
+            "ho.ex_queries_at_commit": xm["queries_at_commit"],
+            "ho.ex_gain_points": round(e["v2_pct"] - e["v1_pct"], 1),
+            # Dropped before anything was measured, and counted so the prose can say
+            # how much of the sibling repository was not disjoint.
+            "ho.ex_shared_forms": xm["shared_with_corpus"],
+        })
+    fig.update({"ho.dd_in_sample_distinct": di["distinct"],
+                "ho.dd_in_sample_queries": di["queries"],
+                "ho.dd_in_sample_dashboards": di["dashboards"],
+                "ho.dd_in_sample_v1_pct": di["v1_pct"],
+                "ho.dd_in_sample_v2_pct": di["v2_pct"],
+                "ho.dd_in_sample_residual": di["residual"],
+                "ho.dd_in_sample_gain_points": round(di["v2_pct"] - di["v1_pct"], 1)})
     fig.update({"ho.gf_in_sample_distinct": gi["distinct"],
                 "ho.gf_in_sample_queries": gi["queries"],
                 "ho.gf_in_sample_raw_pct": gi["raw_pct"],
@@ -368,6 +431,22 @@ def main() -> int:
         fig["ho.dd_kappa_pct"] = res["kappa"]["kappa_occ_pct"]
         fig["ho.dd_kappa_occurrences"] = res["kappa"]["occurrences"]
         fig["ho.dd_kappa_distinct"] = res["kappa"]["distinct"]
+    if "kappa_in_sample" in res:
+        ki = res["kappa_in_sample"]
+        fig["ho.kappa_in_sample_pct"] = ki["kappa_occ_pct"]
+        fig["ho.kappa_in_sample_distinct_pct"] = ki["kappa_distinct_pct"]
+        fig["ho.kappa_in_sample_occurrences"] = ki["occurrences"]
+    if "kappa_extras" in res:
+        ke = res["kappa_extras"]
+        fig["ho.ex_kappa_pct"] = ke["kappa_occ_pct"]
+        fig["ho.ex_kappa_distinct_pct"] = ke["kappa_distinct_pct"]
+        fig["ho.ex_kappa_occurrences"] = ke["occurrences"]
+        fig["ho.ex_kappa_distinct"] = ke["distinct"]
+        fig["ho.ex_translated"] = ke["by_outcome_occ"].get("translated", 0)
+        fig["ho.ex_bottom"] = ke["by_outcome_occ"].get("bottom", 0)
+        fig["ho.ex_unparsed"] = ke["by_outcome_occ"].get("unparsed", 0)
+        for name, n in ke["gaps"].items():
+            fig[f"ho.ex_gap_{name.lower()}"] = n
     print("\nregistry:")
     for k_, v_ in sorted(fig.items()):
         print(f"  {k_:<28} {v_}")

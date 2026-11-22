@@ -1162,14 +1162,14 @@ def test_a_historical_figure_is_not_the_figure_it_supersedes():
 # notebook, bind it with BOUND, or add it here.
 
 TABLE_COINCIDENCE: frozenset[tuple[str, float]] = frozenset({
-    ("num", 1), ("num", 8), ("num", 11), ("num", 17), ("num", 26), ("num", 32),
+    ("num", 8), ("num", 11), ("num", 17), ("num", 26), ("num", 32),
     ("num", 35), ("num", 55), ("num", 60), ("num", 64), ("num", 74),
     ("num", 91), ("num", 93), ("num", 100), ("num", 160), ("num", 208), ("num", 262),
     ("num", 266), ("num", 300), ("num", 329), ("num", 330), ("num", 1680),
-    ("num", 1766), ("num", 7546), ("num", 7799), ("num", 8102), ("num", 8365),
+    ("num", 1766), ("num", 7546), ("num", 8102), ("num", 8365),
     ("pct", 3.8), ("pct", 5.3), ("pct", 11.8), ("pct", 20.2),
     ("pct", 27.4), ("pct", 71.2), ("pct", 83.6), ("pct", 91.4),
-    ("pct", 92.9), ("pct", 94.7), ("pct", 96.5), ("pct", 96.7), ("pct", 98.3),
+    ("pct", 94.7), ("pct", 98.3),
     ("pct", 99.1),
 })
 

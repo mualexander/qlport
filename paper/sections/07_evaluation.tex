@@ -548,6 +548,11 @@ is a statement about our access, not about whether such a corpus could exist.
 All $8{,}770$ Datadog occurrences come from \texttt{integrations-core}: one organisation's
 queries in one house style, with nothing to pair against the PromQL side's two independent
 sources, because no comparable public body of customer-written Datadog dashboards exists.
+\S\ref{sec:heldout} does find a second public body that is not customer-written ---
+\texttt{integrations-extras}, the community- and partner-maintained sibling --- and holds
+it out, which bears on the fit and not on this paragraph: a different set of authors
+writing against the same vendor's documentation tests whether the grammar and the
+translator generalise, not whether either repository resembles what customers write.
 The choice was deliberate --- no reference grammar is published and vendor-authored queries
 are the closest thing to a specification by example (\S\ref{sec:corpus}) --- but a
 specification by example is not a sample of what customers write, so \S\ref{sec:gaps}
@@ -561,7 +566,8 @@ occurrences, which Remark~\ref{rem:type-measured} counts but cannot check.
 
 \paragraph{The grammar and the implementation order were fitted to this corpus.}
 Three places it matters should be named together, and then separated, because they are
-not all fitted in the same way and two of them turn out to be testable.
+not all fitted in the same way and all three turn out to be testable --- two by refitting
+them on part of the corpus, the third by freezing it and reading it somewhere else.
 Grammar v2 is v1 plus every production the corpus showed was missing
 (\S\ref{sec:datadog-inference}), and Table~\ref{tab:parse-coverage} measures the size of
 that fit rather than hiding it: $92.9\%$ of distinct instantiated Datadog queries parsed
@@ -585,18 +591,23 @@ translator frozen --- and reports what they show. The short form: the feature vo
 and the implementation order are functions of the corpus, so they can be refitted on part
 of it and scored on the rest, and both generalise, the vocabulary saturating after a
 tenth of the dashboards and the build order losing one point out of sample. The grammar
-is not refittable by any script, so it was run instead against $497$ community dashboards
-the corpus never listed: on the $12{,}522$ distinct strings there whose instantiated form
-the corpus does not hold, v2 parses $99.6\%$ against $99.0\%$ in sample, and its margin
-over v1 falls from $1.2$ points to $0.8$ --- a third of that fit was this corpus, two
-thirds of it was PromQL. What survives all of that is the Datadog grammar's own
-extension, $92.9\%$ to $99.9\%$, and with it $\kappa$: the later commit yields $99$
-distinct queries, which the frozen pipeline translates without refusal and which are far
-too few to estimate a rate. So this threat is narrowed to one channel on one side rather
-than answered, and what could already be said without any of it still holds --- the gap
-codes name structural constructs, which do not look like the kind of thing a second
-corpus would eliminate, and the $0.1\%$ residual is one undocumented construct rather
-than a tail of them.
+is not refittable by any script, so it was frozen and read on dashboards nobody here had
+seen. On $497$ community dashboards the corpus never listed --- the $12{,}522$ distinct
+strings there whose instantiated form the corpus does not hold --- v2 parses $99.6\%$
+against $99.0\%$ in sample, and its margin over v1 falls from $1.2$ points to $0.8$: a
+third of that fit was this corpus, two thirds of it was PromQL. On $2{,}572$ distinct
+queries from \texttt{integrations-extras}, a repository in the same organisation by other
+authors that the corpus does not touch, v2 parses $99.9\%$ --- its in-sample rate --- and
+the $7$-point climb of this paragraph's first sentence falls to $5.5$. And $\kappa$
+itself, which the paragraph above this one said had no holdout, is $96.7\%$ of those
+$3{,}065$ occurrences against $96.6\%$ here, refusing under four gap codes that are all
+families \S\ref{sec:gaps} already catalogues. So the estimate is still a resubstitution
+estimate, and the worry it licenses is now bounded instead of open: what the fit is worth
+has been measured on every channel, and on the one that matters most it is worth nothing
+measurable. The caveat that is left is authorship, not leakage --- those dashboards are
+built with the vendor's own scaffolding against the vendor's own documentation --- so the
+corpus of private, customer-written dashboards this subsection asks for is still the test
+that was not run.
 
 \paragraph{Everything here is about the query layer.}
 What we measure is the cost of rewriting saved queries, and \S\ref{sec:discussion}'s

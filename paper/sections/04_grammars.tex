@@ -174,9 +174,10 @@ the single most common, boolean scopes, appears in $139$ distinct queries, and a
 with no aggregator prefix in $93$. A grammar inferred from a vendor's own documentation
 misses a measurable fraction of the vendor's own shipped dashboards. That $7$-point
 climb is also the largest fit this paper makes to its corpus, and
-\S\ref{sec:heldout} measures what it is worth away from it: on the PromQL side, where
-a disjoint set of dashboards could be had, v2's margin over v1 falls from $1.2$ points
-to $0.8$ while its absolute rate does not fall at all.
+\S\ref{sec:heldout} measures what it is worth away from it: on $2{,}572$ distinct queries
+from a disjoint repository of Datadog dashboards, the climb falls to $5.5$ points while
+v2's absolute rate stays at $99.9\%$. Four fifths of it was the language and a fifth was
+this corpus.
 
 Second, the gap between the raw and instantiated columns is large in both languages:
 $11.8\%$ against $99.9\%$ for Datadog, $71.2\%$ against $99.1\%$ for PromQL. Every rate

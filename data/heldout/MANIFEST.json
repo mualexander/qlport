@@ -26,5 +26,27 @@
   "ref": "master",
   "repo": "DataDog/integrations-core",
   "unreadable": 9
+ },
+ "integrations-extras": {
+  "commit": "12800f44a6034b5e1d38deb213cab961b27f1269",
+  "dashboards": 209,
+  "dashboards_formula_held_out": 41,
+  "dashboards_held_out": 139,
+  "distinct_at_commit": 2571,
+  "distinct_formula_at_commit": 229,
+  "distinct_formula_held_out": 166,
+  "distinct_held_out": 2564,
+  "fetched": "2026-11-21",
+  "files": 209,
+  "name": "integrations-extras",
+  "queries_at_commit": 3073,
+  "queries_formula_at_commit": 2451,
+  "queries_formula_held_out": 265,
+  "queries_held_out": 3065,
+  "ref": "master",
+  "repo": "DataDog/integrations-extras",
+  "shared_formula_with_corpus": 63,
+  "shared_with_corpus": 7,
+  "unreadable": 0
  }
 }
