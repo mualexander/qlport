@@ -23,6 +23,8 @@ from pathlib import Path
 
 import pytest
 
+from texsource import published
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
 
@@ -167,7 +169,7 @@ def test_e4_recorded_the_divergence_e18_is_credited_with_finding():
     diverging = {k for k in reported if reported[k] != observed[k]}
     assert diverging == {"1m", "5m"}, diverging
     assert reported["1m"] == 1 and observed["1m"] == 10.0
-    remark = (ROOT / "paper" / "sections" / "moved" / "ing_rollup_spans.tex").read_text()
+    remark = published(ROOT / "paper" / "sections" / "moved" / "ing_rollup_spans.tex")
     assert "it was not new" in remark
     assert "two of its five ranges" in remark
 
@@ -243,8 +245,8 @@ def test_the_two_kinds_outside_the_corpus_are_the_two_the_remark_names(corpus_te
     for kind, expected in EXTRACTION_EDGE.items():
         missing = {q for q in found[kind] if q not in corpus_texts}
         assert len(missing) == expected, (kind, len(missing), sorted(missing)[:3])
-    remark = (ROOT / "paper" / "sections" / "moved"
-              / "eval_extraction_fixes.tex").read_text()
+    remark = published(ROOT / "paper" / "sections" / "moved"
+                       / "eval_extraction_fixes.tex")
     assert "$9$ Grafana" in remark and "$5$ more behind" in remark
 
 

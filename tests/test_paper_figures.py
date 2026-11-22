@@ -29,6 +29,8 @@ from pathlib import Path
 
 import pytest
 
+from texsource import flat, published, rendered, strip_comments
+
 ROOT = Path(__file__).resolve().parent.parent
 # rglob, not glob: sections/moved/ holds the blocks the 20-page build defers to an
 # appendix and the full build keeps inline. They are the same prose either way, so
@@ -64,42 +66,26 @@ def _norm(tok: str, pct: str) -> tuple[str, float] | None:
         return None
 
 
-_COMMENT = re.compile(r"(?<!\\)%.*")
-
-
-def _published(path: Path) -> str:
-    """One file as the PDF will have it: everything behind a `%` is gone.
-
-    Every extractor in this file reads through here, and the one that did not is the
-    reason it exists. `_flat` took `path.read_text()` raw for one commit, so a
-    sentence parked behind a `%` while it was being redrafted went on satisfying the
-    phrase meant to pin the sentence that had replaced it. Commenting a line out is
-    the ordinary way to redraft; a guard that reads a larger document than the one
-    published is not checking the paper.
-    """
-    return _COMMENT.sub("", path.read_text())
-
-
 def _math(text: str) -> list[str]:
     """The `$...$` spans, with LaTeX comments and escaped dollars removed first.
 
     `\\%` is not a comment and `\\$65M` is currency rather than math; both bit an
     earlier version of this extractor and silently emptied its input.
     """
-    text = _COMMENT.sub("", text)
+    text = strip_comments(text)
     text = text.replace(r"\$", "\x00")
     return re.findall(r"\$([^$]*)\$", text)
 
 
 def _math_text(path: Path) -> str:
     """Every `$...$` span of one file, joined. Prose outside math is not a figure."""
-    return "\x01".join(_math(path.read_text()))
+    return "\x01".join(_math(published(path)))
 
 
 def _prose_figures() -> dict[tuple[str, float], set[str]]:
     out: dict[tuple[str, float], set[str]] = {}
     for path in [*SECTIONS, MAIN]:
-        for span in _math(path.read_text()):
+        for span in _math(published(path)):
             for tok, pct in _NUM.findall(span):
                 key = _norm(tok, pct)
                 if key:
@@ -118,7 +104,7 @@ def _accounted() -> set[tuple[str, float]]:
     """
     ok: set[tuple[str, float]] = set()
     for path in TABLES:
-        for tok, pct in _NUM.findall(_published(path)):
+        for tok, pct in _NUM.findall(published(path)):
             key = _norm(tok, pct)
             if key:
                 ok.add(key)
@@ -142,7 +128,11 @@ def _accounted() -> set[tuple[str, float]]:
 # figure moved to 1.2%, because the integer 2 was allowlisted and the match was made on
 # magnitude. A share and a count are different claims. Two ledgers that have to agree
 # about which is which is a worse answer than one key that says so, and SCALAR_ONLY had
-# grown to 49 entries, 39 of which licensed nothing.
+# grown to 49 entries, of which only three --- 0.0, 1.4 and 6.0 --- had a per-cent
+# spelling anywhere in the paper to forbid, so 46 forbade nothing. The pass that
+# retired it said 39, which is a number nobody computed; this one is the count of
+# SCALAR_ONLY's magnitudes that appear with a \\% in any `$...$` span of the paper at
+# the commit before the ledger left.
 #
 # An entry that licences nothing is removed, not kept for its prose: see
 # `test_no_allowance_licenses_anything_it_is_still_needed_for`. Seventy-seven of these
@@ -252,6 +242,27 @@ ALLOWED_IN: dict[tuple[str, float], tuple[str, set[str]]] = {
 }
 
 
+def _derived_keys() -> set[tuple[str, float]]:
+    """The `(kind, value)` keys the two derivation ledgers license.
+
+    Kind-blind for three rounds, across all three places that rebuilt this set. A
+    derivation of an occurrence count licensed the same magnitude printed as a per
+    cent, and a derivation of a share licensed it printed as a count; sixty magnitudes
+    carried that free pass, and the sentence "$96\\%$ of the refusals and $38.3$
+    dashboards" --- a share used as a count and a count used as a share, both
+    fabricated --- passed every test in this file. The same re-keying that retired
+    SCALAR_ONLY from the allowlist, applied where it was not.
+
+    One entry names both spellings: $120$ occurrences is $1.4$ points of $\\kappa$ over
+    the corpus and $1.4\\%$ of the translated set, the same count over two denominators
+    that round alike. Naming both is then a decision in the ledger rather than a
+    property of the lookup.
+    """
+    return {(kind, round(float(value), 4))
+            for kinds, value, _, _ in (*DERIVED, *CORPUS_DERIVED)
+            for kind in kinds.split()}
+
+
 def _unaccounted(allowed: dict, allowed_in: dict) -> dict:
     """Prose figures that nothing accounts for, under the two ledgers given.
 
@@ -262,11 +273,11 @@ def _unaccounted(allowed: dict, allowed_in: dict) -> dict:
     registry value never runs.
     """
     ok = _accounted()
-    derived = {round(float(v), 4) for v, _, _ in (*DERIVED, *CORPUS_DERIVED)}
+    derived = _derived_keys()
     out = {}
     for key, files in _prose_figures().items():
         kind, value = key
-        if key in ok or value in derived:
+        if key in ok or key in derived:
             continue
         if (kind, round(value, 4)) in allowed:
             continue
@@ -291,9 +302,13 @@ def test_no_allowance_licenses_anything_it_is_still_needed_for():
 
     Ninety-eight entries were here and seventy-seven of them licensed nothing: the
     figure was already in a generated table, in the registry, or in a derivation, and
-    the sentence recorded beside it was not the reason it passed. Three ALLOWED_IN
+    the sentence recorded beside it was not the reason it passed. Six ALLOWED_IN
     scopes were inert the same way --- one of them said so in its own comment and was
-    kept anyway, which is how a ledger stops being read.
+    kept anyway, which is how a ledger stops being read. The pass that removed them
+    wrote "three" here and in its commit message, having printed the six a few minutes
+    earlier; a file about figures nothing checks is a poor place to put a figure
+    nothing checks, so the number is $7.4, 21, 45, 116, 120, 648$ and this test is
+    what keeps it honest.
 
     Nothing about that was visible from reading the file, so it is asserted instead.
     A value that moves out from under an entry fails `unexplained` and the entry comes
@@ -360,7 +375,7 @@ def test_a_historical_figure_is_not_licensed_outside_its_section():
     Putting the superseded kappa in the abstract -- the exact drift that prompted this
     file -- must fail even though §7 is entitled to quote the same number.
     """
-    abstract = MAIN.read_text()
+    abstract = published(MAIN)
     assert "95.6" not in abstract, "stale kappa in the abstract"
     stale = {k: v for k, v in _prose_figures().items() if k[1] == 95.6}
     assert stale, "the historical kappa should still be quoted somewhere"
@@ -375,7 +390,7 @@ def test_the_registry_agrees_with_the_tables_on_kappa():
     while the paper contradicted itself.
     """
     reg = json.loads(REGISTRY.read_text())
-    coverage = (ROOT / "paper" / "tables" / "translation_coverage.tex").read_text()
+    coverage = published(ROOT / "paper" / "tables" / "translation_coverage.tex")
     assert f"{reg['nb03.kappa_occurrences']:,}" in coverage
     assert f"{reg['nb03.kappa_distinct']:,}" in coverage
     assert f"{reg['nb03.kappa_pct']}\\%" in coverage
@@ -742,17 +757,27 @@ def test_a_bound_figure_still_matches_its_source():
 # the next pass does not add a ledger for each one on discovering it:
 #
 #   * It pins numerals and the words between them, never the relation. Extending a
-#     phrase past its last numeral --- "smaller than the movement a dashboard-level
-#     jackknife puts on either figure" rather than "smaller than the spread" --- is the
-#     only defence, and it works only as far as the phrase runs.
+#     phrase past its last numeral --- "sits inside the 1.9 points of spread" rather
+#     than "sits inside the spread" --- is the only defence, and it works only as far
+#     as the phrase runs. It is also no defence against the relation being false: the
+#     sentence pinned here before this one said the fall was smaller than the movement
+#     on either margin, which it is not, and the phrase held it in place for a commit.
 #   * A negating frame placed outside the span passes. "It would be wrong to say any of
 #     what follows." before a pinned sentence leaves the suite green.
 #   * It says nothing about numerals spelled out in words. "a tenth of a point" is
 #     outside every ledger in this file.
 #
-# These want a reader, and saying so here is the honest form of that. A guard that
-# claimed to cover them would be the third mechanism in three passes to record a check
-# it was not making.
+# A fourth limit was found the same way and is now closed, which is why it is written
+# down here rather than left as a note: the check read one document where the paper
+# has two. A sentence inside `\shortonly` reaches `main.pdf` and one inside
+# `\inlineonly` reaches `main_full.pdf`, so a pinned claim could be put in one and
+# its negation in the other with the suite green. The phrase check now resolves each
+# build and asks for the sentence in both. That is the same defect as a pin satisfied
+# by a comment, one level up, and it was found in the same week as the comment one.
+#
+# The three above want a reader, and saying so here is the honest form of that. A guard
+# that claimed to cover them would be the third mechanism in three passes to record a
+# check it was not making.
 PHRASES: tuple[tuple[str, str], ...] = (
     # kappa, out of sample, beside its population and its in-sample comparator.
     ("eval_heldout.tex",
@@ -779,9 +804,14 @@ PHRASES: tuple[tuple[str, str], ...] = (
     # pinning: a registry that said 96.6 would require the abstract to say 96.6.
     ("body.tex",
      r"it returns an indistinguishable ${ho.ex_kappa_pct}\%$"),
+    # 1.1 is a cluster-robust standard error, which a 20,000-draw cluster bootstrap
+    # puts at 1.085. It is not a drop-one quantity: the largest move any single
+    # dashboard makes is 0.93 and the whole drop-one range is 1.01, which is what the
+    # appendix's 96.7-to-97.7 prints. Both this phrase and the one in \S7 pinned the
+    # drop-one description for a commit, so both named the wrong quantity in step.
     ("09_conclusion.tex",
-     r"against the ${ho.ex_kappa_se_points}$ points the held-out figure moves over "
-     r"when dashboards are dropped one at a time"),
+     r"against the ${ho.ex_kappa_se_points}$ points of spread resampling whole "
+     r"dashboards puts on the held-out figure"),
     # The grammar rates, each beside the population it was measured on.
     ("eval_heldout.tex",
      r"Frozen grammar v2 parses ${ho.ex_v2_pct}\%$ of those ${ho.ex_distinct}$ "
@@ -796,25 +826,36 @@ PHRASES: tuple[tuple[str, str], ...] = (
      r"so the ${ho.gf_shrink_points}$-point difference between them is no larger than "
      r"the ${ho.gf_shrink_se_points}$ points of spread"),
     ("eval_heldout.tex",
-     r"worth ${ho.gf_novel_gain_points}$ points ($\pm{ho.gf_novel_gain_se_points}$) on "
-     r"dashboards the grammar has never seen"),
+     r"worth ${ho.gf_novel_gain_points}$ points on dashboards the grammar has never "
+     r"seen --- with ${ho.gf_novel_gain_se_points}$ points of dashboard-level movement "
+     r"on that figure"),
     ("eval_heldout.tex",
-     r"$\pm{ho.ex_gain_se_points}$ points on the held-out margin, and "
+     r"puts ${ho.ex_gain_se_points}$ points of spread on the held-out margin, and "
      r"${ho.ex_shrink_se_points}$ points of spread on the ${ho.ex_shrink_points}$-point "
      r"fall"),
     # The census, which is why the paragraph may decline to report a sampling error.
     ("eval_heldout.tex",
-     r"${ho.ex_dashboards_shipped}$ of ${ho.ex_dashboards_shipped}$ here, with "
-     r"${ho.ex_unreadable}$ unreadable"),
+     r"${ho.ex_dashboards_read}$ of the ${ho.ex_dashboards_at_commit}$ dashboard "
+     r"files \texttt{integrations-extras} ships at the pinned commit were read, with "
+     r"${ho.ex_unreadable}$ unreadable, and ${ho.dd_corpus_dashboards_read}$ of "
+     r"\texttt{integrations-core}'s ${ho.dd_corpus_dashboards_at_commit}$, the other "
+     r"${ho.dd_corpus_unreadable}$"),
     # And what the dashboard-level movement rests on, beside the figure itself.
     ("eval_heldout.tex",
      r"effective number of dashboards behind it is "
      r"${ho.ex_kappa_effective_dashboards}$, one of them carrying "
      r"${ho.ex_kappa_top_dashboard_pct}\%$ of it, against "
      r"${ho.kappa_in_sample_effective_dashboards}$ on the corpus side"),
+    # Both numerals, because the claim is that the first is inside the second and a
+    # phrase cannot pin a relation. The sentence this replaced was pinned here while
+    # it was false: the fall is 1.4538 and the in-sample margin's own spread is 0.8888,
+    # so "smaller than the movement either figure carries" was wrong on the figure the
+    # reader would check first. Extending a phrase to make it bite harder extended it
+    # over a claim that had not been checked.
     ("04_grammars.tex",
-     r"the ${ho.ex_shrink_points}$-point difference is smaller than the movement a "
-     r"dashboard-level jackknife puts on either figure"),
+     r"the ${ho.ex_shrink_points}$-point difference sits inside the "
+     r"${ho.ex_shrink_se_points}$ points of spread a dashboard-level jackknife puts "
+     r"on that difference"),
     ("07_evaluation.tex",
      r"puts ${ho.gf_shrink_se_points}$ points of spread on the first and "
      r"${ho.ex_shrink_se_points}$ on the second"),
@@ -824,8 +865,8 @@ PHRASES: tuple[tuple[str, str], ...] = (
     ("07_evaluation.tex",
      r"its margin over v1 is ${ho.ex_gain_points}$ points against the seven"),
     ("07_evaluation.tex",
-     r"a tenth of a point where dropping dashboards one at a time moves the held-out "
-     r"figure by ${ho.ex_kappa_se_points}$"),
+     r"a tenth of a point where resampling whole dashboards puts "
+     r"${ho.ex_kappa_se_points}$ points of spread on the held-out figure"),
     # The two ceilings, which must not be quoted under one name.
     ("eval_heldout.tex",
      r"$S^\star$ covers ${ho.ex_sstar_pct}\%$ of these occurrences"),
@@ -865,10 +906,6 @@ def _spell(value: int | float) -> str:
     return repr(float(value))
 
 
-def _flat(text: str) -> str:
-    return re.sub(r"\s+", " ", text)
-
-
 def test_a_pinned_sentence_still_says_what_the_registry_says():
     """A headline figure must appear beside the population it is a figure of.
 
@@ -884,8 +921,14 @@ def test_a_pinned_sentence_still_says_what_the_registry_says():
         for key in _PHRASE_KEY.findall(template):
             assert key in reg, f"{key} is pinned but no longer in the registry"
         want = _PHRASE_KEY.sub(lambda m: _spell(reg[m.group(1)]), template)
-        if _flat(want) not in _flat(_published(path)):
-            missing.append(f"  {section} should contain: {_flat(want)}")
+        # Both builds, because there are two PDFs and `\inlineonly` reaches only one
+        # of them. A sentence pinned here has to be in each; the alternative is a
+        # pin satisfied by a condition no reader ever sees resolved, which is the
+        # same defect as a pin satisfied by a comment one level up.
+        for full in (False, True):
+            if flat(want) not in flat(rendered(path, full)):
+                build = "main_full" if full else "main"
+                missing.append(f"  {section} in {build}.pdf should contain: {flat(want)}")
     assert not missing, "\n".join(missing)
 
 
@@ -915,7 +958,8 @@ def test_the_kappa_each_side_quotes_is_the_one_measured_on_that_side():
             continue
         path = MAIN if section == "body.tex" else _section_path(section)
         want = _PHRASE_KEY.sub(lambda m: _spell(swapped[m.group(1)]), template)
-        caught.append(_flat(want) not in _flat(_published(path)))
+        caught.append(all(flat(want) not in flat(rendered(path, full))
+                          for full in (False, True)))
     assert caught and all(caught), \
         "a file pinning the held-out kappa would accept the in-sample one"
 
@@ -1077,7 +1121,7 @@ def test_the_baseline_names_no_gap_the_catalogue_has_dropped():
     have to be tied to something that shrinks.
     """
     reg = json.loads(REGISTRY.read_text())
-    catalogue = (ROOT / "paper" / "tables" / "gap_catalogue.tex").read_text()
+    catalogue = published(ROOT / "paper" / "tables" / "gap_catalogue.tex")
     for key in sorted(k for k in reg if k.startswith("oo.gap_")):
         code = key[len("oo.gap_"):].upper().replace(".", "_")
         assert code.replace("_", r"\_") in catalogue, \
@@ -1145,102 +1189,102 @@ def _alphabet() -> str:
     return TAG_ALPHABET
 
 
-DERIVED: tuple[tuple[float, str, object], ...] = (
-    (7.4, "the eight misclassifications as a share of the corpus",
+DERIVED: tuple[tuple[str, float, str, object], ...] = (
+    ("num", 7.4, "the eight misclassifications as a share of the corpus",
      lambda: round(648 / _reg()["nb03.corpus_occurrences"] * 100, 1)),
-    (648, "and their sum, with the four disjunctions a residue of the 124",
+    ("num", 648, "and their sum, with the four disjunctions a residue of the 124",
      lambda: 348 + 124 + 70 + 36 + 31 + 34 + 5),
-    (0.8, "points of kappa that withdrawing .weighted() closed",
+    ("num", 0.8, "points of kappa that withdrawing .weighted() closed",
      lambda: round(70 / _reg()["nb03.corpus_occurrences"] * 100, 1)),
-    (1.4, "and points the single-key disjunction rule closed",
+    ("num pct", 1.4, "and points the single-key disjunction rule closed",
      lambda: round(120 / _reg()["nb03.corpus_occurrences"] * 100, 1)),
-    (887, "translated occurrences whose declared type is not decidable",
+    ("num", 887, "translated occurrences whose declared type is not decidable",
      lambda: _reg()["nb03.kappa_occurrences"]
      - _reg()["nb03.type_decidable_occurrences"]),
-    (7867, "PromQL panel queries: the population less its alerting and recording rules",
+    ("num", 7867, "PromQL panel queries: the population less its alerting and recording rules",
      lambda: 8102 - 139 - 96),
-    (41, "the tag alphabet", lambda: len(_alphabet())),
-    (255, "Datadog dashboards a tenth-of-the-corpus vocabulary does not read",
+    ("num", 41, "the tag alphabet", lambda: len(_alphabet())),
+    ("num", 255, "Datadog dashboards a tenth-of-the-corpus vocabulary does not read",
      lambda: _reg()["cv.dd_dashboards"] - _reg()["cv.dd_tenth_dashboards"]),
-    (248, "what the appendix's stale three-code description of the refused column "
+    ("num", 248, "what the appendix's stale three-code description of the refused column "
           "summed to, against the 287 it was describing",
      lambda: 208 + 4 + 36),
-    (541, "tag keys only ever filtered and never grouped: what widening the census "
+    ("num", 541, "tag keys only ever filtered and never grouped: what widening the census "
           "from the grouping lists to every key a matcher can name added",
      lambda: 1264 - 723),
-    (37070, "declared metric names: the unambiguous ones plus the three two "
+    ("num", 37070, "declared metric names: the unambiguous ones plus the three two "
             "integrations declare incompatibly",
      lambda: 23597 + 13140 + 330 + 3),
-    (14, "PHI_QUANTILE occurrences whose metric the repository does not declare, so "
+    ("num", 14, "PHI_QUANTILE occurrences whose metric the repository does not declare, so "
          "the corollary's hypothesis is untested rather than shown to fail",
      lambda: 34 - 20),
-    (17128, "both translators' emitted expressions, every one of which has now been "
+    ("num", 17128, "both translators' emitted expressions, every one of which has now been "
             "through Prometheus's own parser: ours over the whole corpus, theirs over "
             "the held-out set",
      lambda: _reg()["pt.ours_occ"] + _reg()["pt.theirs_occ"]),
-    (1681, "the branch bound, which is the square of it", lambda: len(_alphabet()) ** 2),
-    (3362, "and twice that, which is what `2..|5..` needs",
+    ("num", 1681, "the branch bound, which is the square of it", lambda: len(_alphabet()) ** 2),
+    ("num", 3362, "and twice that, which is what `2..|5..` needs",
      lambda: 2 * len(_alphabet()) ** 2),
-    (3.5, "the differential's largest deviation, in units of 1e-14",
+    ("num", 3.5, "the differential's largest deviation, in units of 1e-14",
      lambda: round(max(r["max_d"] for r in _cache("shapes/differential.json")["rows"]
                        if r["status"] == "compared") / 1e-14, 1)),
-    (2998, "what the unbudgeted cross-check took, seconds",
+    ("num", 2998, "what the unbudgeted cross-check took, seconds",
      lambda: round(_cache("globs/crosscheck.json")["provenance"]["elapsed_seconds"])),
-    (184, "the concrete patterns it re-decided",
+    ("num", 184, "the concrete patterns it re-decided",
      lambda: _cache("globs/crosscheck.json")["provenance"]["n_concrete_regexes"]),
-    (599, "occurrences refused under the other reading of a glob's star",
+    ("num", 599, "occurrences refused under the other reading of a glob's star",
      lambda: _cache("globs/star_reading.json")["other"]["none"]["occurrences"]),
-    (515, "and occurrences that change classification between the two readings",
+    ("num", 515, "and occurrences that change classification between the two readings",
      lambda: _cache("globs/star_reading.json")["moved"]["occurrences"]),
-    (72, "over this many patterns",
+    ("num", 72, "over this many patterns",
      lambda: _cache("globs/star_reading.json")["moved"]["distinct"]),
-    (238, "occurrences of the patterns containing `.+`, which is what the alphabet "
+    ("num", 238, "occurrences of the patterns containing `.+`, which is what the alphabet "
           "question is worth",
      lambda: sum(r["occurrences"] for r in _star_rows() if ".+" in r["regex"])),
-    (21, "and how many patterns those are",
+    ("num", 21, "and how many patterns those are",
      lambda: sum(1 for r in _star_rows() if ".+" in r["regex"])),
-    (71, "of the 74 the branch bound refuses, the two device-name alternations",
+    ("num", 71, "of the 74 the branch bound refuses, the two device-name alternations",
      lambda: sum(r["occurrences"] for r in _star_rows()
                  if r["taken"] == "none" and "mmcblk.p" in r["regex"])),
     # E1: the scripted counter reset, read off the account rather than off the prose.
-    (103, "what Datadog stored over the reset bucket",
+    ("num", 103, "what Datadog stored over the reset bucket",
      lambda: _cache("datadog/e1.json")["cases"]["to100"]["reset_bucket_observed"][0]),
-    (897, "what a raw signed difference would have stored, in magnitude",
+    ("num", 897, "what a raw signed difference would have stored, in magnitude",
      lambda: -_cache("datadog/e1.json")["cases"]["to100"]
      ["reset_bucket_predicted"]["raw"][0]),
-    (1000, "and so the counter value just before the reset",
+    ("num", 1000, "and so the counter value just before the reset",
      lambda: _cache("datadog/e1.json")["cases"]["to100"]["reset_bucket_observed"][0]
      - _cache("datadog/e1.json")["cases"]["to100"]["reset_bucket_predicted"]["raw"][0]),
-    (111, "the fast run's reset bucket at three samples per flush",
+    ("num", 111, "the fast run's reset bucket at three samples per flush",
      lambda: _cache("datadog/e1_fast.json")["cases"]["to100"]
      ["reset_bucket_observed"][0]),
-    (110, "and what losing the increment sharing a flush with it would have given",
+    ("num", 110, "and what losing the increment sharing a flush with it would have given",
      lambda: _cache("datadog/e1_fast.json")["cases"]["to100"]
      ["reset_bucket_observed"][0] - 1),
     # E7: whether a counter and a rate read alike over a window.
-    (0.5, "the relative difference at the start of the run",
+    ("num", 0.5, "the relative difference at the start of the run",
      lambda: _cache("datadog/e7.json")["summary"]["counter_first"]),
-    (0.994, "and after half an hour",
+    ("num", 0.994, "and after half an hour",
      lambda: round(_cache("datadog/e7.json")["summary"]["counter_last"], 3)),
-    (1760, "avg_over_time of the running totals at the end of it",
+    ("num", 1760, "avg_over_time of the running totals at the end of it",
      lambda: _cache("datadog/e7.json")["summary"]["promql_counter_last"]),
     # E9: what .weighted() computes, which is the same as what it does not.
-    (66.7, "the plain mean of the irregular series, with and without the modifier",
+    ("num", 66.7, "the plain mean of the irregular series, with and without the modifier",
      lambda: round(_cache("datadog/e9.json")["promql"]["per_series_mean"]["irregular"],
                    1)),
     # The declared-type census, which §7.3 once stated three too many of, twice.
-    (37070, "metric names integrations-core declares at the pinned commit",
+    ("num", 37070, "metric names integrations-core declares at the pinned commit",
      lambda: sum(_cache("datadog/type_declared.json")["declared_population"].values())),
-    (23597, "of those, declared gauge",
+    ("num", 23597, "of those, declared gauge",
      lambda: _cache("datadog/type_declared.json")["declared_population"]["gauge"]),
-    (13140, "and declared count",
+    ("num", 13140, "and declared count",
      lambda: _cache("datadog/type_declared.json")["declared_population"]["count"]),
     # The one replay bucket where the two engines differ in the last bit, which is why
     # every exactness column in this paper has a tolerance rather than an equality.
-    (236, "the aligned replay bucket where they differ",
+    ("num", 236, "the aligned replay bucket where they differ",
      lambda: next(r["datadog"] for r in _cache("replay/dualwrite_aligned.json")["rows"]
                   if 0 < r["d"] < 1e-12)),
-    (235.999, "and what PromQL read for it, truncated",
+    ("num", 235.999, "and what PromQL read for it, truncated",
      lambda: __import__("math").floor(
          next(r["promql"] for r in _cache("replay/dualwrite_aligned.json")["rows"]
               if 0 < r["d"] < 1e-12) * 1000) / 1000),
@@ -1255,7 +1299,7 @@ def test_every_derivable_figure_still_derives():
     recounted, or a cache that has been re-recorded, and go on reading correctly.
     """
     wrong = []
-    for value, note, derive in DERIVED:
+    for _, value, note, derive in DERIVED:
         got = derive()
         if round(float(got), 4) != round(float(value), 4):
             wrong.append(f"  {value} ({note}) derives as {got}")
@@ -1264,9 +1308,10 @@ def test_every_derivable_figure_still_derives():
 
 def test_every_derivable_figure_is_still_quoted():
     """A derivation for a figure the paper no longer states is dead weight."""
-    prose = {v for _, v in _prose_figures()}
-    missing = [f"  {v} ({note})" for v, note, _ in DERIVED
-               if round(float(v), 4) not in prose]
+    prose = set(_prose_figures())
+    missing = [f"  {kind} {v} ({note})" for kinds, v, note, _ in DERIVED
+               for kind in kinds.split()
+               if (kind, round(float(v), 4)) not in prose]
     assert not missing, "derived but no longer in the paper:\n" + "\n".join(missing)
 
 
@@ -1339,7 +1384,10 @@ def test_a_historical_figure_is_not_the_figure_it_supersedes():
 TABLE_COINCIDENCE: frozenset[tuple[str, float]] = frozenset({
     ("num", 8), ("num", 11), ("num", 17), ("num", 26), ("num", 32),
     ("num", 35), ("num", 55), ("num", 60), ("num", 64), ("num", 74),
-    ("num", 91), ("num", 100), ("num", 160), ("num", 208), ("num", 262),
+    # 95: the upper edge of the vocabulary figure's bootstrap band, which the gap
+    # tables also happen to print. It was accounted for by a derivation of the per cent
+    # of Datadog space aggregators that are sum or avg until that ledger learnt kinds.
+    ("num", 91), ("num", 95), ("num", 100), ("num", 160), ("num", 208), ("num", 262),
     ("num", 266), ("num", 300), ("num", 329), ("num", 330), ("num", 1680),
     ("num", 1766), ("num", 7546), ("num", 8102), ("num", 8365),
     ("pct", 3.8), ("pct", 5.3), ("pct", 11.8), ("pct", 20.2),
@@ -1356,9 +1404,9 @@ def _unchecked() -> list[tuple[str, float]]:
         if isinstance(value, (int, float)) and not isinstance(value, bool):
             share = "pct" in name.rsplit(".", 1)[-1].split("_")
             reg.add(("pct" if share else "num", round(float(value), 4)))
-    derived = {round(float(v), 4) for v, _, _ in (*DERIVED, *CORPUS_DERIVED)}
+    derived = _derived_keys()
     return sorted(k for k in _prose_figures()
-                  if k not in reg and k not in _accounted() and k[1] not in derived)
+                  if k not in reg and k not in _accounted() and k not in derived)
 
 
 def _table_only() -> dict[tuple[str, float], tuple[list[str], list[str]]]:
@@ -1370,14 +1418,14 @@ def _table_only() -> dict[tuple[str, float], tuple[list[str], list[str]]]:
             reg.add(("pct" if share else "num", round(float(value), 4)))
     tables: dict[tuple[str, float], list[str]] = {}
     for path in TABLES:
-        for tok, pct in _NUM.findall(_published(path)):
+        for tok, pct in _NUM.findall(published(path)):
             key = _norm(tok, pct)
             if key:
                 tables.setdefault(key, []).append(path.stem)
-    derived = {round(float(v), 4) for v, _, _ in (*DERIVED, *CORPUS_DERIVED)}
+    derived = _derived_keys()
     out = {}
     for key, files in _prose_figures().items():
-        if key not in reg and key in tables and key[1] not in derived:
+        if key not in reg and key in tables and key not in derived:
             out[key] = (sorted(files), sorted(set(tables[key])))
     return out
 
@@ -1510,110 +1558,110 @@ def _counts(lang: str, which: str, texts) -> "object":
     return total
 
 
-CORPUS_DERIVED: tuple[tuple[float, str, object], ...] = (
-    (22903, "query strings the extraction yields", lambda: len(_queries())),
-    (22894, "and what remains once the nine LogQL panels leave",
+CORPUS_DERIVED: tuple[tuple[str, float, str, object], ...] = (
+    ("num", 22903, "query strings the extraction yields", lambda: len(_queries())),
+    ("num", 22894, "and what remains once the nine LogQL panels leave",
      lambda: len(_queries()) - (sum(1 for q in _queries() if q.lang == "promql")
                                 - len(_promql_kept()))),
-    (96, "PromQL recording rules",
+    ("num", 96, "PromQL recording rules",
      lambda: sum(1 for q in _queries() if q.lang == "promql" and q.kind == "record")),
-    (7867, "and panel queries, once the LogQL ones are gone",
+    ("num", 7867, "and panel queries, once the LogQL ones are gone",
      lambda: sum(1 for q in _queries()
                  if q.lang == "promql" and q.kind == "panel")
      - (sum(1 for q in _queries() if q.lang == "promql") - len(_promql_kept()))),
-    (5231, "PromQL function occurrences over those expressions",
+    ("num", 5231, "PromQL function occurrences over those expressions",
      lambda: sum(_counts("promql", "function", _promql_kept()).values())),
-    (69, "of which rate and irate together are this per cent",
+    ("pct", 69, "of which rate and irate together are this per cent",
      lambda: round((lambda f: (f["rate"] + f["irate"]) / sum(f.values()) * 100)(
          _counts("promql", "function", _promql_kept())))),
-    (0.3, "and offset appears in this share of them",
+    ("pct", 0.3, "and offset appears in this share of them",
      lambda: round(sum(1 for t in _promql_kept()
                        if re.search(r"(?<![\w:])offset\s", t))
                    / len(_promql_kept()) * 100, 1)),
-    (95, "Datadog space aggregators that are sum or avg, per cent",
+    ("pct", 95, "Datadog space aggregators that are sum or avg, per cent",
      lambda: round((lambda a: (a["sum"] + a["avg"]) / sum(a.values()) * 100)(
          _counts("datadog", "aggregator",
                  [q.text for q in _queries() if q.lang == "datadog"])))),
-    (6.6, "and how many times .as_count outnumbers .as_rate",
+    ("num", 6.6, "and how many times .as_count outnumbers .as_rate",
      lambda: round((lambda f: f[".as_count"] / f[".as_rate"])(
          _counts("datadog", "function",
                  [q.text for q in _queries() if q.lang == "datadog"])), 1)),
     # §5's mangling denominators. `test_corpus.py` asserts both when it measures the
     # collision rate; the derivation is shared rather than copied, so the two files
     # cannot drift into asserting different populations of the same name.
-    (5389, "distinct Datadog metric names before mangling",
+    ("num", 5389, "distinct Datadog metric names before mangling",
      lambda: len(__import__("test_corpus")._corpus_identifiers()[0])),
-    (1264, "and distinct tag keys -- the scopes' and the grouping lists' together, "
+    ("num", 1264, "and distinct tag keys -- the scopes' and the grouping lists' together, "
            "which is the class lem:scope's injectivity hypothesis is over",
      lambda: len(__import__("test_corpus")._corpus_identifiers()[1])),
     # E17: the scope-length ladder. Every rung and both edges of the boundary come off
     # the cache, including the HTTP statuses, because an earlier run of this experiment
     # published a limit of exactly 4,096 off one 408 and the numbers are the evidence
     # that the limit is the transport's rather than the query language's.
-    (6656, "the longest scope the account accepted",
+    ("num", 6656, "the longest scope the account accepted",
      lambda: _cache("datadog/e17_scope_length.json")["boundary"]["largest_accepted"]),
-    (7168, "and the shortest it refused",
+    ("num", 7168, "and the shortest it refused",
      lambda: _cache("datadog/e17_scope_length.json")["boundary"]["smallest_refused"]),
-    (8192, "the rung the bisection started from, which is the ladder's first refusal "
+    ("num", 8192, "the rung the bisection started from, which is the ladder's first refusal "
            "rather than the smallest, since the bisection then found a smaller one",
      lambda: next(r["n"] for r in _cache("datadog/e17_scope_length.json")["rows"]
                   if r["accepted"] is False)),
-    (6912, "and the one inside the boundary that answered 500",
+    ("num", 6912, "and the one inside the boundary that answered 500",
      lambda: next(r["n"] for r in _cache("datadog/e17_scope_length.json")["rows"]
                   if r["accepted"] is None)),
     # The status is the head of `detail`; `failure` only says the kind of failure it
     # was, which is a distinction worth keeping since a timeout is not a refusal.
-    (431, "the status both refusals carried",
+    ("num", 431, "the status both refusals carried",
      lambda: int(next(r["detail"] for r in
                       _cache("datadog/e17_scope_length.json")["rows"]
                       if r["accepted"] is False).split()[0])),
-    (500, "and the status of the inconclusive rung",
+    ("num", 500, "and the status of the inconclusive rung",
      lambda: int(next(r["detail"] for r in
                       _cache("datadog/e17_scope_length.json")["rows"]
                       if r["accepted"] is None).split()[0])),
-    (58, "the request URL at the largest accepted rung, kilobytes",
+    ("num", 58, "the request URL at the largest accepted rung, kilobytes",
      lambda: round(next(r["url_bytes"] for r in
                         _cache("datadog/e17_scope_length.json")["rows"]
                         if r["n"] == 6656) / 1000)),
-    (62, "and at the smallest refused one",
+    ("num", 62, "and at the smallest refused one",
      lambda: round(next(r["url_bytes"] for r in
                         _cache("datadog/e17_scope_length.json")["rows"]
                         if r["n"] == 7168) / 1000)),
-    (12, "what the bound this paper fixes needs, kilobytes",
+    ("num", 12, "what the bound this paper fixes needs, kilobytes",
      lambda: round(next(r["url_bytes"] for r in
                         _cache("datadog/e17_scope_length.json")["rows"]
                         if r["n"] == 1681) / 1000)),
     # E18: the interval curve. The two cells the body argues from, and the span of the
     # series, which is why the month column is dashed.
-    (14400, "the interval reported over a month-wide range",
+    ("num", 14400, "the interval reported over a month-wide range",
      lambda: _cache("datadog/e18.json")["interpretation"]
      ["reported_by_range"]["1mo"]),
-    (3500, "the seconds of points the run submitted",
+    ("num", 3500, "the seconds of points the run submitted",
      lambda: _cache("datadog/e18.json")["provenance"]["span"]),
     # Corollary rate's witness, constructed in tests/test_paper_formulas.py rather than
     # copied: two databases with equal phi images whose `rate` readings differ.
-    (1.5, "the start-of-window extrapolation the clip cuts to, seconds",
+    ("num", 1.5, "the start-of-window extrapolation the clip cuts to, seconds",
      lambda: __import__("test_paper_formulas").rate_clip()),
-    (0.628, "what rate() reads where the durationToZero clip binds",
+    ("num", 0.628, "what rate() reads where the durationToZero clip binds",
      lambda: __import__("test_paper_formulas").rate_witness()[0]),
-    (0.667, "and where it does not",
+    ("num", 0.667, "and where it does not",
      lambda: __import__("test_paper_formulas").rate_witness()[1]),
     # What the extractor does not reach, as a share of the population it builds.
-    (0.2, "the fourteen queries outside the corpus, over the PromQL side it would "
+    ("pct", 0.2, "the fourteen queries outside the corpus, over the PromQL side it would "
           "have joined",
      lambda: round(14 / len(_promql_kept()) * 100, 1)),
-    (3.15, "the Prometheus the measurements were taken against",
+    ("num", 3.15, "the Prometheus the measurements were taken against",
      lambda: float(".".join(
          _cache("topk/ranking.json")["provenance"]["prometheus_version"]
          .split(".")[:2]))),
     # The spans the corpus's own Datadog widgets declare, which is what decides how
     # often the emitter's assumed 60 s is the right one. §7's threats section called
     # that default "systematic rather than arbitrary" without asking.
-    (460, "live_span values the corpus's Datadog dashboards declare",
+    ("num", 460, "live_span values the corpus's Datadog dashboards declare",
      lambda: sum(_live_spans().values())),
-    (38.3, "of which one hour, the modal span, is this share",
+    ("pct", 38.3, "of which one hour, the modal span, is this share",
      lambda: round(_live_spans()["1h"] / sum(_live_spans().values()) * 100, 1)),
-    (28.3, "and four hours, the only span whose interval is the assumed 60 s",
+    ("pct", 28.3, "and four hours, the only span whose interval is the assumed 60 s",
      lambda: round(_live_spans()["4h"] / sum(_live_spans().values()) * 100, 1)),
 )
 
@@ -1637,7 +1685,7 @@ def _vendor_dates():
 
 def test_every_corpus_figure_still_comes_out_of_the_corpus():
     wrong = []
-    for value, note, derive in CORPUS_DERIVED:
+    for _, value, note, derive in CORPUS_DERIVED:
         got = derive()
         if round(float(got), 4) != round(float(value), 4):
             wrong.append(f"  {value} ({note}) derives as {got}")
@@ -1645,8 +1693,9 @@ def test_every_corpus_figure_still_comes_out_of_the_corpus():
 
 
 def test_every_corpus_figure_is_still_quoted():
-    prose = {v for _, v in _prose_figures()}
-    missing = [f"  {v} ({note})" for v, note, _ in CORPUS_DERIVED
-               if round(float(v), 4) not in prose]
+    prose = set(_prose_figures())
+    missing = [f"  {kind} {v} ({note})" for kinds, v, note, _ in CORPUS_DERIVED
+               for kind in kinds.split()
+               if (kind, round(float(v), 4)) not in prose]
     assert not missing, "derived from the corpus but no longer in the paper:\n" + \
         "\n".join(missing)

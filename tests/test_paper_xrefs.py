@@ -24,6 +24,8 @@ from pathlib import Path
 
 import pytest
 
+from texsource import published
+
 ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "paper"
 # rglob: sections/moved/ holds the blocks main.tex defers to appendices.
@@ -39,15 +41,10 @@ _GRAPHIC = re.compile(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]*)\}")
 _SOURCE = re.compile(r"((?:[A-Za-z0-9.]|\\_|/|\\slash\s*)+\.py)")
 
 
-def _strip(text: str) -> str:
-    """Drop LaTeX comments. `\\%` is an escaped percent sign, not a comment."""
-    return re.sub(r"(?<!\\)%.*", "", text)
-
-
 def _scan(pattern: re.Pattern[str]) -> dict[str, set[str]]:
     found: dict[str, set[str]] = {}
     for path in TEX:
-        for match in pattern.finditer(_strip(path.read_text())):
+        for match in pattern.finditer(published(path)):
             captured = next((g for g in match.groups() if g is not None), "")
             for item in captured.split(","):
                 found.setdefault(item.strip(), set()).add(path.name)
@@ -68,7 +65,7 @@ def _count(pattern: re.Pattern[str]) -> collections.Counter[str]:
     """Occurrences rather than files, which is the distinction `_scan` cannot make."""
     found: collections.Counter[str] = collections.Counter()
     for path in TEX:
-        for match in pattern.finditer(_strip(path.read_text())):
+        for match in pattern.finditer(published(path)):
             captured = next((g for g in match.groups() if g is not None), "")
             for item in captured.split(","):
                 found[item.strip()] += 1
@@ -148,7 +145,7 @@ def test_every_source_file_the_paper_names_exists():
     """
     missing: dict[str, list[str]] = {}
     for path in TEX:
-        for match in _SOURCE.finditer(_strip(path.read_text())):
+        for match in _SOURCE.finditer(published(path)):
             name = (match.group(1).replace(r"\_", "_")
                                   .replace(r"\slash", "/")
                                   .replace(" ", ""))
@@ -164,12 +161,12 @@ _BIBITEM = re.compile(r"\\bibitem\[[^\]]*\]\{([^}]*)\}")
 def _cited() -> set[str]:
     return {key.strip()
             for path in TEX
-            for match in _CITE.finditer(_strip(path.read_text()))
+            for match in _CITE.finditer(published(path))
             for key in match.group(1).split(",")}
 
 
 def test_every_citation_has_an_entry():
-    entries = set(_BIBITEM.findall((PAPER / "references.tex").read_text()))
+    entries = set(_BIBITEM.findall(published(PAPER / "references.tex")))
     dangling = sorted(_cited() - entries)
     assert not dangling, f"cited with no bibliography entry: {dangling}"
 
@@ -181,7 +178,7 @@ def test_every_entry_is_cited():
     original entry cited by nothing, which is the signal that the repoint was
     incomplete rather than that the source stopped mattering.
     """
-    entries = set(_BIBITEM.findall((PAPER / "references.tex").read_text()))
+    entries = set(_BIBITEM.findall(published(PAPER / "references.tex")))
     orphans = sorted(entries - _cited())
     assert not orphans, f"in the bibliography, cited nowhere: {orphans}"
 
@@ -198,7 +195,7 @@ def test_the_paper_has_no_placeholders_left():
     """
     left: dict[str, list[str]] = {}
     for path in TEX:
-        for match in _PLACEHOLDER.finditer(_strip(path.read_text())):
+        for match in _PLACEHOLDER.finditer(published(path)):
             left.setdefault(match.group(0), []).append(path.name)
     assert not left, f"placeholder left in the paper: {left}"
 
@@ -257,7 +254,7 @@ def test_every_experiment_that_ran_reaches_the_paper():
     exactly where E17 and E18 are. They are listed rather than hidden, so the list
     shrinks as they are written and fails when a new one joins them unnoticed.
     """
-    text = "\n".join(_strip(p.read_text()) for p in TEX)
+    text = "\n".join(published(p) for p in TEX)
     uncited = []
     for cache, citations in EXPERIMENTS:
         if not any(c in text for c in citations):
@@ -310,7 +307,7 @@ def test_the_remarks_nothing_points_at_do_not_multiply():
     is the difference between a remark a reader can reach from the claim it supports and
     one they can only stumble on.
     """
-    text = "\n".join(_strip(p.read_text()) for p in TEX)
+    text = "\n".join(published(p) for p in TEX)
     labels = set(_REMARK.findall(text))
     cited = set(_REF.findall(text))
     uncited = sorted(labels - cited)
@@ -329,9 +326,12 @@ def test_the_proof_convention_matches_the_statements():
     r"""\S3 says how many results have a collected proof; this counts them.
 
     The paragraph claimed "every proof is collected" with one named exception for
-    fourteen passes, and three statements had no proof environment at all -- argued in
+    fourteen passes, and four statements had no proof environment at all -- argued in
     the text instead, adequately, but not what the convention said. Pinned so the
-    sentence cannot drift away from the inventory again.
+    sentence cannot drift away from the inventory again. It drifted anyway: this scan
+    read the files raw, and `\\begin{corollary}[...]%` put a comment between the
+    environment and its `\\label`, so one of the twenty was invisible to the thing
+    counting them and \\S3 said nineteen for as long as the sentence existed.
     """
     import re
 
@@ -339,7 +339,7 @@ def test_the_proof_convention_matches_the_statements():
     files = sorted(sections.glob("*.tex")) + sorted((sections / "moved").glob("*.tex"))
     labels, proofs = {}, set()
     for path in files:
-        text = path.read_text()
+        text = published(path)
         for m in re.finditer(
                 r"\\begin\{(theorem|lemma|proposition|corollary)\}"
                 r"(?:\[[^\]]*\])?\s*\\label\{([^}]+)\}", text, re.S):
@@ -347,9 +347,9 @@ def test_the_proof_convention_matches_the_statements():
         for m in re.finditer(r"\\begin\{proof\}\[[^\]]*?\\ref\{([^}]+)\}", text, re.S):
             proofs.add(m.group(1))
 
-    assert len(labels) == 19, sorted(labels)
+    assert len(labels) == 20, sorted(labels)
     unproved = {k for k in labels if k not in proofs}
-    assert unproved == {"prop:decidable", "cor:raw", "cor:rate", "prop:disjunction"}, \
-        sorted(unproved)
-    body = (PAPER / "sections" / "03_framework.tex").read_text()
-    assert "$19$ numbered results" in body and "$15$ have" in body
+    assert unproved == {"prop:decidable", "cor:raw", "cor:quantile", "cor:rate",
+                        "prop:disjunction"}, sorted(unproved)
+    body = published(PAPER / "sections" / "03_framework.tex")
+    assert "$20$ numbered results" in body and "$15$ have" in body

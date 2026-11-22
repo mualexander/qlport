@@ -553,7 +553,7 @@ sources, because no comparable public body of customer-written Datadog dashboard
 it out. That bears on the fit most directly, but it bears on this paragraph too, because
 the two repositories' house styles are measurably different: $88.6\%$ of corpus
 occurrences carry a template variable against $77.0\%$ of the sibling
-repository's occurrences.
+repository's held-out occurrences.
 Table~\ref{tab:heldout}'s raw column is the same fact counted the other way round and
 over distinct strings rather than occurrences --- a Datadog string parses as shipped
 exactly when it carries no variable, with two exceptions in the whole held-out set ---
@@ -619,14 +619,14 @@ held-out margin itself. And
 $\kappa$ itself, which the paragraph above this one said had no holdout, is
 $96.7\%$ of those $3{,}065$ occurrences against $96.6\%$ here --- the same figure as
 \S\ref{sec:baseline}'s coverage by valid output above, and an unrelated quantity, and a
-tenth of a point where dropping dashboards one at a time moves the held-out figure by
-$1.1$ --- refusing under
+tenth of a point where resampling whole dashboards puts $1.1$ points of spread on
+the held-out figure --- refusing under
 four of the five gap families \S\ref{sec:gaps} catalogues. So the estimate is still a
 resubstitution estimate, and the worry it licenses is bounded instead of open. On the three
 channels \S\ref{sec:heldout} can read twice --- the PromQL grammar, the Datadog grammar
 and $\kappa$ --- the margin the corpus bought is still there out of sample, how much of
-it the corpus kept for itself is smaller than the movement either figure carries across
-dashboards, and on $\kappa$ the two readings cannot be told apart. Nothing is read twice
+it the corpus kept for itself sits inside the spread a dashboard-level jackknife puts on
+that share itself, and on $\kappa$ the two readings cannot be told apart. Nothing is read twice
 on the other channels: the differential, the replay and the trial probes all run against
 one account's data and have no holdout at all. Two caveats are left and neither is leakage --- those
 dashboards are built with the vendor's own scaffolding against the vendor's own

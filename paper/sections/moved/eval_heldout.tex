@@ -61,7 +61,9 @@ dashboard at a time, and recomputing each with one dashboard dropped puts a spre
 $0.3$ points on it, so the $0.4$-point difference between them is no larger than the
 $0.4$ points of spread it inherits from the two. What the holdout settles about this fit
 is the margin and not its decomposition: the corpus-driven productions are still worth
-$0.8$ points ($\pm0.3$) on dashboards the grammar has never seen, which makes them a gap
+$0.8$ points on dashboards the grammar has never seen --- with $0.3$ points of
+dashboard-level movement on that figure, which is a movement and not an interval, since
+this side is a census too --- which makes them a gap
 in PromQL as people write it rather than an accommodation to these $199$. How much more
 they were worth here is a question this population cannot answer.
 
@@ -114,16 +116,20 @@ Frozen grammar v2 parses $99.9\%$ of those $2{,}572$ strings, which is its in-sa
 rate: two strings fail here and six fail in sample, and the two rates agree to four
 significant figures, separating only in the fifth. Meanwhile v1 parses $94.4\%$ against
 $92.9\%$, so the margin \S\ref{sec:datadog-inference}'s corpus-driven productions bought
-falls from $7.0$ points to $5.6$. Neither figure is an estimate. The held-out side is a
-census of its repository --- every dashboard file at the pinned commit was read, $209$ of
-$209$ here, with $0$ unreadable --- and the corpus side is the whole of what
-\S\ref{sec:corpus} collected, so these are two populations and not two samples, and
-there is no sampling error to report. What a dashboard-level jackknife measures instead is how far
+falls from $7.0$ points to $5.6$ --- a fall of $1.5$, which is the difference of the
+unrounded rates and not of the two figures printed here, whose difference is $1.4$.
+Neither figure is an estimate. Both sides are
+censuses of their repositories: $209$ of the $209$ dashboard files
+\texttt{integrations-extras} ships at the pinned commit were read, with $0$ unreadable,
+and $525$ of \texttt{integrations-core}'s $534$, the other $9$ being \texttt{ddev}
+scaffolding templates that are not valid JSON. So these are two populations and not two
+samples, and there is no sampling error to report. What a dashboard-level jackknife measures instead is how far
 each figure moves when a population's dashboards change, and on this side it moves a
-great deal: dropping one dashboard at a time puts $\pm1.7$ points on the held-out margin,
+great deal: dropping one dashboard at a time puts $1.7$ points of spread on the
+held-out margin,
 and $1.9$ points of spread on the $1.5$-point fall. So this pair of repositories does not
-separate the fit from the rest; the fall is smaller than the movement either figure
-carries. That the margin is there at all on dashboards by other authors is the result.
+separate the fit from the rest; the fall sits inside the spread the same jackknife puts
+on the fall itself. That the margin is there at all on dashboards by other authors is the result.
 Its size is this repository's, and how much of it a third repository would show is not
 something two of them settle. Note also which side of the pair moves. v2's rate is the
 same to four significant figures, so essentially the whole of the movement is v1 ---
@@ -206,12 +212,15 @@ out of sample against $96.6\%$ in it, on $3{,}065$ occurrences from $139$ dashbo
 other authors, refusing under four of the five families the catalogue already holds.
 
 None of that makes $96.6\%$ a held-out estimate; it was obtained the way it was obtained.
-What it does is bound the worry the estimate licenses. On every channel that can be
-read twice, the margin the corpus bought survives being read somewhere else --- $0.8$
-points ($\pm0.3$) on the PromQL side and $5.6$ ($\pm1.7$) on the Datadog one --- and on
-both, how much of that margin the corpus kept for itself is smaller than the spread the
-measurement carries. On $\kappa$ the two readings differ by a tenth of a point where a
-dashboard-clustered standard error is $1.1$. Two caveats survive, and neither is leakage.
+What it does is bound the worry the estimate licenses. On each of the three channels
+this subsection reads twice, the margin the corpus bought survives being read somewhere
+else --- $0.8$ points on the PromQL side and $5.6$ on the Datadog one, carrying $0.3$
+and $1.7$ points of dashboard-level movement --- and on both, how much of that margin
+the corpus kept for itself sits inside the spread the same jackknife puts on that share.
+On $\kappa$ the two readings differ by a tenth of a point where resampling whole
+dashboards puts $1.1$ points of spread on the figure. Nothing is read twice on the other
+channels: the differential, the replay and the trial probes all run against one
+account's data and have no holdout at all. Two caveats survive, and neither is leakage.
 The first is authorship: \texttt{integrations-extras} is community- and partner-written,
 which is the different-authors test, but those dashboards are built with the vendor's own
 integration scaffolding against the vendor's own documentation, so their house style is

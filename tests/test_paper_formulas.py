@@ -21,6 +21,8 @@ from pathlib import Path
 
 import pytest
 
+from texsource import published
+
 ROOT = Path(__file__).resolve().parent.parent
 SECTIONS = ROOT / "paper" / "sections"
 SRC = ROOT / "src" / "qlport"
@@ -44,7 +46,7 @@ def _gap_calls(path: Path, names: tuple[str, ...]) -> set[str]:
 
 def _environment(path: Path, kind: str, label: str) -> str:
     """The body of one `\\begin{kind}...\\label{label}...\\end{kind}`."""
-    text = path.read_text()
+    text = published(path)
     start = text.index(f"\\label{{{label}}}")
     opened = text.rindex(f"\\begin{{{kind}}}", 0, start)
     closed = text.index(f"\\end{{{kind}}}", start)
@@ -97,7 +99,7 @@ def test_the_caveats_are_recorded_in_one_place_only():
 
 def test_every_code_in_the_catalogue_is_one_the_translator_can_raise():
     """A catalogue row no code path produces would be a figure with no mechanism."""
-    table = (ROOT / "paper" / "tables" / "gap_catalogue.tex").read_text()
+    table = published(ROOT / "paper" / "tables" / "gap_catalogue.tex")
     reported = _codes_named(table)
     assert reported, "no gap codes read out of the catalogue"
     raisable = (_gap_calls(SRC / "lower" / "datadog.py", ("_refuse", "Bottom"))
@@ -118,7 +120,7 @@ def test_the_two_codes_that_both_refuse_and_caution_are_the_two_the_paper_says()
     emitter = SRC / "emit" / "promql.py"
     both = _gap_calls(emitter, ("note",)) & _gap_calls(emitter, ("_refuse", "Bottom"))
     assert both == {"METRIC_TYPE_UNKNOWN", "ROLLUP_DEFAULT"}, sorted(both)
-    table = (ROOT / "paper" / "tables" / "gap_catalogue.tex").read_text()
+    table = published(ROOT / "paper" / "tables" / "gap_catalogue.tex")
     assert not (_codes_named(table) & both), "a dual-role code reached the catalogue"
 
 
@@ -239,7 +241,7 @@ def test_the_definition_names_every_policy_the_paper_argues_about():
     body = _environment(SECTIONS / "03b_ingestion.tex", "definition", "def:phi")
     assert r"\mathsf{zero}" in body and r"\mathsf{clamp}" in body
     assert "drop" not in body
-    discussion = (SECTIONS / "08_discussion.tex").read_text()
+    discussion = published(SECTIONS / "08_discussion.tex")
     assert "drop" in discussion, "the policy the definition omits is argued nowhere"
 
 
@@ -412,7 +414,7 @@ def test_rate_is_not_phi_invariant_and_here_is_why():
     assert "either" in flat, "the corollary must refuse the warm class too"
     # The withdrawn positive half read "It *is* phi-invariant on the class C_warm".
     assert "invariant on the class" not in flat, "the withdrawn positive half is back"
-    witness = (SECTIONS / "moved" / "ing_rate_disc.tex").read_text()
+    witness = published(SECTIONS / "moved" / "ing_rate_disc.tex")
     assert "0.628" in witness and "durationToZero" in witness
     assert "no series begins inside the window" in witness
 
@@ -590,7 +592,7 @@ def test_an_absent_reading_is_scored_against_the_translation():
     body = _environment(SECTIONS / "03_framework.tex", "definition", "def:d")
     assert r"\mathbb{R}" in body or r"\infty" in body
     # The convention is stated beside the definition rather than left to the code.
-    section = (SECTIONS / "03_framework.tex").read_text()
+    section = published(SECTIONS / "03_framework.tex")
     assert "NaN" in section and "conservative" in section
 
 
@@ -608,7 +610,7 @@ def test_coverage_is_the_quotient_the_definition_writes():
     total = reg["nb03.corpus_occurrences"]
     assert round(translated / total * 100, 1) == reg["nb03.kappa_pct"]
     # Everything not translated is bottom by the definition, the unparsed included.
-    rows = (ROOT / "paper" / "tables" / "translation_coverage.tex").read_text()
+    rows = published(ROOT / "paper" / "tables" / "translation_coverage.tex")
     assert str(total - translated) == "295"
     assert "287" in rows and "8" in rows        # 287 refused plus 8 unparsed
 

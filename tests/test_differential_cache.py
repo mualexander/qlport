@@ -18,6 +18,8 @@ from pathlib import Path
 
 import pytest
 
+from texsource import published
+
 from qlport.diagnostics import Bottom
 from qlport.emit.promql import emit_detail
 from qlport.ir import shape
@@ -111,7 +113,7 @@ def test_the_paper_states_the_figures_this_cache_derives(run):
 
     # The table carries the shape and occurrence counts; `tabular` writes them with a
     # thousands comma, which is also how the prose spells a four-digit figure.
-    table = TABLE.read_text()
+    table = published(TABLE)
     for value in (len(compared), len(agreed), occ_cmp, occ_ok):
         assert f"{value:,}" in table, (value, table)
     assert f"& {len(compared) - len(agreed)} & {occ_cmp - occ_ok} " in table, table
@@ -119,7 +121,7 @@ def test_the_paper_states_the_figures_this_cache_derives(run):
     # And the two figures no table holds: the occurrence weight of the agreement, and
     # the largest deviation among the shapes that agreed. One significant figure in
     # units of 1e-14 is how §7.4 writes the second.
-    prose = PROSE.read_text()
+    prose = published(PROSE)
     assert f"${occ_ok:,}$".replace(",", "{,}") in prose, occ_ok
     assert f"${worst / 1e-14:.1f}" + r"\times10^{-14}$" in prose, worst
 

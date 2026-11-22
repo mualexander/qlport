@@ -10,6 +10,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from texsource import published
+
 from qlport.harness.replay import (
     busiest_window, events_to_counter, parse_events, shift_to,
 )
@@ -281,8 +283,8 @@ def test_the_exactness_the_paper_states_is_the_one_the_rows_support():
     assert round(rows["bit_identical"] * 100, 1) == 19.0
     assert stored["exact"] == pytest.approx(rows["bit_identical"])
     # The figure the paper states is the derived one, in the table notebook 02 writes.
-    table = (Path(__file__).resolve().parent.parent / "paper" / "tables"
-             / "replay_dualwrite.tex").read_text()
+    table = published(Path(__file__).resolve().parent.parent / "paper" / "tables"
+                      / "replay_dualwrite.tex")
     assert r"20.2\%" in table and r"19.0\%" not in table
 
 

@@ -25,6 +25,9 @@ from pathlib import Path
 
 import pytest
 
+from texsource import (RAW_READS, flat, published, suite_source,
+                       unstripped_reads)
+
 ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "paper"
 SECTIONS = PAPER / "sections"
@@ -40,19 +43,6 @@ def _sources() -> list[Path]:
     return sorted(
         [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex"), *(PAPER / "tables").glob("*.tex")]
     )
-
-
-_COMMENT = re.compile(r"(?<!\\\\)%.*")
-
-
-def _body(path: Path) -> str:
-    """The file with LaTeX comments stripped.
-
-    Both pointer checks below first fired on `macros.tex`, whose comment quotes the
-    very mis-reading they exist to catch. A scan that cannot tell prose from a comment
-    reports the documentation of a bug as the bug.
-    """
-    return "\n".join(_COMMENT.sub("", line) for line in path.read_text().split("\n"))
 
 
 def _log(name: str) -> str:
@@ -140,6 +130,36 @@ def test_the_two_builds_are_the_same_length():
     )
 
 
+# --- the guards' own reading ----------------------------------------------------
+
+def test_every_guard_reads_the_document_the_paper_publishes():
+    """Three rounds found this defect three times because the fix never swept.
+
+    A guard that calls `path.read_text()` on a `.tex` file is asserting things about a
+    document nobody publishes: everything behind a `%` is in that string and in no PDF.
+    A sentence commented out while it was redrafted went on satisfying the phrase that
+    pinned its replacement. One file was fixed, in the commit whose message called that
+    the headline fix; three others kept the pattern, and this file had a stripper of its
+    own whose lookbehind wanted two backslashes, so it truncated every line at its first
+    escaped percent -- forty-eight lines of section 7 alone -- and read a document
+    *smaller* than the published one. Fixing a defect where it was found rather than
+    where it belongs
+    is what this test exists to stop, so it scans the suite and not the paper.
+    """
+    offenders = unstripped_reads(ROOT / "tests")
+    assert not offenders, (
+        "read the published document instead: `from texsource import published`\n"
+        + "\n".join(offenders)
+    )
+
+
+def test_no_raw_read_is_excused_for_a_line_no_test_has():
+    """A stale excuse is an assertion that a line exists which does not."""
+    source = suite_source(ROOT / "tests")
+    dead = sorted(line for line in RAW_READS if line not in source)
+    assert not dead, f"RAW_READS excuses lines no test has: {dead}"
+
+
 # --- the hooks ------------------------------------------------------------------
 
 def test_every_deferred_block_is_hooked_once_and_listed_once():
@@ -148,7 +168,7 @@ def test_every_deferred_block_is_hooked_once_and_listed_once():
     hooks: dict[str, list[str]] = {}
     listed: dict[str, list[str]] = {}
     for path in [*SECTIONS.glob("*.tex"), *MOVED.glob("*.tex")]:
-        text = path.read_text()
+        text = published(path)
         for name in _HOOK.findall(text):
             hooks.setdefault(name, []).append(path.name)
         if path.stem in WRAPPERS:
@@ -163,7 +183,7 @@ def test_every_deferred_block_is_hooked_once_and_listed_once():
         # A block nested inside another deferred block is included with its parent, so it
         # is hooked unconditionally there and listed nowhere.
         nested = any(
-            f"\\input{{sections/moved/{name}}}" in p.read_text()
+            f"\\input{{sections/moved/{name}}}" in published(p)
             for p in MOVED.glob("*.tex") if p != path
         )
         if nested:
@@ -182,7 +202,7 @@ def test_no_deferred_block_inputs_an_appendix_wrapper():
     a file that is itself deferred pulls the whole wrapper, and its ten blocks, in again."""
     bad = []
     for path in sorted(MOVED.glob("*.tex")):
-        for ref in _INPUT.findall(path.read_text()):
+        for ref in _INPUT.findall(published(path)):
             if Path(ref).name in WRAPPERS:
                 bad.append(f"  {path.name} inputs the wrapper sections/{ref}")
     assert not bad, "\n".join(bad)
@@ -193,7 +213,7 @@ def test_a_deferred_block_does_not_guard_its_own_children():
     false in the build where it lands in an appendix and its child disappears."""
     bad = []
     for path in sorted(MOVED.glob("*.tex")):
-        for name in _HOOK.findall(path.read_text()):
+        for name in _HOOK.findall(published(path)):
             bad.append(f"  {path.name} hooks {name} with \\iffull; use a plain \\input")
     assert not bad, "\n".join(bad)
 
@@ -216,7 +236,7 @@ def test_an_indent_suppressed_after_a_hook_is_conditional():
     """
     bad = []
     for path in sorted(SECTIONS.glob("*.tex")):
-        lines = path.read_text().split("\n")
+        lines = published(path).split("\n")
         for i, line in enumerate(lines):
             if not _HOOK.fullmatch(line.strip()):
                 continue
@@ -247,7 +267,7 @@ def test_apref_is_used_only_where_it_can_resolve():
     body. Inside a deferred block it tells the reader to consult the page they are on."""
     bad = []
     for path in sorted(MOVED.glob("*.tex")):
-        text = _body(path)
+        text = published(path)
         for macro in ("\\apref{", "\\apin{"):
             if macro in text:
                 bad.append(f"  {path.name} uses {macro[:-1]}; cite the block by its own label")
@@ -257,11 +277,11 @@ def test_apref_is_used_only_where_it_can_resolve():
 def test_every_apref_target_exists():
     targets = set()
     for name in WRAPPERS:
-        text = (SECTIONS / f"{name}.tex").read_text()
+        text = published(SECTIONS / f"{name}.tex")
         targets.update(re.findall(r"\\apphead\{[^}]*\}\{([^}]*)\}", text))
     used = set()
     for path in [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex")]:
-        text = _body(path)
+        text = published(path)
         used.update(re.findall(r"\\apref\{([^}]*)\}", text))
         used.update(re.findall(r"\\apin\{([^}]*)\}", text))
     assert used <= targets, f"\\apref to labels no wrapper defines: {sorted(used - targets)}"
@@ -276,8 +296,8 @@ def test_an_appendix_pointer_carries_its_own_preposition():
     """
     bad = []
     for path in [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex")]:
-        flat = " ".join(_body(path).split())
-        for m in re.finditer(r"(\w+(?:\s+\w+){0,2})\s+\\apref\{", flat):
+        text = flat(published(path))
+        for m in re.finditer(r"(\w+(?:\s+\w+){0,2})\s+\\apref\{", text):
             lead = m.group(1).lower().split()[-1]
             if lead in {"out", "collected", "given", "listed", "recorded", "stated"}:
                 bad.append(f"  {path.name}: \"{m.group(1)} \\apref\" wants \\apin")
@@ -305,11 +325,11 @@ def test_the_compared_shape_count_matches_the_differential_table():
     The count has no registry key, so `BOUND` cannot reach it and the allowlist carried
     the stale value as "unregistered". The table is generated, so it is the authority.
     """
-    table = (PAPER / "tables" / "differential.tex").read_text()
+    table = published(PAPER / "tables" / "differential.tex")
     m = re.search(r"Compared against both systems\s*&\s*([\d,]+)\s*&", table)
     assert m, "the differential table no longer has a 'Compared against both systems' row"
     compared = m.group(1)
-    prose = (SECTIONS / "07_evaluation.tex").read_text()
+    prose = published(SECTIONS / "07_evaluation.tex")
     spelled = compared.replace(",", "{,}")
     assert f"${spelled}$" in prose, (
         f"tables/differential.tex compares {compared} shapes; §7 does not say so"
@@ -332,7 +352,7 @@ def test_the_feature_bound_slack_is_the_registry_value():
     caught.
     """
     slack = _registry()["nb03.feature_slack_occurrences"]
-    prose = " ".join((SECTIONS / "07_evaluation.tex").read_text().split())
+    prose = flat(published(SECTIONS / "07_evaluation.tex"))
     clause = re.search(r"the gap is \$([\d,]+)\$ occurrences that use nothing outside", prose)
     assert clause, "§7 no longer has the feature-bound slack clause this pins"
     assert clause.group(1).replace("{,}", "").replace(",", "") == str(slack), (
@@ -350,7 +370,7 @@ def test_the_promql_population_matches_the_parse_table():
     The table is generated, so it is the authority, and the pre-correction value is
     barred outright rather than left to an allowlist to decline to question.
     """
-    table = (PAPER / "tables" / "parse_coverage.tex").read_text()
+    table = published(PAPER / "tables" / "parse_coverage.tex")
     m = re.search(r"promql\s*&\s*([\d,]+)\s*&", table)
     assert m, "tables/parse_coverage.tex no longer has a promql row"
     spelled = m.group(1).replace(",", "{,}")
@@ -359,12 +379,12 @@ def test_the_promql_population_matches_the_parse_table():
         "moved/eval_language_use.tex", "moved/eval_staircase.tex",
     }
     for rel in sorted(quoting):
-        text = (SECTIONS / rel).read_text()
+        text = published(SECTIONS / rel)
         assert f"${spelled}$" in text, (
             f"{rel} should state the PromQL population as {m.group(1)}"
         )
     for path in sorted(SECTIONS.rglob("*.tex")):
-        assert "8{,}096" not in path.read_text(), (
+        assert "8{,}096" not in published(path), (
             f"{path.name} still quotes the pre-correction PromQL population"
         )
 

@@ -151,8 +151,14 @@ def ceiling(texts: list[str], occ: Counter, feats: dict[str, set],
             inside_occ += occ[t]
             inside_d += 1
     total = sum(occ.values()) or 1
+    # `occurrences` is here so that the distance between two of these ceilings can be
+    # taken from the counts. Differencing the two rounded shares gave 2.6 where the
+    # counts give 2.6101 --- the same to a tenth today and by arithmetic that cannot
+    # promise to stay so, which is the defect this script spent a commit removing from
+    # the shrinkages and left in place one function away.
     return dict(size=len(vocabulary),
                 occ_pct=round(inside_occ / total * 100, 1),
+                occurrences=total, inside_occurrences=inside_occ,
                 distinct_pct=round(inside_d / (len(texts) or 1) * 100, 1),
                 novel_occurrences=novel_occ,
                 novel_features=dict(novel.most_common()))
@@ -228,20 +234,24 @@ def measure(queries: list, lang: str, vocabulary: set[str],
     return out
 
 
-def _cluster_se(per: dict[str, list[int]]) -> tuple[float, float]:
-    """The standard error of a rate whose observations arrive in clusters.
+def _cluster_se(per: dict[str, list[int]]) -> tuple[float, float, float]:
+    """How far a rate moves when the dashboards behind it change.
 
     Occurrences are not drawn one at a time. They arrive a dashboard at a time, and
     inside a dashboard they are near-copies of each other --- one integration's panels
     repeat one query shape over a dozen metrics --- so the binomial standard error of a
     rate over occurrences is the standard error of a sample far larger than the one we
-    have. This is the linearised standard error of the ratio estimator with the
-    dashboard as the sampling unit, which is the design that was actually used, plus
-    the design effect it implies: the factor by which treating occurrences as
-    independent would understate the spread.
+    have. The arithmetic here is the linearised standard error of the ratio estimator
+    with the dashboard as the resampling unit, plus the design effect it implies: the
+    factor by which treating occurrences as independent would understate the spread.
 
-    It is the number that says what a tenth of a point is worth here, and it says the
-    answer is nothing.
+    What it is not is a sampling error, and this docstring claimed it was for a commit:
+    "the design that was actually used" was wrong, because no design was used. Both
+    populations here are censuses of their repositories, so nothing was sampled and
+    there is no sampling error to estimate. What the figure measures is how far the
+    rate moves when the repository's dashboards change, which is the question the
+    paper is actually asking of it, and the answer is that a tenth of a point is
+    inside that movement several times over.
     """
     n = sum(v[0] for v in per.values())
     t = sum(v[1] for v in per.values())
@@ -322,6 +332,35 @@ def feature_set_seen(queries: list, corpus_queries: list) -> dict:
                 pct=round(n / (len(queries) or 1) * 100, 1))
 
 
+_BOOTSTRAP_DRAWS = 20_000
+_BOOTSTRAP_SEED = 20261122
+
+
+def _cluster_bootstrap(per: list[list[int]]) -> float:
+    """The standard deviation of the rate when whole dashboards are resampled.
+
+    The non-parametric companion to `_cluster_se`: draw `len(per)` dashboards with
+    replacement, recompute the rate, and take the spread over draws. It asks nothing
+    of the residuals' shape, so where it agrees with the linearised error the
+    linearisation is doing no work, and where it does not the linearised figure is the
+    one to distrust.
+    """
+    import random
+
+    m = len(per)
+    if m < 2:
+        return 0.0
+    rng = random.Random(_BOOTSTRAP_SEED)
+    reps = []
+    for _ in range(_BOOTSTRAP_DRAWS):
+        pick = [per[rng.randrange(m)] for _ in range(m)]
+        n = sum(v[0] for v in pick)
+        if n:
+            reps.append(sum(v[1] for v in pick) / n * 100)
+    mean = sum(reps) / len(reps)
+    return math.sqrt(sum((r - mean) ** 2 for r in reps) / (len(reps) - 1))
+
+
 def jackknife(queries: list, translated: set[str]) -> dict:
     """kappa with each dashboard dropped in turn.
 
@@ -344,15 +383,28 @@ def jackknife(queries: list, translated: set[str]) -> dict:
     se, srs, deff = _cluster_se(per)
     # How many clusters the spread is really resting on. A cluster-robust error is
     # asymptotic in the number of clusters, and these residuals are concentrated:
-    # (sum r^2)^2 / sum r^4 is the usual effective count, and on the held-out
-    # population it is small enough that a normal two-sigma reading of `se` is the
-    # wrong reading. Recorded here so the prose has to take it into account.
+    # (sum r^2)^2 / sum r^4 is the usual effective count. Recorded here so the prose
+    # has to take it into account.
     resid = [v[1] - (tot_t / tot_n) * v[0] for v in per.values()] if tot_n else []
     s2 = sum(r * r for r in resid)
     s4 = sum(r ** 4 for r in resid)
-    return dict(dashboards=len(per),
+    # Every scalar here is derivable from this list, which is why it is stored: a
+    # cached number nothing can recompute is a number on the author's word.
+    clusters = sorted([v[0], v[1]] for v in per.values())
+    # And whether the linearised error can be read as a normal one at that effective
+    # count, which is a question about the arithmetic and not an opinion about it. The
+    # comment above asserted for one commit that it could not, on no evidence; this is
+    # the evidence, and it says the opposite. Nothing in the paper rests on the answer
+    # -- both populations are censuses and no interval is reported -- but a file that
+    # records a reason should record a reason it has checked. Drawn from `clusters` in
+    # its sorted order, so the draw sequence is a function of what the cache holds
+    # rather than of dictionary insertion order.
+    boot = _cluster_bootstrap(clusters)
+    return dict(dashboards=len(per), clusters=clusters,
                 cluster_se_pct=round(se, 1), srs_se_pct=round(srs, 1),
                 cluster_se_exact=se, srs_se_exact=srs,
+                bootstrap_se_exact=boot, bootstrap_se_pct=round(boot, 1),
+                bootstrap_draws=_BOOTSTRAP_DRAWS, bootstrap_seed=_BOOTSTRAP_SEED,
                 effective_clusters=round(s2 * s2 / s4, 1) if s4 else None,
                 top_cluster_share_pct=round(max((r * r for r in resid), default=0.0)
                                             / s2 * 100, 1) if s2 else None,
@@ -430,9 +482,13 @@ def figures(res: dict) -> dict:
     This is a function and not a stretch of `main()` so that the test suite can call
     it on `data/processed/heldout_eval.json` and compare the result against
     `paper/quoted_figures.json` key by key. Without that comparison the registry was
-    a file thirteen of these values could be hand-edited in, with every guard above
-    it still green: the phrases pin the prose to the registry, and nothing pinned
-    the registry to the run.
+    a file a value could be hand-edited in with every guard above it still green: the
+    phrases pin the prose to the registry, and nothing pinned the registry to the run.
+    The pass that added the comparison put a count on how many values that was. It had
+    not counted them, and the count was wrong by more than a factor of two, so what is
+    written here instead is the property, which the test asserts and which does not
+    need a number: every key the registry holds under `ho.` is one this function
+    returns, and every value it holds for one is the value this function computes.
     """
     manifest = res["manifest"]
     gi = res["grafana_in_sample"]
@@ -480,14 +536,27 @@ def figures(res: dict) -> dict:
             "ho.dd_ceiling_pct": d["ceiling_occ_pct"],
             "ho.dd_novel_features": len(d["novel_features"]),
         })
+    # The corpus side's census. It had no keys at all, so the sentence saying both
+    # sides are populations rather than samples could only be scoped to the held-out
+    # half, where nothing is unreadable. Nine of integrations-core's files are not
+    # valid JSON, which is a fact about the census and belongs in it.
+    cm = manifest.get("integrations-core")
+    if cm:
+        fig.update({
+            "ho.dd_corpus_dashboards_read": cm["dashboards"],
+            "ho.dd_corpus_dashboards_at_commit": cm["files"],
+            "ho.dd_corpus_unreadable": cm["unreadable"],
+        })
     if "integrations-extras" in res:
         e = res["integrations-extras"]
         xm = manifest["integrations-extras"]
         fig.update({
-            "ho.ex_dashboards_shipped": xm["dashboards"],
-            # Every dashboard file in the repository at that commit was read. There
-            # is no sampling frame here and nothing was drawn from one; the
-            # population is the repository.
+            # Read, and shipped, as two keys. They are equal on this repository, and
+            # the prose said "209 of 209" with one key on both sides of the "of", so
+            # the sentence asserting that everything was read could not have failed.
+            # On the corpus side above they are not equal.
+            "ho.ex_dashboards_read": xm["dashboards"],
+            "ho.ex_dashboards_at_commit": xm["files"],
             "ho.ex_unreadable": xm["unreadable"],
             "ho.ex_dashboards": e["dashboards"], "ho.ex_queries": e["queries"],
             "ho.ex_distinct": e["distinct"], "ho.ex_raw_pct": e["raw_pct"],
@@ -515,13 +584,15 @@ def figures(res: dict) -> dict:
             "ho.ex_ceiling_outside_occurrences":
                 e["corpus_vocabulary"]["novel_occurrences"],
             "ho.ex_vocabulary_size": e["corpus_vocabulary"]["size"],
-            # The distance between the two ceilings, taken from the two shares rather
-            # than written out in the prose: quoting the corpus vocabulary's 99.9% as
-            # though it were the translator's would overstate the reachable ceiling by
-            # exactly this much.
+            # The distance between the two ceilings: quoting the corpus vocabulary's
+            # 99.9% as though it were the translator's would overstate the reachable
+            # ceiling by exactly this much. Taken from the occurrence counts, because
+            # the two shares are already rounded and the difference of two rounded
+            # figures is not the rounded difference.
             "ho.ex_ceiling_overstatement_points": round(
-                e["corpus_vocabulary"]["occ_pct"]
-                - e["translator_vocabulary"]["occ_pct"], 1),
+                (e["corpus_vocabulary"]["inside_occurrences"]
+                 - e["translator_vocabulary"]["inside_occurrences"])
+                / e["corpus_vocabulary"]["occurrences"] * 100, 1),
             # Dropped before anything was measured, and counted so the prose can say
             # how much of the sibling repository was not disjoint.
             "ho.ex_shared_forms": xm["shared_with_corpus"],
