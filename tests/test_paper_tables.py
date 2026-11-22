@@ -508,7 +508,10 @@ def test_the_held_out_table_says_what_the_registry_says(reg):
     """The generated table and the figures the prose quotes, against each other."""
     body = rows("heldout_coverage")[1:]           # drop the header row
     by_label = {r[0]: r for r in body}
-    insample = next(r for lab, r in by_label.items() if "corpus's" in lab)
+    # "corpus's" alone now matches two rows, and only insertion order kept this on
+    # the Grafana one; a reordered table would have failed somewhere else entirely.
+    insample = next(r for lab, r in by_label.items()
+                    if lab.startswith("Grafana, the corpus's"))
     assert num(insample[1]) == reg["ho.gf_in_sample_queries"]
     assert num(insample[5]) == reg["ho.gf_in_sample_v2_pct"]
     assert num(insample[6]) == reg["ho.gf_in_sample_residual"]
@@ -524,12 +527,13 @@ def test_the_held_out_table_says_what_the_registry_says(reg):
     assert num(insample[5]) < num(sub[5]), (
         "the text says the frozen grammar does no worse out of sample; if that stops "
         "being true the paragraph has to change, not this assertion")
-    ddin = next(r for lab, r in by_label.items() if "the corpus's $283$" in lab)
+    ddin = next(r for lab, r in by_label.items()
+                if "integrations-core" in lab and "the corpus's" in lab)
     assert num(ddin[1]) == reg["ho.dd_in_sample_queries"]
     assert num(ddin[2]) == reg["ho.dd_in_sample_distinct"]
     assert num(ddin[4]) == reg["ho.dd_in_sample_v1_pct"]
     assert num(ddin[5]) == reg["ho.dd_in_sample_v2_pct"]
-    dd = next(r for lab, r in by_label.items() if "later commit" in lab)
+    dd = next(r for lab, r in by_label.items() if "at a later commit" in lab)
     assert num(dd[1]) == reg["ho.dd_queries"]
     assert num(dd[2]) == reg["ho.dd_distinct"]
     ex = next(r for lab, r in by_label.items() if "integrations-extras" in lab)
@@ -552,7 +556,8 @@ def test_the_in_sample_datadog_row_reproduces_the_parse_coverage_table():
     pipeline the paper describes.
     """
     want = next(r for r in rows("parse_coverage")[1:] if r[0] == "datadog")
-    got = next(r for r in rows("heldout_coverage")[1:] if "the corpus's $283$" in r[0])
+    got = next(r for r in rows("heldout_coverage")[1:]
+               if "integrations-core" in r[0] and "the corpus's" in r[0])
     for col, what in ((1, "queries"), (2, "distinct"), (3, "raw"),
                       (4, "v1"), (5, "v2"), (6, "residual")):
         assert num(got[col]) == num(want[col]), (
@@ -582,8 +587,10 @@ def test_the_disjoint_datadog_holdout_is_disjoint_and_large_enough(reg):
     assert not leaked, f"{len(leaked)} of the extras queries are in the training corpus"
     assert len(held) == reg["ho.ex_queries"] == reg["ho.ex_kappa_occurrences"]
     assert len({q.origin for q in held}) == reg["ho.ex_dashboards"]
-    e = _ho()["integrations-extras"]
-    assert e["shared_distinct"] == 0 and e["novel_distinct"] == e["distinct"]
+    # Not `shared_distinct == 0 and novel_distinct == distinct`: in measure() those
+    # are the same proposition written twice, and both read the cache this script
+    # wrote. The leak check above is the one that recomputes.
+    assert reg["ho.ex_shared_distinct"] == 0
     assert reg["ho.ex_kappa_occurrences"] > 1000, (
         "below about a thousand occurrences the prose cannot call this a rate; it "
         "would have to be reported the way the later-commit holdout is")
@@ -603,33 +610,192 @@ def test_the_held_out_refusals_are_all_catalogued_families(reg):
     inside = set(ho["kappa_in_sample"]["gaps"])
     assert out <= inside, f"gap codes seen only out of sample: {sorted(out - inside)}"
     assert len(out) == 4, f"the prose names four: {sorted(out)}"
-    for name, n in ho["kappa_extras"]["gaps"].items():
-        assert reg[f"ho.ex_gap_{name.lower()}"] == n
+    # The prose says exactly which family the corpus raises and this repository does
+    # not. `out <= inside` would still hold if a second one went unseen, or if a sixth
+    # family appeared in sample, and the sentence would be wrong either way.
+    assert inside - out == {"SCOPE_DISJUNCTION"}, (
+        "the prose names one family the corpus raises and this repository does not: "
+        f"{sorted(inside - out)}")
     k = ho["kappa_extras"]
-    assert (k["by_outcome_occ"]["translated"] + k["by_outcome_occ"]["bottom"]
-            + k["by_outcome_occ"]["unparsed"]) == k["occurrences"]
+    for name, n in k["gaps"].items():
+        assert reg[f"ho.ex_gap_{name.lower()}"] == n
+        assert reg[f"ho.ex_gap_occ_{name.lower()}"] == k["gaps_occ"][name]
+    # The breakdown has to exhaust the refusals, in whichever unit the prose uses.
+    # This is the assertion the outcome-sum line used to stand in for, and unlike that
+    # one it is not an identity: `gaps` is keyed off the gap code and the outcome
+    # counts off the outcome, so a refusal reaching the table with no code breaks it.
+    assert sum(k["gaps"].values()) == k["by_outcome_distinct"]["bottom"] == 93
+    assert sum(k["gaps_occ"].values()) == k["by_outcome_occ"]["bottom"] == 98
+    # The mixture claim: which family leads, in sample and out.
+    assert max(inside, key=ho["kappa_in_sample"]["gaps"].get) == "UNSUPPORTED_FUNCTION"
+    assert max(k["gaps_occ"], key=k["gaps_occ"].get) == "PHI_QUANTILE"
 
 
-def test_the_held_out_kappa_is_not_worse_than_the_in_sample_one(reg):
+def test_the_held_out_kappa_is_indistinguishable_from_the_in_sample_one(reg):
     """The headline comparison, with the in-sample side checked against notebook 03.
 
     `heldout_eval.py` recomputes kappa over the corpus with the same classify() the
     notebook uses, which makes it a control: if it does not return the notebook's
     96.6% the held-out figure beside it was produced by a different translator.
+
+    What the paper claims about the two rates is that they cannot be told apart, so
+    that is what is asserted. An earlier version of this test asserted the held-out
+    rate was the higher one, which is a different claim and a worse one: the script's
+    own docstring says a figure worse than the in-sample one is the finding, and a
+    guard that reddens the build when the finding arrives is a guard against learning
+    anything. It also encoded something the paper does not say, since by distinct
+    string the held-out rate is already the lower of the two.
     """
     assert reg["ho.kappa_in_sample_pct"] == reg["nb03.kappa_pct"]
     assert reg["ho.kappa_in_sample_occurrences"] == reg["nb03.corpus_occurrences"]
-    assert reg["ho.ex_kappa_pct"] >= reg["ho.kappa_in_sample_pct"], (
-        "the abstract, the introduction and section 7 all say the held-out rate does "
-        "not fall; if it does, those three sentences change")
-    # The fit the Datadog grammar made to the corpus, in sample and out of it. The
-    # paper's claim is that four fifths of the climb was the language, so the
-    # out-of-sample gain has to be most of the in-sample one and not all of it.
+    assert abs(reg["ho.ex_kappa_pct"] - reg["ho.kappa_in_sample_pct"]) <= 0.5, (
+        "the abstract, the introduction, section 7 and section 9 all call the two "
+        "rates indistinguishable; at this distance they are not, and those four "
+        "sentences have to be rewritten rather than re-rounded")
+    assert abs(reg["ho.ex_kappa_distinct_pct"]
+               - reg["ho.kappa_in_sample_distinct_pct"]) <= 0.5
+    # And the reason the paper may call a tenth of a point nothing: it is smaller than
+    # the spread one dashboard produces. If the held-out population ever becomes tight
+    # enough that this stops being true, "indistinguishable" needs re-arguing.
+    lo, hi = reg["ho.ex_jackknife_low_pct"], reg["ho.ex_jackknife_high_pct"]
+    ilo, ihi = (reg["ho.kappa_in_sample_jackknife_low_pct"],
+                reg["ho.kappa_in_sample_jackknife_high_pct"])
+    assert (hi - lo) > abs(reg["ho.ex_kappa_pct"] - reg["ho.kappa_in_sample_pct"]), (
+        "the held-out rate no longer moves more under dropping one dashboard than it "
+        "differs from the in-sample rate, so 'inside that spread' stops being true")
+    assert max(lo, ilo) <= min(hi, ihi), (
+        "the two jackknife spreads no longer overlap, which is a stronger separation "
+        "than 'indistinguishable' survives")
+
+    # The fit the Datadog grammar made to the corpus, in sample and out of it, each
+    # taken from counts rather than from two already-rounded percentages.
     assert 0 < reg["ho.ex_gain_points"] < reg["ho.dd_in_sample_gain_points"]
-    assert reg["ho.ex_v2_pct"] == reg["ho.dd_in_sample_v2_pct"]
-    # One feature beyond the 25, and it is the two strings that do not parse.
-    assert reg["ho.ex_novel_features"] == 1
-    assert reg["ho.ex_residual"] == reg["ho.ex_unparsed"] == 2
+    assert reg["ho.ex_v2_pct"] == reg["ho.dd_in_sample_v2_pct"], (
+        "the prose says v2 does not fall out of sample, which is what makes the "
+        "shrinking margin a fact about v1 rather than about overfitting")
+
+
+def test_the_two_vocabularies_are_not_quoted_under_one_name(reg):
+    """The corpus's 28 features and the translator's 25 are different ceilings.
+
+    The subsection once said "one feature beyond the 25 ... so the 25 features reach
+    99.9%". Both halves were measured against the corpus's 28. Against the 25 that
+    actually bound kappa the figure is 97.3% with four features outside, so the
+    sentence overstated the reachable ceiling by 2.6 points. Each ceiling is now
+    registered under the vocabulary it was measured against, and the in-sample one is
+    a control: it has to come back as notebook 03's.
+    """
+    assert reg["ho.dd_in_sample_sstar_size"] == reg["nb03.feature_set_size"] == 25
+    assert reg["ho.dd_in_sample_sstar_pct"] == reg["nb03.feature_ceiling_pct"], (
+        "the script's in-sample S* ceiling must reproduce notebook 03's, or the "
+        "out-of-sample figure beside it was measured against a different set")
+    assert reg["ho.ex_vocabulary_size"] > reg["ho.ex_sstar_size"], (
+        "S* is a subset of what the corpus exhibits; if they coincide the two "
+        "ceilings stop being different quantities and the paragraph can be cut")
+    assert reg["ho.ex_sstar_pct"] < reg["ho.ex_ceiling_pct"]
+    assert reg["ho.ex_sstar_novel_features"] > reg["ho.ex_novel_features"]
+    # Occurrences outside a vocabulary, counted once per string. The per-feature
+    # counts in `novel_features` do not sum to this and must not be quoted as if
+    # they did: against S* they total 102 for 82 strings' worth of occurrences.
+    e = _ho()["integrations-extras"]
+    assert (e["translator_vocabulary"]["novel_occurrences"]
+            == reg["ho.ex_sstar_outside_occurrences"] == 82)
+    assert (e["corpus_vocabulary"]["novel_occurrences"]
+            == reg["ho.ex_ceiling_outside_occurrences"] == 2)
+    assert sum(e["translator_vocabulary"]["novel_features"].values()) > 82, (
+        "if these ever agree the double-counting this guard exists for has gone, "
+        "and the comment above can go with it")
+
+
+def test_the_one_out_of_sample_parse_failure_is_the_construct_the_prose_names(reg):
+    """"stddev: as a space aggregator" --- the identity, not just the count.
+
+    `ho.ex_novel_features == 1` pins how many features the corpus vocabulary lacks
+    and says nothing about which, so the sentence naming the construct could go stale
+    while the count stayed right.
+    """
+    e = _ho()["integrations-extras"]
+    assert list(e["novel_features"]) == ["AGG_OTHER"], (
+        "the prose names the one out-of-sample feature; this is not it")
+    assert e["blockers"] == {"COLON": 2}, (
+        "the prose says the two unparsed strings are one construct")
+    assert reg["ho.ex_residual"] == 2 and reg["ho.ex_unparsed"] == 2, (
+        "these count different things --- distinct strings v2 cannot parse, and "
+        "refused occurrences --- and agree only while each stddev: string occurs "
+        "once; asserting they are equal to each other would be a coincidence")
+    import sys
+    sys.path.insert(0, str(ROOT / "src"))
+    from qlport import corpus as c
+    corpus_stddev = [q.text for q in c.read_queries(ROOT / "data" / "corpus"
+                                                    / "queries.jsonl")
+                     if q.lang == "datadog" and q.text.lstrip().startswith("stddev:")]
+    assert not corpus_stddev, (
+        "the corpus now uses stddev: as an aggregator, so it is no longer the "
+        f"construct the holdout found: {corpus_stddev[:2]}")
+
+
+def test_the_extras_holdout_names_its_commit_and_its_own_size(reg):
+    """What integrations-core's temporal holdout gets, the disjoint one gets too.
+
+    `data/heldout/sources/` is gitignored, so the shipped-dashboard count, the
+    at-commit occurrences and the overlap that was dropped are recorded in the
+    manifest and nowhere else. Without this they can drift from the prose in silence.
+    """
+    man = json.loads((ROOT / "data" / "heldout" / "MANIFEST.json").read_text())
+    xm = man["integrations-extras"]
+    assert xm["repo"] == "DataDog/integrations-extras"
+    assert len(xm["commit"]) == 40
+    assert xm["commit"] != man["integrations-core"]["commit"]
+    assert xm["dashboards"] == xm["files"] == reg["ho.ex_dashboards_shipped"]
+    assert xm["queries_at_commit"] == reg["ho.ex_queries_at_commit"]
+    assert xm["queries_held_out"] == reg["ho.ex_queries"]
+    assert xm["shared_with_corpus"] == reg["ho.ex_shared_forms"]
+    # "3,073 occurrences, of which 3,065 ... seven such forms, eight occurrences".
+    assert reg["ho.ex_queries_at_commit"] - reg["ho.ex_queries"] == 8
+    assert reg["ho.ex_dashboards"] <= reg["ho.ex_dashboards_shipped"]
+    # The formula layer is carried in the committed file and scored nowhere; the
+    # prose says so, and these are the numbers it says it with.
+    assert xm["queries_formula_held_out"] == reg["ho.ex_formula_queries"] == 265
+    assert xm["distinct_formula_held_out"] == reg["ho.ex_formula_distinct"] == 166
+
+
+def test_the_template_share_is_measured_on_both_sides(reg):
+    """Section 7's house-style caveat, now with a number against it.
+
+    The in-sample side is a control: the script counts template variables by notebook
+    00's test, so it has to return notebook 00's figure.
+    """
+    assert reg["ho.dd_in_sample_template_pct"] == reg["nb00.datadog_with_variable_pct"]
+    assert reg["ho.ex_template_pct"] < reg["ho.dd_in_sample_template_pct"], (
+        "section 7 says the corpus is the more heavily templated of the two, which "
+        "is the direction its own caveat feared")
+
+
+def test_the_grafana_comparator_reproduces_the_promql_residual(reg):
+    """The claim the Datadog check is said to be a stricter version of.
+
+    The subsection cites the Grafana comparator's reproduction of the PromQL residual
+    as precedent, and nothing checked it.
+    """
+    promql = next(r for r in rows("parse_coverage")[1:] if r[0] == "promql")
+    assert reg["ho.gf_in_sample_residual"] == num(promql[6]) == 58
+    assert reg["ho.gf_in_sample_distinct"] < num(promql[2]), (
+        "the Grafana comparator is a restriction of that row, not the row; if it "
+        "ever equals it, the paragraph explaining why they differ is wrong")
+
+
+def test_the_staircase_figure_the_ledger_cannot_see(reg):
+    """The queries the first six Datadog features complete, recomputed.
+
+    This is 45, and since the held-out run so is ho.ex_gap_phi_quantile. The figure
+    ledger accounts for a prose numeral by magnitude, so that unrelated key now
+    licenses this one, and ALLOWED_IN's scope is consulted only for figures the
+    registry cannot account for -- which this no longer is. The table that generates
+    the staircase is the real source, so the check belongs here.
+    """
+    body = rows("implementation_order")[1:]
+    assert sum(num(r[4]) for r in body[:6]) == 45, (
+        "eval_staircase.tex says the first six features complete 45 queries")
 
 
 def test_the_temporal_holdout_names_both_commits_and_its_own_size(reg):

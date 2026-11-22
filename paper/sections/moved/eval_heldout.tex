@@ -80,49 +80,73 @@ An earlier version of this subsection reported the Datadog side as having only t
 remedy available --- a later commit of the same repository --- on the ground that no
 second public body of Datadog dashboards exists to draw a disjoint set from. That was
 wrong, and wrong about a repository in the same organisation with the same file layout.
-\texttt{DataDog/integrations-extras} is the sibling of \texttt{integrations-core}, holding
-``community developed integrations and plugins for the Datadog Agent'': $209$ dashboards
-shipped under the same \texttt{assets/dashboards/} path, read here by the same extractor
-that read the corpus. $139$ of them carry Datadog metric queries, $3{,}073$ occurrences in
-all, of which $3{,}065$ in $2{,}572$ distinct strings have no instantiated form the corpus
-holds --- only $7$ distinct forms overlap, and those are dropped before anything is
-measured. So this is a disjoint set rather than a later commit of a fitted one, and it is
-large enough to estimate a rate. Table~\ref{tab:heldout}'s in-sample Datadog row is
-Table~\ref{tab:parse-coverage}'s own \texttt{datadog} row recomputed by this script,
-down to the residual of $6$, which is the same check the Grafana comparator above
-passes.
+\texttt{DataDog/integrations-extras} is the sibling of \texttt{integrations-core},
+holding ``community developed integrations and plugins for the Datadog Agent'': $209$
+dashboards shipped under the same \texttt{assets/dashboards/} path, read here by the same
+extractor that read the corpus, and $139$ of them contribute the queries below. The
+repository carries $3{,}073$ Datadog metric-query occurrences, of which $3{,}065$ in
+$2{,}572$ distinct strings survive dropping every string whose instantiated form the
+corpus already holds --- seven such forms, eight occurrences. Its formula layer, $265$
+occurrences in $166$ forms, is set aside exactly as the corpus's $6{,}022$ are, because
+no version of either grammar parses that language at all.
+Table~\ref{tab:heldout}'s in-sample Datadog row is Table~\ref{tab:parse-coverage}'s own
+\texttt{datadog} row recomputed by this script, down to the residual of $6$ --- a
+stricter version of the check the Grafana comparator passes, which reproduces that
+table's PromQL residual but not its row.
 
-Frozen grammar v2 parses $99.9\%$ of those $2{,}572$ strings, which is its in-sample rate
-to the decimal place, while v1 parses $94.4\%$ against $92.9\%$ in sample. The margin
+Frozen grammar v2 parses $99.9\%$ of those $2{,}572$ strings, which is its in-sample
+rate, while v1 parses $94.4\%$ against $92.9\%$. The margin
 \S\ref{sec:datadog-inference}'s corpus-driven productions bought therefore falls from
-$7.0$ points to $5.5$: about four fifths of the largest fit in this paper was Datadog as
-people write it and about a fifth was this corpus, which is the reverse proportion from
-the PromQL side and the more favourable one. And the frozen translator, called exactly as
-\S\ref{sec:evaluation} calls it, returns $\kappa=96.7\%$ of those $3{,}065$ occurrences
-against $96.6\%$ in sample, and $96.3\%$ of distinct strings against $96.5\%$. The number
-this paper is about does not move when it is asked about somebody else's dashboards.
+$7.0$ points to $5.6$. That is the strongest statement this design supports and it is
+weaker than it looks: v2 does not fall at all, so there is no measurable overfit in v2 to
+find, and the whole of the movement is v1 --- the \emph{unfitted} documentation grammar
+--- doing better here than it does on the corpus. What the pair measures is a difference
+between two populations read under the assumption that they are otherwise exchangeable.
+The honest reading is that roughly four fifths of the climb reappears on dashboards the
+grammar never saw.
 
-\paragraph{The refusals out of sample are the refusals in it.}
+The frozen translator, called exactly as \S\ref{sec:evaluation} calls it, returns
+$\kappa=96.7\%$ of those $3{,}065$ occurrences against $96.6\%$ in sample, and $96.3\%$ of
+the $2{,}564$ distinct instantiated forms against $96.5\%$. Those are not two results, one
+up and one down. They are one result, which is that the two rates are indistinguishable.
+Occurrences cluster inside dashboards --- $23$ of the $139$ carry any refusal at all, and
+one integration's dashboard carries $30$ of them --- so dropping any single dashboard
+moves the held-out figure anywhere in $96.7\%$ to $97.7\%$, where the same operation in
+sample moves it only within $96.6\%$ to $97.0\%$. A tenth of a point sits well inside
+that. What the comparison establishes is that nothing large is hiding on the Datadog
+side, not that the fit is worth nothing.
+
+\paragraph{The refusals out of sample are refusals the catalogue already names.}
 What a held-out $\kappa$ can show that an in-sample one cannot is a failure mode nobody
-had catalogued, and there is none. The $98$ refused occurrences carry four gap codes:
-\textsc{phi\_quantile} on $45$ distinct strings, \textsc{unsupported\_function} on $40$,
-\textsc{fill\_interpolation} on $7$ and \textsc{scope\_empty\_value} on $1$. All four are
-families \S\ref{sec:gaps} already names, in a different mixture --- in sample
-\textsc{unsupported\_function} dominates and here the quantile gap slightly exceeds it ---
-and the one family that appears in sample and not here,
-\textsc{scope\_disjunction}, is a gap being missed rather than a new one found.
-\S\ref{sec:threats} argued that the shortfall was structural rather than corpus-specific
-and had nothing but the shape of the gap codes to argue it from. This is the evidence:
-dashboards written by other people fail in the same four ways and no fifth.
+had catalogued, and among the refusals there is none. The $98$ refused occurrences carry
+four gap codes --- \textsc{phi\_quantile} $49$, \textsc{unsupported\_function} $40$,
+\textsc{fill\_interpolation} $7$, \textsc{scope\_empty\_value} $2$ --- and all four are
+families \S\ref{sec:gaps} names. The corpus raises a fifth, \textsc{scope\_disjunction},
+which this repository does not, so what differs is a gap going unseen rather than a gap
+appearing. The mixture differs less than it first appears, too:
+\textsc{unsupported\_function} dominates in sample and here the quantile gap edges past
+it, but $30$ of those $49$ occurrences are the one integration's panels, and without that
+dashboard the in-sample order returns. \S\ref{sec:threats} argued that the shortfall was
+structural rather than specific to this corpus with nothing but the shape of the gap
+codes behind it. This is evidence for it.
 
-Two strings of $2{,}572$ do not parse, and they are one construct --- \texttt{stddev:} as
-a space aggregator, which no query in the corpus uses. That is also the feature
-vocabulary's only out-of-sample addition: one feature beyond the $25$, worth $2$ of
-$3{,}065$ occurrences, so the $25$ features reach $99.9\%$ of this population rather than
-all of it --- where the cross-validation above found no replicate missing a feature at
-all past $60\%$ of the corpus. It is the honest
-cost of the fit on this side, and it is small and specific: a vocabulary read off one
-organisation's dashboards misses one aggregator in a thousand queries.
+Outside the refusals there is one new failure, and it is the only thing here the
+catalogue did not predict. Two strings of $2{,}572$ do not parse, and they are one
+construct: \texttt{stddev:} as a space aggregator, which no query in the corpus uses.
+Being a parse failure rather than a typed refusal, it carries no gap code, so no reading
+of the catalogue in sample could have anticipated it.
+
+\paragraph{Two vocabularies, and the one that bounds $\kappa$.}
+That construct is also the single feature the corpus's $28$ Datadog features do not have,
+so the corpus vocabulary covers $99.9\%$ of these occurrences rather than all of them,
+where the cross-validation above found no replicate missing a feature at all past $60\%$
+of the corpus. But the set that bounds $\kappa$ is not that one. It is $S^\star$, the
+$25$ features the translator demonstrably handles (\S\ref{sec:evaluation}), and
+$S^\star$ covers $97.3\%$ of these occurrences --- the same $97.3\%$ it covers in sample
+--- with $82$ occurrences outside it rather than two, under four features rather than
+one. So the ceiling that matters reproduces out of sample to the decimal place, and it is
+the smaller of the two numbers: reporting the $99.9\%$ as though it were the translator's
+would overstate the reachable ceiling by $2.6$ points.
 
 \paragraph{The later commit, now a check rather than the evidence.}
 The second remedy still runs and is still reported, with its size attached. In the week
@@ -136,25 +160,30 @@ check against breakage, and re-running it against a commit a year from now costs
 
 \paragraph{Where that leaves the threat.}
 All three fitted things now have an out-of-sample reading. The vocabulary and the build
-order are functions of the corpus and were refitted on part of it: both generalise, the
-vocabulary saturating after a tenth of the dashboards and the order losing one point. The
+order are functions of the corpus and were refitted on part of it: the vocabulary
+saturates after a tenth of the dashboards and the order loses one point --- and on the
+disjoint repository the corpus vocabulary turns out to miss one aggregator after all. The
 grammar is not refittable by any script, so it was frozen and run on populations nobody
-here had read --- $497$ community dashboards on the PromQL side, $99.6\%$ against
-$99.0\%$, and a disjoint Datadog repository, $99.9\%$ against $99.9\%$. And $\kappa$ is
-$96.7\%$ out of sample against $96.6\%$ in it, on $3{,}065$ occurrences from $139$
-dashboards by other authors, failing in the same four ways.
+here had read: $497$ community dashboards on the PromQL side, $99.6\%$ against $99.0\%$,
+and a disjoint Datadog repository, $99.9\%$ against $99.9\%$. And $\kappa$ is $96.7\%$
+out of sample against $96.6\%$ in it, on $3{,}065$ occurrences from $139$ dashboards by
+other authors, refusing under four of the five families the catalogue already holds.
 
-None of that makes $96.6\%$ a held-out estimate. It was obtained the way it was obtained,
-and a second number beside it does not change that. What it does is bound the worry the
-estimate licenses, and the bound is tight: on this evidence the fit is worth a fifth of
-the Datadog grammar's climb, a third of the PromQL grammar's, one point of the staircase,
-and nothing measurable in $\kappa$. The caveat that remains is about authorship rather
-than leakage. \texttt{integrations-extras} is community- and partner-written, which is
-the different-authors test; but those dashboards are built with the vendor's own
+None of that makes $96.6\%$ a held-out estimate; it was obtained the way it was obtained.
+What it does is bound the worry the estimate licenses. On every channel a script can
+reach, the fit is worth at most a point, and on $\kappa$ the two readings differ by less
+than the spread a single dashboard produces. Two caveats survive, and neither is leakage.
+The first is authorship: \texttt{integrations-extras} is community- and partner-written,
+which is the different-authors test, but those dashboards are built with the vendor's own
 integration scaffolding against the vendor's own documentation, so their house style is
-not independent of \texttt{integrations-core}'s. \S\ref{sec:threats}'s preference for
-private, customer-written dashboards stands unmet, and it is the one test this paper
-cannot run rather than the one it declined to.
+not independent of \texttt{integrations-core}'s --- \S\ref{sec:threats} puts a number on
+how far it differs. The second is that string-level disjointness is not structural
+novelty. Nothing in this population survives even whitespace- and tag-order-blind
+matching against the corpus, and yet $90.0\%$ of its occurrences have a feature set that
+occurs there verbatim: these are largely the same query shapes over different metrics,
+which is what a grammar is tested by and not what a body of unfamiliar practice would
+be. So \S\ref{sec:threats}'s preference for private, customer-written dashboards stands
+unmet. It is the one test this paper cannot run rather than the one it declined to.
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=0.92\linewidth]{figures/heldout_vocabulary}
@@ -172,10 +201,12 @@ the parts of the fit a script can undo.}
 \caption{The frozen grammars inside and outside the corpus. ``Raw'' is the share of
 distinct queries that parse as shipped; the v1 and v2 columns are after template
 instantiation, as in Table~\ref{tab:parse-coverage}, and the residual is what v2 still
-cannot parse. An indented row restricts the row above it: the held-out Grafana set
-to the strings whose instantiated form the corpus does not hold, which is the comparison
-the text quotes, and \texttt{integrations-core} to the strings its later commit added,
-which are too few to estimate anything. The last row is the disjoint Datadog repository,
-every string of which is one the corpus does not hold.}
+cannot parse. The one indented row restricts the row above it, to the strings
+whose instantiated form the corpus does not hold, which is the comparison the text
+quotes; the Datadog rows are four separate populations and none of them is nested in
+another. \texttt{integrations-extras} is the disjoint repository, every string of which
+is one the corpus does not hold. The last row is \texttt{integrations-core} at a later
+commit, which holds only strings the corpus lacks and at $99$ of them estimates
+nothing.}
 \label{tab:heldout}
 \end{table}

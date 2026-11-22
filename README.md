@@ -61,11 +61,12 @@ downloads the corpus and writes `data/corpus/queries.jsonl`, which is committed;
 `scripts/heldout_fetch.py` does the same for the held-out set in `data/heldout/`, taking
 community dashboards past the rank the corpus stopped at, `integrations-core` at a later
 commit, and `integrations-extras` --- a repository the corpus does not touch, which is
-where the held-out kappa comes from. Both pin what they fetched in a manifest beside the queries, and neither
-needs to run again to reproduce anything in the paper --- `make data` scores the committed
-held-out queries with `scripts/heldout_eval.py` and cross-validates the committed corpus
-with `scripts/heldout_split.py`. Re-running `heldout_fetch.py` replaces the held-out set
-with a later one, which is a new experiment rather than a reproduction of this one.
+where the held-out kappa comes from. Both scripts pin what they fetched in a manifest
+beside the queries, and neither needs to run again to reproduce anything in the paper ---
+`make data` scores the committed held-out queries with `scripts/heldout_eval.py` and
+cross-validates the committed corpus with `scripts/heldout_split.py`. Re-running
+`heldout_fetch.py` replaces the held-out set with a later one, which is a new experiment
+rather than a reproduction of this one.
 
 `make paper` runs `pdflatex` three times, not twice. The table of contents has a length
 of its own and that length moves every page number after it, so a two-pass build

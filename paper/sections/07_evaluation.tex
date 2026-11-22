@@ -550,9 +550,12 @@ queries in one house style, with nothing to pair against the PromQL side's two i
 sources, because no comparable public body of customer-written Datadog dashboards exists.
 \S\ref{sec:heldout} does find a second public body that is not customer-written ---
 \texttt{integrations-extras}, the community- and partner-maintained sibling --- and holds
-it out, which bears on the fit and not on this paragraph: a different set of authors
-writing against the same vendor's documentation tests whether the grammar and the
-translator generalise, not whether either repository resembles what customers write.
+it out. That bears on the fit most directly, but it bears on this paragraph too, because
+the two repositories' house styles are measurably different: $88.6\%$ of corpus
+occurrences carry a template variable against $77.0\%$ there, and $11.8\%$ of corpus
+strings parse as shipped against $22.8\%$. So the template share is confirmed as
+source-specific, in the direction the paragraph above fears. What neither repository is,
+is evidence about what customers write.
 The choice was deliberate --- no reference grammar is published and vendor-authored queries
 are the closest thing to a specification by example (\S\ref{sec:corpus}) --- but a
 specification by example is not a sample of what customers write, so \S\ref{sec:gaps}
@@ -589,25 +592,31 @@ number beside an out-of-sample one.
 set of dashboards, and a later commit of the same repository, with the grammar and the
 translator frozen --- and reports what they show. The short form: the feature vocabulary
 and the implementation order are functions of the corpus, so they can be refitted on part
-of it and scored on the rest, and both generalise, the vocabulary saturating after a
-tenth of the dashboards and the build order losing one point out of sample. The grammar
+of it and scored on the rest, and both broadly generalise: the vocabulary saturates
+after a tenth of the dashboards, missing one aggregator on the disjoint repository, and
+the build order loses one point out of sample. The grammar
 is not refittable by any script, so it was frozen and read on dashboards nobody here had
 seen. On $497$ community dashboards the corpus never listed --- the $12{,}522$ distinct
 strings there whose instantiated form the corpus does not hold --- v2 parses $99.6\%$
-against $99.0\%$ in sample, and its margin over v1 falls from $1.2$ points to $0.8$: a
-third of that fit was this corpus, two thirds of it was PromQL. On $2{,}572$ distinct
-queries from \texttt{integrations-extras}, a repository in the same organisation by other
-authors that the corpus does not touch, v2 parses $99.9\%$ --- its in-sample rate --- and
-the $7$-point climb of this paragraph's first sentence falls to $5.5$. And $\kappa$
-itself, which the paragraph above this one said had no holdout, is $96.7\%$ of those
-$3{,}065$ occurrences against $96.6\%$ here, refusing under four gap codes that are all
-families \S\ref{sec:gaps} already catalogues. So the estimate is still a resubstitution
-estimate, and the worry it licenses is now bounded instead of open: what the fit is worth
-has been measured on every channel, and on the one that matters most it is worth nothing
-measurable. The caveat that is left is authorship, not leakage --- those dashboards are
-built with the vendor's own scaffolding against the vendor's own documentation --- so the
-corpus of private, customer-written dashboards this subsection asks for is still the test
-that was not run.
+against $99.0\%$ in sample, and its margin over v1 falls from $1.2$ points to $0.8$. On
+$2{,}572$ distinct queries from \texttt{integrations-extras}, a repository in the same
+organisation by other authors that the corpus does not touch, v2 parses $99.9\%$ --- its
+in-sample rate --- and the climb from $92.9\%$ to $99.9\%$ above, seven points of it,
+falls to $5.6$. Both of those are differences between populations rather than
+measurements of overfitting, since in each pair it is the unfitted v1 that moves while v2
+holds. And $\kappa$ itself, which the paragraph above this one said had no holdout, is
+$96.7\%$ of those $3{,}065$ occurrences against $96.6\%$ here --- the same figure as
+\S\ref{sec:baseline}'s coverage by valid output above, and an unrelated quantity, and a
+difference smaller than the spread produced by dropping any one of the $139$
+dashboards --- refusing under
+four of the five gap families \S\ref{sec:gaps} catalogues. So the estimate is still a
+resubstitution estimate, and the worry it licenses is bounded instead of open: on every
+channel a script can reach the fit is worth at most a point, and on $\kappa$ the two
+readings cannot be told apart. Two caveats are left and neither is leakage --- those
+dashboards are built with the vendor's own scaffolding against the vendor's own
+documentation, and their strings are novel while $90.0\%$ of their occurrences reuse a
+feature set the corpus already holds --- so the corpus of private, customer-written
+dashboards this subsection asks for is still the test that was not run.
 
 \paragraph{Everything here is about the query layer.}
 What we measure is the cost of rewriting saved queries, and \S\ref{sec:discussion}'s

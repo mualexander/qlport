@@ -128,8 +128,37 @@ def classify(text: str) -> dict:
 # ---------------------------------------------------------------------------
 # one side of the held-out set
 # ---------------------------------------------------------------------------
+def ceiling(texts: list[str], occ: Counter, feats: dict[str, set],
+            vocabulary: set[str]) -> dict:
+    """What share of occurrences use only features the vocabulary already has.
+
+    `novel_features` counts occurrences per feature and a string with two novel
+    features lands in two buckets, so those counts do not sum to anything. The number
+    that means something --- and the only one the prose may total --- is
+    `novel_occurrences`, which counts each string once however many features it adds.
+    """
+    novel: Counter = Counter()
+    inside_occ = inside_d = 0
+    novel_occ = 0
+    for t in texts:
+        extra = feats[t] - vocabulary
+        if extra:
+            novel_occ += occ[t]
+            for f in extra:
+                novel[f] += occ[t]
+        else:
+            inside_occ += occ[t]
+            inside_d += 1
+    total = sum(occ.values()) or 1
+    return dict(size=len(vocabulary),
+                occ_pct=round(inside_occ / total * 100, 1),
+                distinct_pct=round(inside_d / (len(texts) or 1) * 100, 1),
+                novel_occurrences=novel_occ,
+                novel_features=dict(novel.most_common()))
+
+
 def measure(queries: list, lang: str, vocabulary: set[str],
-            corpus_forms: set[str]) -> dict:
+            corpus_forms: set[str], translator: set[str] | None = None) -> dict:
     """Parse rates over distinct queries, and the vocabulary ceiling over occurrences.
 
     Disjointness is enforced by dashboard, which is the unit the fit was made over: the
@@ -165,34 +194,78 @@ def measure(queries: list, lang: str, vocabulary: set[str],
     nn = len(novel_texts) or 1
 
     feats = {t: c.features(lang, t) for t in texts}
-    novel: Counter = Counter()
-    inside_occ = inside_d = 0
-    for t in texts:
-        extra = feats[t] - vocabulary
-        if extra:
-            for f in extra:
-                novel[f] += occ[t]
-        else:
-            inside_occ += occ[t]
-            inside_d += 1
-    total_occ = sum(occ.values()) or 1
-
-    return dict(
+    corpus_ceiling = ceiling(texts, occ, feats, vocabulary)
+    out = dict(
         dashboards=len({q.origin for q in queries}),
         queries=len(queries), distinct=len(texts),
+        # The counts, so a margin can be taken before the rounding rather than after it.
+        # round(99.9 - 94.4, 1) is 5.5 and the gain is 5.6: subtracting two figures that
+        # have each already lost four decimal places is how a tenth of a point appears
+        # out of nowhere, and every gain this script reports is derived from these.
+        raw_n=raw, v1_n=v1, v2_n=v2,
         raw_pct=round(raw / n * 100, 1), v1_pct=round(v1 / n * 100, 1),
         v2_pct=round(v2 / n * 100, 1), residual=len(residual),
         shared_distinct=len(texts) - len(novel_texts),
         novel_distinct=len(novel_texts),
+        novel_v1_n=nov_v1, novel_v2_n=nov_v2,
         novel_v1_pct=round(nov_v1 / nn * 100, 1),
         novel_v2_pct=round(nov_v2 / nn * 100, 1),
         blockers=dict(blockers.most_common()),
         residual_kinds=residual_kinds(residual),
         residual_examples=[r[:120] for r in residual[:5]],
-        ceiling_occ_pct=round(inside_occ / total_occ * 100, 1),
-        ceiling_distinct_pct=round(inside_d / n * 100, 1),
-        novel_features=dict(novel.most_common()),
+        # Named for the vocabulary it is measured against. The corpus shows 28 Datadog
+        # features; the translator demonstrably handles 25 of them, and that smaller set
+        # is the one that bounds kappa. A ceiling quoted without saying which set it is
+        # against is two different numbers wearing one name.
+        corpus_vocabulary=corpus_ceiling,
+        ceiling_occ_pct=corpus_ceiling["occ_pct"],
+        ceiling_distinct_pct=corpus_ceiling["distinct_pct"],
+        novel_features=corpus_ceiling["novel_features"],
     )
+    if translator is not None:
+        out["translator_vocabulary"] = ceiling(texts, occ, feats, translator)
+    return out
+
+
+def jackknife(queries: list, translated: set[str]) -> dict:
+    """kappa with each dashboard dropped in turn.
+
+    Occurrences are not independent: they cluster inside dashboards, and one
+    integration's dashboard can carry a double-figure share of a population's refusals.
+    A rate quoted to a tenth of a point should be set against the spread this produces,
+    not against its own standard error computed as though the occurrences were drawn
+    one at a time.
+    """
+    per: dict[str, list[int]] = {}
+    for q in queries:
+        d = per.setdefault(q.origin, [0, 0])
+        d[0] += 1
+        d[1] += c.normalise("datadog", q.text) in translated
+    tot_n = sum(v[0] for v in per.values())
+    tot_t = sum(v[1] for v in per.values())
+    spread = sorted((tot_t - v[1]) / (tot_n - v[0]) * 100
+                    for v in per.values() if tot_n - v[0])
+    worst = max(per.items(), key=lambda kv: kv[1][0] - kv[1][1])
+    return dict(dashboards=len(per),
+                dashboards_with_a_refusal=sum(1 for v in per.values() if v[0] != v[1]),
+                worst_dashboard=worst[0],
+                worst_dashboard_refusals=worst[1][0] - worst[1][1],
+                low_pct=round(spread[0], 1) if spread else None,
+                high_pct=round(spread[-1], 1) if spread else None)
+
+
+def template_share(queries: list) -> dict:
+    """Occurrences carrying a template variable, under notebook 00's definition.
+
+    \S\ref{sec:threats} says the template share is the figure most likely to be inflated
+    by using vendor and community dashboards, and before this holdout there was nothing
+    to compare it against. There is now, so it is measured rather than conceded --- by
+    the notebook's own test, a literal ``$'' in the shipped string, so that the
+    in-sample figure here has to come back as the notebook's.
+    """
+    n = sum("$" in q.text for q in queries)
+    return dict(occurrences=len(queries), with_variable=n,
+                pct=round(n / (len(queries) or 1) * 100, 1))
 
 
 def kappa(queries: list) -> dict:
@@ -205,13 +278,41 @@ def kappa(queries: list) -> dict:
         by[r["outcome"]] += r["n"]
         byd[r["outcome"]] += 1
     gaps = Counter(r["gap"] for r in rows if r["gap"])
+    gaps_occ: Counter = Counter()
+    for r in rows:
+        if r["gap"]:
+            gaps_occ[r["gap"]] += r["n"]
     return dict(
         occurrences=total, distinct=len(rows),
+        translated_occ=by["translated"], translated_distinct=byd["translated"],
         kappa_occ_pct=round(by["translated"] / total * 100, 1),
         kappa_distinct_pct=round(byd["translated"] / (len(rows) or 1) * 100, 1),
         by_outcome_occ=dict(by), by_outcome_distinct=dict(byd),
-        gaps=dict(gaps.most_common()),
+        # Both units. The prose breaks the refusals down in a sentence that opens with
+        # an occurrence count, so the distinct counts alone cannot be quoted there: they
+        # sum to the number of refused *strings*, which is a different number.
+        gaps=dict(gaps.most_common()), gaps_occ=dict(gaps_occ.most_common()),
+        jackknife=jackknife(queries, {r["norm"] for r in rows
+                                      if r["outcome"] == "translated"}),
+        translated_norms=sorted(r["norm"] for r in rows
+                                if r["outcome"] == "translated"),
     )
+
+
+def translator_feature_set(queries: list, translated: list[str]) -> set[str]:
+    """$S^\star$: the features of the queries the translator actually translates.
+
+    Notebook 03 builds it this way and uses it to bound kappa, because a query using a
+    feature the translator never handles is refused by construction. It is a subset of
+    the features the corpus exhibits --- 25 of 28 --- so a ceiling measured against the
+    corpus vocabulary is a different and looser quantity, and the two must not be
+    quoted under one name.
+    """
+    by_norm: dict[str, set[str]] = {}
+    for q in queries:
+        norm = c.normalise("datadog", q.text)
+        by_norm.setdefault(norm, set()).update(c.features("datadog", q.text))
+    return set().union(*(by_norm[n] for n in translated if n in by_norm))
 
 
 def main() -> int:
@@ -237,16 +338,22 @@ def main() -> int:
              for lang in ("datadog", "promql")}
 
     # Disjointness is the whole premise, so it is asserted rather than assumed.
-    seen_dd = {c.normalise("datadog", q.text)
-               for q in train if q.source == "integrations-core"}
+    # Every held-out Datadog source, found from the file rather than named here: an
+    # earlier version of this check listed `integrations-core` and `grafana` explicitly
+    # and so asserted nothing about `integrations-extras`, which is the population the
+    # held-out kappa rests on, while printing that none of them were in the corpus.
+    seen_dd = {c.normalise("datadog", q.text) for q in train if q.lang == "datadog"}
     seen_ids = {q.origin.split()[0] for q in train if q.source == "grafana"}
-    leaked_dd = [q for q in held if q.source == "integrations-core"
-                 and c.normalise("datadog", q.text) in seen_dd]
+    dd_sources = sorted({q.source for q in held if q.lang == "datadog"})
+    for src in dd_sources:
+        leaked = [q for q in held if q.source == src and q.lang == "datadog"
+                  and c.normalise("datadog", q.text) in seen_dd]
+        assert not leaked, f"{len(leaked)} held-out {src} queries are in the corpus"
     leaked_gf = [q for q in held if q.source == "grafana"
                  and q.origin.split()[0] in seen_ids]
-    assert not leaked_dd, f"{len(leaked_dd)} held-out Datadog queries are in the corpus"
     assert not leaked_gf, f"{len(leaked_gf)} held-out dashboards are in the corpus"
-    print(f"held out: {len(held):,} queries, none of them in the corpus")
+    print(f"held out: {len(held):,} queries; the Datadog sources checked for leakage "
+          f"are {', '.join(dd_sources)}, and none of them leaked")
 
     res: dict = {"manifest": manifest}
 
@@ -268,62 +375,11 @@ def main() -> int:
     # pipeline and nothing below it means anything.
     dd_train = [q for q in train if q.source == "integrations-core"
                 and q.lang == "datadog"]
-    res["datadog_in_sample"] = measure(dd_train, "datadog", vocab["datadog"], set())
-    di = res["datadog_in_sample"]
-    print(f"Datadog in sample: {di['queries']:,} queries, {di['distinct']:,} distinct, "
-          f"raw {di['raw_pct']}%  v1 {di['v1_pct']}%  v2 {di['v2_pct']}%  "
-          f"residual {di['residual']}")
 
-    rows = [[r"Grafana, the corpus's $200$",
-             f"{gi['queries']:,}", f"{gi['distinct']:,}", pct(gi["raw_pct"] / 100),
-             pct(gi["v1_pct"] / 100), pct(gi["v2_pct"] / 100), f"{gi['residual']:,}"]]
-    for source, lang, label in (
-            ("grafana", "promql", r"Grafana, @N it never saw"),
-            ("@dd-in-sample", "datadog",
-             r"\texttt{integrations-core}, the corpus's $@N$"),
-            ("integrations-core", "datadog",
-             r"\quad its later commit's new strings"),
-            ("integrations-extras", "datadog",
-             r"\texttt{integrations-extras}, @N others")):
-        if source == "@dd-in-sample":
-            m = di
-            rows.append([label.replace("@N", f"{m['dashboards']}"),
-                         f"{m['queries']:,}", f"{m['distinct']:,}",
-                         pct(m["raw_pct"] / 100), pct(m["v1_pct"] / 100),
-                         pct(m["v2_pct"] / 100), f"{m['residual']:,}"])
-            continue
-        qs = [q for q in held if q.source == source and q.lang == lang]
-        if not qs:
-            print(f"\n{label}: nothing held out")
-            continue
-        m = measure(qs, lang, vocab[lang], forms[lang])
-        res[source] = m
-        print(f"\n{label.replace('@N', str(m['dashboards']))}: """
-              f"{m['dashboards']} dashboards, {m['queries']:,} queries, "
-              f"{m['distinct']:,} distinct")
-        print(f"  raw {m['raw_pct']}%  v1 {m['v1_pct']}%  v2 {m['v2_pct']}%  "
-              f"residual {m['residual']} {m['blockers']}")
-        print(f"  of those, {m['shared_distinct']:,} strings the corpus also holds; "
-              f"on the {m['novel_distinct']:,} it does not: "
-              f"v1 {m['novel_v1_pct']}%  v2 {m['novel_v2_pct']}%")
-        print(f"  residual by kind: {m['residual_kinds']}")
-        print(f"  vocabulary ceiling {m['ceiling_occ_pct']}% of occurrences, "
-              f"{len(m['novel_features'])} novel features {list(m['novel_features'])}")
-        for r in m["residual_examples"]:
-            print(f"    [residual] {r}")
-        rows.append([label.replace("@N", f"${m['dashboards']}$"),
-                     f"{m['queries']:,}", f"{m['distinct']:,}",
-                     pct(m["raw_pct"] / 100), pct(m["v1_pct"] / 100),
-                     pct(m["v2_pct"] / 100), f"{m['residual']:,}"])
-        if m["shared_distinct"]:
-            rows.append([r"\quad its strings the corpus lacks", "---",
-                         f"{m['novel_distinct']:,}", "---",
-                         pct(m["novel_v1_pct"] / 100), pct(m["novel_v2_pct"] / 100),
-                         "---"])
-
-    # kappa, in sample and on each held-out Datadog population. The in-sample run is
-    # here as a check and not as a result: it calls notebook 03's classify() over
-    # notebook 03's input, so it must return notebook 03's kappa.
+    # kappa, in sample and on each held-out Datadog population. The in-sample run is a
+    # check and not a result: it calls notebook 03's classify() over notebook 03's
+    # input, so it must return notebook 03's kappa. It also runs first, because the
+    # queries it translates are what define $S^\star$.
     for key, qs, what in (
             ("kappa_in_sample", dd_train, "the corpus"),
             ("kappa_extras",
@@ -338,7 +394,88 @@ def main() -> int:
               f"of {k['occurrences']:,} occurrences, {k['kappa_distinct_pct']}% of "
               f"{k['distinct']:,} distinct")
         print(f"  outcomes {k['by_outcome_occ']}")
-        print(f"  gaps {k['gaps']}")
+        print(f"  gaps by string {k['gaps']}")
+        print(f"  gaps by occurrence {k['gaps_occ']}")
+
+    for key, qs in (("template_in_sample", dd_train),
+                    ("template_extras",
+                     [q for q in held if q.source == "integrations-extras"
+                      and q.lang == "datadog"])):
+        if qs:
+            res[key] = t = template_share(qs)
+            print(f"{key}: {t['with_variable']:,}/{t['occurrences']:,} "
+                  f"= {t['pct']}% carry a template variable")
+
+    sstar = translator_feature_set(
+        dd_train, res["kappa_in_sample"].pop("translated_norms"))
+    for key in ("kappa_extras", "kappa"):
+        res.get(key, {}).pop("translated_norms", None)
+    print(f"\ntranslator feature set: {len(sstar)} of {len(vocab['datadog'])} "
+          f"(absent: {sorted(vocab['datadog'] - sstar)})")
+
+    res["datadog_in_sample"] = measure(dd_train, "datadog", vocab["datadog"], set(),
+                                       translator=sstar)
+    di = res["datadog_in_sample"]
+    print(f"Datadog in sample: {di['queries']:,} queries, {di['distinct']:,} distinct, "
+          f"raw {di['raw_pct']}%  v1 {di['v1_pct']}%  v2 {di['v2_pct']}%  "
+          f"residual {di['residual']}")
+
+    rows = [[rf"Grafana, the corpus's ${gi['dashboards']}$",
+             f"{gi['queries']:,}", f"{gi['distinct']:,}", pct(gi["raw_pct"] / 100),
+             pct(gi["v1_pct"] / 100), pct(gi["v2_pct"] / 100), f"{gi['residual']:,}"]]
+    for source, lang, label in (
+            ("grafana", "promql", r"Grafana, @N it never saw"),
+            ("@dd-in-sample", "datadog",
+             r"\texttt{integrations-core}, the corpus's $@N$"),
+            ("integrations-extras", "datadog",
+             r"\texttt{integrations-extras}, @N others"),
+            # Last, and not indented. An indented row in this table restricts the row
+            # above it; this one is the complement of the corpus's own rows --- the
+            # strings a later commit added, which are by construction the ones the
+            # corpus does not contain --- so indenting it under them said the opposite
+            # of what it measures.
+            ("integrations-core", "datadog",
+             r"\texttt{integrations-core}, @N at a later commit")):
+        if source == "@dd-in-sample":
+            m = di
+            rows.append([label.replace("@N", f"{m['dashboards']}"),
+                         f"{m['queries']:,}", f"{m['distinct']:,}",
+                         pct(m["raw_pct"] / 100), pct(m["v1_pct"] / 100),
+                         pct(m["v2_pct"] / 100), f"{m['residual']:,}"])
+            continue
+        qs = [q for q in held if q.source == source and q.lang == lang]
+        if not qs:
+            print(f"\n{label}: nothing held out")
+            continue
+        m = measure(qs, lang, vocab[lang], forms[lang],
+                    translator=sstar if lang == "datadog" else None)
+        res[source] = m
+        print(f"\n{label.replace('@N', str(m['dashboards']))}: """
+              f"{m['dashboards']} dashboards, {m['queries']:,} queries, "
+              f"{m['distinct']:,} distinct")
+        print(f"  raw {m['raw_pct']}%  v1 {m['v1_pct']}%  v2 {m['v2_pct']}%  "
+              f"residual {m['residual']} {m['blockers']}")
+        print(f"  of those, {m['shared_distinct']:,} strings the corpus also holds; "
+              f"on the {m['novel_distinct']:,} it does not: "
+              f"v1 {m['novel_v1_pct']}%  v2 {m['novel_v2_pct']}%")
+        print(f"  residual by kind: {m['residual_kinds']}")
+        for which, cl in (("corpus", m["corpus_vocabulary"]),
+                          ("translator", m.get("translator_vocabulary"))):
+            if cl:
+                print(f"  {which} vocabulary ({cl['size']} features): "
+                      f"{cl['occ_pct']}% of occurrences, {cl['novel_occurrences']} "
+                      f"outside it, novel {list(cl['novel_features'])}")
+        for r in m["residual_examples"]:
+            print(f"    [residual] {r}")
+        rows.append([label.replace("@N", f"${m['dashboards']}$"),
+                     f"{m['queries']:,}", f"{m['distinct']:,}",
+                     pct(m["raw_pct"] / 100), pct(m["v1_pct"] / 100),
+                     pct(m["v2_pct"] / 100), f"{m['residual']:,}"])
+        if m["shared_distinct"]:
+            rows.append([r"\quad its strings the corpus lacks", "---",
+                         f"{m['novel_distinct']:,}", "---",
+                         pct(m["novel_v1_pct"] / 100), pct(m["novel_v2_pct"] / 100),
+                         "---"])
 
     if rows:
         tabular("lrrrrrr",
@@ -350,6 +487,14 @@ def main() -> int:
     out = PROCESSED / "heldout_eval.json"
     out.write_text(json.dumps(res, indent=1, sort_keys=True) + "\n")
     print(f"wrote {out.relative_to(ROOT)}")
+
+    def gain(m: dict) -> float:
+        """v2 over v1 in points, taken from the counts.
+
+        Not `round(v2_pct - v1_pct, 1)`: both of those have already been rounded, and
+        on the extras population that subtraction gives 5.5 where the counts give 5.6.
+        """
+        return round((m["v2_n"] - m["v1_n"]) / (m["distinct"] or 1) * 100, 1)
 
     fig: dict = {}
     if "grafana" in res:
@@ -401,18 +546,36 @@ def main() -> int:
             "ho.ex_novel_v1_pct": e["novel_v1_pct"],
             "ho.ex_novel_v2_pct": e["novel_v2_pct"],
             "ho.ex_queries_at_commit": xm["queries_at_commit"],
-            "ho.ex_gain_points": round(e["v2_pct"] - e["v1_pct"], 1),
+            "ho.ex_gain_points": gain(e),
+            "ho.ex_sstar_size": e["translator_vocabulary"]["size"],
+            "ho.ex_sstar_pct": e["translator_vocabulary"]["occ_pct"],
+            "ho.ex_sstar_novel_features":
+                len(e["translator_vocabulary"]["novel_features"]),
+            "ho.ex_sstar_outside_occurrences":
+                e["translator_vocabulary"]["novel_occurrences"],
+            "ho.ex_ceiling_outside_occurrences":
+                e["corpus_vocabulary"]["novel_occurrences"],
+            "ho.ex_vocabulary_size": e["corpus_vocabulary"]["size"],
             # Dropped before anything was measured, and counted so the prose can say
             # how much of the sibling repository was not disjoint.
             "ho.ex_shared_forms": xm["shared_with_corpus"],
+            # Set aside rather than scored. No grammar exists for the formula layer in
+            # either version, so there is no parse rate to report; the corpus's own
+            # formulas are held aside the same way, which is why there is no formula
+            # row in Table~\ref{tab:parse-coverage} either.
+            "ho.ex_formula_queries": xm["queries_formula_held_out"],
+            "ho.ex_formula_distinct": xm["distinct_formula_held_out"],
         })
-    fig.update({"ho.dd_in_sample_distinct": di["distinct"],
+    fig.update({"ho.dd_in_sample_sstar_pct":
+                di["translator_vocabulary"]["occ_pct"],
+                "ho.dd_in_sample_sstar_size": di["translator_vocabulary"]["size"],
+                "ho.dd_in_sample_distinct": di["distinct"],
                 "ho.dd_in_sample_queries": di["queries"],
                 "ho.dd_in_sample_dashboards": di["dashboards"],
                 "ho.dd_in_sample_v1_pct": di["v1_pct"],
                 "ho.dd_in_sample_v2_pct": di["v2_pct"],
                 "ho.dd_in_sample_residual": di["residual"],
-                "ho.dd_in_sample_gain_points": round(di["v2_pct"] - di["v1_pct"], 1)})
+                "ho.dd_in_sample_gain_points": gain(di)})
     fig.update({"ho.gf_in_sample_distinct": gi["distinct"],
                 "ho.gf_in_sample_queries": gi["queries"],
                 "ho.gf_in_sample_raw_pct": gi["raw_pct"],
@@ -422,11 +585,15 @@ def main() -> int:
                 # What the corpus-driven productions are worth, in sample and out of it.
                 # The pair is the point, so both are recorded rather than subtracted in
                 # the prose.
-                "ho.gf_in_sample_gain_points": round(gi["v2_pct"] - gi["v1_pct"], 1)})
+                "ho.gf_in_sample_gain_points": gain(gi)})
     if "grafana" in res:
         g = res["grafana"]
-        fig["ho.gf_novel_gain_points"] = round(g["novel_v2_pct"] - g["novel_v1_pct"], 1)
+        fig["ho.gf_novel_gain_points"] = round(
+            (g["novel_v2_n"] - g["novel_v1_n"]) / (g["novel_distinct"] or 1) * 100, 1)
         fig["ho.gf_listed_to_rank"] = manifest["grafana"]["listed_to_rank"]
+    if "template_extras" in res:
+        fig["ho.ex_template_pct"] = res["template_extras"]["pct"]
+        fig["ho.dd_in_sample_template_pct"] = res["template_in_sample"]["pct"]
     if "kappa" in res:
         fig["ho.dd_kappa_pct"] = res["kappa"]["kappa_occ_pct"]
         fig["ho.dd_kappa_occurrences"] = res["kappa"]["occurrences"]
@@ -434,6 +601,8 @@ def main() -> int:
     if "kappa_in_sample" in res:
         ki = res["kappa_in_sample"]
         fig["ho.kappa_in_sample_pct"] = ki["kappa_occ_pct"]
+        fig["ho.kappa_in_sample_jackknife_low_pct"] = ki["jackknife"]["low_pct"]
+        fig["ho.kappa_in_sample_jackknife_high_pct"] = ki["jackknife"]["high_pct"]
         fig["ho.kappa_in_sample_distinct_pct"] = ki["kappa_distinct_pct"]
         fig["ho.kappa_in_sample_occurrences"] = ki["occurrences"]
     if "kappa_extras" in res:
@@ -445,8 +614,17 @@ def main() -> int:
         fig["ho.ex_translated"] = ke["by_outcome_occ"].get("translated", 0)
         fig["ho.ex_bottom"] = ke["by_outcome_occ"].get("bottom", 0)
         fig["ho.ex_unparsed"] = ke["by_outcome_occ"].get("unparsed", 0)
+        fig["ho.ex_refused_distinct"] = ke["by_outcome_distinct"].get("bottom", 0)
+        fig["ho.ex_jackknife_low_pct"] = ke["jackknife"]["low_pct"]
+        fig["ho.ex_jackknife_high_pct"] = ke["jackknife"]["high_pct"]
+        fig["ho.ex_dashboards_with_a_refusal"] = (
+            ke["jackknife"]["dashboards_with_a_refusal"])
+        fig["ho.ex_worst_dashboard_refusals"] = (
+            ke["jackknife"]["worst_dashboard_refusals"])
         for name, n in ke["gaps"].items():
             fig[f"ho.ex_gap_{name.lower()}"] = n
+        for name, n in ke["gaps_occ"].items():
+            fig[f"ho.ex_gap_occ_{name.lower()}"] = n
     print("\nregistry:")
     for k_, v_ in sorted(fig.items()):
         print(f"  {k_:<28} {v_}")

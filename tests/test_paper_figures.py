@@ -303,8 +303,8 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
          {"eval_weighted.tex"}),
     56: ("E9: the superseded count of distinct forms carrying .weighted(), now 52 ---\n         and, separately, the share of Datadog queries using by {...}",
          {"eval_weighted.tex", "eval_language_use.tex"}),
-    45: ("the queries the first six Datadog features complete, an nb-00 staircase\n         quantity. The reason recorded here until the tenth pass described nb 04's\n         refusals, which the cross-check now reports as all 7 of 184",
-         {"eval_staircase.tex"}),
+    45: ("the queries the first six Datadog features complete, an nb-00 staircase\n         quantity. The reason recorded here until the tenth pass described nb 04's\n         refusals, which the cross-check now reports as all 7 of 184. Since the\n         held-out run it is also ho.ex_gap_phi_quantile, the strings the disjoint\n         repository refuses under the quantile gap --- an unrelated quantity of the\n         same magnitude, which is why this scope is enforced ahead of the registry",
+         {"eval_staircase.tex", "eval_heldout.tex"}),
     21: ("a superseded harness run: the shapes a single global 60 s bucket grid broke\n         by comparing a .rollup(sum, 300) bucket against a window covering a fifth\n         of it. The grid is per shape now and the count cannot be recomputed, which\n         is what makes rem:harness-failures a record rather than a measurement.\n         And, separately, the corpus patterns containing `.+`, which carry the 238\n         occurrences the alphabet question is worth",
          {"eval_harness_failures.tex", "06_regular.tex"}),
     76.2: ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
@@ -448,6 +448,28 @@ def test_the_registry_agrees_with_the_tables_on_kappa():
 # should arrive; the list is a statement about which of the paper's numbers are tied to
 # their source by name rather than by luck.
 BOUND: tuple[tuple[str, str], ...] = (
+    # The held-out apparatus. Until these arrived, every ho.* figure was tied to the
+    # prose by magnitude alone, and the held-out kappa could drift from the paper in
+    # silence: 96.7% also happens to be \S\ref{sec:baseline}'s coverage-by-valid-output,
+    # so a stale 96.7 in five files went on being accounted for by a table about
+    # something else. These bind it where it means the holdout. 07_evaluation.tex and
+    # 09_conclusion.tex are deliberately absent --- the baseline's own 96.7% lives
+    # there, so a binding on those files would pass whatever the registry said.
+    ("ho.ex_kappa_pct", "eval_heldout.tex"),
+    ("ho.ex_kappa_pct", "body.tex"),
+    ("ho.ex_kappa_pct", "01_introduction.tex"),
+    ("ho.ex_kappa_distinct_pct", "eval_heldout.tex"),
+    ("ho.ex_sstar_pct", "eval_heldout.tex"),
+    ("ho.ex_template_pct", "07_evaluation.tex"),
+    ("ho.ex_queries", "eval_heldout.tex"),
+    ("ho.ex_queries", "01_introduction.tex"),
+    ("ho.ex_distinct", "eval_heldout.tex"),
+    ("ho.ex_distinct", "04_grammars.tex"),
+    ("ho.ex_queries_at_commit", "eval_heldout.tex"),
+    ("ho.ex_kappa_distinct", "eval_heldout.tex"),
+    ("ho.ex_v1_pct", "eval_heldout.tex"),
+    ("ho.ex_jackknife_high_pct", "eval_heldout.tex"),
+    ("ho.gf_novel_distinct", "eval_heldout.tex"),
     ("nb00.ceiling_8_features_pct", "eval_staircase.tex"),
     ("oo.corpus", "07_evaluation.tex"),
     ("oo.invalid", "07_evaluation.tex"),
@@ -1164,7 +1186,7 @@ def test_a_historical_figure_is_not_the_figure_it_supersedes():
 TABLE_COINCIDENCE: frozenset[tuple[str, float]] = frozenset({
     ("num", 8), ("num", 11), ("num", 17), ("num", 26), ("num", 32),
     ("num", 35), ("num", 55), ("num", 60), ("num", 64), ("num", 74),
-    ("num", 91), ("num", 93), ("num", 100), ("num", 160), ("num", 208), ("num", 262),
+    ("num", 91), ("num", 100), ("num", 160), ("num", 208), ("num", 262),
     ("num", 266), ("num", 300), ("num", 329), ("num", 330), ("num", 1680),
     ("num", 1766), ("num", 7546), ("num", 8102), ("num", 8365),
     ("pct", 3.8), ("pct", 5.3), ("pct", 11.8), ("pct", 20.2),
@@ -1219,7 +1241,7 @@ def test_the_coincidence_list_has_no_dead_entries():
 # accepted, the status it misread, and the 64 KiB the transport appears to cap at -- so
 # the ceiling is 42. The ratchet is against drift, not against putting history on the
 # record: a bump needs a reason in this comment, and a reduction needs a derivation.
-UNCHECKED_CEILING = 37
+UNCHECKED_CEILING = 35
 
 
 def test_the_unchecked_figures_do_not_multiply():
