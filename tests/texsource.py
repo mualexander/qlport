@@ -35,19 +35,30 @@ import ast
 import re
 from pathlib import Path
 
-# `\%` is an escaped percent sign and `\\%` is a line break followed by a comment;
-# the lookbehind has to see exactly one backslash to mean the former.
-COMMENT = re.compile(r"(?<!\\)%.*")
+# Whether a `%` opens a comment is a question of PARITY, not of whether a backslash
+# precedes it: `%` is a comment iff an even number of backslashes stands before it.
+# `\%` is an escaped percent sign, `\\%` is a line break followed by a comment, and
+# `\\\%` is a line break followed by an escaped percent. A lookbehind cannot count,
+# so the pairs are matched and put back.
+#
+# Both halves of this have now been got wrong in this repository, in opposite
+# directions. A lookbehind for two backslashes cut every line at its first `\%` and
+# read a document SMALLER than the published one. A lookbehind for one accepted `\\%`
+# and read a document LARGER -- which let a pinned sentence be satisfied by text
+# behind a `\\%`, with the visible sentence saying the opposite and the suite green.
+COMMENT = re.compile(r"(?<!\\)((?:\\\\)*)%.*")
+# Python's own comments, for the audit below, which reads source lines.
+_PY_COMMENT = re.compile(r"#.*")
 
 
 def published(path: Path) -> str:
     """One source file as both PDFs will have it: everything behind a `%` is gone."""
-    return COMMENT.sub("", path.read_text())
+    return strip_comments(path.read_text())
 
 
 def strip_comments(text: str) -> str:
     """`published` for text already in hand -- a `$...$` span, a line, a whole file."""
-    return COMMENT.sub("", text)
+    return COMMENT.sub(r"\1", text)
 
 
 def flat(text: str) -> str:
@@ -61,10 +72,6 @@ def flat(text: str) -> str:
 RAW_READS = {
     'return files("qlport.grammars").joinpath(name).read_text()':
         "a Lark grammar, where % is not a comment",
-    'source = (ROOT / "scripts" / "as_rate_order.py").read_text()':
-        "a Python script, checked for the call order it documents",
-    'corpus_md = (ROOT / "data" / "corpus" / "SOURCES.md").read_text()':
-        "the corpus provenance note, which is Markdown",
     "for node in ast.walk(ast.parse(path.read_text())):":
         "a Python module, read as a syntax tree",
     "src = Path(__file__).read_text()":
@@ -73,34 +80,71 @@ RAW_READS = {
         "the translator's own source, for the gap codes it raises",
     'return log.read_text(errors="replace")':
         "pdflatex's log, which is neither LaTeX nor ours to strip",
+    "before = path.read_bytes()":
+        "a corpus archive member, compared byte for byte across two extractions",
+    'assert path.read_bytes() == before, "re-extraction changed the corpus"':
+        "and the comparison itself",
 }
 
 
+# Every way of getting a file's bytes that the suite could use. `read_text` alone was
+# audited for one commit, and a probe guard that read the paper raw through the other
+# five -- a bound method, `getattr`, `read_bytes().decode()`, `open()` and
+# `Path.open()` -- passed. An audit that names one spelling of the thing it forbids
+# measures the author's imagination, not the suite.
+_READERS = frozenset({"read_text", "read_bytes", "open"})
+
+# Formats with no comment syntax to strip, named on the reading line itself.
+_NOT_LATEX = ("json", "csv", ".md", ".py", ".log", ".toml")
+
+
 def unstripped_reads(directory: Path) -> list[str]:
-    """Every `.read_text()` in `directory` that neither strips comments nor is excused.
+    """Every read in `directory` that neither strips comments nor is excused.
 
     Read off each file's syntax tree rather than its text, so that this module's own
-    ledger -- six string literals that each quote a `read_text()` call -- cannot
-    satisfy the audit it exists to narrow. `json` on the line is the other excuse: a
-    cache is parsed, not scanned, and a `%` in it is data.
+    ledger -- seven string literals that each quote a read -- cannot satisfy the audit
+    it exists to narrow. Both the call `p.read_text()` and the bare reference `f =
+    p.read_text` count, since the second is the first with a step in between.
+
+    A read whose line names a format that is not LaTeX is excused by rule rather than
+    by entry, which is what keeps the ledger from growing every time the audit is
+    widened: a `.csv`, a `.json`, a `.md`, a `.py` or a `.log` has no comment syntax
+    this module could strip, and a `%` in one is data. The line is taken with its
+    Python comment removed, because as a whole-line substring the old `json` excuse
+    was satisfied by writing `# not json` after a raw read -- the same defect as
+    keying a ledger on a magnitude instead of on a magnitude and a kind.
+
+    What is left in `RAW_READS` is therefore only the reads whose line says nothing
+    about what is being read: a bare variable, or `__file__`.
     """
     out = []
-    for path in sorted(directory.glob("*.py")):
+    for path in sorted(directory.rglob("*.py")):
         if path.resolve() == Path(__file__).resolve():
             continue
         text = path.read_text()
         lines = text.split("\n")
         for node in ast.walk(ast.parse(text)):
-            if not isinstance(node, ast.Call):
-                continue
-            func = node.func
-            if not (isinstance(func, ast.Attribute) and func.attr == "read_text"):
+            name = None
+            if isinstance(node, ast.Attribute) and node.attr in _READERS:
+                name = node.attr
+            elif (isinstance(node, ast.Call)
+                  and isinstance(node.func, ast.Name) and node.func.id == "open"):
+                name = "open"
+            elif (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                  and node.func.id == "getattr" and len(node.args) > 1
+                  and isinstance(node.args[1], ast.Constant)
+                  and node.args[1].value in _READERS):
+                name = str(node.args[1].value)
+            if name is None:
                 continue
             line = lines[node.lineno - 1].strip()
-            if "json" in line or line in RAW_READS:
+            code = _PY_COMMENT.sub("", line).strip() or line
+            if any(fmt in code for fmt in _NOT_LATEX):
+                continue
+            if line in RAW_READS or code in RAW_READS:
                 continue
             out.append(f"  {path.name}:{node.lineno} {line}")
-    return out
+    return sorted(set(out))
 
 
 def suite_source(directory: Path) -> str:
@@ -109,8 +153,15 @@ def suite_source(directory: Path) -> str:
     Here rather than in a test file because a test that reads the suite's text would
     otherwise be an offender under `unstripped_reads`, and excusing the audit from its
     own rule is how a ledger starts growing excuses instead of shrinking.
+
+    This module is excluded, for the reason `unstripped_reads` excludes it and one
+    more: every key of `RAW_READS` is a string literal in this file, so a staleness
+    audit that read this file would find every excuse present by construction and
+    could never fail. It could not, for one commit, and an excuse naming a line that
+    exists nowhere in the suite passed.
     """
-    return "\n".join(p.read_text() for p in sorted(directory.glob("*.py")))
+    return "\n".join(p.read_text() for p in sorted(directory.rglob("*.py"))
+                      if p.resolve() != Path(__file__).resolve())
 
 
 def _group(text: str, open_brace: int) -> int:
@@ -150,11 +201,22 @@ def rendered(path: Path, full: bool) -> str:
             end = _group(text, at + len(needle) - 1)
             body = text[at + len(needle):end]
             text = text[:at] + (body if keep else "") + text[end + 1:]
+    # `\iffalse A \fi` is how a block is parked while it is redrafted, which is the
+    # scenario this module exists for: the text is in the source and in no PDF. It is
+    # resolved first, and the same way for both builds. `\iftrue` is its complement.
+    for name, keep in (("iffalse", False), ("iftrue", True)):
+        text = _resolve(text, name, keep)
     # `\iffull A \else B \fi`, innermost first so a nested hook resolves with its parent
-    pattern = re.compile(r"\\iffull(?!\w)((?:(?!\\iffull(?!\w)|\\else|\\fi).)*)"
-                         r"(?:\\else((?:(?!\\iffull(?!\w)|\\else|\\fi).)*))?\\fi", re.S)
+    return _resolve(text, "iffull", full)
+
+
+def _resolve(text: str, name: str, keep: bool) -> str:
+    r"""`\name A \else B \fi` reduced to A or B, innermost conditional first."""
+    pattern = re.compile(
+        rf"\\{name}(?!\w)((?:(?!\\{name}(?!\w)|\\else|\\fi).)*)"
+        r"(?:\\else((?:(?!\\else|\\fi).)*))?\\fi", re.S)
     while True:
         text, n = pattern.subn(
-            lambda m: (m.group(1) or "") if full else (m.group(2) or ""), text)
+            lambda m: (m.group(1) or "") if keep else (m.group(2) or ""), text)
         if not n:
             return text

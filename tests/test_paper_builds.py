@@ -160,6 +160,47 @@ def test_no_raw_read_is_excused_for_a_line_no_test_has():
     assert not dead, f"RAW_READS excuses lines no test has: {dead}"
 
 
+def test_no_section_file_is_read_by_neither_build():
+    """A `.tex` under sections/ that nothing inputs is in no PDF and in no guard.
+
+    Which would be merely untidy, except that a binding and a pinned phrase name
+    their file by basename. An orphan copy of a deferred block, one directory up,
+    answers to that name ahead of the real one, so every check about the block reads
+    the orphan while the paper prints the block. The two halves of that -- unambiguous
+    resolution, and no orphan to resolve to -- are checked here and in
+    `test_paper_figures.py::_section_path`.
+    """
+    # By path and not by basename. The first version of this compared stems, so a
+    # copy of `moved/eval_heldout.tex` placed at `sections/eval_heldout.tex` --- which
+    # is exactly the shadowing this test exists to prevent --- was itself excused by
+    # the real file's `\\input`.
+    inputs = set()
+    for path in [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex")]:
+        for ref in re.findall(r"\\input\{([^}]*)\}", published(path)):
+            rel = ref[len("sections/"):] if ref.startswith("sections/") else ref
+            inputs.add(rel)
+    orphans = sorted(
+        p.relative_to(PAPER).as_posix() for p in SECTIONS.rglob("*.tex")
+        if p.relative_to(SECTIONS).with_suffix("").as_posix() not in inputs)
+    assert not orphans, (
+        "under paper/sections and inputted by nothing:\n  " + "\n  ".join(orphans))
+
+
+def test_the_sections_define_no_macros_of_their_own():
+    """Every macro lives in `macros.tex`, where both builds expand it.
+
+    A `\\newcommand` whose body nothing calls is prose that is in the source and in
+    neither PDF, which satisfies a pinned phrase and a binding exactly as a comment
+    used to. Barring the definitions is cheaper than resolving them, and the paper has
+    never had one outside `macros.tex`.
+    """
+    bad = []
+    for path in sorted(SECTIONS.rglob("*.tex")):
+        for m in re.finditer(r"\\(?:re)?newcommand|\\def(?=\\)", published(path)):
+            bad.append(f"  {path.relative_to(PAPER).as_posix()} defines a macro")
+    assert not bad, "\n".join(sorted(set(bad))) + "\n  (define it in macros.tex)"
+
+
 # --- the hooks ------------------------------------------------------------------
 
 def test_every_deferred_block_is_hooked_once_and_listed_once():

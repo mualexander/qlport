@@ -57,14 +57,16 @@ dashboards it was built from. It does not do worse out of sample. Its margin ove
 $1.2$ points in sample and $0.8$ out of it, and the obvious thing to do with that pair is
 to read the difference as the share of the fit that was specific to this corpus. The pair
 will not carry that reading. Both margins are measured over strings that arrive a
-dashboard at a time, and recomputing each with one dashboard dropped puts a spread of
-$0.3$ points on it, so the $0.4$-point difference between them is no larger than the
-$0.4$ points of spread it inherits from the two. What the holdout settles about this fit
-is the margin and not its decomposition: the corpus-driven productions are still worth
-$0.8$ points on dashboards the grammar has never seen --- with $0.3$ points of
-dashboard-level movement on that figure, which is a movement and not an interval, since
-this side is a census too --- which makes them a gap
-in PromQL as people write it rather than an accommodation to these $199$. How much more
+dashboard at a time, and a dashboard-level jackknife puts a standard error of $0.3$
+points on each, so the $0.4$-point difference between them is no larger than the $0.4$
+points of spread it inherits from the two. What the holdout settles about this fit is
+the margin and not its decomposition: the corpus-driven productions are still worth
+$0.8$ points on dashboards the grammar has never seen, which makes them a gap in PromQL
+as people write it rather than an accommodation to these $199$. The $0.3$ is a standard
+error in arithmetic only. Nothing was sampled --- these $497$ dashboards are every one
+the catalogue ranks below the corpus's, and the corpus is all of what it collected ---
+so the figure is not an interval on anything, and what it measures is how far the margin
+would move were the population's dashboards to change. How much more
 they were worth here is a question this population cannot answer.
 
 The vocabulary result repeats out of sample exactly as the cross-validation predicts: the
@@ -116,20 +118,25 @@ Frozen grammar v2 parses $99.9\%$ of those $2{,}572$ strings, which is its in-sa
 rate: two strings fail here and six fail in sample, and the two rates agree to four
 significant figures, separating only in the fifth. Meanwhile v1 parses $94.4\%$ against
 $92.9\%$, so the margin \S\ref{sec:datadog-inference}'s corpus-driven productions bought
-falls from $7.0$ points to $5.6$ --- a fall of $1.5$, which is the difference of the
-unrounded rates and not of the two figures printed here, whose difference is $1.4$.
-Neither figure is an estimate. Both sides are
+falls from $7.0$ points to $5.6$, a fall of $1.5$. Neither figure is an estimate.
+Every rate in this subsection is a quotient of counts and every margin a difference of
+two of them, taken before either is rounded, so differencing or dividing the
+one-decimal figures printed beside each other will sometimes miss the figure the paper
+states by a tenth of a point: these three are an instance, as is the design effect
+below. Both sides are
 censuses of their repositories: $209$ of the $209$ dashboard files
-\texttt{integrations-extras} ships at the pinned commit were read, with $0$ unreadable,
-and $525$ of \texttt{integrations-core}'s $534$, the other $9$ being \texttt{ddev}
-scaffolding templates that are not valid JSON. So these are two populations and not two
-samples, and there is no sampling error to report. What a dashboard-level jackknife measures instead is how far
+\texttt{integrations-extras} ships at its pinned commit were read, and $525$ of the
+$534$ \texttt{integrations-core} ships at the corpus's own, the other $9$ being
+scaffolding templates \texttt{ddev} and its predecessor keep under
+\texttt{assets/dashboards/} with a placeholder for a name, which are not valid JSON and
+not dashboards. Of the $525$, the $283$ that carry a surviving Datadog query are the
+corpus side of every comparison here. So these are two populations and not two samples,
+and there is no sampling error to report. What a dashboard-level jackknife measures instead is how far
 each figure moves when a population's dashboards change, and on this side it moves a
-great deal: dropping one dashboard at a time puts $1.7$ points of spread on the
-held-out margin,
-and $1.9$ points of spread on the $1.5$-point fall. So this pair of repositories does not
-separate the fit from the rest; the fall sits inside the spread the same jackknife puts
-on the fall itself. That the margin is there at all on dashboards by other authors is the result.
+great deal: the same jackknife puts a standard error of $1.7$ points on the held-out
+margin and $0.9$ on the in-sample one, which in quadrature is $1.9$ points on the
+$1.5$-point fall between them. So this pair of repositories does not separate the fit
+from the rest; the fall is no larger than the spread it inherits from the two. That the margin is there at all on dashboards by other authors is the result.
 Its size is this repository's, and how much of it a third repository would show is not
 something two of them settle. Note also which side of the pair moves. v2's rate is the
 same to four significant figures, so essentially the whole of the movement is v1 ---
@@ -147,8 +154,8 @@ at a time. They arrive a dashboard at a time and repeat one query shape across a
 metrics inside it, which is why $23$ of the $139$ dashboards carry any refusal at all and
 one integration's carries $30$ of them; dropping a single dashboard and recomputing moves
 the held-out figure anywhere between $96.7\%$ and $97.7\%$. Treating the $3{,}065$ as
-independent draws gives a standard error of $0.3$ points. Resampling dashboards instead
-gives $1.1$, a design effect of $11.6$. Neither number is a sampling error, since nothing
+independent draws gives a standard error of $0.3$ points. Clustering them by
+dashboard instead gives $1.1$, a design effect of $11.6$. Neither number is a sampling error, since nothing
 was sampled; the second is how far this rate moves when the repository's dashboards
 change, and it rests on very little. The dispersion is concentrated enough that the
 effective number of dashboards behind it is $2.0$, one of them carrying $69.8\%$ of it,
@@ -212,15 +219,15 @@ out of sample against $96.6\%$ in it, on $3{,}065$ occurrences from $139$ dashbo
 other authors, refusing under four of the five families the catalogue already holds.
 
 None of that makes $96.6\%$ a held-out estimate; it was obtained the way it was obtained.
-What it does is bound the worry the estimate licenses. On each of the three channels
-this subsection reads twice, the margin the corpus bought survives being read somewhere
-else --- $0.8$ points on the PromQL side and $5.6$ on the Datadog one, carrying $0.3$
-and $1.7$ points of dashboard-level movement --- and on both, how much of that margin
-the corpus kept for itself sits inside the spread the same jackknife puts on that share.
-On $\kappa$ the two readings differ by a tenth of a point where resampling whole
-dashboards puts $1.1$ points of spread on the figure. Nothing is read twice on the other
-channels: the differential, the replay and the trial probes all run against one
-account's data and have no holdout at all. Two caveats survive, and neither is leakage.
+What it does is bound the worry the estimate licenses. This subsection reads three
+channels twice: the PromQL grammar, the Datadog grammar and $\kappa$. On the two
+grammars the margin the corpus bought survives being read somewhere else --- $0.8$
+points on the PromQL side and $5.6$ on the Datadog one, with dashboard-clustered
+standard errors of $0.3$ and $1.7$ --- and on both, how much of that margin the corpus
+kept for itself is no larger than the spread it inherits from the two. On $\kappa$ there
+is no such margin to carry over; what there is, is two readings a tenth of a point apart
+where the dashboard-clustered standard error is $1.1$. Two caveats survive, and neither
+is leakage.
 The first is authorship: \texttt{integrations-extras} is community- and partner-written,
 which is the different-authors test, but those dashboards are built with the vendor's own
 integration scaffolding against the vendor's own documentation, so their house style is

@@ -43,10 +43,18 @@ def _section_path(name: str) -> Path:
 
     Apparatus lives in sections/moved/ so that one copy of the prose serves both the
     20-page build and the full one, and a binding has to follow it there.
+
+    Exactly one file may answer to a name. This returned the first match in sorted
+    order, and `sections/eval_heldout.tex` sorts before `sections/moved/eval_heldout
+    .tex`, so a same-named file one directory up silently became the file every
+    binding and every pinned phrase was checked against. With the real block left
+    saying the opposite, the whole suite stayed green.
     """
-    for candidate in SECTIONS:
-        if candidate.name == name:
-            return candidate
+    found = [c for c in SECTIONS if c.name == name]
+    assert len(found) == 1, (
+        f"{name} names {len(found)} files under paper/sections: "
+        f"{[str(c.relative_to(ROOT)) for c in found]}")
+    return found[0]
     raise AssertionError(f"{name} is bound but no such file exists")
 # The abstract moved into body.tex when the paper gained a 20-page and a full
 # build; it is the most-read part of the document and the one place a stale figure
@@ -80,6 +88,21 @@ def _math(text: str) -> list[str]:
 def _math_text(path: Path) -> str:
     """Every `$...$` span of one file, joined. Prose outside math is not a figure."""
     return "\x01".join(_math(published(path)))
+
+
+def _math_in_both_builds(path: Path) -> tuple[str, str]:
+    r"""One file's math spans as each of the two PDFs will have them.
+
+    `published` resolves `%` and not `\iffull`, so it returns the union of two
+    documents no reader ever sees together. For a census -- "is this figure accounted
+    for anywhere" -- the union is the conservative reading and `_math_text` keeps it.
+    For a claim that a file *states* a figure it is not: a figure inside
+    `\inlineonly` reaches one PDF and is absent from the other, and the binding
+    asserting the file states it is then true of neither document on its own. Both
+    bindings and historical pairs go through here, so the claim has to hold in each
+    build rather than in their union.
+    """
+    return tuple("\x01".join(_math(rendered(path, full))) for full in (False, True))
 
 
 def _prose_figures() -> dict[tuple[str, float], set[str]]:
@@ -253,10 +276,13 @@ def _derived_keys() -> set[tuple[str, float]]:
     fabricated --- passed every test in this file. The same re-keying that retired
     SCALAR_ONLY from the allowlist, applied where it was not.
 
-    One entry names both spellings: $120$ occurrences is $1.4$ points of $\\kappa$ over
-    the corpus and $1.4\\%$ of the translated set, the same count over two denominators
-    that round alike. Naming both is then a decision in the ledger rather than a
-    property of the lookup.
+    Every entry names one spelling. One named two for a commit --- $120$ occurrences is
+    $1.4$ points of $\\kappa$ over the corpus and $1.4\\%$ of the translated set, the
+    same count over two denominators that round alike --- with a paragraph here
+    defending the exception. Withholding the second kind turned out to change nothing:
+    a generated table already accounts for $1.4\\%$, so the grant was inert and the
+    defence was of a decision that had no effect. `test_no_derived_kind_grants_more
+    _than_it_has_to` is what would have said so.
     """
     return {(kind, round(float(value), 4))
             for kinds, value, _, _ in (*DERIVED, *CORPUS_DERIVED)
@@ -723,9 +749,10 @@ def test_a_bound_figure_still_matches_its_source():
         assert key in reg, f"{key} is bound but no longer in the registry"
         # A section file, body.tex, or an apparatus file under sections/moved/.
         path = MAIN if section == "body.tex" else _section_path(section)
-        text = _math_text(path)
-        if not any(s in text for s in _spellings(reg[key])):
-            stale.append(f"  {section} should state {key} = {reg[key]}")
+        for build, text in zip(("main", "main_full"), _math_in_both_builds(path)):
+            if not any(s in text for s in _spellings(reg[key])):
+                stale.append(
+                    f"  {section} should state {key} = {reg[key]} in {build}.pdf")
     assert not stale, "\n".join(stale)
 
 
@@ -788,7 +815,8 @@ PHRASES: tuple[tuple[str, str], ...] = (
     # And what that tenth of a point is worth, which is the claim, not the rate.
     ("eval_heldout.tex",
      r"Treating the ${ho.ex_queries}$ as independent draws gives a standard error of "
-     r"${ho.ex_kappa_srs_se_points}$ points. Resampling dashboards instead gives "
+     r"${ho.ex_kappa_srs_se_points}$ points. Clustering them by dashboard instead "
+     r"gives "
      r"${ho.ex_kappa_se_points}$, a design effect of "
      r"${ho.ex_kappa_design_effect}$"),
     ("eval_heldout.tex",
@@ -810,8 +838,8 @@ PHRASES: tuple[tuple[str, str], ...] = (
     # appendix's 96.7-to-97.7 prints. Both this phrase and the one in \S7 pinned the
     # drop-one description for a commit, so both named the wrong quantity in step.
     ("09_conclusion.tex",
-     r"against the ${ho.ex_kappa_se_points}$ points of spread resampling whole "
-     r"dashboards puts on the held-out figure"),
+     r"against the ${ho.ex_kappa_se_points}$ points of dashboard-clustered standard "
+     r"error on the held-out figure"),
     # The grammar rates, each beside the population it was measured on.
     ("eval_heldout.tex",
      r"Frozen grammar v2 parses ${ho.ex_v2_pct}\%$ of those ${ho.ex_distinct}$ "
@@ -825,21 +853,32 @@ PHRASES: tuple[tuple[str, str], ...] = (
     ("eval_heldout.tex",
      r"so the ${ho.gf_shrink_points}$-point difference between them is no larger than "
      r"the ${ho.gf_shrink_se_points}$ points of spread"),
+    # Both numerals, and the word that names the statistic. 0.3 is a delete-one
+    # cluster jackknife standard error; the largest move any single dashboard makes on
+    # the 0.8 is 0.19 and the whole drop-one range is 0.21, so "movement" --- which
+    # this phrase pinned for a commit --- overstated it by 43 per cent. That is the
+    # same error, on the same page, as the one the commit was correcting for kappa.
     ("eval_heldout.tex",
-     r"worth ${ho.gf_novel_gain_points}$ points on dashboards the grammar has never "
-     r"seen --- with ${ho.gf_novel_gain_se_points}$ points of dashboard-level movement "
-     r"on that figure"),
+     r"a dashboard-level jackknife puts a standard error of "
+     r"${ho.gf_novel_gain_se_points}$ points on each"),
     ("eval_heldout.tex",
-     r"puts ${ho.ex_gain_se_points}$ points of spread on the held-out margin, and "
-     r"${ho.ex_shrink_se_points}$ points of spread on the ${ho.ex_shrink_points}$-point "
-     r"fall"),
+     r"a standard error of ${ho.ex_gain_se_points}$ points on the held-out margin and "
+     r"${ho.dd_in_sample_gain_se_points}$ on the in-sample one, which in quadrature is "
+     r"${ho.ex_shrink_se_points}$ points on the ${ho.ex_shrink_points}$-point fall"),
     # The census, which is why the paragraph may decline to report a sampling error.
+    # Read and shipped as two keys on either side of the "of", because one key on
+    # both sides could not fail. And the bridge from the census to the population
+    # the comparison is made over, which a reader otherwise has to work out.
     ("eval_heldout.tex",
      r"${ho.ex_dashboards_read}$ of the ${ho.ex_dashboards_at_commit}$ dashboard "
-     r"files \texttt{integrations-extras} ships at the pinned commit were read, with "
-     r"${ho.ex_unreadable}$ unreadable, and ${ho.dd_corpus_dashboards_read}$ of "
-     r"\texttt{integrations-core}'s ${ho.dd_corpus_dashboards_at_commit}$, the other "
-     r"${ho.dd_corpus_unreadable}$"),
+     r"files \texttt{integrations-extras} ships at its pinned commit were read, "
+     r"and ${ho.dd_corpus_dashboards_read}$ of the "
+     r"${ho.dd_corpus_dashboards_at_commit}$ \texttt{integrations-core} ships at "
+     r"the corpus's own, the other ${ho.dd_corpus_unreadable}$"),
+    ("eval_heldout.tex",
+     r"Of the ${ho.dd_corpus_dashboards_read}$, the "
+     r"${ho.dd_in_sample_dashboards}$ that carry a surviving Datadog query are "
+     r"the corpus side of every comparison here"),
     # And what the dashboard-level movement rests on, beside the figure itself.
     ("eval_heldout.tex",
      r"effective number of dashboards behind it is "
@@ -853,11 +892,11 @@ PHRASES: tuple[tuple[str, str], ...] = (
     # reader would check first. Extending a phrase to make it bite harder extended it
     # over a claim that had not been checked.
     ("04_grammars.tex",
-     r"the ${ho.ex_shrink_points}$-point difference sits inside the "
-     r"${ho.ex_shrink_se_points}$ points of spread a dashboard-level jackknife puts "
-     r"on that difference"),
+     r"the ${ho.ex_shrink_points}$-point difference is no larger than the "
+     r"${ho.ex_shrink_se_points}$ points of spread it inherits from the two "
+     r"dashboard-level jackknives behind it"),
     ("07_evaluation.tex",
-     r"puts ${ho.gf_shrink_se_points}$ points of spread on the first and "
+     r"${ho.gf_shrink_se_points}$ points on the first and "
      r"${ho.ex_shrink_se_points}$ on the second"),
     ("07_evaluation.tex",
      r"its margin over v1 is ${ho.gf_novel_gain_points}$ points against "
@@ -865,8 +904,8 @@ PHRASES: tuple[tuple[str, str], ...] = (
     ("07_evaluation.tex",
      r"its margin over v1 is ${ho.ex_gain_points}$ points against the seven"),
     ("07_evaluation.tex",
-     r"a tenth of a point where resampling whole dashboards puts "
-     r"${ho.ex_kappa_se_points}$ points of spread on the held-out figure"),
+     r"a tenth of a point where the dashboard-clustered standard error on the "
+     r"held-out figure is ${ho.ex_kappa_se_points}$"),
     # The two ceilings, which must not be quoted under one name.
     ("eval_heldout.tex",
      r"$S^\star$ covers ${ho.ex_sstar_pct}\%$ of these occurrences"),
@@ -1196,7 +1235,7 @@ DERIVED: tuple[tuple[str, float, str, object], ...] = (
      lambda: 348 + 124 + 70 + 36 + 31 + 34 + 5),
     ("num", 0.8, "points of kappa that withdrawing .weighted() closed",
      lambda: round(70 / _reg()["nb03.corpus_occurrences"] * 100, 1)),
-    ("num pct", 1.4, "and points the single-key disjunction rule closed",
+    ("num", 1.4, "and points the single-key disjunction rule closed",
      lambda: round(120 / _reg()["nb03.corpus_occurrences"] * 100, 1)),
     ("num", 887, "translated occurrences whose declared type is not decidable",
      lambda: _reg()["nb03.kappa_occurrences"]
@@ -1291,6 +1330,37 @@ DERIVED: tuple[tuple[str, float, str, object], ...] = (
 )
 
 
+def test_no_derived_kind_grants_more_than_it_has_to():
+    """A derivation that names two kinds must need both of them.
+
+    A `DERIVED` entry does three jobs: its arithmetic is recomputed, its figure must
+    still be quoted, and its `(kind, value)` key licenses that spelling in the prose.
+    The first two keep an entry honest even where the third licenses nothing, which is
+    why a single inert kind is left alone. A *second* kind does only the third job, so
+    an inert one is a grant with no reason -- and an over-broad kind is how the free
+    pass this ledger just gave up would come back.
+    """
+    base = _unaccounted(_keyed(ALLOWED), _keyed(ALLOWED_IN))
+    real = _derived_keys
+    pointless = []
+    try:
+        for name, ledger in (("DERIVED", DERIVED), ("CORPUS_DERIVED", CORPUS_DERIVED)):
+            for kinds, value, note, _ in ledger:
+                declared = kinds.split()
+                if len(declared) < 2:
+                    continue
+                for kind in declared:
+                    key = (kind, round(float(value), 4))
+                    globals()["_derived_keys"] = lambda k=key: real() - {k}
+                    if _unaccounted(_keyed(ALLOWED), _keyed(ALLOWED_IN)) == base:
+                        pointless.append(f"  {name}: {kind} {value} ({note})")
+    finally:
+        globals()["_derived_keys"] = real
+    assert not pointless, (
+        "these derivations name a kind that licenses nothing:\n"
+        + "\n".join(pointless) + "\n  (declare the one kind the paper prints)")
+
+
 def test_every_derivable_figure_still_derives():
     """A figure whose derivation can be executed must equal what it computes.
 
@@ -1345,12 +1415,15 @@ def test_every_historical_figure_is_quoted_beside_the_one_that_replaced_it():
     broken = []
     for old, key, section in SUPERSEDED:
         assert key in reg, f"{key} supersedes {old} but is not in the registry"
-        text = _math_text(MAIN if section == "body.tex" else _section_path(section))
-        if not any(s in text for s in _spellings(old)):
-            broken.append(f"  {section} no longer states the historical {old}")
-        elif not any(s in text for s in _spellings(reg[key])):
-            broken.append(f"  {section} states {old} but not {key} = {reg[key]}, "
-                          "so the comparison has nothing on the other side")
+        path = MAIN if section == "body.tex" else _section_path(section)
+        for build, text in zip(("main", "main_full"), _math_in_both_builds(path)):
+            if not any(s in text for s in _spellings(old)):
+                broken.append(
+                    f"  {section} no longer states the historical {old} in {build}.pdf")
+            elif not any(s in text for s in _spellings(reg[key])):
+                broken.append(f"  {section} states {old} but not {key} = {reg[key]} "
+                              f"in {build}.pdf, so the comparison has nothing on the "
+                              "other side")
     assert not broken, "\n".join(broken)
 
 

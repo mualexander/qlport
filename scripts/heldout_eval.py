@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -333,32 +334,67 @@ def feature_set_seen(queries: list, corpus_queries: list) -> dict:
 
 
 _BOOTSTRAP_DRAWS = 20_000
-_BOOTSTRAP_SEED = 20261122
+# Five seeds, not one. A single seed's third decimal is not a measurement: across
+# eight seeds at this many draws the held-out standard deviation ran from 1.077 to
+# 1.091, and the one originally shipped was the highest of them --- which is to say
+# the one closest to the linearised 1.095, quoted in a commit message as evidence that
+# the two agree. The Monte-Carlo error on a bootstrap standard deviation is about
+# sd/sqrt(2B), some 0.005 here, so the spread is expected and only the mean is worth
+# storing. The spread is stored beside it so that nothing has to take that on trust.
+_BOOTSTRAP_SEEDS = (20261122, 1, 2, 7, 12345)
 
 
-def _cluster_bootstrap(per: list[list[int]]) -> float:
-    """The standard deviation of the rate when whole dashboards are resampled.
-
-    The non-parametric companion to `_cluster_se`: draw `len(per)` dashboards with
-    replacement, recompute the rate, and take the spread over draws. It asks nothing
-    of the residuals' shape, so where it agrees with the linearised error the
-    linearisation is doing no work, and where it does not the linearised figure is the
-    one to distrust.
-    """
+def _cluster_bootstrap_once(per: list[list[int]], seed: int) -> list[float]:
+    """One seed's replicate rates: `len(per)` dashboards drawn with replacement."""
     import random
 
     m = len(per)
-    if m < 2:
-        return 0.0
-    rng = random.Random(_BOOTSTRAP_SEED)
+    rng = random.Random(seed)
     reps = []
     for _ in range(_BOOTSTRAP_DRAWS):
         pick = [per[rng.randrange(m)] for _ in range(m)]
         n = sum(v[0] for v in pick)
         if n:
             reps.append(sum(v[1] for v in pick) / n * 100)
-    mean = sum(reps) / len(reps)
-    return math.sqrt(sum((r - mean) ** 2 for r in reps) / (len(reps) - 1))
+    return reps
+
+
+def _cluster_bootstrap(per: list[list[int]]) -> dict:
+    """How the rate behaves when whole dashboards are resampled.
+
+    The non-parametric companion to `_cluster_se`, which asks nothing of the
+    residuals' shape. Where it agrees with the linearised error, the linearisation is
+    doing no work; where it does not, the linearised figure is the one to distrust.
+
+    It answers two different questions and they came out differently, which is why
+    both are recorded. The MAGNITUDE agrees: the mean standard deviation over the
+    seeds is within a per cent of the linearised error. The SHAPE does not: the
+    replicate distribution is left-skewed, and its 95 per cent interval is displaced
+    from the normal one by a third of a standard error on the held-out side against a
+    sixth in sample --- the degradation an effective cluster count of two predicts. A
+    comment in this file asserted the shape was fine on the strength of the magnitude
+    agreeing, which does not follow, after an earlier one had asserted the opposite on
+    no evidence at all.
+    """
+    if len(per) < 2:
+        return {}
+    sds, out = [], {}
+    for seed in _BOOTSTRAP_SEEDS:
+        reps = _cluster_bootstrap_once(per, seed)
+        mean = sum(reps) / len(reps)
+        sds.append(math.sqrt(sum((r - mean) ** 2 for r in reps) / (len(reps) - 1)))
+        if seed == _BOOTSTRAP_SEEDS[0]:
+            reps.sort()
+            sd = sds[0]
+            # The temporal holdout's three dashboards all translate everything, so
+            # every replicate is the same rate and there is no shape to describe.
+            if sd:
+                out["skew"] = sum((r - mean) ** 3 for r in reps) / len(reps) / sd ** 3
+            out["pct_2_5"] = reps[int(0.025 * len(reps))]
+            out["pct_97_5"] = reps[int(0.975 * len(reps))]
+    out["se_exact"] = sum(sds) / len(sds)
+    out["se_spread"] = max(sds) - min(sds)
+    return out
 
 
 def jackknife(queries: list, translated: set[str]) -> dict:
@@ -392,19 +428,23 @@ def jackknife(queries: list, translated: set[str]) -> dict:
     # cached number nothing can recompute is a number on the author's word.
     clusters = sorted([v[0], v[1]] for v in per.values())
     # And whether the linearised error can be read as a normal one at that effective
-    # count, which is a question about the arithmetic and not an opinion about it. The
-    # comment above asserted for one commit that it could not, on no evidence; this is
-    # the evidence, and it says the opposite. Nothing in the paper rests on the answer
-    # -- both populations are censuses and no interval is reported -- but a file that
-    # records a reason should record a reason it has checked. Drawn from `clusters` in
-    # its sorted order, so the draw sequence is a function of what the cache holds
-    # rather than of dictionary insertion order.
+    # count, which is a question about the arithmetic and not an opinion about it. Two
+    # comments here have now answered it wrongly in opposite directions: the first said
+    # no on no evidence, the second said yes on evidence about the width. The answer is
+    # that the width agrees and the tails do not. Drawn from `clusters` in its sorted
+    # order, so the draw sequence is a function of what the cache holds rather than of
+    # dictionary insertion order.
     boot = _cluster_bootstrap(clusters)
     return dict(dashboards=len(per), clusters=clusters,
                 cluster_se_pct=round(se, 1), srs_se_pct=round(srs, 1),
                 cluster_se_exact=se, srs_se_exact=srs,
-                bootstrap_se_exact=boot, bootstrap_se_pct=round(boot, 1),
-                bootstrap_draws=_BOOTSTRAP_DRAWS, bootstrap_seed=_BOOTSTRAP_SEED,
+                bootstrap_se_exact=boot.get("se_exact"),
+                bootstrap_se_pct=round(boot["se_exact"], 1) if boot else None,
+                bootstrap_se_spread=boot.get("se_spread"),
+                bootstrap_skew=boot.get("skew"),
+                bootstrap_pct_2_5=boot.get("pct_2_5"),
+                bootstrap_pct_97_5=boot.get("pct_97_5"),
+                bootstrap_draws=_BOOTSTRAP_DRAWS, bootstrap_seeds=list(_BOOTSTRAP_SEEDS),
                 effective_clusters=round(s2 * s2 / s4, 1) if s4 else None,
                 top_cluster_share_pct=round(max((r * r for r in resid), default=0.0)
                                             / s2 * 100, 1) if s2 else None,
@@ -476,6 +516,25 @@ def translator_feature_set(queries: list, translated: list[str]) -> set[str]:
         by_norm.setdefault(norm, set()).update(c.features("datadog", q.text))
     return set().union(*(by_norm[n] for n in translated if n in by_norm))
 
+def _corpus_census() -> dict:
+    """The corpus side's dashboard census, from `data/corpus/SOURCES.md`.
+
+    That file is written by `fetch_corpus.py` at the commit the corpus was extracted
+    from, and is the only record of it: `data/corpus/sources/` is gitignored. Parsed
+    out of its own section rather than by taking the last matching line, which would
+    silently become kube-prometheus's if the sections were reordered.
+    """
+    text = (ROOT / "data" / "corpus" / "SOURCES.md").read_text()
+    section = text.split("## integrations-core", 1)[1].split("\n## ", 1)[0]
+
+    def field(name: str) -> int:
+        return int(re.search(rf"- {name}: `(\d+)`", section).group(1))
+
+    return {"ho.dd_corpus_dashboards_read": field("dashboards"),
+            "ho.dd_corpus_dashboards_at_commit": field("files"),
+            "ho.dd_corpus_unreadable": field("unreadable")}
+
+
 def figures(res: dict) -> dict:
     """Every `ho.*` key the paper may quote, derived from one run's cached output.
 
@@ -536,17 +595,19 @@ def figures(res: dict) -> dict:
             "ho.dd_ceiling_pct": d["ceiling_occ_pct"],
             "ho.dd_novel_features": len(d["novel_features"]),
         })
-    # The corpus side's census. It had no keys at all, so the sentence saying both
-    # sides are populations rather than samples could only be scoped to the held-out
-    # half, where nothing is unreadable. Nine of integrations-core's files are not
-    # valid JSON, which is a fact about the census and belongs in it.
-    cm = manifest.get("integrations-core")
-    if cm:
-        fig.update({
-            "ho.dd_corpus_dashboards_read": cm["dashboards"],
-            "ho.dd_corpus_dashboards_at_commit": cm["files"],
-            "ho.dd_corpus_unreadable": cm["unreadable"],
-        })
+    # The corpus side's census, read out of the corpus's own provenance note.
+    #
+    # It came off `manifest["integrations-core"]` for a commit, which is the entry
+    # `heldout_fetch.py` writes for that repository at a LATER commit --- the temporal
+    # holdout, which this subsection insists is a separate population. The two commits
+    # ship the same 534 dashboard files with the same 9 unreadable, so the figures
+    # agreed digit for digit and nothing could see it. They agree because nothing was
+    # added or removed between them, not because they are the same tree: four of the
+    # 534 files differ in content. One upstream commit adding a dashboard would have
+    # had the paper reporting the holdout's census as the corpus's, with the
+    # registry-to-run pin confirming it, because the run is where the wrong number
+    # came from.
+    fig.update(_corpus_census())
     if "integrations-extras" in res:
         e = res["integrations-extras"]
         xm = manifest["integrations-extras"]

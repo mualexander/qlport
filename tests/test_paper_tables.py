@@ -28,13 +28,27 @@ ROOT = Path(__file__).resolve().parent.parent
 TABLES = ROOT / "paper" / "tables"
 REGISTRY = ROOT / "paper" / "quoted_figures.json"
 HELDOUT = ROOT / "paper" / "sections" / "moved" / "eval_heldout.tex"
+GRAMMARS = ROOT / "paper" / "sections" / "04_grammars.tex"
 
 # Rounding a difference and differencing two rounded figures are not the same
-# operation, and at one decimal place they disagree about the Datadog fall: the
-# rates give 1.4538, the printed 7.0 and 5.6 give 1.4. The paper reports the
-# first, so it has to tell the reader that subtracting its own two figures is
-# not how the third was obtained.
-RECONCILED = "the difference of the unrounded rates and not of the two figures printed"
+# operation, and at one decimal place they disagree about three of the six trios the
+# paper prints: the Datadog fall (the rates give 1.4538, the printed 7.0 and 5.6 give
+# 1.4), the Datadog held-out margin (5.5599 against 99.9 less 94.4) and the design
+# effect (11.644 against (1.1/0.3)^2 = 13.4). The paper reports the first of each
+# pair, so it has to say once, in each build, that its figures are taken from the
+# counts and not from each other.
+#
+# Two sentences rather than one because there are two PDFs and the appendix is in a
+# different place in each; neither is the other's words, which `paper/body.tex`'s
+# convention requires of a summary. Each is required only while some trio actually
+# fails to reconcile, and each must say enough to be the statement: a previous version
+# of this check was a single literal in one file, and setting it to the word
+# "difference" left the suite green.
+RECONCILED = (
+    (GRAMMARS, "taken from the counts and not from each other"),
+    (HELDOUT, "quotient of counts and every margin a difference of two of them, "
+              "taken before either is rounded"),
+)
 
 
 @pytest.fixture(scope="module")
@@ -718,12 +732,60 @@ def test_the_held_out_kappa_is_indistinguishable_from_the_in_sample_one(reg):
         "shrinking margin a fact about v1 rather than about overfitting")
 
 
+def _require_the_rounding_note(because: str) -> None:
+    """Both builds must carry the note, in their own words, and say enough to be it."""
+    for path, want in RECONCILED:
+        text = flat(published(path))
+        assert len(want) > 40 and "counts" in want, (
+            "RECONCILED has been weakened to something that is not the statement")
+        assert want in text, (
+            f"{because}, and {path.name} does not say its figures come from the "
+            f"counts rather than from each other")
+
+
+def test_every_printed_trio_either_reconciles_or_is_accounted_for(reg):
+    """Three figures, two of which the reader will difference to get the third.
+
+    The paper prints six such trios and three of them do not reconcile at one decimal
+    place. That is ordinary --- a difference of counts is not the difference of two
+    rounded quotients --- and it is also exactly the shape of a defect this suite has
+    had twice: a guard asserted the printed subtraction and agreed with the error it
+    was added to catch, and the guard that replaced it asserted only the exact
+    arithmetic and stopped noticing that the reader gets a third number.
+
+    So every trio is enumerated here and the disagreement is counted rather than
+    tolerated silently. While any of them disagrees, the note has to be in the paper.
+    If a future run makes all six reconcile, this fails and the note comes out.
+    """
+    diffs = (
+        ("the Datadog in-sample margin", "ho.dd_in_sample_v2_pct",
+         "ho.dd_in_sample_v1_pct", "ho.dd_in_sample_gain_points"),
+        ("the Datadog held-out margin", "ho.ex_v2_pct", "ho.ex_v1_pct",
+         "ho.ex_gain_points"),
+        ("the Datadog fall", "ho.dd_in_sample_gain_points", "ho.ex_gain_points",
+         "ho.ex_shrink_points"),
+        ("the PromQL fall", "ho.gf_in_sample_gain_points", "ho.gf_novel_gain_points",
+         "ho.gf_shrink_points"),
+    )
+    unreconciled = [name for name, a, b, c in diffs
+                    if round(reg[a] - reg[b], 1) != reg[c]]
+    # And the one that is a ratio rather than a difference.
+    deff = round((reg["ho.ex_kappa_se_points"]
+                  / reg["ho.ex_kappa_srs_se_points"]) ** 2, 1)
+    if deff != reg["ho.ex_kappa_design_effect"]:
+        unreconciled.append("the design effect")
+    assert unreconciled, (
+        "every printed trio now reconciles, so the rounding note in section 4 and in "
+        "eval_heldout is telling the reader about a problem the paper no longer has")
+    _require_the_rounding_note("; ".join(unreconciled) + " do not reconcile")
+
+
 def test_every_cluster_statistic_is_a_function_of_the_stored_tally(reg):
-    """The whole jackknife block, recomputed from the one list it keeps.
+    """Both jackknife blocks, recomputed from the one list each of them keeps.
 
     Everything the subsection says about what a tenth of a point is worth rests on
-    eight cached scalars: a cluster-robust error, a binomial one, their ratio as a
-    design effect, an effective cluster count, the share of the dispersion in the
+    eight cached scalars per side: a cluster-robust error, a binomial one, their ratio
+    as a design effect, an effective cluster count, the share of the dispersion in the
     largest dashboard, the drop-one range, and a bootstrap standard deviation. The
     registry-to-run pin holds the paper to those scalars. Nothing held the scalars to
     anything, so a consistent edit of the cache and the prose was green, and two of
@@ -732,54 +794,117 @@ def test_every_cluster_statistic_is_a_function_of_the_stored_tally(reg):
     So the per-dashboard tally is stored and all eight are derived from it here. The
     exact errors stop being dead weight: the design effect is their ratio squared, and
     asserting that against the registry's rounded pair is the assertion that had to be
-    dropped last pass because 11.6 is not (1.1/0.3)^2.
+    dropped two passes ago because 11.6 is not (1.1/0.3)^2.
+
+    Both sides, because the first version of this test read `kappa_extras` only. The
+    in-sample block stores a tally too, and the paper quotes its scalars -- the 0.6,
+    the 9.6 effective dashboards that the held-out 2.0 is compared against, the
+    96.6-to-97.0 range -- so moving a refusal between two in-sample dashboards changed
+    the dispersion the paper describes and passed. Guarding one of two halves is the
+    defect this file keeps finding, one level down.
     """
-    j = _ho()["kappa_extras"]["jackknife"]
-    clusters = [tuple(c) for c in j["clusters"]]
-    m = len(clusters)
-    assert m == j["dashboards"] == reg["ho.ex_dashboards"]
-    n = sum(a for a, _ in clusters)
-    t = sum(b for _, b in clusters)
-    assert n == reg["ho.ex_queries"] and round(t / n * 100, 1) == reg["ho.ex_kappa_pct"]
-
-    share = t / n
-    resid = [b - share * a for a, b in clusters]
-    s2 = sum(r * r for r in resid)
-    s4 = sum(r ** 4 for r in resid)
-    cluster_se = math.sqrt(s2 * m / (m - 1)) / n * 100
-    srs_se = math.sqrt(share * (1 - share) / n) * 100
-    assert cluster_se == pytest.approx(j["cluster_se_exact"])
-    assert srs_se == pytest.approx(j["srs_se_exact"])
-    assert round(cluster_se, 1) == reg["ho.ex_kappa_se_points"]
-    assert round(srs_se, 1) == reg["ho.ex_kappa_srs_se_points"]
-    # The design effect is the ratio of the *exact* errors, which is why they are kept.
-    assert round((j["cluster_se_exact"] / j["srs_se_exact"]) ** 2, 1) == \
-        reg["ho.ex_kappa_design_effect"]
-    assert round(s2 * s2 / s4, 1) == reg["ho.ex_kappa_effective_dashboards"]
-    assert round(max(r * r for r in resid) / s2 * 100, 1) == \
-        reg["ho.ex_kappa_top_dashboard_pct"]
-
-    # The drop-one range, which is the quantity the prose must not call the error:
-    # the widest single-dashboard move is a point, and the error is 1.1.
-    drop = [(t - b) / (n - a) * 100 for a, b in clusters if n - a]
-    assert round(min(drop), 1) == j["low_pct"] and round(max(drop), 1) == j["high_pct"]
-    assert max(abs(d - t / n * 100) for d in drop) < j["cluster_se_exact"], (
-        "the largest drop-one move now exceeds the cluster-robust error, so the two "
-        "are no longer different enough for the distinction the prose draws")
-
-    # And the bootstrap, drawn from this same list in this same order.
     import importlib.util
     spec = importlib.util.spec_from_file_location(
         "heldout_eval", ROOT / "scripts" / "heldout_eval.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    assert j["bootstrap_draws"] == mod._BOOTSTRAP_DRAWS
-    assert j["bootstrap_seed"] == mod._BOOTSTRAP_SEED
-    boot = mod._cluster_bootstrap([list(c) for c in clusters])
-    assert boot == pytest.approx(j["bootstrap_se_exact"])
-    # The claim the comment below rests on: resampling and linearising agree here, so
-    # the linearisation is doing no work and nothing need be said against it.
-    assert abs(boot - j["cluster_se_exact"]) < 0.1 * j["cluster_se_exact"]
+    run = _ho()
+
+    for block, dashboards, occurrences, pct, se, srs, deff, eff, top in (
+            ("kappa_extras", "ho.ex_dashboards", "ho.ex_queries", "ho.ex_kappa_pct",
+             "ho.ex_kappa_se_points", "ho.ex_kappa_srs_se_points",
+             "ho.ex_kappa_design_effect", "ho.ex_kappa_effective_dashboards",
+             "ho.ex_kappa_top_dashboard_pct"),
+            ("kappa_in_sample", "ho.dd_in_sample_dashboards",
+             "ho.kappa_in_sample_occurrences", "ho.kappa_in_sample_pct",
+             "ho.kappa_in_sample_se_points", None, None,
+             "ho.kappa_in_sample_effective_dashboards", None)):
+        j = run[block]["jackknife"]
+        clusters = [tuple(c) for c in j["clusters"]]
+        m = len(clusters)
+        assert m == j["dashboards"] == reg[dashboards], block
+        n = sum(a for a, _ in clusters)
+        t = sum(b for _, b in clusters)
+        assert n == reg[occurrences], block
+        assert round(t / n * 100, 1) == reg[pct], block
+
+        share = t / n
+        resid = [b - share * a for a, b in clusters]
+        s2 = sum(r * r for r in resid)
+        s4 = sum(r ** 4 for r in resid)
+        cluster_se = math.sqrt(s2 * m / (m - 1)) / n * 100
+        srs_se = math.sqrt(share * (1 - share) / n) * 100
+        assert cluster_se == pytest.approx(j["cluster_se_exact"]), block
+        assert srs_se == pytest.approx(j["srs_se_exact"]), block
+        assert round(cluster_se, 1) == reg[se], block
+        assert round(srs_se, 1) == j["srs_se_pct"], block
+        # The design effect is the ratio of the *exact* errors, which is why they are
+        # kept: at one decimal place the printed pair gives 13.4 against 11.6.
+        assert round((j["cluster_se_exact"] / j["srs_se_exact"]) ** 2, 1) == \
+            j["design_effect"], block
+        assert round(s2 * s2 / s4, 1) == reg[eff], block
+        assert round(max(r * r for r in resid) / s2 * 100, 1) == \
+            j["top_cluster_share_pct"], block
+        if srs:
+            assert j["srs_se_pct"] == reg[srs]
+        if deff:
+            assert j["design_effect"] == reg[deff]
+        if top:
+            assert j["top_cluster_share_pct"] == reg[top]
+
+        # The drop-one range, which is the quantity the prose must not call the error.
+        drop = [(t - b) / (n - a) * 100 for a, b in clusters if n - a]
+        assert round(min(drop), 1) == j["low_pct"], block
+        assert round(max(drop), 1) == j["high_pct"], block
+        assert max(abs(d - share * 100) for d in drop) < j["cluster_se_exact"], (
+            f"{block}: the largest drop-one move now exceeds the cluster-robust "
+            "error, so the two are no longer different enough for the distinction "
+            "the prose draws between them")
+        # `worst_dashboard_refusals` is recoverable from the tally; the path beside it
+        # is not, is in no registry key and is quoted nowhere, so it is not asserted.
+        assert max(a - b for a, b in clusters) == j["worst_dashboard_refusals"], block
+
+        # And the bootstrap, drawn from this same list in this same order.
+        assert j["bootstrap_draws"] == mod._BOOTSTRAP_DRAWS, block
+        assert j["bootstrap_seeds"] == list(mod._BOOTSTRAP_SEEDS), block
+        boot = mod._cluster_bootstrap([list(c) for c in clusters])
+        assert boot["se_exact"] == pytest.approx(j["bootstrap_se_exact"]), block
+        assert boot["se_spread"] == pytest.approx(j["bootstrap_se_spread"]), block
+        # A single seed's third decimal is not a measurement. The stored figure is the
+        # mean over five, and the spread across them has to stay small enough that the
+        # mean is worth a decimal place at all -- which is the check that the version
+        # of this quoting one seed's 1.0908 against a linearised 1.0950, as evidence
+        # that the two agreed, could not make. That seed was the highest of eight.
+        assert j["bootstrap_se_spread"] < 0.05 * j["bootstrap_se_exact"], block
+        # Magnitude: resampling and linearising agree, which is all `jackknife`'s
+        # comment now claims of them.
+        assert abs(boot["se_exact"] - j["cluster_se_exact"]) \
+            < 0.1 * j["cluster_se_exact"], block
+
+    # Shape: they do not agree, and that is the half the comment got wrong twice. The
+    # replicate distribution is left-skewed on both sides, and its interval is
+    # displaced from the normal one further where the dispersion is more concentrated
+    # --- which is what an effective count of two predicts and what the retracted
+    # worry was about. Asserted as a comparison between the two sides, because that is
+    # the form the claim takes and neither number alone means anything.
+    def displacement(block: str) -> float:
+        j = run[block]["jackknife"]
+        cl = j["clusters"]
+        n = sum(a for a, _ in cl)
+        point = sum(b for _, b in cl) / n * 100
+        se = j["cluster_se_exact"]
+        lo, hi = point - 1.96 * se, point + 1.96 * se
+        return max(abs(j["bootstrap_pct_2_5"] - lo),
+                   abs(j["bootstrap_pct_97_5"] - hi)) / se
+
+    # Measured today: skew -0.61 against -0.31, and the furthest edge displaced by
+    # 0.33 of a standard error against 0.19, a ratio of 1.8.
+    assert run["kappa_extras"]["jackknife"]["bootstrap_skew"] < -0.4
+    assert run["kappa_in_sample"]["jackknife"]["bootstrap_skew"] < 0
+    assert displacement("kappa_extras") > 1.5 * displacement("kappa_in_sample"), (
+        "the held-out interval is no longer displaced further than the in-sample one, "
+        "so the concentration costs nothing in shape and `jackknife`'s comment about "
+        "the tails is now the wrong way round")
 
 
 def test_the_fit_decompositions_are_reported_with_their_own_spread(reg):
@@ -841,10 +966,9 @@ def test_the_fit_decompositions_are_reported_with_their_own_spread(reg):
             f"shrinkage where its two margins give {quad:.4f} in quadrature")
         naive = round(reg[in_sample] - reg[held], 1)
         if naive != points:
-            assert RECONCILED in flat(published(HELDOUT)), (
+            _require_the_rounding_note(
                 f"{lang}: the paper prints {reg[in_sample]} and {reg[held]}, whose "
-                f"difference is {naive}, and calls the fall {points}. One of those "
-                f"has to be reconciled where the reader meets them")
+                f"difference is {naive}, and calls the fall {points}")
         assert abs(points) <= se, (
             f"{lang}: the margin now shrinks by {points} points against {se} of "
             f"spread, which these data may be able to separate. The subsection says "
@@ -860,10 +984,15 @@ def test_the_fit_decompositions_are_reported_with_their_own_spread(reg):
         #
         # An earlier version of this comment gave a third reason -- that the spread
         # rests on an effective two or three dashboards, where a two-sigma reading is
-        # not a reading. A 20,000-draw cluster bootstrap of the held-out kappa gives a
-        # standard deviation of 1.091 against the linearised 1.095 --- the test above
-        # redraws it --- so the normal interval is close to calibrated and that reason
-        # blamed a defect these data do not show. The two above do not need it.
+        # not a reading. It was then retracted on the strength of a bootstrap standard
+        # deviation agreeing with the linearised one, which was the wrong evidence:
+        # two standard deviations agreeing says nothing about the tails. Measured
+        # properly, the width agrees to about a per cent and the 95 per cent interval
+        # is displaced from the normal one by a third of a standard error, against a
+        # sixth in sample, with twice the skew. So the original worry was about the
+        # right thing. It is still not a reason this test needs, because the two above
+        # do not depend on reading any interval at all -- which is the point: a reason
+        # retracted for the wrong reason is not a reason restored.
         assert reg[held] > 0, f"{lang}: v2 no longer parses more than v1 out of sample"
         assert reg[held_eff] < reg[dashboards] / 10, (
             f"{lang}: the dashboard-level spread now rests on {reg[held_eff]} of "
@@ -1000,10 +1129,18 @@ def test_the_extras_holdout_names_its_commit_and_its_own_size(reg):
     assert xm["dashboards"] == reg["ho.ex_dashboards_read"]
     assert xm["files"] == reg["ho.ex_dashboards_at_commit"]
     assert xm["files"] - xm["dashboards"] == reg["ho.ex_unreadable"] == 0
-    cm = man["integrations-core"]
-    assert cm["dashboards"] == reg["ho.dd_corpus_dashboards_read"]
-    assert cm["files"] == reg["ho.dd_corpus_dashboards_at_commit"]
-    assert cm["files"] - cm["dashboards"] == reg["ho.dd_corpus_unreadable"] == 9
+    # The corpus side's census comes from the corpus's own provenance note, not from
+    # this manifest, whose integrations-core entry is the TEMPORAL HOLDOUT at a later
+    # commit. They agree today and the test below says why that is not good enough.
+    corpus_md = (ROOT / "data" / "corpus" / "SOURCES.md").read_text()
+    section = corpus_md.split("## integrations-core", 1)[1].split("\n## ", 1)[0]
+    for field, key in (("files", "ho.dd_corpus_dashboards_at_commit"),
+                       ("dashboards", "ho.dd_corpus_dashboards_read"),
+                       ("unreadable", "ho.dd_corpus_unreadable")):
+        want = int(re.search(rf"- {field}: `(\d+)`", section).group(1))
+        assert want == reg[key], f"{key} is {reg[key]} where SOURCES.md says {want}"
+    assert (reg["ho.dd_corpus_dashboards_at_commit"]
+            - reg["ho.dd_corpus_dashboards_read"]) == reg["ho.dd_corpus_unreadable"]
     assert xm["queries_at_commit"] == reg["ho.ex_queries_at_commit"]
     assert xm["queries_held_out"] == reg["ho.ex_queries"]
     assert xm["shared_with_corpus"] == reg["ho.ex_shared_forms"]
@@ -1014,6 +1151,36 @@ def test_the_extras_holdout_names_its_commit_and_its_own_size(reg):
     # prose says so, and these are the numbers it says it with.
     assert xm["queries_formula_held_out"] == reg["ho.ex_formula_queries"] == 265
     assert xm["distinct_formula_held_out"] == reg["ho.ex_formula_distinct"] == 166
+
+
+def test_the_corpus_census_is_not_read_off_the_holdout(reg):
+    """The two integrations-core commits agree on their file counts, by luck.
+
+    The corpus was extracted at one commit of that repository and the temporal holdout
+    fetched at a later one, and this subsection's whole argument is that those are two
+    populations. Both ship 534 dashboard files with the same 9 unreadable, so for a
+    commit the corpus side's census was read off the holdout's manifest entry and
+    agreed digit for digit. The agreement is contingent --- four of the 534 files
+    differ in content between the commits --- so this asserts the two commits really
+    are different, which is what makes reading one for the other an error rather than
+    a shortcut, and leaves the figures themselves to SOURCES.md next door.
+    """
+    man = json.loads((ROOT / "data" / "heldout" / "MANIFEST.json").read_text())
+    cm = man["integrations-core"]
+    corpus_md = (ROOT / "data" / "corpus" / "SOURCES.md").read_text()
+    section = corpus_md.split("## integrations-core", 1)[1].split("\n## ", 1)[0]
+    corpus_commit = re.search(r"- commit: `([0-9a-f]+)`", section).group(1)
+    assert cm["commit"] != corpus_commit, (
+        "the holdout is now at the corpus's own commit, so it holds out nothing")
+    assert cm["corpus_commit"] == corpus_commit, (
+        "the manifest records a different corpus commit from SOURCES.md")
+    # And the coincidence that hid the error, stated so that losing it is loud rather
+    # than silent: if a dashboard is ever added upstream, these stop matching and the
+    # docstring above stops being the explanation.
+    assert cm["files"] == reg["ho.dd_corpus_dashboards_at_commit"], (
+        "the two commits no longer ship the same number of dashboard files -- which "
+        "is fine, but the corpus census must now be read from SOURCES.md alone and "
+        "this assertion should go")
 
 
 def test_the_template_share_is_measured_on_both_sides(reg):

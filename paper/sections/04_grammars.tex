@@ -176,12 +176,14 @@ misses a measurable fraction of the vendor's own shipped dashboards. That $7$-po
 climb is also the largest fit this paper makes to its corpus, and
 \S\ref{sec:heldout} measures what it is worth away from it: on $2{,}572$ distinct queries
 from a disjoint repository of Datadog dashboards, v2's absolute rate stays at $99.9\%$
-and the climb is $5.6$ points rather than seven. So four fifths of the climb --- $5.6$
-points of the $7.0$ --- is there on dashboards the grammar never saw. That ratio is
-arithmetic on two censuses and needs no interval; what the two repositories do not
-settle is how much of the remaining fifth is fit rather than a difference between two
-populations, because the $1.5$-point difference sits inside the $1.9$ points of spread a
-dashboard-level jackknife puts on that difference. What moves is v1 rather than v2, which would make it a
+and the climb is $5.6$ points rather than seven; both margins, and the difference
+between them, are taken from the counts and not from each other, so differencing the
+figures printed here need not reproduce it. The held-out margin is just under four
+fifths of the in-sample one --- a ratio of two censuses, and so a fact about these two
+repositories rather than an estimate of anything. What the two do not settle is how
+much of the remaining fifth is fit rather than a difference between two populations,
+because the $1.5$-point difference is no larger than the $1.9$ points of spread it
+inherits from the two dashboard-level jackknives behind it. What moves is v1 rather than v2, which would make it a
 difference between two populations rather than a measurement of overfitting in any
 case.
 

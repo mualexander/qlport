@@ -352,4 +352,4 @@ def test_the_proof_convention_matches_the_statements():
     assert unproved == {"prop:decidable", "cor:raw", "cor:quantile", "cor:rate",
                         "prop:disjunction"}, sorted(unproved)
     body = published(PAPER / "sections" / "03_framework.tex")
-    assert "$20$ numbered results" in body and "$15$ have" in body
+    assert "$20$ numbered results" in body and "$15$ are" in body
