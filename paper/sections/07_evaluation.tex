@@ -552,9 +552,14 @@ sources, because no comparable public body of customer-written Datadog dashboard
 \texttt{integrations-extras}, the community- and partner-maintained sibling --- and holds
 it out. That bears on the fit most directly, but it bears on this paragraph too, because
 the two repositories' house styles are measurably different: $88.6\%$ of corpus
-occurrences carry a template variable against $77.0\%$ there, and $11.8\%$ of corpus
-strings parse as shipped against $22.8\%$. So the template share is confirmed as
-source-specific, in the direction the paragraph above fears. What neither repository is,
+occurrences carry a template variable against $77.0\%$ of that repository's.
+Table~\ref{tab:heldout}'s raw column is the same fact counted the other way round and
+over distinct strings rather than occurrences --- a Datadog string parses as shipped
+exactly when it carries no variable, with two exceptions in the whole held-out set ---
+so $11.8\%$ of corpus strings parsing as shipped against $22.8\%$ there is a restatement
+of the template share and not a second channel of evidence for it. One measurement,
+then, and it confirms the template share as source-specific, in the direction the
+paragraph above fears. What neither repository is,
 is evidence about what customers write.
 The choice was deliberate --- no reference grammar is published and vendor-authored queries
 are the closest thing to a specification by example (\S\ref{sec:corpus}) --- but a
@@ -598,21 +603,27 @@ the build order loses one point out of sample. The grammar
 is not refittable by any script, so it was frozen and read on dashboards nobody here had
 seen. On $497$ community dashboards the corpus never listed --- the $12{,}522$ distinct
 strings there whose instantiated form the corpus does not hold --- v2 parses $99.6\%$
-against $99.0\%$ in sample, and its margin over v1 falls from $1.2$ points to $0.8$. On
+against $99.0\%$ in sample, and its margin over v1 is $0.8$ points against $1.2$ here. On
 $2{,}572$ distinct queries from \texttt{integrations-extras}, a repository in the same
 organisation by other authors that the corpus does not touch, v2 parses $99.9\%$ --- its
-in-sample rate --- and the climb from $92.9\%$ to $99.9\%$ above, seven points of it,
-falls to $5.6$. Both of those are differences between populations rather than
-measurements of overfitting, since in each pair it is the unfitted v1 that moves while v2
-holds. And $\kappa$ itself, which the paragraph above this one said had no holdout, is
+in-sample rate --- and its margin over v1 is $5.6$ points against the seven of the climb
+from $92.9\%$ to $99.9\%$ above. Neither of those falls is what it looks like. Both are
+differences between populations rather than measurements of overfitting: on the Datadog
+side v2 does not move at all and the whole of the fall is the unfitted v1 doing better
+out of sample, and on the PromQL side both grammars do better out of sample, v2
+included. And neither fall is large enough to resolve --- a dashboard-level jackknife
+puts $0.4$ points of spread on the first and $1.9$ on the second, which is as large as
+the falls themselves. What survives on both sides is the held-out margin itself. And
+$\kappa$ itself, which the paragraph above this one said had no holdout, is
 $96.7\%$ of those $3{,}065$ occurrences against $96.6\%$ here --- the same figure as
 \S\ref{sec:baseline}'s coverage by valid output above, and an unrelated quantity, and a
-difference smaller than the spread produced by dropping any one of the $139$
-dashboards --- refusing under
+tenth of a point where occurrences clustered by their dashboard give a standard error of
+$1.1$ --- refusing under
 four of the five gap families \S\ref{sec:gaps} catalogues. So the estimate is still a
 resubstitution estimate, and the worry it licenses is bounded instead of open: on every
-channel a script can reach the fit is worth at most a point, and on $\kappa$ the two
-readings cannot be told apart. Two caveats are left and neither is leakage --- those
+channel that can be read twice the margin the corpus bought is still there out of
+sample, how much of it the corpus kept for itself is below the resolution of the
+measurement, and on $\kappa$ the two readings cannot be told apart. Two caveats are left and neither is leakage --- those
 dashboards are built with the vendor's own scaffolding against the vendor's own
 documentation, and their strings are novel while $90.0\%$ of their occurrences reuse a
 feature set the corpus already holds --- so the corpus of private, customer-written

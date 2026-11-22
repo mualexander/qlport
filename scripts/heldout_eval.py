@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from collections import Counter
 from pathlib import Path
@@ -227,6 +228,89 @@ def measure(queries: list, lang: str, vocabulary: set[str],
     return out
 
 
+def _cluster_se(per: dict[str, list[int]]) -> tuple[float, float]:
+    """The standard error of a rate whose observations arrive in clusters.
+
+    Occurrences are not drawn one at a time. They arrive a dashboard at a time, and
+    inside a dashboard they are near-copies of each other --- one integration's panels
+    repeat one query shape over a dozen metrics --- so the binomial standard error of a
+    rate over occurrences is the standard error of a sample far larger than the one we
+    have. This is the linearised standard error of the ratio estimator with the
+    dashboard as the sampling unit, which is the design that was actually used, plus
+    the design effect it implies: the factor by which treating occurrences as
+    independent would understate the spread.
+
+    It is the number that says what a tenth of a point is worth here, and it says the
+    answer is nothing.
+    """
+    n = sum(v[0] for v in per.values())
+    t = sum(v[1] for v in per.values())
+    m = len(per)
+    if not n or m < 2:
+        return 0.0, 0.0, 0.0
+    p = t / n
+    resid = [v[1] - p * v[0] for v in per.values()]
+    se = math.sqrt(sum(x * x for x in resid) * m / (m - 1)) / n * 100
+    srs = math.sqrt(p * (1 - p) / n) * 100
+    return se, srs, (se / srs) ** 2 if srs else 0.0
+
+
+def gain_spread(queries: list, lang: str, corpus_forms: set[str]) -> dict:
+    """v2's margin over v1, and the spread a dashboard-level jackknife puts on it.
+
+    The paper's interest is not in this margin but in how much of it survives out of
+    sample, which is a difference of two of these. A difference of two noisy numbers is
+    noisier than either, and the fit decompositions this subsection used to report ---
+    a third of the PromQL climb, a fifth of the Datadog one --- were differences
+    quoted to a tenth of a point without anyone asking what a tenth of a point was
+    worth. Dropping one dashboard and recomputing answers that, and the answer is that
+    neither difference is larger than its own spread.
+
+    Strings are the unit measured and dashboards are the unit resampled, so dropping a
+    dashboard drops only the strings no other dashboard carries.
+    """
+    bydash: dict[str, set[str]] = {}
+    for q in queries:
+        bydash.setdefault(q.origin, set()).add(q.text)
+    texts = sorted({q.text for q in queries})
+    forms = {t: c.normalise(lang, t) for t in texts}
+    keep = [t for t in texts if forms[t] not in corpus_forms]
+    kept = set(keep)
+    ok1 = {t: c.parse_outcome(lang, forms[t], "v1").ok for t in keep}
+    ok2 = {t: c.parse_outcome(lang, forms[t], "v2").ok for t in keep}
+    holders: Counter = Counter()
+    for ts in bydash.values():
+        for t in ts & kept:
+            holders[t] += 1
+
+    def rate(drop: set[str]) -> float:
+        sel = [t for t in keep if t not in drop]
+        return (sum(ok2[t] for t in sel) - sum(ok1[t] for t in sel)) / (len(sel) or 1) \
+            * 100
+
+    full = rate(set())
+    reps = [rate({t for t in ts & kept if holders[t] == 1}) for ts in bydash.values()]
+    n = len(reps)
+    mean = sum(reps) / n if n else 0.0
+    var = (n - 1) / n * sum((r - mean) ** 2 for r in reps) if n > 1 else 0.0
+    return dict(distinct=len(keep), dashboards=n,
+                gain_points=round(full, 1), gain_se_points=round(math.sqrt(var), 1))
+
+
+def feature_set_seen(queries: list, corpus_queries: list) -> dict:
+    """Occurrences whose whole feature set is one the corpus already exhibits.
+
+    String-level disjointness is what this holdout enforces and it is not structural
+    novelty: a query can be a string no corpus dashboard contains and still be the
+    same shape over a different metric. This measures how much of that there is, and
+    it is the caveat the subsection ends on rather than a result.
+    """
+    seen = {frozenset(c.features("datadog", q.text)) for q in corpus_queries}
+    n = sum(1 for q in queries if frozenset(c.features("datadog", q.text)) in seen)
+    return dict(occurrences=len(queries), seen=n,
+                pct=round(n / (len(queries) or 1) * 100, 1))
+
+
 def jackknife(queries: list, translated: set[str]) -> dict:
     """kappa with each dashboard dropped in turn.
 
@@ -246,7 +330,10 @@ def jackknife(queries: list, translated: set[str]) -> dict:
     spread = sorted((tot_t - v[1]) / (tot_n - v[0]) * 100
                     for v in per.values() if tot_n - v[0])
     worst = max(per.items(), key=lambda kv: kv[1][0] - kv[1][1])
+    se, srs, deff = _cluster_se(per)
     return dict(dashboards=len(per),
+                cluster_se_pct=round(se, 1), srs_se_pct=round(srs, 1),
+                design_effect=round(deff, 1),
                 dashboards_with_a_refusal=sum(1 for v in per.values() if v[0] != v[1]),
                 worst_dashboard=worst[0],
                 worst_dashboard_refusals=worst[1][0] - worst[1][1],
@@ -420,6 +507,40 @@ def main() -> int:
           f"raw {di['raw_pct']}%  v1 {di['v1_pct']}%  v2 {di['v2_pct']}%  "
           f"residual {di['residual']}")
 
+    # How much of v2's margin over v1 is corpus-specific, and what that difference is
+    # worth. The pair of gains is the measurement; the difference between them is what
+    # the prose wants to call the fit, and it is reported here beside the spread a
+    # dashboard-level jackknife puts on it so that the prose cannot quote the one
+    # without the other. On both languages the difference is smaller than its spread.
+    for key, qs, lang, base in (
+            ("gain_gf_in_sample", gf_train, "promql", set()),
+            ("gain_gf_held", [q for q in held if q.source == "grafana"
+                              and q.lang == "promql"], "promql", forms["promql"]),
+            ("gain_dd_in_sample", dd_train, "datadog", set()),
+            ("gain_ex_held", [q for q in held
+                              if q.source == "integrations-extras"
+                              and q.lang == "datadog"], "datadog", forms["datadog"])):
+        if qs:
+            res[key] = g = gain_spread(qs, lang, base)
+            print(f"{key}: {g['gain_points']} +/- {g['gain_se_points']} points over "
+                  f"{g['distinct']:,} strings in {g['dashboards']} dashboards")
+    for name, a, b in (("shrink_gf", "gain_gf_in_sample", "gain_gf_held"),
+                       ("shrink_dd", "gain_dd_in_sample", "gain_ex_held")):
+        if a in res and b in res:
+            d = res[a]["gain_points"] - res[b]["gain_points"]
+            se = math.hypot(res[a]["gain_se_points"], res[b]["gain_se_points"])
+            res[name] = dict(points=round(d, 1), se_points=round(se, 1))
+            print(f"{name}: the margin shrinks {d:.1f} points, "
+                  f"spread {se:.1f} --- {'' if abs(d) > 2 * se else 'not '}"
+                  f"distinguishable from no shrink at all")
+
+    ex_qs = [q for q in held if q.source == "integrations-extras"
+             and q.lang == "datadog"]
+    if ex_qs:
+        res["feature_set_seen"] = f = feature_set_seen(ex_qs, dd_train)
+        print(f"feature sets the corpus already exhibits: {f['seen']:,}/"
+              f"{f['occurrences']:,} = {f['pct']}% of held-out occurrences")
+
     rows = [[rf"Grafana, the corpus's ${gi['dashboards']}$",
              f"{gi['queries']:,}", f"{gi['distinct']:,}", pct(gi["raw_pct"] / 100),
              pct(gi["v1_pct"] / 100), pct(gi["v2_pct"] / 100), f"{gi['residual']:,}"]]
@@ -546,6 +667,7 @@ def main() -> int:
             "ho.ex_novel_v1_pct": e["novel_v1_pct"],
             "ho.ex_novel_v2_pct": e["novel_v2_pct"],
             "ho.ex_queries_at_commit": xm["queries_at_commit"],
+            "ho.ex_distinct_at_commit": xm["distinct_at_commit"],
             "ho.ex_gain_points": gain(e),
             "ho.ex_sstar_size": e["translator_vocabulary"]["size"],
             "ho.ex_sstar_pct": e["translator_vocabulary"]["occ_pct"],
@@ -556,6 +678,13 @@ def main() -> int:
             "ho.ex_ceiling_outside_occurrences":
                 e["corpus_vocabulary"]["novel_occurrences"],
             "ho.ex_vocabulary_size": e["corpus_vocabulary"]["size"],
+            # The distance between the two ceilings, taken from the two shares rather
+            # than written out in the prose: quoting the corpus vocabulary's 99.9% as
+            # though it were the translator's would overstate the reachable ceiling by
+            # exactly this much.
+            "ho.ex_ceiling_overstatement_points": round(
+                e["corpus_vocabulary"]["occ_pct"]
+                - e["translator_vocabulary"]["occ_pct"], 1),
             # Dropped before anything was measured, and counted so the prose can say
             # how much of the sibling repository was not disjoint.
             "ho.ex_shared_forms": xm["shared_with_corpus"],
@@ -565,6 +694,31 @@ def main() -> int:
             # row in Table~\ref{tab:parse-coverage} either.
             "ho.ex_formula_queries": xm["queries_formula_held_out"],
             "ho.ex_formula_distinct": xm["distinct_formula_held_out"],
+        })
+    for key, prefix in (("gain_gf_in_sample", "ho.gf_in_sample"),
+                        ("gain_gf_held", "ho.gf_novel"),
+                        ("gain_dd_in_sample", "ho.dd_in_sample"),
+                        ("gain_ex_held", "ho.ex")):
+        if key in res:
+            fig[f"{prefix}_gain_se_points"] = res[key]["gain_se_points"]
+    for name, prefix in (("shrink_gf", "ho.gf"), ("shrink_dd", "ho.ex")):
+        if name in res:
+            fig[f"{prefix}_shrink_points"] = res[name]["points"]
+            fig[f"{prefix}_shrink_se_points"] = res[name]["se_points"]
+    if "feature_set_seen" in res:
+        fig["ho.ex_feature_set_seen_pct"] = res["feature_set_seen"]["pct"]
+    # The formula layer as it ships, before anything is held out. The prose used to
+    # quote the post-filter remnant as though it were the layer, which understated it
+    # ninefold and left the dropped majority --- forms the corpus already holds ---
+    # unmentioned.
+    if "integrations-extras" in res:
+        xm = manifest["integrations-extras"]
+        fig.update({
+            "ho.ex_formula_queries_at_commit": xm["queries_formula_at_commit"],
+            "ho.ex_formula_distinct_at_commit": xm["distinct_formula_at_commit"],
+            "ho.ex_formula_shared_forms": xm["shared_formula_with_corpus"],
+            "ho.ex_formula_shared_queries": (xm["queries_formula_at_commit"]
+                                             - xm["queries_formula_held_out"]),
         })
     fig.update({"ho.dd_in_sample_sstar_pct":
                 di["translator_vocabulary"]["occ_pct"],
@@ -576,7 +730,8 @@ def main() -> int:
                 "ho.dd_in_sample_v2_pct": di["v2_pct"],
                 "ho.dd_in_sample_residual": di["residual"],
                 "ho.dd_in_sample_gain_points": gain(di)})
-    fig.update({"ho.gf_in_sample_distinct": gi["distinct"],
+    fig.update({"ho.gf_in_sample_dashboards": gi["dashboards"],
+                "ho.gf_in_sample_distinct": gi["distinct"],
                 "ho.gf_in_sample_queries": gi["queries"],
                 "ho.gf_in_sample_raw_pct": gi["raw_pct"],
                 "ho.gf_in_sample_residual": gi["residual"],
@@ -601,6 +756,7 @@ def main() -> int:
     if "kappa_in_sample" in res:
         ki = res["kappa_in_sample"]
         fig["ho.kappa_in_sample_pct"] = ki["kappa_occ_pct"]
+        fig["ho.kappa_in_sample_se_points"] = ki["jackknife"]["cluster_se_pct"]
         fig["ho.kappa_in_sample_jackknife_low_pct"] = ki["jackknife"]["low_pct"]
         fig["ho.kappa_in_sample_jackknife_high_pct"] = ki["jackknife"]["high_pct"]
         fig["ho.kappa_in_sample_distinct_pct"] = ki["kappa_distinct_pct"]
@@ -617,6 +773,9 @@ def main() -> int:
         fig["ho.ex_refused_distinct"] = ke["by_outcome_distinct"].get("bottom", 0)
         fig["ho.ex_jackknife_low_pct"] = ke["jackknife"]["low_pct"]
         fig["ho.ex_jackknife_high_pct"] = ke["jackknife"]["high_pct"]
+        fig["ho.ex_kappa_se_points"] = ke["jackknife"]["cluster_se_pct"]
+        fig["ho.ex_kappa_srs_se_points"] = ke["jackknife"]["srs_se_pct"]
+        fig["ho.ex_kappa_design_effect"] = ke["jackknife"]["design_effect"]
         fig["ho.ex_dashboards_with_a_refusal"] = (
             ke["jackknife"]["dashboards_with_a_refusal"])
         fig["ho.ex_worst_dashboard_refusals"] = (

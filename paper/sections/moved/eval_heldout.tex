@@ -35,6 +35,8 @@ an order chosen from somewhere else.
 \paragraph{The grammar, on $497$ dashboards it has never seen.}
 The corpus took the $200$ most-downloaded Prometheus dashboards from a catalogue that
 now lists $5{,}904$ (\S\ref{sec:corpus}); the rest were never listed, downloaded or read.
+One of the $200$ carries nothing but Loki panels once \S\ref{sec:corpus}'s filter has
+run, which is why the in-sample row below counts $199$ dashboards and not $200$.
 \texttt{scripts/heldout\_fetch.py} takes every dashboard down to rank $700$ that the
 corpus does not already hold, which is $500$ dashboards, $497$ of them carrying PromQL:
 $16{,}569$ queries against the in-sample $7{,}286$, and $13{,}960$ distinct strings
@@ -51,12 +53,17 @@ across dashboards, so $1{,}438$ of the held-out strings are strings the corpus a
 holds, and those are not held out in any sense that bears on a grammar; the rate that
 belongs in this paper is the one on the $12{,}522$ whose instantiated form appears
 nowhere in the corpus. There, frozen grammar v2 parses $99.6\%$, against $99.0\%$ on the
-dashboards it was built from. It does not do worse out of sample. What does shrink is the
-fit: v2 beats v1 by $1.2$ points in sample and by $0.8$ out of it, so about a third of
-what the corpus-driven productions bought was specific to this corpus and about two
-thirds of it was a gap in PromQL as people write it. That is the most precise statement
-we can make about the largest of the three fits on the side where it can be tested, and
-it is smaller than the paragraph it replaces assumed without saying.
+dashboards it was built from. It does not do worse out of sample. Its margin over v1 is
+$1.2$ points in sample and $0.8$ out of it, and the obvious thing to do with that pair is
+to read the difference as the share of the fit that was specific to this corpus. The pair
+will not carry that reading. Both margins are measured over strings that arrive a
+dashboard at a time, and recomputing each with one dashboard dropped puts a spread of
+$0.3$ points on it, so the $0.4$-point difference between them is no larger than the
+$0.4$ points of spread it inherits from the two. What the holdout settles about this fit
+is the margin and not its decomposition: the corpus-driven productions are still worth
+$0.8$ points ($\pm0.3$) on dashboards the grammar has never seen, which makes them a gap
+in PromQL as people write it rather than an accommodation to these $199$. How much more
+they were worth here is a question this population cannot answer.
 
 The vocabulary result repeats out of sample exactly as the cross-validation predicts: the
 $24$ features cover $100.0\%$ of those $16{,}569$ occurrences with none outside them, on
@@ -86,35 +93,54 @@ dashboards shipped under the same \texttt{assets/dashboards/} path, read here by
 extractor that read the corpus, and $139$ of them contribute the queries below. The
 repository carries $3{,}073$ Datadog metric-query occurrences, of which $3{,}065$ in
 $2{,}572$ distinct strings survive dropping every string whose instantiated form the
-corpus already holds --- seven such forms, eight occurrences. Its formula layer, $265$
-occurrences in $166$ forms, is set aside exactly as the corpus's $6{,}022$ are, because
-no version of either grammar parses that language at all.
+corpus already holds --- seven such forms, eight occurrences. Its formula layer is set
+aside exactly as the corpus's $6{,}022$ are, because no version of either grammar parses
+that language at all; for the record it is $2{,}451$ occurrences in $229$ distinct forms,
+of which $63$ forms carrying $2{,}186$ occurrences are forms the corpus already holds,
+leaving the $265$ occurrences in $166$ forms that a formula grammar would have had to be
+scored on. The two layers are not alike in this: the formula layer shares $63$ of its
+$229$ forms with the corpus where the metric-query layer shares seven of its $2{,}571$,
+a hundredfold difference in how much of each is already here. That is a fact about the
+two languages rather than about this repository --- a formula is short arithmetic over
+query aliases, and there are only so many of those to write.
 Table~\ref{tab:heldout}'s in-sample Datadog row is Table~\ref{tab:parse-coverage}'s own
 \texttt{datadog} row recomputed by this script, down to the residual of $6$ --- a
 stricter version of the check the Grafana comparator passes, which reproduces that
 table's PromQL residual but not its row.
 
 Frozen grammar v2 parses $99.9\%$ of those $2{,}572$ strings, which is its in-sample
-rate, while v1 parses $94.4\%$ against $92.9\%$. The margin
-\S\ref{sec:datadog-inference}'s corpus-driven productions bought therefore falls from
-$7.0$ points to $5.6$. That is the strongest statement this design supports and it is
-weaker than it looks: v2 does not fall at all, so there is no measurable overfit in v2 to
-find, and the whole of the movement is v1 --- the \emph{unfitted} documentation grammar
---- doing better here than it does on the corpus. What the pair measures is a difference
-between two populations read under the assumption that they are otherwise exchangeable.
-The honest reading is that roughly four fifths of the climb reappears on dashboards the
-grammar never saw.
+rate: two strings fail here and six fail in sample, and the two rates agree to four
+significant figures, separating only in the fifth. Meanwhile v1 parses $94.4\%$ against
+$92.9\%$, so the margin \S\ref{sec:datadog-inference}'s corpus-driven productions bought
+falls from $7.0$ points to $5.6$. The PromQL caution applies here with more force,
+because this side is $139$ dashboards rather than $497$: dropping one at a time puts
+$\pm1.7$ points on the held-out margin by itself, and the $1.4$-point fall carries $1.9$
+points of spread. The fall is not distinguishable from no fall at all. What is
+distinguishable is the held-out margin itself, and $5.6$ points ($\pm1.7$) on a
+repository by other authors is a long way from zero. Note also which side of the pair
+moves. v2's rate does not change, so the whole of the movement is v1 ---
+the \emph{unfitted} documentation grammar --- doing better here than it does on the
+corpus, which means that even a fall large enough to resolve would be a difference
+between two populations read as exchangeable rather than a measurement of overfitting.
 
 The frozen translator, called exactly as \S\ref{sec:evaluation} calls it, returns
 $\kappa=96.7\%$ of those $3{,}065$ occurrences against $96.6\%$ in sample, and $96.3\%$ of
 the $2{,}564$ distinct instantiated forms against $96.5\%$. Those are not two results, one
-up and one down. They are one result, which is that the two rates are indistinguishable.
-Occurrences cluster inside dashboards --- $23$ of the $139$ carry any refusal at all, and
-one integration's dashboard carries $30$ of them --- so dropping any single dashboard
-moves the held-out figure anywhere in $96.7\%$ to $97.7\%$, where the same operation in
-sample moves it only within $96.6\%$ to $97.0\%$. A tenth of a point sits well inside
-that. What the comparison establishes is that nothing large is hiding on the Datadog
-side, not that the fit is worth nothing.
+up and one down. They are one result, which is that the two rates are indistinguishable
+--- and the arithmetic behind that word is worth setting down, because it also says what
+the decimal place in every $\kappa$ in this paper is worth. Occurrences do not arrive one
+at a time. They arrive a dashboard at a time and repeat one query shape across a dozen
+metrics inside it, which is why $23$ of the $139$ dashboards carry any refusal at all and
+one integration's carries $30$ of them; dropping a single dashboard and recomputing moves
+the held-out figure anywhere between $96.7\%$ and $97.7\%$. Treating the $3{,}065$ as
+independent draws gives a standard error of $0.3$ points. Treating the dashboard as the
+sampling unit, which is what it was, gives $1.1$; the design effect between the two is
+$11.6$. A tenth of a point over occurrences, and two tenths the other way over distinct
+forms, both sit far inside that, and so would a gap several times either. What the
+comparison establishes is that nothing large is hiding on the Datadog side, not that the
+fit is worth nothing,
+and the one-decimal place these rates are written to is a property of the division rather
+than a claim about the third digit.
 
 \paragraph{The refusals out of sample are refusals the catalogue already names.}
 What a held-out $\kappa$ can show that an in-sample one cannot is a failure mode nobody
@@ -170,9 +196,12 @@ out of sample against $96.6\%$ in it, on $3{,}065$ occurrences from $139$ dashbo
 other authors, refusing under four of the five families the catalogue already holds.
 
 None of that makes $96.6\%$ a held-out estimate; it was obtained the way it was obtained.
-What it does is bound the worry the estimate licenses. On every channel a script can
-reach, the fit is worth at most a point, and on $\kappa$ the two readings differ by less
-than the spread a single dashboard produces. Two caveats survive, and neither is leakage.
+What it does is bound the worry the estimate licenses. On every channel that can be
+read twice, the margin the corpus bought survives being read somewhere else --- $0.8$
+points ($\pm0.3$) on the PromQL side and $5.6$ ($\pm1.7$) on the Datadog one --- and on
+both, how much of that margin the corpus kept for itself is smaller than the spread the
+measurement carries. On $\kappa$ the two readings differ by a tenth of a point where a
+dashboard-clustered standard error is $1.1$. Two caveats survive, and neither is leakage.
 The first is authorship: \texttt{integrations-extras} is community- and partner-written,
 which is the different-authors test, but those dashboards are built with the vendor's own
 integration scaffolding against the vendor's own documentation, so their house style is
@@ -203,7 +232,7 @@ distinct queries that parse as shipped; the v1 and v2 columns are after template
 instantiation, as in Table~\ref{tab:parse-coverage}, and the residual is what v2 still
 cannot parse. The one indented row restricts the row above it, to the strings
 whose instantiated form the corpus does not hold, which is the comparison the text
-quotes; the Datadog rows are four separate populations and none of them is nested in
+quotes; the three Datadog rows are three separate populations and none is nested in
 another. \texttt{integrations-extras} is the disjoint repository, every string of which
 is one the corpus does not hold. The last row is \texttt{integrations-core} at a later
 commit, which holds only strings the corpus lacks and at $99$ of them estimates

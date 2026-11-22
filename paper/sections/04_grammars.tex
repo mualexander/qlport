@@ -175,10 +175,13 @@ with no aggregator prefix in $93$. A grammar inferred from a vendor's own docume
 misses a measurable fraction of the vendor's own shipped dashboards. That $7$-point
 climb is also the largest fit this paper makes to its corpus, and
 \S\ref{sec:heldout} measures what it is worth away from it: on $2{,}572$ distinct queries
-from a disjoint repository of Datadog dashboards, the climb falls to $5.6$ points while
-v2's absolute rate stays at $99.9\%$. So roughly four fifths of it reappears on
-dashboards the grammar never saw --- though what moves is v1 rather than v2, which makes
-that a difference between two populations rather than a measurement of overfitting.
+from a disjoint repository of Datadog dashboards, v2's absolute rate stays at $99.9\%$
+and the climb is $5.6$ points rather than seven. So most of what the productions are
+worth here they are worth on dashboards the grammar never saw. How much less is not
+resolvable at that size --- the $1.4$-point difference is smaller than the spread a
+dashboard-level jackknife puts on it --- and what moves is v1 rather than v2, which
+would make it a difference between two populations rather than a measurement of
+overfitting in any case.
 
 Second, the gap between the raw and instantiated columns is large in both languages:
 $11.8\%$ against $99.9\%$ for Datadog, $71.2\%$ against $99.1\%$ for PromQL. Every rate

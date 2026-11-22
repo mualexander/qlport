@@ -213,9 +213,9 @@ ALLOWED: dict[float, str] = {
           "          alphabet was pinned and this remark was not",
     176: "the slowest single pattern in it, seconds, timed uncontended",
     91: "and the fastest of that same four-pattern family",
-    139: "three different quantities of this magnitude: nb00.top_occurrences, which\n         is registered and bound in \u00a77 and concl_evidence; the PromQL alerting\n         rules of \u00a77.1; and the \u00a74 grammar-gap count. Only the first is a\n         registry figure, so the other two ride here",
+    139: "four different quantities of this magnitude: nb00.top_occurrences, which\n         is registered and bound in \u00a77 and concl_evidence; ho.ex_dashboards,\n         the dashboards the disjoint repository contributes, registered since the\n         held-out run; the PromQL alerting rules of \u00a77.1; and the \u00a74\n         grammar-gap count. Two of the four are registry figures now, which means\n         either of them licenses this magnitude everywhere; the other two ride here",
     96: "unregistered (nb 00): PromQL recording rules",
-    93: "unregistered (nb 01): queries needing a bare metric name",
+    93: "unregistered (nb 01): queries needing a bare metric name.\n        ho.ex_refused_distinct is 93 as well and, being a registry key, licenses the\n        value everywhere; this entry is what records which 93 \u00a74 means",
     70: "unregistered (nb 03): .weighted() occurrences; also the second share "
         "in the discussion's hypothetical illustration",
     36: "unregistered (nb 03): FILL_INTERPOLATION occurrences",
@@ -303,8 +303,8 @@ ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
          {"eval_weighted.tex"}),
     56: ("E9: the superseded count of distinct forms carrying .weighted(), now 52 ---\n         and, separately, the share of Datadog queries using by {...}",
          {"eval_weighted.tex", "eval_language_use.tex"}),
-    45: ("the queries the first six Datadog features complete, an nb-00 staircase\n         quantity. The reason recorded here until the tenth pass described nb 04's\n         refusals, which the cross-check now reports as all 7 of 184. Since the\n         held-out run it is also ho.ex_gap_phi_quantile, the strings the disjoint\n         repository refuses under the quantile gap --- an unrelated quantity of the\n         same magnitude, which is why this scope is enforced ahead of the registry",
-         {"eval_staircase.tex", "eval_heldout.tex"}),
+    45: ("the queries the first six Datadog features complete, an nb-00 staircase\n         quantity. The reason recorded here until the tenth pass described nb 04's\n         refusals, which the cross-check now reports as all 7 of 184. Since the\n         held-out run ho.ex_gap_phi_quantile is 45 too --- the strings the disjoint\n         repository refuses under the quantile gap --- and a registry key licenses\n         its value in every file, so unexplained() returns before it ever reads this\n         scope. The entry is kept as the record of what 45 means in the staircase\n         prose and not as a check on it. An unrelated registry key of the same\n         magnitude is the one thing this ledger cannot see; PHRASES below is the\n         answer where the figure is load-bearing",
+         {"eval_staircase.tex"}),
     21: ("a superseded harness run: the shapes a single global 60 s bucket grid broke\n         by comparing a .rollup(sum, 300) bucket against a window covering a fifth\n         of it. The grid is per shape now and the count cannot be recomputed, which\n         is what makes rem:harness-failures a record rather than a measurement.\n         And, separately, the corpus patterns containing `.+`, which carry the 238\n         occurrences the alphabet question is worth",
          {"eval_harness_failures.tex", "06_regular.tex"}),
     76.2: ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
@@ -765,6 +765,186 @@ def test_a_bound_figure_still_matches_its_source():
         if not any(s in text for s in _spellings(reg[key])):
             stale.append(f"  {section} should state {key} = {reg[key]}")
     assert not stale, "\n".join(stale)
+
+
+# --- the sentence a figure lives in ---------------------------------------------------
+# BOUND asks whether a file states the registry's value anywhere in it. That is
+# containment, and containment is weak exactly where a paper is most likely to drift:
+# in a sentence that states several figures of the same magnitude.
+#
+# The held-out kappa is the case that showed it. `ho.ex_kappa_pct` was bound to three
+# files, and every one of them passed with the registry set to 96.6 --- the in-sample
+# value, the precise drift the binding was added to catch --- because each of those
+# files already states 96.6 as the comparator in the same sentence. A twelfth review
+# pass set it to 96.6 and watched the whole suite stay green while five files went on
+# saying 96.7. The binding recorded a check that could not fail.
+#
+# These are stronger, and they are stronger in the only way that matters: a rate is
+# pinned beside the population it is a rate of. `96.7\% of those 3{,}065 occurrences`
+# is a string nothing else in this paper can produce, where `96.7` alone is produced by
+# the baseline's coverage-by-valid-output and by three unrelated tables.
+#
+# Each entry is a fragment of the paper's own LaTeX with `{registry.key}` spliced in,
+# asserted to appear in its file after whitespace is flattened, so line wrapping is free
+# to move but words and figures are not. The cost is that rewording one of these
+# sentences breaks its test. That is the intended trade and the reason the list is
+# short: these are the sentences carrying claims the paper cannot afford to state
+# stalely, not every sentence with a number in it.
+
+PHRASES: tuple[tuple[str, str], ...] = (
+    # kappa, out of sample, beside its population and its in-sample comparator.
+    ("eval_heldout.tex",
+     r"returns $\kappa={ho.ex_kappa_pct}\%$ of those ${ho.ex_queries}$ occurrences "
+     r"against ${ho.kappa_in_sample_pct}\%$ in sample, and "
+     r"${ho.ex_kappa_distinct_pct}\%$ of the ${ho.ex_kappa_distinct}$ distinct "
+     r"instantiated forms against ${ho.kappa_in_sample_distinct_pct}\%$"),
+    # And what that tenth of a point is worth, which is the claim, not the rate.
+    ("eval_heldout.tex",
+     r"Treating the ${ho.ex_queries}$ as independent draws gives a standard error of "
+     r"${ho.ex_kappa_srs_se_points}$ points. Treating the dashboard as the sampling "
+     r"unit, which is what it "
+     r"was, gives ${ho.ex_kappa_se_points}$; the design effect between the two is "
+     r"${ho.ex_kappa_design_effect}$"),
+    ("eval_heldout.tex",
+     r"$\kappa$ is ${ho.ex_kappa_pct}\%$ out of sample against "
+     r"${ho.kappa_in_sample_pct}\%$ in it, on ${ho.ex_queries}$ occurrences from "
+     r"${ho.ex_dashboards}$ dashboards"),
+    ("01_introduction.tex",
+     r"the translator reaches ${ho.ex_kappa_pct}\%$ of ${ho.ex_queries}$ occurrences"),
+    ("07_evaluation.tex",
+     r"is ${ho.ex_kappa_pct}\%$ of those ${ho.ex_queries}$ occurrences against "
+     r"${ho.kappa_in_sample_pct}\%$ here"),
+    # body.tex states the rate with no population beside it, so the phrase is the
+    # pinning: a registry that said 96.6 would require the abstract to say 96.6.
+    ("body.tex",
+     r"it returns an indistinguishable ${ho.ex_kappa_pct}\%$"),
+    ("09_conclusion.tex",
+     r"against the ${ho.ex_kappa_se_points}$ points of standard error"),
+    # The grammar rates, each beside the population it was measured on.
+    ("eval_heldout.tex",
+     r"Frozen grammar v2 parses ${ho.ex_v2_pct}\%$ of those ${ho.ex_distinct}$ "
+     r"strings"),
+    ("eval_heldout.tex",
+     r"v1 parses ${ho.ex_v1_pct}\%$ against ${ho.dd_in_sample_v1_pct}\%$"),
+    ("eval_heldout.tex",
+     r"falls from ${ho.dd_in_sample_gain_points}$ points to ${ho.ex_gain_points}$"),
+    # The two fit decompositions, each beside the spread that makes it unresolvable.
+    # These are the figures the twelfth pass found quoted as thirds and fifths.
+    ("eval_heldout.tex",
+     r"so the ${ho.gf_shrink_points}$-point difference between them is no larger than "
+     r"the ${ho.gf_shrink_se_points}$ points of spread"),
+    ("eval_heldout.tex",
+     r"worth ${ho.gf_novel_gain_points}$ points ($\pm{ho.gf_novel_gain_se_points}$) on "
+     r"dashboards the grammar has never seen"),
+    ("eval_heldout.tex",
+     r"$\pm{ho.ex_gain_se_points}$ points on the held-out margin by itself, and the "
+     r"${ho.ex_shrink_points}$-point fall carries ${ho.ex_shrink_se_points}$ points "
+     r"of spread"),
+    ("04_grammars.tex",
+     r"the ${ho.ex_shrink_points}$-point difference is smaller than the spread"),
+    ("07_evaluation.tex",
+     r"puts ${ho.gf_shrink_se_points}$ points of spread on the first and "
+     r"${ho.ex_shrink_se_points}$ on the second"),
+    ("07_evaluation.tex",
+     r"its margin over v1 is ${ho.gf_novel_gain_points}$ points against "
+     r"${ho.gf_in_sample_gain_points}$ here"),
+    ("07_evaluation.tex",
+     r"its margin over v1 is ${ho.ex_gain_points}$ points against the seven"),
+    ("07_evaluation.tex",
+     r"a tenth of a point where occurrences clustered by their dashboard give a "
+     r"standard error of ${ho.ex_kappa_se_points}$"),
+    # The two ceilings, which must not be quoted under one name.
+    ("eval_heldout.tex",
+     r"$S^\star$ covers ${ho.ex_sstar_pct}\%$ of these occurrences"),
+    ("eval_heldout.tex",
+     r"would overstate the reachable ceiling by "
+     r"${ho.ex_ceiling_overstatement_points}$ points"),
+    # The caveat the subsection ends on, and the formula layer as it ships.
+    ("eval_heldout.tex",
+     r"yet ${ho.ex_feature_set_seen_pct}\%$ of its occurrences have a feature set "
+     r"that occurs there verbatim"),
+    ("eval_heldout.tex",
+     r"it is ${ho.ex_formula_queries_at_commit}$ occurrences in "
+     r"${ho.ex_formula_distinct_at_commit}$ distinct forms, of which "
+     r"${ho.ex_formula_shared_forms}$ forms carrying "
+     r"${ho.ex_formula_shared_queries}$ occurrences"),
+    # The template share, whose two halves §7 used to present as two channels.
+    ("07_evaluation.tex",
+     r"${ho.dd_in_sample_template_pct}\%$ of corpus occurrences carry a template "
+     r"variable against ${ho.ex_template_pct}\%$"),
+)
+
+_PHRASE_KEY = re.compile(r"\{([a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+)\}")
+
+
+def _spell(value: int | float) -> str:
+    """One spelling, the one this paper uses: `3{,}065`, `96.7`, `7.0`, `139`.
+
+    A count and a rate of the same magnitude are written differently and the registry
+    already distinguishes them --- `ho.ex_gain_points` is the JSON float 7.0 and the
+    paper writes `$7.0$`, while `ho.ex_dashboards` is the integer 139. Collapsing 7.0
+    to `7` here would have made three of these phrases unsatisfiable and invited the
+    obvious repair, which is to accept both spellings and so to stop distinguishing
+    the two kinds of figure.
+    """
+    if isinstance(value, int) and not isinstance(value, bool):
+        return f"{value:,}".replace(",", "{,}")
+    return repr(float(value))
+
+
+def _flat(text: str) -> str:
+    return re.sub(r"\s+", " ", text)
+
+
+def test_a_pinned_sentence_still_says_what_the_registry_says():
+    """A headline figure must appear beside the population it is a figure of.
+
+    This is the check BOUND cannot make. `ho.ex_kappa_pct` was bound to three files
+    and the binding passed with the registry set to the in-sample value, because each
+    of those files states the in-sample value in the same sentence as the held-out
+    one. Containment cannot tell a rate from its own comparator. A phrase can.
+    """
+    reg = json.loads(REGISTRY.read_text())
+    missing = []
+    for section, template in PHRASES:
+        path = MAIN if section == "body.tex" else _section_path(section)
+        for key in _PHRASE_KEY.findall(template):
+            assert key in reg, f"{key} is pinned but no longer in the registry"
+        want = _PHRASE_KEY.sub(lambda m: _spell(reg[m.group(1)]), template)
+        if _flat(want) not in _flat(path.read_text()):
+            missing.append(f"  {section} should contain: {_flat(want)}")
+    assert not missing, "\n".join(missing)
+
+
+def test_every_pinned_sentence_pins_something():
+    """A phrase with no registry key in it records a check that cannot drift."""
+    bare = [t for _, t in PHRASES if not _PHRASE_KEY.search(t)]
+    assert not bare, f"pinned sentences with no registry key: {bare}"
+
+
+def test_the_kappa_each_side_quotes_is_the_one_measured_on_that_side():
+    """The two kappas are a tenth of a point apart, so only a phrase separates them.
+
+    Setting `ho.ex_kappa_pct` to the in-sample value must fail. Before the phrases
+    above it did not: every file bound to it already carried that value as the
+    comparator, so the suite stayed green while the paper went on stating the other
+    one in five places. This asserts the hole is shut, by checking that no file
+    pinning the held-out rate would still pin it were the registry to hold the
+    in-sample one.
+    """
+    reg = json.loads(REGISTRY.read_text())
+    swapped = dict(reg, **{"ho.ex_kappa_pct": reg["ho.kappa_in_sample_pct"]})
+    assert reg["ho.ex_kappa_pct"] != swapped["ho.ex_kappa_pct"], \
+        "the two kappas have converged; this test no longer separates anything"
+    caught = []
+    for section, template in PHRASES:
+        if "ho.ex_kappa_pct" not in template:
+            continue
+        path = MAIN if section == "body.tex" else _section_path(section)
+        want = _PHRASE_KEY.sub(lambda m: _spell(swapped[m.group(1)]), template)
+        caught.append(_flat(want) not in _flat(path.read_text()))
+    assert caught and all(caught), \
+        "a file pinning the held-out kappa would accept the in-sample one"
 
 
 def test_every_binding_names_a_distinctive_value():

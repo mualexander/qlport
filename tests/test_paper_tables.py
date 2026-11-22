@@ -675,6 +675,69 @@ def test_the_held_out_kappa_is_indistinguishable_from_the_in_sample_one(reg):
         "shrinking margin a fact about v1 rather than about overfitting")
 
 
+def test_the_fit_decompositions_are_reported_with_their_own_spread(reg):
+    """Both fit decompositions are inside their own noise, and the paper must say so.
+
+    For three drafts this subsection split the PromQL margin into a third that was
+    corpus-specific and two thirds that were not, and called the Datadog one four
+    fifths. Those are differences between two rates measured over strings that arrive
+    a dashboard at a time, and nobody had asked what a dashboard-level jackknife puts
+    on them. It puts 0.4 points on a 0.4-point difference and 1.9 on a 1.4-point one.
+    Neither fraction was ever resolvable; both sentences were arithmetic on noise.
+
+    So the claim the paper now makes is the one the data supports --- the held-out
+    margin is real, its shrinkage is not measurable --- and both halves are asserted
+    here. If a later corpus makes a shrinkage resolvable, this test fails and the
+    prose gets to say something stronger; if a held-out margin stops clearing its own
+    spread, it fails the other way and the prose has to stop claiming the productions
+    generalise at all.
+    """
+    for lang, in_sample, held, shrink in (
+            ("promql", "ho.gf_in_sample_gain_points", "ho.gf_novel_gain_points",
+             "ho.gf_shrink"),
+            ("datadog", "ho.dd_in_sample_gain_points", "ho.ex_gain_points",
+             "ho.ex_shrink")):
+        points, se = reg[f"{shrink}_points"], reg[f"{shrink}_se_points"]
+        assert points == round(reg[in_sample] - reg[held], 1), (
+            f"{lang}: the reported shrinkage is not the difference of the two "
+            f"margins it is supposed to be the difference of")
+        assert abs(points) <= 2 * se, (
+            f"{lang}: the margin now shrinks by {points} points against {se} of "
+            f"spread, which is resolvable. The subsection says the shrinkage cannot "
+            f"be measured at this size and that sentence is now wrong")
+        held_se = reg[f"{held.rsplit('_', 2)[0]}_gain_se_points"]
+        assert reg[held] > 2 * held_se, (
+            f"{lang}: the held-out margin is {reg[held]} points against {held_se} "
+            f"of spread. The subsection says the corpus-driven productions are worth "
+            f"something on dashboards the grammar never saw; at this ratio it cannot")
+
+
+def test_the_kappa_decimal_place_is_not_a_claim_about_the_third_digit(reg):
+    """What a tenth of a point is worth here, asserted rather than asserted of.
+
+    Section 7 has always said the one-decimal place is a property of the arithmetic.
+    Nothing measured it until the twelfth pass, and the measurement is the reason the
+    held-out and in-sample rates can be called indistinguishable without hedging:
+    occurrences repeat one query shape across a dozen metrics inside one dashboard, so
+    the binomial error over 3,065 of them describes a sample this paper does not have.
+    """
+    srs, se = reg["ho.ex_kappa_srs_se_points"], reg["ho.ex_kappa_se_points"]
+    assert se > srs, (
+        "clustering by dashboard no longer widens the error, which would mean the "
+        "occurrences are independent after all and the paragraph arguing they are "
+        "not has to go")
+    assert reg["ho.ex_kappa_design_effect"] > 1
+    assert se > abs(reg["ho.ex_kappa_pct"] - reg["ho.kappa_in_sample_pct"]), (
+        "the two rates are further apart than one clustered standard error, so "
+        "'indistinguishable' is no longer what the arithmetic says")
+    assert se > abs(reg["ho.ex_kappa_distinct_pct"]
+                    - reg["ho.kappa_in_sample_distinct_pct"]), (
+        "the same, over distinct forms, where the gap runs the other way")
+    # The in-sample side clusters too, which is why section 7 may generalise the
+    # remark to every kappa in the paper rather than to this one.
+    assert reg["ho.kappa_in_sample_se_points"] > 0
+
+
 def test_the_two_vocabularies_are_not_quoted_under_one_name(reg):
     """The corpus's 28 features and the translator's 25 are different ceilings.
 
