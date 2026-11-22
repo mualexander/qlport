@@ -64,13 +64,29 @@ def _norm(tok: str, pct: str) -> tuple[str, float] | None:
         return None
 
 
+_COMMENT = re.compile(r"(?<!\\)%.*")
+
+
+def _published(path: Path) -> str:
+    """One file as the PDF will have it: everything behind a `%` is gone.
+
+    Every extractor in this file reads through here, and the one that did not is the
+    reason it exists. `_flat` took `path.read_text()` raw for one commit, so a
+    sentence parked behind a `%` while it was being redrafted went on satisfying the
+    phrase meant to pin the sentence that had replaced it. Commenting a line out is
+    the ordinary way to redraft; a guard that reads a larger document than the one
+    published is not checking the paper.
+    """
+    return _COMMENT.sub("", path.read_text())
+
+
 def _math(text: str) -> list[str]:
     """The `$...$` spans, with LaTeX comments and escaped dollars removed first.
 
     `\\%` is not a comment and `\\$65M` is currency rather than math; both bit an
     earlier version of this extractor and silently emptied its input.
     """
-    text = re.sub(r"(?<!\\)%.*", "", text)
+    text = _COMMENT.sub("", text)
     text = text.replace(r"\$", "\x00")
     return re.findall(r"\$([^$]*)\$", text)
 
@@ -102,7 +118,7 @@ def _accounted() -> set[tuple[str, float]]:
     """
     ok: set[tuple[str, float]] = set()
     for path in TABLES:
-        for tok, pct in _NUM.findall(re.sub(r"(?<!\\)%.*", "", path.read_text())):
+        for tok, pct in _NUM.findall(_published(path)):
             key = _norm(tok, pct)
             if key:
                 ok.add(key)
@@ -119,243 +135,182 @@ def _accounted() -> set[tuple[str, float]]:
 # how a figure changed; those must not be recomputed. Entries marked "unregistered"
 # are live figures that no notebook records yet -- they are the next ones to migrate,
 # and listing them here is a statement that they are unchecked, not that they are fine.
-ALLOWED: dict[float, str] = {
-    # --- constants of the apparatus -------------------------------------------------
-    3.15: "Prometheus version the measurements were taken against",
-    15: "scrape interval, seconds",
-    60: "rollup interval (seconds); also the first share in the discussion's "
-        "worked illustration of conjunctive coverage, which is hypothetical "
-        "and not measured",
-    20: "automatic rollup interval over an hour (seconds); also the upper end of "
-        "rate's bucket disagreement in the replay, and the proverb's 20% of the work",
-    300: "automatic rollup interval over a day, seconds",
-    1800: "the one rollup width the differential window cannot hold two of",
-    8587: "regex matchers in the PromQL corpus; the table beside it reports the split",
-    0.628: "cor:rate: what rate() reads on one of two databases with equal phi images",
-    887: "rem:type-measured: translated occurrences whose declared type is not decidable",
-    0.667: "and on the other, which is why rate is inadmissible on C_warm too",
-    325: "shapes the differential had before the abstraction kept rollup intervals",
-    335: "and after that, before the empty-value scopes left the translated set",
-    3600: "the second rollup width the differential window cannot hold two of",
-    114: "matcher occurrences in single-quoted and backtick literals, which the "
-         "double-quoted-only scanner of an earlier pass did not see",
-    22903: "query strings extraction yields",
-    22894: "of those, what remains once the LogQL panels leave",
-    7867: "PromQL panel queries, against 139 alerting and 96 recording rules",
-    84: "buckets compared per row of the dual-write replay table",
-    236.0: "the aligned replay bucket where the two engines differ in the last bit",
-    235.999: "and what PromQL read for it, truncated -- the float64 noise a "
-             "bit-identity test counted as a disagreement",
-    0: "zero", 1: "one", 2: "two", 3: "three", 6: "six",
-    10: "ten", 64: "the glob-union bound B", 100: "a percentage scale factor",
-    80: "the proverbial 80% of queries, which this corpus does not support",
-    # --- the declared metric types, from data/raw/datadog/metric_types.json ----------
-    37070: "metric names integrations-core declares at the pinned commit",
-    23597: "of those, declared gauge",
-    13140: "of those, declared count",
-    330: "of those, declared rate",
-    # --- E9: what `.weighted()` does, and what it would have done if weighted --------
-    66.7: "E9: the plain mean of the irregular series, with and without the modifier",
-    16.7: "E9: what a mean weighted by each point's interval would have read",
-    0.8: "points of kappa that implementing .weighted() closed",
-    # --- E1, E7, E8: values from cached experiment records ---------------------------
-    1000: "E1: the counter value just before the scripted reset",
-    103: "E1: what Datadog stored over the reset bucket",
-    897: "E1: what a raw signed difference would have stored",
-    111: "E1 fast run: the reset bucket at three samples per flush",
-    110: "E1 fast run: what losing the pre-reset increment would have given",
-    25: "series-start check: the bucket sum for a series older than the window",
-    1760: "E7: avg_over_time of the running totals at the end of the run",
-    0.994: "E7: the relative difference after half an hour",
-    0.5: "E7: the relative difference at the start of the run",
-    # --- E17's superseded run, quoted so the method's own failure is on the record ----
-    4096: "the limit an earlier run of E17 published, off one HTTP 408 in a run that\n"
-          "          had already accepted 5,096. The retry and the boundary-contradiction\n"
-          "          guard that followed are why the current run reports a range",
-    5096: "the rung that run had already accepted when it reported 4,096",
-    408: "and the status it took for a refusal",
-    # --- §6's own measurements, each pinned to a cache by tests/test_regular.py -------
-    599: "the occurrences this paper's procedure refuses under the other reading of a\n"
-         "         glob's star, against 84 under the reading E5 settled. Read off\n"
-         "         data/raw/globs/star_reading.json and pinned to it by\n"
-         "         test_the_other_reading_costs_what_the_section_says_it_costs",
-    515: "and the occurrences that change classification between the two readings,\n"
-         "         over 72 patterns, every one of them toward refusal. Same cache",
-    72: "the patterns behind those 515 occurrences; also, separately, nothing else",
-    1681: "41 squared: MAX_UNION, the branch bound, and so the branch count of `5..`.\n"
-          "          test_the_bound_is_the_square_of_the_alphabet pins the relation",
-    3362: "twice that, which is what `2..|5..` would need",
-    71: "of the 74 occurrences the branch bound refuses, the share carried by the two\n"
-        "        device-name alternations: 49 + 22 from data/processed/regex_glob.csv",
-    # --- corpus figures from notebooks 00, 01, 04, 05: unregistered -------------------
-    5389: "unregistered (test_corpus): distinct Datadog metric names",
-    1264: "unregistered (test_corpus): distinct tag keys, scopes and grouping\n"
-        "        lists together -- the class lem:scope's hypothesis is over",
-    723: "unregistered (test_corpus): distinct grouping keys, the narrower census\n"
-        "        tr_mangling reports widening from",
-    # 388 and 238 are the unpinned reading's refusal counts, now 84 and none: `.+` is
-    # a union of 41 globs over a tag alphabet of 41 characters. They survive only in
-    # reg_star_empty.tex, which the TO FINISH note in §6.4 lists for rewriting; 378 and
-    # 344 are gone from the prose, and test_the_allowlist_has_no_dead_entries says so.
-    # What the alphabet question is worth: the 21 patterns containing `.+`, which are
-    # inexpressible over all strings and a 41-branch union over a tag value's own
-    # alphabet. Derivable from data/processed/regex_glob.csv.
-    238: "nb 04: occurrences of the patterns containing `.+`",
-    221: "unregistered (nb 01): PromQL queries the first six features complete",
-    184: "distinct concrete regexes the complete procedure re-decides, all reached",
-    168: "superseded: how many it reached under the 2,400 s budget, named in §6 as the "
-         "figure this run replaces",
-    183: "superseded: the population that budgeted run was over, one pattern smaller",
-    2400: "the time budget that stopped an earlier cross-check at 168 of 183, seconds",
-    2998: "what the unbudgeted cross-check took, seconds, from the provenance of\n"
-          "          data/raw/globs/crosscheck.json. The 4,725 it replaces was an\n"
-          "          earlier unbudgeted run: the cache was re-recorded when the tag\n"
-          "          alphabet was pinned and this remark was not",
-    176: "the slowest single pattern in it, seconds, timed uncontended",
-    91: "and the fastest of that same four-pattern family",
-    139: "four different quantities of this magnitude: nb00.top_occurrences, which\n         is registered and bound in \u00a77 and concl_evidence; ho.ex_dashboards,\n         the dashboards the disjoint repository contributes, registered since the\n         held-out run; the PromQL alerting rules of \u00a77.1; and the \u00a74\n         grammar-gap count. Two of the four are registry figures now, which means\n         either of them licenses this magnitude everywhere; the other two ride here",
-    96: "unregistered (nb 00): PromQL recording rules",
-    93: "unregistered (nb 01): queries needing a bare metric name.\n        ho.ex_refused_distinct is 93 as well and, being a registry key, licenses the\n        value everywhere; this entry is what records which 93 \u00a74 means",
-    70: "unregistered (nb 03): .weighted() occurrences; also the second share "
-        "in the discussion's hypothetical illustration",
-    36: "unregistered (nb 03): FILL_INTERPOLATION occurrences",
-    22: "unregistered (nb 00): per_second() occurrences",
-    9: "unregistered (nb 04): occurrences of .*",
-    8: "unregistered (nb 03): unparsed occurrences",
-    8102: "the PromQL population after the nine LogQL panels are dropped. It has no\n          registry key, so it is pinned instead to the generated parse-coverage table\n          by tests/test_paper_builds.py -- which is what the 8,096 this replaces\n          escaped, having been allowlisted here as though it were the live value",
-    5231: "unregistered (nb 00): PromQL function occurrences, recomputed as\n          sum(corpus.function_names) over the 8,102 kept expressions. The 5,227 this\n          replaces was the pre-correction corpus; the 69% rate/irate share derived\n          from it is 69.3% either way and did not move",
-    332: "historical: the shape count the seventh-reading fixes left, quoted in\n         rem:differential-fixes as the last step of a lineage that runs\n         325 -> 335 -> 332. The live count is 333 and the same remark now says so",
-    22608: "historical: the second run's bucket comparisons, quoted beside the third\n           run's 22,692 to say the agreement did not move. The compared-occurrence\n           figure that sat here as 8,364 is now 8,365 and comes off the generated\n           table, so it no longer needs an entry",
-    3.5: "unregistered: the differential's largest deviation, 3.5e-14, read off\n         data/raw/shapes/differential.json and pinned to that cache by\n         tests/test_differential_cache.py. The 2.1e-14 it replaces was the second\n         run's and went unexplained here for as long as it stood",
-    99.9: "unregistered (nb 01): Datadog instantiated parse rate, v2",
-    99.1: "unregistered (nb 01): PromQL instantiated parse rate",
-    95: "unregistered (nb 00): share of Datadog space aggregators that are sum/avg;\n        also the coverage level \u00a7C.2's shape reduction reports 107 shapes reaching,\n        and a round level in \u00a74 -- three uses, one magnitude",
-    71.2: "unregistered (nb 01): PromQL raw parse rate",
-    69: "unregistered (nb 00): share of PromQL functions that are rate/irate",
-    34: "unregistered: percentile-aggregator occurrences (nb 03), and the union share (nb 04)",
-    27.4: "unregistered (replay): aligned-grid agreement on the bucket edge",
-    23: "unregistered (nb 03): shapes covering 80% -- also an allowed small integer",
-    19: "unregistered (replay): lower end of rate's bucket disagreement, percent",
-    30: "the rollup width E6 separates the two divisor placements at (seconds); also the "
-        "uniform error the differential's shared-metric-name fault produced, an "
-        "observation of a broken run rather than a computed figure",
-    11.8: "unregistered (nb 01): Datadog raw parse rate",
-    6.6: "unregistered (nb 00): as_count to as_rate ratio",
-    2.7: "unregistered (nb 01): PromQL queries the first six features complete",
-    1.68: "unregistered (nb 02): worst relative error under a reset",
-    1.4: "unregistered (nb 03): points of kappa the disjunction rule closed",
-    1.1: "unregistered (nb 00): PromQL subquery share",
-    0.9: "unregistered (nb 03): the 90% line on the coverage figure",
-    90: "the same line quoted as a threshold in the staircase prose, and in the shape\n"
-        "reduction; also, in \u00a72, the coverage Chronosphere's converter reports for\n"
-        "itself -- a quotation of another tool's self-reported figure, not one of ours,\n"
-        "and the paper says in the same sentence that its derivation is not stated",
-    0.3: "unregistered (nb 00): PromQL offset share",
-}
-
-
-# Values above that are counts, versions, seconds or bare integers. They license a plain
-# numeral and must never license a *percentage* of the same magnitude.
 #
-# §3b carried "$2.0\\%$" for the expressiveness gap through two full review passes after
-# the figure moved to 1.2%, because the integer 2 is allowlisted here and the match was
-# made on magnitude alone. A share and a count are different claims; a checker that
-# cannot tell them apart launders one into the other.
-SCALAR_ONLY: set[float] = {
-    8587, 84, 236.0, 235.999, 3.15, 15, 25, 64, 300, 1000, 1800, 0, 1, 2, 3, 6, 10, 103, 110, 111, 139, 221, 238, 723, 897, 1760, 8102, 5231, 5389, 325, 3600, 184, 2400, 2998, 168, 183, 176, 91, 1681, 3362, 599, 515, 71, 72, 0.628, 0.667, 887, 335, 1.4,
+# Keyed by kind as well as magnitude. It used to be keyed by magnitude alone with a
+# second ledger, SCALAR_ONLY, naming the entries that must not licence a percentage:
+# §3b carried "$2.0\\%$" for the expressiveness gap through two review passes after the
+# figure moved to 1.2%, because the integer 2 was allowlisted and the match was made on
+# magnitude. A share and a count are different claims. Two ledgers that have to agree
+# about which is which is a worse answer than one key that says so, and SCALAR_ONLY had
+# grown to 49 entries, 39 of which licensed nothing.
+#
+# An entry that licences nothing is removed, not kept for its prose: see
+# `test_no_allowance_licenses_anything_it_is_still_needed_for`. Seventy-seven of these
+# were shadowed --- the figure was already in a table, a registry key, or a derivation,
+# and the reason recorded here was not the reason it passed. A ledger that describes a
+# check it is not performing is worse than no ledger.
+ALLOWED: dict[tuple[str, float], str] = {
+    # --- constants of the apparatus -------------------------------------------------
+    ("num", 1800): "the one rollup width the differential window cannot hold two of",
+    ("num", 3600): "the second rollup width the differential window cannot hold two of",
+    ("num", 325): "shapes the differential had before the abstraction kept rollup "
+                  "intervals",
+    ("num", 335): "and after that, before the empty-value scopes left the translated "
+                  "set",
+    ("num", 114): "matcher occurrences in single-quoted and backtick literals, which "
+                  "the double-quoted-only scanner of an earlier pass did not see",
+    ("pct", 20): "the upper end of rate's bucket disagreement in the replay, and the "
+                 "proverb's 20% of the work",
+    ("pct", 30): "the uniform error the differential's shared-metric-name fault "
+                 "produced, an observation of a broken run rather than a computed "
+                 "figure",
+    # --- the trial probes, whose runs are not reproducible on a lapsed account -------
+    ("num", 16.7): "E9: what a mean weighted by each point's interval would have read",
+    ("num", 4096): "the limit an earlier run of E17 published, off one HTTP 408 in a "
+                   "run that had already accepted 5,096. The retry and the "
+                   "boundary-contradiction guard that followed are why the current "
+                   "run reports a range",
+    ("num", 5096): "the rung that run had already accepted when it reported 4,096",
+    ("num", 408): "and the status it took for a refusal",
+    ("num", 1.68): "unregistered (nb 02): worst relative error under a reset",
+    # --- the glob cross-check, and the budgeted run it replaces ----------------------
+    ("num", 168): "superseded: how many patterns the budgeted run reached, named in "
+                  "§6 as the figure this run replaces",
+    ("num", 183): "superseded: the population that run was over, one pattern smaller",
+    ("num", 2400): "the time budget that stopped it at 168 of 183, seconds",
+    ("num", 176): "the slowest single pattern in the current run, seconds, timed "
+                  "uncontended",
+    # --- figures no notebook records yet ---------------------------------------------
+    ("num", 723): "unregistered (test_corpus): distinct grouping keys, the narrower "
+                  "census tr_mangling reports widening from",
+    ("num", 221): "unregistered (nb 01): PromQL queries the first six features "
+                  "complete",
+    ("pct", 2.7): "and what that is as a share of the PromQL corpus",
+    ("pct", 70): "unregistered (nb 03): .weighted() occurrences as a share; also the "
+                 "second share in the discussion's hypothetical illustration",
+    ("num", 22608): "historical: the second run's bucket comparisons, quoted beside "
+                    "the third run's 22,692 to say the agreement did not move",
 }
 
 
 # Historical figures: a value the prose quotes deliberately to describe how something
 # changed. These are scoped to the sections entitled to say them, because an unscoped
 # entry would license the stale value *anywhere* -- and a stale kappa in the abstract is
-# exactly the bug this file exists to catch. The value and the place are both the claim.
-ALLOWED_IN: dict[float, tuple[str, set[str]]] = {
-    648: ("the eight misclassified episodes, less the overlap between two of them:\n"
-          "348 + 124 + 70 + 36 + 31 + 34 + 5, where the four disjunctions are a\n"
-          "residue of the 124. Was 542 until rem:fill returned the zero-fills, then\n"
-          "578 until LABEL_NAME_GLOB, PHI_QUANTILE and SCOPE_EMPTY_VALUE left the\n"
-          "expressiveness set and emptied it",
-          {"08_discussion.tex"}),
-    7.4: ("those 648 as a share of the corpus: 648 / 8,770. The six points it\n"
-          "replaces was 578 / 8,770",
-          {"08_discussion.tex"}),
-    348: ("refusals under the commutation argument",
-          {"01_introduction.tex", "05_translation.tex", "07_evaluation.tex",
-           "08_discussion.tex"}),
-    124: ("disjunctive scopes before prop:disjunction. It was also, until E17's\n"
-           "counterfactual was measured, the figure this file recorded for what the\n"
-           "empty-string reading of a glob star is worth; that is 515 now, derived\n"
-           "from data/raw/globs/star_reading.json, and the prose no longer says 124",
-          {"01_introduction.tex", "06_regular.tex", "07_evaluation.tex",
-           "08_discussion.tex", "eval_rows_fill_glob.tex", "reg_star_empty.tex"}),
-    120: ("of those, the single-key ones",
-          {"01_introduction.tex", "07_evaluation.tex", "08_discussion.tex"}),
-    116: ("translations once thought to carry ROLLUP_ALIGNMENT alone",
-          {"07_evaluation.tex", "eval_type_caveat.tex"}),
-    94.2: ("kappa before the disjunction rule",
-           {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
-    95.6: ("kappa after it and before the counter-average fix",
-           {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
-    11628: ("the formula count an earlier draft reported, which was the metric ones\n            plus 5,606 over log, event and security-signal requests; the live figure\n            is nb00.formulas = 6,022 and Table 6's caption said 11,628 until the\n            tenth pass, where it broke the corpus arithmetic on its own page",
-           {"eval_held_aside.tex"}),
-    54: ("E9: the superseded count of forms attaching .weighted() to sum:, now 52",
-         {"eval_weighted.tex"}),
-    56: ("E9: the superseded count of distinct forms carrying .weighted(), now 52 ---\n         and, separately, the share of Datadog queries using by {...}",
-         {"eval_weighted.tex", "eval_language_use.tex"}),
-    45: ("the queries the first six Datadog features complete, an nb-00 staircase\n         quantity. The reason recorded here until the tenth pass described nb 04's\n         refusals, which the cross-check now reports as all 7 of 184. Since the\n         held-out run ho.ex_gap_phi_quantile is 45 too --- the strings the disjoint\n         repository refuses under the quantile gap --- and a registry key licenses\n         its value in every file, so unexplained() returns before it ever reads this\n         scope. The entry is kept as the record of what 45 means in the staircase\n         prose and not as a check on it. An unrelated registry key of the same\n         magnitude is the one thing this ledger cannot see; PHRASES below is the\n         answer where the figure is load-bearing",
-         {"eval_staircase.tex"}),
-    21: ("a superseded harness run: the shapes a single global 60 s bucket grid broke\n         by comparing a .rollup(sum, 300) bucket against a window covering a fifth\n         of it. The grid is per shape now and the count cannot be recomputed, which\n         is what makes rem:harness-failures a record rather than a measurement.\n         And, separately, the corpus patterns containing `.+`, which carry the 238\n         occurrences the alphabet question is worth",
-         {"eval_harness_failures.tex", "06_regular.tex"}),
-    76.2: ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
-    6381: ("the occurrences that share carried", {"tr_gauge.tex"}),
-    31: ("LABEL_NAME_GLOB's occurrences. The code left the catalogue when\n"
-         "corpus._TMPL stopped truncating $cluster-location at its hyphen, so this is\n"
-         "a historical figure: the sections entitled to it are the ones telling that\n"
-         "story, plus the two the ceiling rewrite still has to reach",
-         {"01_introduction.tex", "07_evaluation.tex", "08_discussion.tex",
-          "eval_baseline.tex", "eval_beyond_reach.tex", "eval_differential_fixes.tex",
-          "eval_rows_fill_glob.tex", "reg_trial_probes.tex"}),
-    87: ("the implementation-order figure contrasted with the kernel's reach, and\n"
-         "separately the scope-only template share it was once confused with",
-         {"07_evaluation.tex", "gr_template_shares.tex", "tr_two_figures.tex"}),
+# exactly the bug this file exists to catch. The value, the kind and the place are all
+# part of the claim.
+#
+# Scoping is the weakest thing in this file and it is worth saying why rather than
+# discovering it again. `unexplained()` returns at the first accounting it finds, and a
+# registry key of the same magnitude is an accounting, so any scope whose value
+# collides with a live registry value is inert everywhere --- the scope never runs.
+# Three entries here were in that state and have been removed. Where the figure is
+# load-bearing, PHRASES below is the answer, because a phrase names the sentence and
+# not just the number.
+ALLOWED_IN: dict[tuple[str, float], tuple[str, set[str]]] = {
+    ("num", 348): ("refusals under the commutation argument",
+                   {"01_introduction.tex", "05_translation.tex", "07_evaluation.tex",
+                    "08_discussion.tex"}),
+    ("num", 124): ("disjunctive scopes before prop:disjunction. It was also, until "
+                   "E17's counterfactual was measured, the figure this file recorded "
+                   "for what the empty-string reading of a glob star is worth; that "
+                   "is 515 now, derived from data/raw/globs/star_reading.json, and "
+                   "the prose no longer says 124",
+                   {"01_introduction.tex", "06_regular.tex", "07_evaluation.tex",
+                    "08_discussion.tex", "eval_rows_fill_glob.tex",
+                    "reg_star_empty.tex"}),
+    ("pct", 94.2): ("kappa before the disjunction rule",
+                    {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
+    ("pct", 95.6): ("kappa after it and before the counter-average fix",
+                    {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
+    ("num", 11628): ("the formula count an earlier draft reported, which was the "
+                     "metric ones plus 5,606 over log, event and security-signal "
+                     "requests; the live figure is nb00.formulas = 6,022 and Table "
+                     "6's caption said 11,628 until the tenth pass, where it broke "
+                     "the corpus arithmetic on its own page",
+                     {"eval_held_aside.tex"}),
+    ("num", 54): ("E9: the superseded count of forms attaching .weighted() to sum:, "
+                  "now 52", {"eval_weighted.tex"}),
+    ("pct", 56): ("E9: the superseded share of distinct forms carrying .weighted(), "
+                  "now 52 --- and, separately, the share of Datadog queries using "
+                  "by {...}", {"eval_weighted.tex", "eval_language_use.tex"}),
+    ("pct", 76.2): ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
+    ("num", 6381): ("the occurrences that share carried", {"tr_gauge.tex"}),
+    ("num", 31): ("LABEL_NAME_GLOB's occurrences. The code left the catalogue when "
+                  "corpus._TMPL stopped truncating $cluster-location at its hyphen, "
+                  "so this is a historical figure: the sections entitled to it are "
+                  "the ones telling that story, plus the two the ceiling rewrite "
+                  "still has to reach",
+                  {"01_introduction.tex", "07_evaluation.tex", "08_discussion.tex",
+                   "eval_baseline.tex", "eval_beyond_reach.tex",
+                   "eval_differential_fixes.tex", "eval_rows_fill_glob.tex",
+                   "reg_trial_probes.tex"}),
+    ("num", 87): ("the implementation-order figure contrasted with the kernel's "
+                  "reach", {"07_evaluation.tex", "tr_two_figures.tex"}),
+    ("pct", 87): ("the scope-only template share it was once confused with",
+                  {"07_evaluation.tex", "gr_template_shares.tex",
+                   "tr_two_figures.tex"}),
 }
 
 
-@pytest.fixture(scope="module")
-def unexplained():
+def _unaccounted(allowed: dict, allowed_in: dict) -> dict:
+    """Prose figures that nothing accounts for, under the two ledgers given.
+
+    Parameterised so the reachability test can run it with an entry withheld. The
+    order matters and is the thing most likely to be misread: a figure accounted for
+    by a table, a registry key or a derivation returns here before either ledger is
+    consulted, which is why an ALLOWED_IN scope whose magnitude collides with a live
+    registry value never runs.
+    """
     ok = _accounted()
-    allowed = {round(float(v), 4) for v in ALLOWED}
-    scalar = {round(float(v), 4) for v in SCALAR_ONLY}
-    # A figure with an executable derivation is better accounted for than an
-    # allowlisted one: the reason is a function of a committed source rather than a
-    # sentence. See DERIVED and CORPUS_DERIVED below.
     derived = {round(float(v), 4) for v, _, _ in (*DERIVED, *CORPUS_DERIVED)}
     out = {}
     for key, files in _prose_figures().items():
         kind, value = key
         if key in ok or value in derived:
             continue
-        if value in allowed and not (kind == "pct" and value in scalar):
+        if (kind, round(value, 4)) in allowed:
             continue
-        scoped = ALLOWED_IN.get(value)
+        scoped = allowed_in.get((kind, round(value, 4)))
         if scoped and set(files) <= scoped[1]:
             continue
         out[key] = sorted(files)
     return out
 
 
-def test_no_scalar_allowance_can_license_a_percentage():
-    """The hole that hid a stale figure for two review passes, kept shut.
+@pytest.fixture(scope="module")
+def unexplained():
+    return _unaccounted(_keyed(ALLOWED), _keyed(ALLOWED_IN))
 
-    A percentage is a different claim from a count of the same magnitude, so the
-    allowlist entry for one must not stand in for the other. Pinned by construction
-    rather than by the absence of a failure, since the absence is what let it through.
+
+def _keyed(ledger: dict) -> dict:
+    return {(k, round(float(v), 4)): r for (k, v), r in ledger.items()}
+
+
+def test_no_allowance_licenses_anything_it_is_still_needed_for():
+    """An allowlist entry that changes nothing when removed has to come out.
+
+    Ninety-eight entries were here and seventy-seven of them licensed nothing: the
+    figure was already in a generated table, in the registry, or in a derivation, and
+    the sentence recorded beside it was not the reason it passed. Three ALLOWED_IN
+    scopes were inert the same way --- one of them said so in its own comment and was
+    kept anyway, which is how a ledger stops being read.
+
+    Nothing about that was visible from reading the file, so it is asserted instead.
+    A value that moves out from under an entry fails `unexplained` and the entry comes
+    back; a value that moves under one fails here and it goes.
     """
-    assert SCALAR_ONLY <= {round(float(v), 4) for v in ALLOWED}, \
-        "SCALAR_ONLY names a value that is not allowlisted at all"
-    assert not ({0, 1, 2, 3, 6, 10} - SCALAR_ONLY), \
-        "a bare small integer must never license a share"
+    allowed, scoped = _keyed(ALLOWED), _keyed(ALLOWED_IN)
+    base = len(_unaccounted(allowed, scoped))
+    dead = []
+    for ledger, name in ((allowed, "ALLOWED"), (scoped, "ALLOWED_IN")):
+        for key in list(ledger):
+            held = {k: v for k, v in ledger.items() if k != key}
+            a, b = (held, scoped) if name == "ALLOWED" else (allowed, held)
+            if len(_unaccounted(a, b)) == base:
+                dead.append(f"  {name}[{key}] licenses nothing")
+    assert not dead, (
+        "these entries can be deleted without changing what this file checks:\n"
+        + "\n".join(dead))
 
 
 def test_the_registry_was_written():
@@ -399,14 +354,6 @@ def test_the_allowlist_has_no_duplicate_keys():
         assert not dupes, f"{target.id} states two reasons for: {dupes}"
 
 
-def test_the_allowlist_has_no_dead_entries():
-    """An allowlist that outlives its numbers stops being a record of anything."""
-    prose = {k[1] for k in _prose_figures()}
-    dead = sorted(v for v in {**ALLOWED, **ALLOWED_IN}
-                  if round(float(v), 4) not in prose)
-    assert not dead, f"allowlisted but no longer in the paper: {dead}"
-
-
 def test_a_historical_figure_is_not_licensed_outside_its_section():
     """The scoping is the point, so it is checked rather than trusted.
 
@@ -417,7 +364,7 @@ def test_a_historical_figure_is_not_licensed_outside_its_section():
     assert "95.6" not in abstract, "stale kappa in the abstract"
     stale = {k: v for k, v in _prose_figures().items() if k[1] == 95.6}
     assert stale, "the historical kappa should still be quoted somewhere"
-    assert all(set(f) <= ALLOWED_IN[95.6][1] for f in stale.values()), stale
+    assert all(set(f) <= ALLOWED_IN[("pct", 95.6)][1] for f in stale.values()), stale
 
 
 def test_the_registry_agrees_with_the_tables_on_kappa():
@@ -791,6 +738,21 @@ def test_a_bound_figure_still_matches_its_source():
 # short: these are the sentences carrying claims the paper cannot afford to state
 # stalely, not every sentence with a number in it.
 
+# What a phrase cannot do, established by perturbation rather than guessed at, so that
+# the next pass does not add a ledger for each one on discovering it:
+#
+#   * It pins numerals and the words between them, never the relation. Extending a
+#     phrase past its last numeral --- "smaller than the movement a dashboard-level
+#     jackknife puts on either figure" rather than "smaller than the spread" --- is the
+#     only defence, and it works only as far as the phrase runs.
+#   * A negating frame placed outside the span passes. "It would be wrong to say any of
+#     what follows." before a pinned sentence leaves the suite green.
+#   * It says nothing about numerals spelled out in words. "a tenth of a point" is
+#     outside every ledger in this file.
+#
+# These want a reader, and saying so here is the honest form of that. A guard that
+# claimed to cover them would be the third mechanism in three passes to record a check
+# it was not making.
 PHRASES: tuple[tuple[str, str], ...] = (
     # kappa, out of sample, beside its population and its in-sample comparator.
     ("eval_heldout.tex",
@@ -801,9 +763,8 @@ PHRASES: tuple[tuple[str, str], ...] = (
     # And what that tenth of a point is worth, which is the claim, not the rate.
     ("eval_heldout.tex",
      r"Treating the ${ho.ex_queries}$ as independent draws gives a standard error of "
-     r"${ho.ex_kappa_srs_se_points}$ points. Treating the dashboard as the sampling "
-     r"unit, which is what it "
-     r"was, gives ${ho.ex_kappa_se_points}$; the design effect between the two is "
+     r"${ho.ex_kappa_srs_se_points}$ points. Resampling dashboards instead gives "
+     r"${ho.ex_kappa_se_points}$, a design effect of "
      r"${ho.ex_kappa_design_effect}$"),
     ("eval_heldout.tex",
      r"$\kappa$ is ${ho.ex_kappa_pct}\%$ out of sample against "
@@ -819,7 +780,8 @@ PHRASES: tuple[tuple[str, str], ...] = (
     ("body.tex",
      r"it returns an indistinguishable ${ho.ex_kappa_pct}\%$"),
     ("09_conclusion.tex",
-     r"against the ${ho.ex_kappa_se_points}$ points of standard error"),
+     r"against the ${ho.ex_kappa_se_points}$ points the held-out figure moves over "
+     r"when dashboards are dropped one at a time"),
     # The grammar rates, each beside the population it was measured on.
     ("eval_heldout.tex",
      r"Frozen grammar v2 parses ${ho.ex_v2_pct}\%$ of those ${ho.ex_distinct}$ "
@@ -837,11 +799,22 @@ PHRASES: tuple[tuple[str, str], ...] = (
      r"worth ${ho.gf_novel_gain_points}$ points ($\pm{ho.gf_novel_gain_se_points}$) on "
      r"dashboards the grammar has never seen"),
     ("eval_heldout.tex",
-     r"$\pm{ho.ex_gain_se_points}$ points on the held-out margin by itself, and the "
-     r"${ho.ex_shrink_points}$-point fall carries ${ho.ex_shrink_se_points}$ points "
-     r"of spread"),
+     r"$\pm{ho.ex_gain_se_points}$ points on the held-out margin, and "
+     r"${ho.ex_shrink_se_points}$ points of spread on the ${ho.ex_shrink_points}$-point "
+     r"fall"),
+    # The census, which is why the paragraph may decline to report a sampling error.
+    ("eval_heldout.tex",
+     r"${ho.ex_dashboards_shipped}$ of ${ho.ex_dashboards_shipped}$ here, with "
+     r"${ho.ex_unreadable}$ unreadable"),
+    # And what the dashboard-level movement rests on, beside the figure itself.
+    ("eval_heldout.tex",
+     r"effective number of dashboards behind it is "
+     r"${ho.ex_kappa_effective_dashboards}$, one of them carrying "
+     r"${ho.ex_kappa_top_dashboard_pct}\%$ of it, against "
+     r"${ho.kappa_in_sample_effective_dashboards}$ on the corpus side"),
     ("04_grammars.tex",
-     r"the ${ho.ex_shrink_points}$-point difference is smaller than the spread"),
+     r"the ${ho.ex_shrink_points}$-point difference is smaller than the movement a "
+     r"dashboard-level jackknife puts on either figure"),
     ("07_evaluation.tex",
      r"puts ${ho.gf_shrink_se_points}$ points of spread on the first and "
      r"${ho.ex_shrink_se_points}$ on the second"),
@@ -851,8 +824,8 @@ PHRASES: tuple[tuple[str, str], ...] = (
     ("07_evaluation.tex",
      r"its margin over v1 is ${ho.ex_gain_points}$ points against the seven"),
     ("07_evaluation.tex",
-     r"a tenth of a point where occurrences clustered by their dashboard give a "
-     r"standard error of ${ho.ex_kappa_se_points}$"),
+     r"a tenth of a point where dropping dashboards one at a time moves the held-out "
+     r"figure by ${ho.ex_kappa_se_points}$"),
     # The two ceilings, which must not be quoted under one name.
     ("eval_heldout.tex",
      r"$S^\star$ covers ${ho.ex_sstar_pct}\%$ of these occurrences"),
@@ -865,7 +838,7 @@ PHRASES: tuple[tuple[str, str], ...] = (
      r"that occurs there verbatim"),
     ("eval_heldout.tex",
      r"it is ${ho.ex_formula_queries_at_commit}$ occurrences in "
-     r"${ho.ex_formula_distinct_at_commit}$ distinct forms, of which "
+     r"${ho.ex_formula_forms_at_commit}$ distinct forms, of which "
      r"${ho.ex_formula_shared_forms}$ forms carrying "
      r"${ho.ex_formula_shared_queries}$ occurrences"),
     # The template share, whose two halves §7 used to present as two channels.
@@ -911,7 +884,7 @@ def test_a_pinned_sentence_still_says_what_the_registry_says():
         for key in _PHRASE_KEY.findall(template):
             assert key in reg, f"{key} is pinned but no longer in the registry"
         want = _PHRASE_KEY.sub(lambda m: _spell(reg[m.group(1)]), template)
-        if _flat(want) not in _flat(path.read_text()):
+        if _flat(want) not in _flat(_published(path)):
             missing.append(f"  {section} should contain: {_flat(want)}")
     assert not missing, "\n".join(missing)
 
@@ -942,7 +915,7 @@ def test_the_kappa_each_side_quotes_is_the_one_measured_on_that_side():
             continue
         path = MAIN if section == "body.tex" else _section_path(section)
         want = _PHRASE_KEY.sub(lambda m: _spell(swapped[m.group(1)]), template)
-        caught.append(_flat(want) not in _flat(path.read_text()))
+        caught.append(_flat(want) not in _flat(_published(path)))
     assert caught and all(caught), \
         "a file pinning the held-out kappa would accept the in-sample one"
 
@@ -1376,6 +1349,18 @@ TABLE_COINCIDENCE: frozenset[tuple[str, float]] = frozenset({
 })
 
 
+def _unchecked() -> list[tuple[str, float]]:
+    """Prose figures with no table, no registry key and no derivation behind them."""
+    reg: set[tuple[str, float]] = set()
+    for name, value in json.loads(REGISTRY.read_text()).items():
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            share = "pct" in name.rsplit(".", 1)[-1].split("_")
+            reg.add(("pct" if share else "num", round(float(value), 4)))
+    derived = {round(float(v), 4) for v, _, _ in (*DERIVED, *CORPUS_DERIVED)}
+    return sorted(k for k in _prose_figures()
+                  if k not in reg and k not in _accounted() and k[1] not in derived)
+
+
 def _table_only() -> dict[tuple[str, float], tuple[list[str], list[str]]]:
     """Prose figures no registry key accounts for, keyed to the tables that do."""
     reg: set[tuple[str, float]] = set()
@@ -1385,7 +1370,7 @@ def _table_only() -> dict[tuple[str, float], tuple[list[str], list[str]]]:
             reg.add(("pct" if share else "num", round(float(value), 4)))
     tables: dict[tuple[str, float], list[str]] = {}
     for path in TABLES:
-        for tok, pct in _NUM.findall(re.sub(r"(?<!\\)%.*", "", path.read_text())):
+        for tok, pct in _NUM.findall(_published(path)):
             key = _norm(tok, pct)
             if key:
                 tables.setdefault(key, []).append(path.stem)
@@ -1414,35 +1399,42 @@ def test_the_coincidence_list_has_no_dead_entries():
 
 
 # How far the checking actually reaches. The number that matters is the last one: a
-# figure whose only accountant is a sentence in ALLOWED is a figure nothing recomputes,
-# and three of those were found wrong in one afternoon. It was 81 before the derivations
-# above and 38 after them; writing up E17 and E18 added four historical figures that
-# cannot be derived -- the limit an earlier E17 run published, the rung it had already
-# accepted, the status it misread, and the 64 KiB the transport appears to cap at -- so
-# the ceiling is 42. The ratchet is against drift, not against putting history on the
-# record: a bump needs a reason in this comment, and a reduction needs a derivation.
-UNCHECKED_CEILING = 35
+# figure whose only accountant is a sentence in a ledger is a figure nothing
+# recomputes, and three of those were found wrong in one afternoon. It was 81 before
+# the derivations above, 38 after them, and 35 once E17 and E18 put four historical
+# figures on the record that cannot be derived. It is 33 now; the two the ratchet
+# earned when `ho.ex_refused_distinct` and the extras gap codes gained registry keys
+# sat unbanked for a commit. The ratchet is against drift, not against putting history
+# on the record: a bump needs a reason in this comment, and a reduction needs a
+# derivation.
+UNCHECKED_CEILING = 33
 
 
 def test_the_unchecked_figures_do_not_multiply():
     """A ratchet, not a target. Lowering it means writing another derivation."""
-    reg: set[tuple[str, float]] = set()
-    for name, value in json.loads(REGISTRY.read_text()).items():
-        if isinstance(value, (int, float)) and not isinstance(value, bool):
-            share = "pct" in name.rsplit(".", 1)[-1].split("_")
-            reg.add(("pct" if share else "num", round(float(value), 4)))
-    tables = {k for k, _ in _table_only().items()} | {
-        k for k in _accounted() if k in reg} - reg
-    derived = {round(float(v), 4) for v, _, _ in (*DERIVED, *CORPUS_DERIVED)}
-    unchecked = sorted(
-        k for k in _prose_figures()
-        if k not in reg and k not in _accounted() and k[1] not in derived)
+    unchecked = _unchecked()
     assert len(unchecked) <= UNCHECKED_CEILING, (
         f"{len(unchecked)} figures rest on an allowlist sentence alone, over a ceiling "
         f"of {UNCHECKED_CEILING}:\n" + "\n".join(f"  {k} {v:g}" for k, v in unchecked))
-    assert len(unchecked) >= UNCHECKED_CEILING - 4, (
+    assert len(unchecked) >= UNCHECKED_CEILING - 2, (
         f"only {len(unchecked)} are unchecked now; lower UNCHECKED_CEILING to "
-        f"{len(unchecked)} so the ratchet keeps holding")
+        f"{len(unchecked)} so the ratchet keeps its grip")
+
+
+def test_the_unchecked_figures_are_exactly_what_the_ledgers_claim():
+    """The two ledgers and the unchecked set have to be the same set.
+
+    This is the invariant the ceiling was standing in for, and it is sharper: a
+    ledger entry that is not unchecked is licensing nothing, and an unchecked figure
+    that is in no ledger is one nothing has said anything about at all. Both are
+    failures and each used to need its own test, one of which asked a weaker question
+    and found none of the seventy-seven dead entries.
+    """
+    ledgers = set(_keyed(ALLOWED)) | set(_keyed(ALLOWED_IN))
+    unchecked = {(k, round(v, 4)) for k, v in _unchecked()}
+    assert ledgers == unchecked, (
+        f"  in a ledger but checked elsewhere: {sorted(ledgers - unchecked)}\n"
+        f"  unchecked and in no ledger: {sorted(unchecked - ledgers)}")
 
 
 # --- figures the corpus itself settles -------------------------------------------------

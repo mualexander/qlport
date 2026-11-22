@@ -552,7 +552,8 @@ sources, because no comparable public body of customer-written Datadog dashboard
 \texttt{integrations-extras}, the community- and partner-maintained sibling --- and holds
 it out. That bears on the fit most directly, but it bears on this paragraph too, because
 the two repositories' house styles are measurably different: $88.6\%$ of corpus
-occurrences carry a template variable against $77.0\%$ of that repository's.
+occurrences carry a template variable against $77.0\%$ of the sibling
+repository's occurrences.
 Table~\ref{tab:heldout}'s raw column is the same fact counted the other way round and
 over distinct strings rather than occurrences --- a Datadog string parses as shipped
 exactly when it carries no variable, with two exceptions in the whole held-out set ---
@@ -609,21 +610,25 @@ organisation by other authors that the corpus does not touch, v2 parses $99.9\%$
 in-sample rate --- and its margin over v1 is $5.6$ points against the seven of the climb
 from $92.9\%$ to $99.9\%$ above. Neither of those falls is what it looks like. Both are
 differences between populations rather than measurements of overfitting: on the Datadog
-side v2 does not move at all and the whole of the fall is the unfitted v1 doing better
-out of sample, and on the PromQL side both grammars do better out of sample, v2
-included. And neither fall is large enough to resolve --- a dashboard-level jackknife
-puts $0.4$ points of spread on the first and $1.9$ on the second, which is as large as
-the falls themselves. What survives on both sides is the held-out margin itself. And
+side v2's two rates agree to four significant figures, so essentially the whole of the
+fall is the unfitted v1 doing better out of sample, and on the PromQL side both grammars
+do better out of sample, v2 included. And neither fall is separable from no fall at all
+--- a dashboard-level jackknife puts $0.4$ points of spread on the first and $1.9$ on
+the second, each at least as large as the fall beside it. What survives on both sides is the
+held-out margin itself. And
 $\kappa$ itself, which the paragraph above this one said had no holdout, is
 $96.7\%$ of those $3{,}065$ occurrences against $96.6\%$ here --- the same figure as
 \S\ref{sec:baseline}'s coverage by valid output above, and an unrelated quantity, and a
-tenth of a point where occurrences clustered by their dashboard give a standard error of
+tenth of a point where dropping dashboards one at a time moves the held-out figure by
 $1.1$ --- refusing under
 four of the five gap families \S\ref{sec:gaps} catalogues. So the estimate is still a
-resubstitution estimate, and the worry it licenses is bounded instead of open: on every
-channel that can be read twice the margin the corpus bought is still there out of
-sample, how much of it the corpus kept for itself is below the resolution of the
-measurement, and on $\kappa$ the two readings cannot be told apart. Two caveats are left and neither is leakage --- those
+resubstitution estimate, and the worry it licenses is bounded instead of open. On the three
+channels \S\ref{sec:heldout} can read twice --- the PromQL grammar, the Datadog grammar
+and $\kappa$ --- the margin the corpus bought is still there out of sample, how much of
+it the corpus kept for itself is smaller than the movement either figure carries across
+dashboards, and on $\kappa$ the two readings cannot be told apart. Nothing is read twice
+on the other channels: the differential, the replay and the trial probes all run against
+one account's data and have no holdout at all. Two caveats are left and neither is leakage --- those
 dashboards are built with the vendor's own scaffolding against the vendor's own
 documentation, and their strings are novel while $90.0\%$ of their occurrences reuse a
 feature set the corpus already holds --- so the corpus of private, customer-written

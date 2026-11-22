@@ -99,8 +99,10 @@ that language at all; for the record it is $2{,}451$ occurrences in $229$ distin
 of which $63$ forms carrying $2{,}186$ occurrences are forms the corpus already holds,
 leaving the $265$ occurrences in $166$ forms that a formula grammar would have had to be
 scored on. The two layers are not alike in this: the formula layer shares $63$ of its
-$229$ forms with the corpus where the metric-query layer shares seven of its $2{,}571$,
-a hundredfold difference in how much of each is already here. That is a fact about the
+$229$ distinct normalised forms with the corpus where the metric-query layer shares
+seven of its $2{,}571$, a hundredfold difference in how much of each is already here.
+Both counts are over normalised forms, which is the unit the overlap is computed in and
+not the unit Table~\ref{tab:heldout} counts shipped strings in. That is a fact about the
 two languages rather than about this repository --- a formula is short arithmetic over
 query aliases, and there are only so many of those to write.
 Table~\ref{tab:heldout}'s in-sample Datadog row is Table~\ref{tab:parse-coverage}'s own
@@ -112,15 +114,21 @@ Frozen grammar v2 parses $99.9\%$ of those $2{,}572$ strings, which is its in-sa
 rate: two strings fail here and six fail in sample, and the two rates agree to four
 significant figures, separating only in the fifth. Meanwhile v1 parses $94.4\%$ against
 $92.9\%$, so the margin \S\ref{sec:datadog-inference}'s corpus-driven productions bought
-falls from $7.0$ points to $5.6$. The PromQL caution applies here with more force,
-because this side is $139$ dashboards rather than $497$: dropping one at a time puts
-$\pm1.7$ points on the held-out margin by itself, and the $1.4$-point fall carries $1.9$
-points of spread. The fall is not distinguishable from no fall at all. What is
-distinguishable is the held-out margin itself, and $5.6$ points ($\pm1.7$) on a
-repository by other authors is a long way from zero. Note also which side of the pair
-moves. v2's rate does not change, so the whole of the movement is v1 ---
+falls from $7.0$ points to $5.6$. Neither figure is an estimate. The held-out side is a
+census of its repository --- every dashboard file at the pinned commit was read, $209$ of
+$209$ here, with $0$ unreadable --- and the corpus side is the whole of what
+\S\ref{sec:corpus} collected, so these are two populations and not two samples, and
+there is no sampling error to report. What a dashboard-level jackknife measures instead is how far
+each figure moves when a population's dashboards change, and on this side it moves a
+great deal: dropping one dashboard at a time puts $\pm1.7$ points on the held-out margin,
+and $1.9$ points of spread on the $1.5$-point fall. So this pair of repositories does not
+separate the fit from the rest; the fall is smaller than the movement either figure
+carries. That the margin is there at all on dashboards by other authors is the result.
+Its size is this repository's, and how much of it a third repository would show is not
+something two of them settle. Note also which side of the pair moves. v2's rate is the
+same to four significant figures, so essentially the whole of the movement is v1 ---
 the \emph{unfitted} documentation grammar --- doing better here than it does on the
-corpus, which means that even a fall large enough to resolve would be a difference
+corpus, which means that even a fall large enough to separate would be a difference
 between two populations read as exchangeable rather than a measurement of overfitting.
 
 The frozen translator, called exactly as \S\ref{sec:evaluation} calls it, returns
@@ -133,14 +141,16 @@ at a time. They arrive a dashboard at a time and repeat one query shape across a
 metrics inside it, which is why $23$ of the $139$ dashboards carry any refusal at all and
 one integration's carries $30$ of them; dropping a single dashboard and recomputing moves
 the held-out figure anywhere between $96.7\%$ and $97.7\%$. Treating the $3{,}065$ as
-independent draws gives a standard error of $0.3$ points. Treating the dashboard as the
-sampling unit, which is what it was, gives $1.1$; the design effect between the two is
-$11.6$. A tenth of a point over occurrences, and two tenths the other way over distinct
-forms, both sit far inside that, and so would a gap several times either. What the
-comparison establishes is that nothing large is hiding on the Datadog side, not that the
-fit is worth nothing,
-and the one-decimal place these rates are written to is a property of the division rather
-than a claim about the third digit.
+independent draws gives a standard error of $0.3$ points. Resampling dashboards instead
+gives $1.1$, a design effect of $11.6$. Neither number is a sampling error, since nothing
+was sampled; the second is how far this rate moves when the repository's dashboards
+change, and it rests on very little. The dispersion is concentrated enough that the
+effective number of dashboards behind it is $2.0$, one of them carrying $69.8\%$ of it,
+against $9.6$ on the corpus side. A tenth of a point over occurrences, and two tenths the
+other way over distinct forms, sit far inside even so, and so would a gap several times
+either. What the comparison establishes is that nothing large is hiding on the Datadog
+side, not that the fit is worth nothing, and the one-decimal place these rates are
+written to is a property of the division rather than a resolution these data have.
 
 \paragraph{The refusals out of sample are refusals the catalogue already names.}
 What a held-out $\kappa$ can show that an in-sample one cannot is a failure mode nobody

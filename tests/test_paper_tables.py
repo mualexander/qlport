@@ -398,6 +398,38 @@ def _ho() -> dict:
     return _derived("heldout_eval.json")
 
 
+def test_every_held_out_figure_is_the_one_the_run_produced(reg):
+    """The registry's `ho.*` keys, recomputed from the cached run and compared.
+
+    Everything above this pins the prose to `paper/quoted_figures.json`. Nothing
+    pinned that file to anything. Thirteen of its values --- the margins, the two
+    shrinkages, every standard error --- could be edited by hand and the whole suite
+    stayed green, which is how four deliberate corruptions survived a review. The
+    registry is written by `scripts/heldout_eval.py`, so the check is to call the
+    function that writes it on the run it was written from and compare key by key.
+
+    This replaces per-figure data-side tests rather than adding to them: a new `ho.*`
+    key is covered the moment the script emits it, with nothing to remember to add
+    here.
+    """
+    import importlib.util
+
+    path = ROOT / "scripts" / "heldout_eval.py"
+    spec = importlib.util.spec_from_file_location("heldout_eval", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    want = mod.figures(_ho())
+    assert len(want) > 100, "the run produced almost no figures; it is not the run"
+    drifted = [f"  {k}: registry {reg.get(k, '(absent)')} vs run {v}"
+               for k, v in sorted(want.items()) if reg.get(k) != v]
+    assert not drifted, (
+        "the registry no longer says what the run says:\n" + "\n".join(drifted))
+    orphans = sorted(k for k in reg if k.startswith("ho.") and k not in want)
+    assert not orphans, (
+        f"registry keys under `ho.` that the run does not produce: {orphans}")
+
+
 def test_the_cross_validated_greedy_is_the_staircase_of_notebook_00(reg):
     """The split experiment must refit the paper's instrument, not a near neighbour.
 
@@ -682,51 +714,81 @@ def test_the_fit_decompositions_are_reported_with_their_own_spread(reg):
     corpus-specific and two thirds that were not, and called the Datadog one four
     fifths. Those are differences between two rates measured over strings that arrive
     a dashboard at a time, and nobody had asked what a dashboard-level jackknife puts
-    on them. It puts 0.4 points on a 0.4-point difference and 1.9 on a 1.4-point one.
+    on them. It puts 0.4 points on a 0.4-point difference and 1.9 on a 1.5-point one.
     Neither fraction was ever resolvable; both sentences were arithmetic on noise.
 
-    So the claim the paper now makes is the one the data supports --- the held-out
-    margin is real, its shrinkage is not measurable --- and both halves are asserted
-    here. If a later corpus makes a shrinkage resolvable, this test fails and the
-    prose gets to say something stronger; if a held-out margin stops clearing its own
-    spread, it fails the other way and the prose has to stop claiming the productions
-    generalise at all.
+    So the claim the paper now makes is the negative one these data support: the
+    margin falls out of sample by less than the spread either figure carries across
+    dashboards, so this corpus does not separate the fit from the rest. If a later
+    corpus makes a shrinkage larger than its spread, this test fails and the prose
+    gets to say something it currently cannot.
     """
-    for lang, in_sample, held, shrink in (
-            ("promql", "ho.gf_in_sample_gain_points", "ho.gf_novel_gain_points",
-             "ho.gf_shrink"),
-            ("datadog", "ho.dd_in_sample_gain_points", "ho.ex_gain_points",
-             "ho.ex_shrink")):
-        points, se = reg[f"{shrink}_points"], reg[f"{shrink}_se_points"]
-        assert points == round(reg[in_sample] - reg[held], 1), (
-            f"{lang}: the reported shrinkage is not the difference of the two "
-            f"margins it is supposed to be the difference of")
-        assert abs(points) <= 2 * se, (
+    run = _ho()
+    # Every key spelled out. An earlier version built three of these six names by
+    # slicing another one, which reads a neighbouring key rather than failing when a
+    # name moves, and on this table would have read `ho.dd_shrink_points` --- a key
+    # that does not exist --- had the slice not happened to be discarded.
+    for lang, a, b, points_key, se_key, held, held_eff, dashboards in (
+            ("promql", "gain_gf_in_sample", "gain_gf_held",
+             "ho.gf_shrink_points", "ho.gf_shrink_se_points",
+             "ho.gf_novel_gain_points", "ho.gf_novel_gain_effective_dashboards",
+             "ho.gf_dashboards"),
+            ("datadog", "gain_dd_in_sample", "gain_ex_held",
+             "ho.ex_shrink_points", "ho.ex_shrink_se_points",
+             "ho.ex_gain_points", "ho.ex_gain_effective_dashboards",
+             "ho.ex_dashboards")):
+        # The difference of the two unrounded margins, not of the two the paper
+        # prints. On the Datadog pair those differ: 6.99 less 5.54 is 1.45, which
+        # rounds to 1.5, while 7.0 less 5.6 is 1.4. The previous version of this
+        # test asserted the second and so agreed with the error it was added to
+        # catch. Comparing against the run means the test cannot be satisfied by
+        # arithmetic the registry and the prose perform on each other.
+        exact = run[a]["gain"] - run[b]["gain"]
+        points, se = reg[points_key], reg[se_key]
+        assert points == round(exact, 1), (
+            f"{lang}: the registry reports a shrinkage of {points} points where the "
+            f"run's two margins differ by {exact:.4f}")
+        assert abs(points) <= se, (
             f"{lang}: the margin now shrinks by {points} points against {se} of "
-            f"spread, which is resolvable. The subsection says the shrinkage cannot "
-            f"be measured at this size and that sentence is now wrong")
-        held_se = reg[f"{held.rsplit('_', 2)[0]}_gain_se_points"]
-        assert reg[held] > 2 * held_se, (
-            f"{lang}: the held-out margin is {reg[held]} points against {held_se} "
-            f"of spread. The subsection says the corpus-driven productions are worth "
-            f"something on dashboards the grammar never saw; at this ratio it cannot")
+            f"spread, which these data may be able to separate. The subsection says "
+            f"the shrinkage is smaller than the spread either margin carries, and "
+            f"that sentence is now wrong")
+        # What is NOT asserted here, and the reason: that the held-out margin
+        # clears twice its spread. An earlier version did, and it was a test of an
+        # impossible null twice over. v2's productions are a superset of v1's, so
+        # the margin cannot be negative and no population could have rejected zero;
+        # and the spread it was compared against rests on an effective two or three
+        # dashboards, where a two-sigma reading is not the reading. Both populations
+        # are censuses of their repositories, so the margin is a fact about those
+        # repositories and needs no interval at all. What the spread is for is the
+        # negative claim above, which concentration only makes safer.
+        assert reg[held] > 0, f"{lang}: v2 no longer parses more than v1 out of sample"
+        assert reg[held_eff] < reg[dashboards] / 10, (
+            f"{lang}: the dashboard-level spread now rests on {reg[held_eff]} of "
+            f"{reg[dashboards]} dashboards in effect, which is no longer the "
+            f"concentration the subsection describes. If the dispersion has spread "
+            f"out, the spread is worth more than the prose currently says it is")
 
 
-def test_the_kappa_decimal_place_is_not_a_claim_about_the_third_digit(reg):
-    """What a tenth of a point is worth here, asserted rather than asserted of.
+def test_the_two_kappas_are_closer_than_the_spread_that_separates_them(reg):
+    """Why the paper may call the held-out and in-sample rates indistinguishable.
 
-    Section 7 has always said the one-decimal place is a property of the arithmetic.
-    Nothing measured it until the twelfth pass, and the measurement is the reason the
-    held-out and in-sample rates can be called indistinguishable without hedging:
-    occurrences repeat one query shape across a dozen metrics inside one dashboard, so
-    the binomial error over 3,065 of them describes a sample this paper does not have.
+    This test used to be called one about the third digit, which was wrong on its
+    face: in 96.7 the first decimal is the third digit, so the name denied of itself
+    what the body asserted. What the body actually checks is narrower and worth
+    keeping --- that the gap between the two rates is smaller than the spread a
+    dashboard-level resampling puts on them, in both units.
+
+    Occurrences repeat one query shape across a dozen metrics inside one dashboard,
+    so a binomial error over 3,065 of them describes a sample this paper does not
+    have. The clustered figure is the one to read, and the two rates sit well inside
+    it.
     """
     srs, se = reg["ho.ex_kappa_srs_se_points"], reg["ho.ex_kappa_se_points"]
     assert se > srs, (
         "clustering by dashboard no longer widens the error, which would mean the "
         "occurrences are independent after all and the paragraph arguing they are "
         "not has to go")
-    assert reg["ho.ex_kappa_design_effect"] > 1
     assert se > abs(reg["ho.ex_kappa_pct"] - reg["ho.kappa_in_sample_pct"]), (
         "the two rates are further apart than one clustered standard error, so "
         "'indistinguishable' is no longer what the arithmetic says")
@@ -734,8 +796,29 @@ def test_the_kappa_decimal_place_is_not_a_claim_about_the_third_digit(reg):
                     - reg["ho.kappa_in_sample_distinct_pct"]), (
         "the same, over distinct forms, where the gap runs the other way")
     # The in-sample side clusters too, which is why section 7 may generalise the
-    # remark to every kappa in the paper rather than to this one.
-    assert reg["ho.kappa_in_sample_se_points"] > 0
+    # remark to every kappa in the paper rather than to this one. `> 0` was what
+    # this said, which a standard error always is.
+    assert reg["ho.kappa_in_sample_se_points"] >= 0.5, (
+        "the in-sample kappa's clustered error has collapsed, and section 7's "
+        "remark about every kappa in this paper rests on this one being like the "
+        "other")
+    # And what that spread rests on, which is the reason the subsection reports it
+    # as a range the figure moves over rather than as an interval. Both populations
+    # were read whole --- no dashboard in integrations-extras was unreadable --- so
+    # there is no sampling error to estimate; the dispersion across dashboards is a
+    # stability statement, and it is concentrated.
+    assert reg["ho.ex_unreadable"] == 0, (
+        "a dashboard in integrations-extras could not be read, so the population is "
+        "no longer the census the subsection says it is")
+    assert reg["ho.ex_kappa_effective_dashboards"] < 5, (
+        "the held-out dispersion is no longer concentrated in a handful of "
+        "dashboards, and the sentence saying it is has to go")
+    assert (reg["ho.ex_kappa_effective_dashboards"]
+            < reg["ho.kappa_in_sample_effective_dashboards"]), (
+        "the held-out side is supposed to be the thinner of the two; if the corpus "
+        "side is now thinner, the comparison between them reads backwards")
+    assert reg["ho.ex_kappa_top_dashboard_pct"] > 50, (
+        "no single dashboard carries most of the held-out dispersion any more")
 
 
 def test_the_two_vocabularies_are_not_quoted_under_one_name(reg):

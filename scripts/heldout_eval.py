@@ -293,7 +293,18 @@ def gain_spread(queries: list, lang: str, corpus_forms: set[str]) -> dict:
     n = len(reps)
     mean = sum(reps) / n if n else 0.0
     var = (n - 1) / n * sum((r - mean) ** 2 for r in reps) if n > 1 else 0.0
+    # Rounded for the paper, exact for anything that subtracts two of these. The
+    # shrink below is a difference of two margins about a point apart; taking it from
+    # the rounded pair moved it a tenth of a point and the guard that checked the
+    # subtraction checked the rounded one, so it agreed.
+    # Same concentration question as the kappa jackknife: how many dashboards the
+    # spread actually rests on. The replicates are the per-dashboard deviations.
+    dev = [r - mean for r in reps]
+    s2 = sum(d * d for d in dev)
+    s4 = sum(d ** 4 for d in dev)
     return dict(distinct=len(keep), dashboards=n,
+                effective_clusters=round(s2 * s2 / s4, 1) if s4 else None,
+                gain=full, gain_se=math.sqrt(var),
                 gain_points=round(full, 1), gain_se_points=round(math.sqrt(var), 1))
 
 
@@ -331,8 +342,20 @@ def jackknife(queries: list, translated: set[str]) -> dict:
                     for v in per.values() if tot_n - v[0])
     worst = max(per.items(), key=lambda kv: kv[1][0] - kv[1][1])
     se, srs, deff = _cluster_se(per)
+    # How many clusters the spread is really resting on. A cluster-robust error is
+    # asymptotic in the number of clusters, and these residuals are concentrated:
+    # (sum r^2)^2 / sum r^4 is the usual effective count, and on the held-out
+    # population it is small enough that a normal two-sigma reading of `se` is the
+    # wrong reading. Recorded here so the prose has to take it into account.
+    resid = [v[1] - (tot_t / tot_n) * v[0] for v in per.values()] if tot_n else []
+    s2 = sum(r * r for r in resid)
+    s4 = sum(r ** 4 for r in resid)
     return dict(dashboards=len(per),
                 cluster_se_pct=round(se, 1), srs_se_pct=round(srs, 1),
+                cluster_se_exact=se, srs_se_exact=srs,
+                effective_clusters=round(s2 * s2 / s4, 1) if s4 else None,
+                top_cluster_share_pct=round(max((r * r for r in resid), default=0.0)
+                                            / s2 * 100, 1) if s2 else None,
                 design_effect=round(deff, 1),
                 dashboards_with_a_refusal=sum(1 for v in per.values() if v[0] != v[1]),
                 worst_dashboard=worst[0],
@@ -342,7 +365,7 @@ def jackknife(queries: list, translated: set[str]) -> dict:
 
 
 def template_share(queries: list) -> dict:
-    """Occurrences carrying a template variable, under notebook 00's definition.
+    r"""Occurrences carrying a template variable, under notebook 00's definition.
 
     \S\ref{sec:threats} says the template share is the figure most likely to be inflated
     by using vendor and community dashboards, and before this holdout there was nothing
@@ -387,7 +410,7 @@ def kappa(queries: list) -> dict:
 
 
 def translator_feature_set(queries: list, translated: list[str]) -> set[str]:
-    """$S^\star$: the features of the queries the translator actually translates.
+    r"""$S^\star$: the features of the queries the translator actually translates.
 
     Notebook 03 builds it this way and uses it to bound kappa, because a query using a
     feature the translator never handles is refused by construction. It is a subset of
@@ -400,6 +423,218 @@ def translator_feature_set(queries: list, translated: list[str]) -> set[str]:
         norm = c.normalise("datadog", q.text)
         by_norm.setdefault(norm, set()).update(c.features("datadog", q.text))
     return set().union(*(by_norm[n] for n in translated if n in by_norm))
+
+def figures(res: dict) -> dict:
+    """Every `ho.*` key the paper may quote, derived from one run's cached output.
+
+    This is a function and not a stretch of `main()` so that the test suite can call
+    it on `data/processed/heldout_eval.json` and compare the result against
+    `paper/quoted_figures.json` key by key. Without that comparison the registry was
+    a file thirteen of these values could be hand-edited in, with every guard above
+    it still green: the phrases pin the prose to the registry, and nothing pinned
+    the registry to the run.
+    """
+    manifest = res["manifest"]
+    gi = res["grafana_in_sample"]
+    di = res["datadog_in_sample"]
+
+    def gain(m: dict) -> float:
+        """v2 over v1 in points, taken from the counts.
+
+        Not `round(v2_pct - v1_pct, 1)`: both of those have already been rounded, and
+        on the extras population that subtraction gives 5.5 where the counts give 5.6.
+        """
+        return round((m["v2_n"] - m["v1_n"]) / (m["distinct"] or 1) * 100, 1)
+
+    fig: dict = {}
+    if "grafana" in res:
+        g = res["grafana"]
+        fig.update({
+            "ho.gf_dashboards": g["dashboards"], "ho.gf_queries": g["queries"],
+            "ho.gf_distinct": g["distinct"], "ho.gf_raw_pct": g["raw_pct"],
+            "ho.gf_v1_pct": g["v1_pct"], "ho.gf_v2_pct": g["v2_pct"],
+            "ho.gf_residual": g["residual"],
+            "ho.gf_ceiling_pct": g["ceiling_occ_pct"],
+            "ho.gf_novel_features": len(g["novel_features"]),
+            "ho.gf_shared_distinct": g["shared_distinct"],
+            "ho.gf_residual_metric": g["blockers"].get("METRIC", 0),
+            "ho.gf_residual_matchop": g["blockers"].get("MATCHOP", 0),
+            "ho.gf_residual_other": g["residual"] - g["blockers"].get("METRIC", 0)
+                                    - g["blockers"].get("MATCHOP", 0),
+            "ho.gf_residual_logql": g["residual_kinds"]["logql"],
+            "ho.gf_residual_metricsql": g["residual_kinds"]["metricsql"],
+            "ho.gf_residual_old_template": g["residual_kinds"]["old_template"],
+            "ho.gf_residual_promql": g["residual_kinds"]["promql"],
+            "ho.gf_catalogue": manifest["grafana"]["available"],
+            "ho.gf_downloaded": manifest["grafana"]["downloaded"],
+            "ho.gf_novel_distinct": g["novel_distinct"],
+            "ho.gf_novel_v1_pct": g["novel_v1_pct"],
+            "ho.gf_novel_v2_pct": g["novel_v2_pct"],
+        })
+    if "integrations-core" in res:
+        d = res["integrations-core"]
+        fig.update({
+            "ho.dd_dashboards": d["dashboards"], "ho.dd_queries": d["queries"],
+            "ho.dd_distinct": d["distinct"], "ho.dd_v1_pct": d["v1_pct"],
+            "ho.dd_v2_pct": d["v2_pct"], "ho.dd_residual": d["residual"],
+            "ho.dd_ceiling_pct": d["ceiling_occ_pct"],
+            "ho.dd_novel_features": len(d["novel_features"]),
+        })
+    if "integrations-extras" in res:
+        e = res["integrations-extras"]
+        xm = manifest["integrations-extras"]
+        fig.update({
+            "ho.ex_dashboards_shipped": xm["dashboards"],
+            # Every dashboard file in the repository at that commit was read. There
+            # is no sampling frame here and nothing was drawn from one; the
+            # population is the repository.
+            "ho.ex_unreadable": xm["unreadable"],
+            "ho.ex_dashboards": e["dashboards"], "ho.ex_queries": e["queries"],
+            "ho.ex_distinct": e["distinct"], "ho.ex_raw_pct": e["raw_pct"],
+            "ho.ex_v1_pct": e["v1_pct"], "ho.ex_v2_pct": e["v2_pct"],
+            "ho.ex_residual": e["residual"],
+            "ho.ex_ceiling_pct": e["ceiling_occ_pct"],
+            "ho.ex_novel_features": len(e["novel_features"]),
+            "ho.ex_shared_distinct": e["shared_distinct"],
+            "ho.ex_novel_distinct": e["novel_distinct"],
+            "ho.ex_novel_v1_pct": e["novel_v1_pct"],
+            "ho.ex_novel_v2_pct": e["novel_v2_pct"],
+            "ho.ex_queries_at_commit": xm["queries_at_commit"],
+            # Normalised forms, not shipped strings: the manifest counts
+            # `corpus.normalise(lang, text)`, and the shipped-string count for the
+            # same population is a different and larger number that sits one row away
+            # in tab:heldout-coverage. The key says which so the prose has to.
+            "ho.ex_forms_at_commit": xm["distinct_at_commit"],
+            "ho.ex_gain_points": gain(e),
+            "ho.ex_sstar_size": e["translator_vocabulary"]["size"],
+            "ho.ex_sstar_pct": e["translator_vocabulary"]["occ_pct"],
+            "ho.ex_sstar_novel_features":
+                len(e["translator_vocabulary"]["novel_features"]),
+            "ho.ex_sstar_outside_occurrences":
+                e["translator_vocabulary"]["novel_occurrences"],
+            "ho.ex_ceiling_outside_occurrences":
+                e["corpus_vocabulary"]["novel_occurrences"],
+            "ho.ex_vocabulary_size": e["corpus_vocabulary"]["size"],
+            # The distance between the two ceilings, taken from the two shares rather
+            # than written out in the prose: quoting the corpus vocabulary's 99.9% as
+            # though it were the translator's would overstate the reachable ceiling by
+            # exactly this much.
+            "ho.ex_ceiling_overstatement_points": round(
+                e["corpus_vocabulary"]["occ_pct"]
+                - e["translator_vocabulary"]["occ_pct"], 1),
+            # Dropped before anything was measured, and counted so the prose can say
+            # how much of the sibling repository was not disjoint.
+            "ho.ex_shared_forms": xm["shared_with_corpus"],
+            # Set aside rather than scored. No grammar exists for the formula layer in
+            # either version, so there is no parse rate to report; the corpus's own
+            # formulas are held aside the same way, which is why there is no formula
+            # row in Table~\ref{tab:parse-coverage} either.
+            "ho.ex_formula_queries": xm["queries_formula_held_out"],
+            "ho.ex_formula_distinct": xm["distinct_formula_held_out"],
+        })
+    for key, prefix in (("gain_gf_in_sample", "ho.gf_in_sample"),
+                        ("gain_gf_held", "ho.gf_novel"),
+                        ("gain_dd_in_sample", "ho.dd_in_sample"),
+                        ("gain_ex_held", "ho.ex")):
+        if key in res:
+            fig[f"{prefix}_gain_se_points"] = res[key]["gain_se_points"]
+            fig[f"{prefix}_gain_effective_dashboards"] = \
+                res[key]["effective_clusters"]
+    for name, prefix in (("shrink_gf", "ho.gf"), ("shrink_dd", "ho.ex")):
+        if name in res:
+            fig[f"{prefix}_shrink_points"] = res[name]["points"]
+            fig[f"{prefix}_shrink_se_points"] = res[name]["se_points"]
+    if "feature_set_seen" in res:
+        fig["ho.ex_feature_set_seen_pct"] = res["feature_set_seen"]["pct"]
+    # The formula layer as it ships, before anything is held out. The prose used to
+    # quote the post-filter remnant as though it were the layer, which understated it
+    # ninefold and left the dropped majority --- forms the corpus already holds ---
+    # unmentioned.
+    if "integrations-extras" in res:
+        xm = manifest["integrations-extras"]
+        fig.update({
+            "ho.ex_formula_queries_at_commit": xm["queries_formula_at_commit"],
+            "ho.ex_formula_forms_at_commit": xm["distinct_formula_at_commit"],
+            "ho.ex_formula_shared_forms": xm["shared_formula_with_corpus"],
+            "ho.ex_formula_shared_queries": (xm["queries_formula_at_commit"]
+                                             - xm["queries_formula_held_out"]),
+        })
+    fig.update({"ho.dd_in_sample_sstar_pct":
+                di["translator_vocabulary"]["occ_pct"],
+                "ho.dd_in_sample_sstar_size": di["translator_vocabulary"]["size"],
+                "ho.dd_in_sample_distinct": di["distinct"],
+                "ho.dd_in_sample_queries": di["queries"],
+                "ho.dd_in_sample_dashboards": di["dashboards"],
+                "ho.dd_in_sample_v1_pct": di["v1_pct"],
+                "ho.dd_in_sample_v2_pct": di["v2_pct"],
+                "ho.dd_in_sample_residual": di["residual"],
+                "ho.dd_in_sample_gain_points": gain(di)})
+    fig.update({"ho.gf_in_sample_dashboards": gi["dashboards"],
+                "ho.gf_in_sample_distinct": gi["distinct"],
+                "ho.gf_in_sample_queries": gi["queries"],
+                "ho.gf_in_sample_raw_pct": gi["raw_pct"],
+                "ho.gf_in_sample_residual": gi["residual"],
+                "ho.gf_in_sample_v1_pct": gi["v1_pct"],
+                "ho.gf_in_sample_v2_pct": gi["v2_pct"],
+                # What the corpus-driven productions are worth, in sample and out of it.
+                # The pair is the point, so both are recorded rather than subtracted in
+                # the prose.
+                "ho.gf_in_sample_gain_points": gain(gi)})
+    if "grafana" in res:
+        g = res["grafana"]
+        fig["ho.gf_novel_gain_points"] = round(
+            (g["novel_v2_n"] - g["novel_v1_n"]) / (g["novel_distinct"] or 1) * 100, 1)
+        fig["ho.gf_listed_to_rank"] = manifest["grafana"]["listed_to_rank"]
+    if "template_extras" in res:
+        fig["ho.ex_template_pct"] = res["template_extras"]["pct"]
+        fig["ho.dd_in_sample_template_pct"] = res["template_in_sample"]["pct"]
+    if "kappa" in res:
+        fig["ho.dd_kappa_pct"] = res["kappa"]["kappa_occ_pct"]
+        fig["ho.dd_kappa_occurrences"] = res["kappa"]["occurrences"]
+        fig["ho.dd_kappa_distinct"] = res["kappa"]["distinct"]
+    if "kappa_in_sample" in res:
+        ki = res["kappa_in_sample"]
+        fig["ho.kappa_in_sample_pct"] = ki["kappa_occ_pct"]
+        fig["ho.kappa_in_sample_se_points"] = ki["jackknife"]["cluster_se_pct"]
+        fig["ho.kappa_in_sample_effective_dashboards"] = (
+            ki["jackknife"]["effective_clusters"])
+        fig["ho.kappa_in_sample_jackknife_low_pct"] = ki["jackknife"]["low_pct"]
+        fig["ho.kappa_in_sample_jackknife_high_pct"] = ki["jackknife"]["high_pct"]
+        fig["ho.kappa_in_sample_distinct_pct"] = ki["kappa_distinct_pct"]
+        fig["ho.kappa_in_sample_occurrences"] = ki["occurrences"]
+    if "kappa_extras" in res:
+        ke = res["kappa_extras"]
+        fig["ho.ex_kappa_pct"] = ke["kappa_occ_pct"]
+        fig["ho.ex_kappa_distinct_pct"] = ke["kappa_distinct_pct"]
+        fig["ho.ex_kappa_occurrences"] = ke["occurrences"]
+        fig["ho.ex_kappa_distinct"] = ke["distinct"]
+        fig["ho.ex_translated"] = ke["by_outcome_occ"].get("translated", 0)
+        fig["ho.ex_bottom"] = ke["by_outcome_occ"].get("bottom", 0)
+        fig["ho.ex_unparsed"] = ke["by_outcome_occ"].get("unparsed", 0)
+        fig["ho.ex_refused_distinct"] = ke["by_outcome_distinct"].get("bottom", 0)
+        fig["ho.ex_jackknife_low_pct"] = ke["jackknife"]["low_pct"]
+        fig["ho.ex_jackknife_high_pct"] = ke["jackknife"]["high_pct"]
+        fig["ho.ex_kappa_se_points"] = ke["jackknife"]["cluster_se_pct"]
+        fig["ho.ex_kappa_srs_se_points"] = ke["jackknife"]["srs_se_pct"]
+        fig["ho.ex_kappa_design_effect"] = ke["jackknife"]["design_effect"]
+        # What the dashboard-level spread rests on. 139 dashboards, but the
+        # dispersion is concentrated in effectively two of them and one carries most
+        # of it, so the spread is a statement about how much this figure moves when
+        # the repository's dashboards change --- not an interval anything was
+        # sampled to produce.
+        fig["ho.ex_kappa_effective_dashboards"] = (
+            ke["jackknife"]["effective_clusters"])
+        fig["ho.ex_kappa_top_dashboard_pct"] = (
+            ke["jackknife"]["top_cluster_share_pct"])
+        fig["ho.ex_dashboards_with_a_refusal"] = (
+            ke["jackknife"]["dashboards_with_a_refusal"])
+        fig["ho.ex_worst_dashboard_refusals"] = (
+            ke["jackknife"]["worst_dashboard_refusals"])
+        for name, n in ke["gaps"].items():
+            fig[f"ho.ex_gap_{name.lower()}"] = n
+        for name, n in ke["gaps_occ"].items():
+            fig[f"ho.ex_gap_occ_{name.lower()}"] = n
+    return fig
 
 
 def main() -> int:
@@ -527,8 +762,8 @@ def main() -> int:
     for name, a, b in (("shrink_gf", "gain_gf_in_sample", "gain_gf_held"),
                        ("shrink_dd", "gain_dd_in_sample", "gain_ex_held")):
         if a in res and b in res:
-            d = res[a]["gain_points"] - res[b]["gain_points"]
-            se = math.hypot(res[a]["gain_se_points"], res[b]["gain_se_points"])
+            d = res[a]["gain"] - res[b]["gain"]
+            se = math.hypot(res[a]["gain_se"], res[b]["gain_se"])
             res[name] = dict(points=round(d, 1), se_points=round(se, 1))
             print(f"{name}: the margin shrinks {d:.1f} points, "
                   f"spread {se:.1f} --- {'' if abs(d) > 2 * se else 'not '}"
@@ -609,181 +844,7 @@ def main() -> int:
     out.write_text(json.dumps(res, indent=1, sort_keys=True) + "\n")
     print(f"wrote {out.relative_to(ROOT)}")
 
-    def gain(m: dict) -> float:
-        """v2 over v1 in points, taken from the counts.
-
-        Not `round(v2_pct - v1_pct, 1)`: both of those have already been rounded, and
-        on the extras population that subtraction gives 5.5 where the counts give 5.6.
-        """
-        return round((m["v2_n"] - m["v1_n"]) / (m["distinct"] or 1) * 100, 1)
-
-    fig: dict = {}
-    if "grafana" in res:
-        g = res["grafana"]
-        fig.update({
-            "ho.gf_dashboards": g["dashboards"], "ho.gf_queries": g["queries"],
-            "ho.gf_distinct": g["distinct"], "ho.gf_raw_pct": g["raw_pct"],
-            "ho.gf_v1_pct": g["v1_pct"], "ho.gf_v2_pct": g["v2_pct"],
-            "ho.gf_residual": g["residual"],
-            "ho.gf_ceiling_pct": g["ceiling_occ_pct"],
-            "ho.gf_novel_features": len(g["novel_features"]),
-            "ho.gf_shared_distinct": g["shared_distinct"],
-            "ho.gf_residual_metric": g["blockers"].get("METRIC", 0),
-            "ho.gf_residual_matchop": g["blockers"].get("MATCHOP", 0),
-            "ho.gf_residual_other": g["residual"] - g["blockers"].get("METRIC", 0)
-                                    - g["blockers"].get("MATCHOP", 0),
-            "ho.gf_residual_logql": g["residual_kinds"]["logql"],
-            "ho.gf_residual_metricsql": g["residual_kinds"]["metricsql"],
-            "ho.gf_residual_old_template": g["residual_kinds"]["old_template"],
-            "ho.gf_residual_promql": g["residual_kinds"]["promql"],
-            "ho.gf_catalogue": manifest["grafana"]["available"],
-            "ho.gf_downloaded": manifest["grafana"]["downloaded"],
-            "ho.gf_novel_distinct": g["novel_distinct"],
-            "ho.gf_novel_v1_pct": g["novel_v1_pct"],
-            "ho.gf_novel_v2_pct": g["novel_v2_pct"],
-        })
-    if "integrations-core" in res:
-        d = res["integrations-core"]
-        fig.update({
-            "ho.dd_dashboards": d["dashboards"], "ho.dd_queries": d["queries"],
-            "ho.dd_distinct": d["distinct"], "ho.dd_v1_pct": d["v1_pct"],
-            "ho.dd_v2_pct": d["v2_pct"], "ho.dd_residual": d["residual"],
-            "ho.dd_ceiling_pct": d["ceiling_occ_pct"],
-            "ho.dd_novel_features": len(d["novel_features"]),
-        })
-    if "integrations-extras" in res:
-        e = res["integrations-extras"]
-        xm = manifest["integrations-extras"]
-        fig.update({
-            "ho.ex_dashboards_shipped": xm["dashboards"],
-            "ho.ex_dashboards": e["dashboards"], "ho.ex_queries": e["queries"],
-            "ho.ex_distinct": e["distinct"], "ho.ex_raw_pct": e["raw_pct"],
-            "ho.ex_v1_pct": e["v1_pct"], "ho.ex_v2_pct": e["v2_pct"],
-            "ho.ex_residual": e["residual"],
-            "ho.ex_ceiling_pct": e["ceiling_occ_pct"],
-            "ho.ex_novel_features": len(e["novel_features"]),
-            "ho.ex_shared_distinct": e["shared_distinct"],
-            "ho.ex_novel_distinct": e["novel_distinct"],
-            "ho.ex_novel_v1_pct": e["novel_v1_pct"],
-            "ho.ex_novel_v2_pct": e["novel_v2_pct"],
-            "ho.ex_queries_at_commit": xm["queries_at_commit"],
-            "ho.ex_distinct_at_commit": xm["distinct_at_commit"],
-            "ho.ex_gain_points": gain(e),
-            "ho.ex_sstar_size": e["translator_vocabulary"]["size"],
-            "ho.ex_sstar_pct": e["translator_vocabulary"]["occ_pct"],
-            "ho.ex_sstar_novel_features":
-                len(e["translator_vocabulary"]["novel_features"]),
-            "ho.ex_sstar_outside_occurrences":
-                e["translator_vocabulary"]["novel_occurrences"],
-            "ho.ex_ceiling_outside_occurrences":
-                e["corpus_vocabulary"]["novel_occurrences"],
-            "ho.ex_vocabulary_size": e["corpus_vocabulary"]["size"],
-            # The distance between the two ceilings, taken from the two shares rather
-            # than written out in the prose: quoting the corpus vocabulary's 99.9% as
-            # though it were the translator's would overstate the reachable ceiling by
-            # exactly this much.
-            "ho.ex_ceiling_overstatement_points": round(
-                e["corpus_vocabulary"]["occ_pct"]
-                - e["translator_vocabulary"]["occ_pct"], 1),
-            # Dropped before anything was measured, and counted so the prose can say
-            # how much of the sibling repository was not disjoint.
-            "ho.ex_shared_forms": xm["shared_with_corpus"],
-            # Set aside rather than scored. No grammar exists for the formula layer in
-            # either version, so there is no parse rate to report; the corpus's own
-            # formulas are held aside the same way, which is why there is no formula
-            # row in Table~\ref{tab:parse-coverage} either.
-            "ho.ex_formula_queries": xm["queries_formula_held_out"],
-            "ho.ex_formula_distinct": xm["distinct_formula_held_out"],
-        })
-    for key, prefix in (("gain_gf_in_sample", "ho.gf_in_sample"),
-                        ("gain_gf_held", "ho.gf_novel"),
-                        ("gain_dd_in_sample", "ho.dd_in_sample"),
-                        ("gain_ex_held", "ho.ex")):
-        if key in res:
-            fig[f"{prefix}_gain_se_points"] = res[key]["gain_se_points"]
-    for name, prefix in (("shrink_gf", "ho.gf"), ("shrink_dd", "ho.ex")):
-        if name in res:
-            fig[f"{prefix}_shrink_points"] = res[name]["points"]
-            fig[f"{prefix}_shrink_se_points"] = res[name]["se_points"]
-    if "feature_set_seen" in res:
-        fig["ho.ex_feature_set_seen_pct"] = res["feature_set_seen"]["pct"]
-    # The formula layer as it ships, before anything is held out. The prose used to
-    # quote the post-filter remnant as though it were the layer, which understated it
-    # ninefold and left the dropped majority --- forms the corpus already holds ---
-    # unmentioned.
-    if "integrations-extras" in res:
-        xm = manifest["integrations-extras"]
-        fig.update({
-            "ho.ex_formula_queries_at_commit": xm["queries_formula_at_commit"],
-            "ho.ex_formula_distinct_at_commit": xm["distinct_formula_at_commit"],
-            "ho.ex_formula_shared_forms": xm["shared_formula_with_corpus"],
-            "ho.ex_formula_shared_queries": (xm["queries_formula_at_commit"]
-                                             - xm["queries_formula_held_out"]),
-        })
-    fig.update({"ho.dd_in_sample_sstar_pct":
-                di["translator_vocabulary"]["occ_pct"],
-                "ho.dd_in_sample_sstar_size": di["translator_vocabulary"]["size"],
-                "ho.dd_in_sample_distinct": di["distinct"],
-                "ho.dd_in_sample_queries": di["queries"],
-                "ho.dd_in_sample_dashboards": di["dashboards"],
-                "ho.dd_in_sample_v1_pct": di["v1_pct"],
-                "ho.dd_in_sample_v2_pct": di["v2_pct"],
-                "ho.dd_in_sample_residual": di["residual"],
-                "ho.dd_in_sample_gain_points": gain(di)})
-    fig.update({"ho.gf_in_sample_dashboards": gi["dashboards"],
-                "ho.gf_in_sample_distinct": gi["distinct"],
-                "ho.gf_in_sample_queries": gi["queries"],
-                "ho.gf_in_sample_raw_pct": gi["raw_pct"],
-                "ho.gf_in_sample_residual": gi["residual"],
-                "ho.gf_in_sample_v1_pct": gi["v1_pct"],
-                "ho.gf_in_sample_v2_pct": gi["v2_pct"],
-                # What the corpus-driven productions are worth, in sample and out of it.
-                # The pair is the point, so both are recorded rather than subtracted in
-                # the prose.
-                "ho.gf_in_sample_gain_points": gain(gi)})
-    if "grafana" in res:
-        g = res["grafana"]
-        fig["ho.gf_novel_gain_points"] = round(
-            (g["novel_v2_n"] - g["novel_v1_n"]) / (g["novel_distinct"] or 1) * 100, 1)
-        fig["ho.gf_listed_to_rank"] = manifest["grafana"]["listed_to_rank"]
-    if "template_extras" in res:
-        fig["ho.ex_template_pct"] = res["template_extras"]["pct"]
-        fig["ho.dd_in_sample_template_pct"] = res["template_in_sample"]["pct"]
-    if "kappa" in res:
-        fig["ho.dd_kappa_pct"] = res["kappa"]["kappa_occ_pct"]
-        fig["ho.dd_kappa_occurrences"] = res["kappa"]["occurrences"]
-        fig["ho.dd_kappa_distinct"] = res["kappa"]["distinct"]
-    if "kappa_in_sample" in res:
-        ki = res["kappa_in_sample"]
-        fig["ho.kappa_in_sample_pct"] = ki["kappa_occ_pct"]
-        fig["ho.kappa_in_sample_se_points"] = ki["jackknife"]["cluster_se_pct"]
-        fig["ho.kappa_in_sample_jackknife_low_pct"] = ki["jackknife"]["low_pct"]
-        fig["ho.kappa_in_sample_jackknife_high_pct"] = ki["jackknife"]["high_pct"]
-        fig["ho.kappa_in_sample_distinct_pct"] = ki["kappa_distinct_pct"]
-        fig["ho.kappa_in_sample_occurrences"] = ki["occurrences"]
-    if "kappa_extras" in res:
-        ke = res["kappa_extras"]
-        fig["ho.ex_kappa_pct"] = ke["kappa_occ_pct"]
-        fig["ho.ex_kappa_distinct_pct"] = ke["kappa_distinct_pct"]
-        fig["ho.ex_kappa_occurrences"] = ke["occurrences"]
-        fig["ho.ex_kappa_distinct"] = ke["distinct"]
-        fig["ho.ex_translated"] = ke["by_outcome_occ"].get("translated", 0)
-        fig["ho.ex_bottom"] = ke["by_outcome_occ"].get("bottom", 0)
-        fig["ho.ex_unparsed"] = ke["by_outcome_occ"].get("unparsed", 0)
-        fig["ho.ex_refused_distinct"] = ke["by_outcome_distinct"].get("bottom", 0)
-        fig["ho.ex_jackknife_low_pct"] = ke["jackknife"]["low_pct"]
-        fig["ho.ex_jackknife_high_pct"] = ke["jackknife"]["high_pct"]
-        fig["ho.ex_kappa_se_points"] = ke["jackknife"]["cluster_se_pct"]
-        fig["ho.ex_kappa_srs_se_points"] = ke["jackknife"]["srs_se_pct"]
-        fig["ho.ex_kappa_design_effect"] = ke["jackknife"]["design_effect"]
-        fig["ho.ex_dashboards_with_a_refusal"] = (
-            ke["jackknife"]["dashboards_with_a_refusal"])
-        fig["ho.ex_worst_dashboard_refusals"] = (
-            ke["jackknife"]["worst_dashboard_refusals"])
-        for name, n in ke["gaps"].items():
-            fig[f"ho.ex_gap_{name.lower()}"] = n
-        for name, n in ke["gaps_occ"].items():
-            fig[f"ho.ex_gap_occ_{name.lower()}"] = n
+    fig = figures(res)
     print("\nregistry:")
     for k_, v_ in sorted(fig.items()):
         print(f"  {k_:<28} {v_}")
