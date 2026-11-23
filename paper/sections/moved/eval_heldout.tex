@@ -27,10 +27,17 @@ makes the staircase steep.
 
 \paragraph{The build order survives being scored on dashboards it was not chosen from.}
 Recomputing the greedy order on half the dashboards and scoring it on the other half
-gives $89.9\%$ at sixteen features where the order's own half gives $90.9\%$ --- a gap of
-one point. \S\ref{sec:discussion} calls the staircase the practical result of this paper,
-and it is a claim about effort against coverage that survives the effort being spent in
-an order chosen from somewhere else.
+gives $89.9\%$ at sixteen features where the order's own half gives $91.0\%$, a gap of
+$1.2$ points. This is the one figure in this subsection that is an estimate from a
+sampling procedure rather than a quotient of counts, and so the one with a Monte-Carlo
+error: $0.08$ points on the mean of $1{,}000$ replicates, five seeds of $200$. It was
+reported as one point for three drafts, off a single seed of $200$ whose mean was the
+lowest of the five and whose last digit the other four do not share. What a reader
+planning one migration needs is not that mean but the spread behind it: the gap's
+standard deviation across replicates is $2.6$ points, and $33\%$ of single
+half-splits show no gap at all. \S\ref{sec:discussion} calls the staircase the practical result of
+this paper, and what survives being scored elsewhere is its shape --- the order travels
+--- rather than any particular toll for travelling in it.
 
 \paragraph{The grammar, on $497$ dashboards it has never seen.}
 The corpus took the $200$ most-downloaded Prometheus dashboards from a catalogue that
@@ -159,9 +166,11 @@ dashboard instead gives $1.1$, a design effect of $11.6$. Neither number is a sa
 was sampled; the second is how far this rate moves when the repository's dashboards
 change, and it rests on very little. The dispersion is concentrated enough that the
 effective number of dashboards behind it is $2.0$, one of them carrying $69.8\%$ of it,
-against $9.6$ on the corpus side. A tenth of a point over occurrences, and two tenths the
-other way over distinct forms, sit far inside even so, and so would a gap several times
-either. What the comparison establishes is that nothing large is hiding on the Datadog
+against $9.6$ on the corpus side. A tenth of a point over occurrences sits far
+inside even so, and so would a gap several times it. The distinct-form reading moves two
+tenths the other way, and the $1.1$ is a spread on the occurrence-weighted rate: no
+dashboard-level spread is computed here for distinct forms, so that second gap is
+reported without one rather than against a figure that is not about it. What the comparison establishes is that nothing large is hiding on the Datadog
 side, not that the fit is worth nothing, and the one-decimal place these rates are
 written to is a property of the division rather than a resolution these data have.
 
@@ -222,11 +231,16 @@ None of that makes $96.6\%$ a held-out estimate; it was obtained the way it was 
 What it does is bound the worry the estimate licenses. This subsection reads three
 channels twice: the PromQL grammar, the Datadog grammar and $\kappa$. On the two
 grammars the margin the corpus bought survives being read somewhere else --- $0.8$
-points on the PromQL side and $5.6$ on the Datadog one, with dashboard-clustered
-standard errors of $0.3$ and $1.7$ --- and on both, how much of that margin the corpus
-kept for itself is no larger than the spread it inherits from the two. On $\kappa$ there
-is no such margin to carry over; what there is, is two readings a tenth of a point apart
-where the dashboard-clustered standard error is $1.1$. Two caveats survive, and neither
+points on the PromQL side and $5.6$ on the Datadog one, with delete-one-dashboard
+jackknife standard errors of $0.3$ and $1.7$ --- and on both, how much of that margin the
+corpus kept for itself is no larger than the spread it inherits from the two. Each of
+those margins rests on about as few dashboards as $\kappa$ does: the effective number
+behind the held-out one is $2.0$, the same figure reported for $\kappa$ above, and
+behind the in-sample one $19.3$. On $\kappa$ there is no such margin to carry over; what
+there is, is two readings a tenth of a point apart where the dashboard-clustered
+standard error --- a linearised one, and not the jackknife of the sentence before --- is
+$1.1$. Nothing on either side was sampled, so none of these is an interval on
+anything. Two caveats survive, and neither
 is leakage.
 The first is authorship: \texttt{integrations-extras} is community- and partner-written,
 which is the different-authors test, but those dashboards are built with the vendor's own

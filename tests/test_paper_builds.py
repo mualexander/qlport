@@ -18,6 +18,8 @@ place a duplicate label is reported.
 """
 from __future__ import annotations
 
+import ast
+import hashlib
 import os
 import re
 import subprocess
@@ -25,8 +27,9 @@ from pathlib import Path
 
 import pytest
 
-from texsource import (RAW_READS, flat, published, suite_source,
-                       unstripped_reads)
+from texsource import (COMMENT, RAW_READS, SOURCE_READS, anywhere, builds, flat,
+                       rendered, source, source_reads, source_readers, strip_comments,
+                       suite_source, table, unstripped_reads)
 
 ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "paper"
@@ -46,16 +49,37 @@ def _sources() -> list[Path]:
 
 
 def _log(name: str) -> str:
-    """The build log, insisting it is newer than every source that went into it.
+    """The build log, insisting it was built from the sources that are here now.
 
-    A stale log is worse than no log: it reports a clean build of a paper that no longer
-    exists. So this fails rather than skips, and says what to run.
+    A stale log is worse than no log: it reports a clean build of a paper that no
+    longer exists. So this fails rather than skips, and says what to run.
+
+    BY CONTENT, NOT ONLY BY MTIME. This compared timestamps, so `touch paper/main.log`
+    satisfied it and everything downstream -- duplicate labels, undefined references,
+    overfull boxes, heading levels, the two page counts, build convergence -- went on
+    reporting on a build that no longer existed. The one test that would have noticed
+    rebuilds both PDFs inside the suite and is skipped by default, which is to say the
+    whole log layer rested on the suite's single skip. `make paper` now records a
+    digest of what it read, and a digest cannot be touched into agreement.
     """
     log = PAPER / f"{name}.log"
     assert log.exists(), f"{log.relative_to(ROOT)} is missing -- run `make paper`"
     newest = max(p.stat().st_mtime for p in _sources())
     assert log.stat().st_mtime >= newest, (
         f"{log.relative_to(ROOT)} is older than a paper source -- run `make paper`"
+    )
+    stamp = PAPER / ".sources.sha256"
+    assert stamp.exists(), (
+        f"{stamp.relative_to(ROOT)} is missing -- run `make paper`, which records by "
+        f"content what the build read"
+    )
+    digest = hashlib.sha256()
+    for path in _sources():
+        digest.update(path.read_bytes())
+    want = f"{digest.hexdigest()} {len(_sources())}"
+    assert stamp.read_text().strip() == want, (
+        f"{stamp.relative_to(ROOT)} does not match the sources here, so this log is "
+        f"from a different paper -- run `make paper`"
     )
     return log.read_text(errors="replace")
 
@@ -148,16 +172,113 @@ def test_every_guard_reads_the_document_the_paper_publishes():
     """
     offenders = unstripped_reads(ROOT / "tests")
     assert not offenders, (
-        "read the published document instead: `from texsource import published`\n"
+        "read a document instead: `rendered`, `builds`, `anywhere` or `table` from "
+        "texsource, or `source` if the question really is about the file\n"
         + "\n".join(offenders)
     )
 
 
 def test_no_raw_read_is_excused_for_a_line_no_test_has():
     """A stale excuse is an assertion that a line exists which does not."""
-    source = suite_source(ROOT / "tests")
-    dead = sorted(line for line in RAW_READS if line not in source)
+    suite = suite_source(ROOT / "tests")
+    dead = sorted(line for line in RAW_READS if line not in suite)
     assert not dead, f"RAW_READS excuses lines no test has: {dead}"
+
+
+def test_the_comment_stripper_reads_a_percent_the_way_latex_does():
+    r"""Whether a `%` opens a comment is parity, and this suite has had it wrong twice.
+
+    A lookbehind cannot count, so both one-backslash and two-backslash lookbehinds are
+    wrong, in opposite directions: one cuts every line at its first `\%` and reads a
+    document smaller than the published one, the other accepts `\\%` -- a forced line
+    break followed by a comment -- and reads one larger. The second is the dangerous
+    direction, because a guard asserting a sentence is present is satisfied by text no
+    reader sees.
+
+    Reverting `COMMENT` to either bug left the whole suite passing, through all
+    fifty-one call sites, because the fix was checked by hand in a shell and the
+    hand-check was never committed. This is that hand-check. The cases are written out
+    here rather than imported, because a table of them in `texsource` would be a
+    ledger the audit reads and would be satisfied by construction.
+    """
+    cases = [
+        (r"a % b", "a "),                      # no backslash: a comment
+        (r"a \% b", r"a \% b"),              # one: an escaped percent sign
+        (r"a \\% b", r"a \\"),             # two: a line break, then a comment
+        (r"a \\\% b", r"a \\\% b"),      # three: a line break, then an escape
+        (r"a \\\\% b", r"a \\\\"),     # four: two line breaks, then a comment
+        (r"a \\\\\% b", r"a \\\\\% b"),
+        # And the two shapes the paper actually contains.
+        (r"v2 parses $99.9\%$ of them % and v1 parses less",
+         r"v2 parses $99.9\%$ of them "),
+        (r"\begin{corollary}[Quantiles]% \label{cor:quantile}",
+         r"\begin{corollary}[Quantiles]"),
+    ]
+    wrong = [f"  {text!r} -> {strip_comments(text)!r}, want {want!r}"
+             for text, want in cases if strip_comments(text) != want]
+    assert not wrong, "the comment stripper is not reading parity:\n" + "\n".join(wrong)
+    # And the regex is the one those cases were written for, not a rewrite of it.
+    assert COMMENT.pattern == r"(?<!\\)((?:\\\\)*)%.*", COMMENT.pattern
+
+
+def test_rendered_refuses_a_conditional_it_does_not_know(tmp_path):
+    r"""Resolving conditionals by name is the stripper's defect one level up.
+
+    `rendered` knows five: `\inlineonly`, `\shortonly`, `\iffalse`, `\iftrue` and
+    `\iffull`. `\ifnum0=1 ... \fi` needs no macro definition, is in none of those,
+    and passed straight through -- so a pinned sentence parked behind one satisfied
+    its phrase check while both PDFs printed the opposite figure, at 795 passed and a
+    real build. A reader that does not know a construct has to fail, not pass it on.
+    """
+    for hidden in (r"\ifnum0=1 HIDDEN \fi", r"\ifx\a\b HIDDEN \fi",
+                   r"\ifcase0 HIDDEN\or SHOWN\fi", r"HIDDEN \fi"):
+        probe = tmp_path / "probe.tex"
+        probe.write_text("Before.\n" + hidden + "\nAfter.\n")
+        for full in (False, True):
+            with pytest.raises(AssertionError, match="after rendering"):
+                rendered(probe, full)
+    # The five it does know still resolve, and to the right side.
+    probe = tmp_path / "known.tex"
+    probe.write_text(r"\iffull F\else S\fi \inlineonly{I}\shortonly{H}"
+                     r" \iffalse NEVER\fi \iftrue ALWAYS\fi")
+    assert flat(rendered(probe, False)).strip() == "S H ALWAYS"
+    assert flat(rendered(probe, True)).strip() == "F I ALWAYS"
+
+
+def test_no_guard_reads_the_source_where_it_means_a_document():
+    r"""`source` returns the file, which is neither PDF, so every call is a decision.
+
+    Fifty-one guards read the comment-stripped source through a function called
+    `published`, which was the name that hid this: it suggested a document and
+    returned neither of the two. Three ledgers were moved to per-build reading in the
+    commit that diagnosed the defect; the other forty-eight were not, one of them a
+    guard added in that same commit whose docstring said "both builds must carry the
+    note". Parking the note behind `\iffalse` left it in no PDF with the suite green.
+
+    So `source` is for structural questions only -- what a file inputs, what it
+    defines, where its labels are -- and `SOURCE_READS` is the list of them. A new
+    call has to be added there, which is where the question "is this about the file or
+    about the paper?" gets asked.
+    """
+    offenders = source_reads(ROOT / "tests")
+    assert not offenders, (
+        "these read the source where they may mean a document; if the question is "
+        "what the paper says, use `builds` or `anywhere`:\n" + "\n".join(offenders)
+    )
+
+
+def test_the_source_ledger_names_exactly_the_guards_that_read_the_source():
+    """Held to the suite in both directions, which is what `RAW_READS` is not.
+
+    A ledger checked only for dead entries drifts the way that matters: it goes on
+    excusing what has moved while saying nothing about what has arrived. So this is an
+    equality, and a guard that stops reading the source has to give up its entry.
+    """
+    reading = source_readers(ROOT / "tests")
+    assert set(SOURCE_READS) == set(reading), (
+        f"no entry: {sorted(set(reading) - set(SOURCE_READS))}\n"
+        f"no longer reads the source: {sorted(set(SOURCE_READS) - set(reading))}"
+    )
 
 
 def test_no_section_file_is_read_by_neither_build():
@@ -176,7 +297,7 @@ def test_no_section_file_is_read_by_neither_build():
     # the real file's `\\input`.
     inputs = set()
     for path in [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex")]:
-        for ref in re.findall(r"\\input\{([^}]*)\}", published(path)):
+        for ref in re.findall(r"\\input\{([^}]*)\}", source(path)):
             rel = ref[len("sections/"):] if ref.startswith("sections/") else ref
             inputs.add(rel)
     orphans = sorted(
@@ -196,7 +317,7 @@ def test_the_sections_define_no_macros_of_their_own():
     """
     bad = []
     for path in sorted(SECTIONS.rglob("*.tex")):
-        for m in re.finditer(r"\\(?:re)?newcommand|\\def(?=\\)", published(path)):
+        for m in re.finditer(r"\\(?:re)?newcommand|\\def(?=\\)", source(path)):
             bad.append(f"  {path.relative_to(PAPER).as_posix()} defines a macro")
     assert not bad, "\n".join(sorted(set(bad))) + "\n  (define it in macros.tex)"
 
@@ -209,7 +330,7 @@ def test_every_deferred_block_is_hooked_once_and_listed_once():
     hooks: dict[str, list[str]] = {}
     listed: dict[str, list[str]] = {}
     for path in [*SECTIONS.glob("*.tex"), *MOVED.glob("*.tex")]:
-        text = published(path)
+        text = source(path)
         for name in _HOOK.findall(text):
             hooks.setdefault(name, []).append(path.name)
         if path.stem in WRAPPERS:
@@ -224,7 +345,7 @@ def test_every_deferred_block_is_hooked_once_and_listed_once():
         # A block nested inside another deferred block is included with its parent, so it
         # is hooked unconditionally there and listed nowhere.
         nested = any(
-            f"\\input{{sections/moved/{name}}}" in published(p)
+            f"\\input{{sections/moved/{name}}}" in source(p)
             for p in MOVED.glob("*.tex") if p != path
         )
         if nested:
@@ -243,7 +364,7 @@ def test_no_deferred_block_inputs_an_appendix_wrapper():
     a file that is itself deferred pulls the whole wrapper, and its ten blocks, in again."""
     bad = []
     for path in sorted(MOVED.glob("*.tex")):
-        for ref in _INPUT.findall(published(path)):
+        for ref in _INPUT.findall(source(path)):
             if Path(ref).name in WRAPPERS:
                 bad.append(f"  {path.name} inputs the wrapper sections/{ref}")
     assert not bad, "\n".join(bad)
@@ -254,7 +375,7 @@ def test_a_deferred_block_does_not_guard_its_own_children():
     false in the build where it lands in an appendix and its child disappears."""
     bad = []
     for path in sorted(MOVED.glob("*.tex")):
-        for name in _HOOK.findall(published(path)):
+        for name in _HOOK.findall(source(path)):
             bad.append(f"  {path.name} hooks {name} with \\iffull; use a plain \\input")
     assert not bad, "\n".join(bad)
 
@@ -277,7 +398,7 @@ def test_an_indent_suppressed_after_a_hook_is_conditional():
     """
     bad = []
     for path in sorted(SECTIONS.glob("*.tex")):
-        lines = published(path).split("\n")
+        lines = source(path).split("\n")
         for i, line in enumerate(lines):
             if not _HOOK.fullmatch(line.strip()):
                 continue
@@ -308,7 +429,7 @@ def test_apref_is_used_only_where_it_can_resolve():
     body. Inside a deferred block it tells the reader to consult the page they are on."""
     bad = []
     for path in sorted(MOVED.glob("*.tex")):
-        text = published(path)
+        text = source(path)
         for macro in ("\\apref{", "\\apin{"):
             if macro in text:
                 bad.append(f"  {path.name} uses {macro[:-1]}; cite the block by its own label")
@@ -318,11 +439,11 @@ def test_apref_is_used_only_where_it_can_resolve():
 def test_every_apref_target_exists():
     targets = set()
     for name in WRAPPERS:
-        text = published(SECTIONS / f"{name}.tex")
+        text = source(SECTIONS / f"{name}.tex")
         targets.update(re.findall(r"\\apphead\{[^}]*\}\{([^}]*)\}", text))
     used = set()
     for path in [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex")]:
-        text = published(path)
+        text = source(path)
         used.update(re.findall(r"\\apref\{([^}]*)\}", text))
         used.update(re.findall(r"\\apin\{([^}]*)\}", text))
     assert used <= targets, f"\\apref to labels no wrapper defines: {sorted(used - targets)}"
@@ -337,7 +458,7 @@ def test_an_appendix_pointer_carries_its_own_preposition():
     """
     bad = []
     for path in [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex")]:
-        text = flat(published(path))
+        text = flat(anywhere(path))
         for m in re.finditer(r"(\w+(?:\s+\w+){0,2})\s+\\apref\{", text):
             lead = m.group(1).lower().split()[-1]
             if lead in {"out", "collected", "given", "listed", "recorded", "stated"}:
@@ -366,20 +487,21 @@ def test_the_compared_shape_count_matches_the_differential_table():
     The count has no registry key, so `BOUND` cannot reach it and the allowlist carried
     the stale value as "unregistered". The table is generated, so it is the authority.
     """
-    table = published(PAPER / "tables" / "differential.tex")
-    m = re.search(r"Compared against both systems\s*&\s*([\d,]+)\s*&", table)
-    assert m, "the differential table no longer has a 'Compared against both systems' row"
+    printed = table(PAPER / "tables" / "differential.tex")
+    m = re.search(r"Compared against both systems\s*&\s*([\d,]+)\s*&", printed)
+    assert m, "the differential printed no longer has a 'Compared against both systems' row"
     compared = m.group(1)
-    prose = published(SECTIONS / "07_evaluation.tex")
     spelled = compared.replace(",", "{,}")
-    assert f"${spelled}$" in prose, (
-        f"tables/differential.tex compares {compared} shapes; §7 does not say so"
-    )
     total = _registry()["nb05.shapes"]
     uncompared = total - int(compared.replace(",", ""))
-    assert uncompared >= 0 and f"${total}$" in prose, (
-        f"§7 should state the shape total {total} beside the {compared} compared"
-    )
+    assert uncompared >= 0
+    for prose in builds(SECTIONS / "07_evaluation.tex"):
+        assert f"${spelled}$" in prose, (
+            f"tables/differential.tex compares {compared} shapes; §7 does not say so"
+        )
+        assert f"${total}$" in prose, (
+            f"§7 should state the shape total {total} beside the {compared} compared"
+        )
 
 
 def test_the_feature_bound_slack_is_the_registry_value():
@@ -393,12 +515,14 @@ def test_the_feature_bound_slack_is_the_registry_value():
     caught.
     """
     slack = _registry()["nb03.feature_slack_occurrences"]
-    prose = flat(published(SECTIONS / "07_evaluation.tex"))
-    clause = re.search(r"the gap is \$([\d,]+)\$ occurrences that use nothing outside", prose)
-    assert clause, "§7 no longer has the feature-bound slack clause this pins"
-    assert clause.group(1).replace("{,}", "").replace(",", "") == str(slack), (
-        f"§7 states the slack as {clause.group(1)}; the registry computes {slack}"
-    )
+    for build in builds(SECTIONS / "07_evaluation.tex"):
+        prose = flat(build)
+        clause = re.search(
+            r"the gap is \$([\d,]+)\$ occurrences that use nothing outside", prose)
+        assert clause, "§7 no longer has the feature-bound slack clause this pins"
+        assert clause.group(1).replace("{,}", "").replace(",", "") == str(slack), (
+            f"§7 states the slack as {clause.group(1)}; the registry computes {slack}"
+        )
 
 
 def test_the_promql_population_matches_the_parse_table():
@@ -411,8 +535,8 @@ def test_the_promql_population_matches_the_parse_table():
     The table is generated, so it is the authority, and the pre-correction value is
     barred outright rather than left to an allowlist to decline to question.
     """
-    table = published(PAPER / "tables" / "parse_coverage.tex")
-    m = re.search(r"promql\s*&\s*([\d,]+)\s*&", table)
+    printed = table(PAPER / "tables" / "parse_coverage.tex")
+    m = re.search(r"promql\s*&\s*([\d,]+)\s*&", printed)
     assert m, "tables/parse_coverage.tex no longer has a promql row"
     spelled = m.group(1).replace(",", "{,}")
     quoting = {
@@ -420,12 +544,12 @@ def test_the_promql_population_matches_the_parse_table():
         "moved/eval_language_use.tex", "moved/eval_staircase.tex",
     }
     for rel in sorted(quoting):
-        text = published(SECTIONS / rel)
-        assert f"${spelled}$" in text, (
-            f"{rel} should state the PromQL population as {m.group(1)}"
-        )
+        for text in builds(SECTIONS / rel):
+            assert f"${spelled}$" in text, (
+                f"{rel} should state the PromQL population as {m.group(1)}"
+            )
     for path in sorted(SECTIONS.rglob("*.tex")):
-        assert "8{,}096" not in published(path), (
+        assert "8{,}096" not in anywhere(path), (
             f"{path.name} still quotes the pre-correction PromQL population"
         )
 
@@ -450,4 +574,64 @@ def test_the_build_converged(build):
     assert not stale, (
         f"paper/{build}.log asks for another pass ({', '.join(stale)}): the PDF's "
         "cross-references and table of contents are a pass behind its sources"
+    )
+
+
+def test_no_module_defines_a_private_helper_nothing_calls():
+    r"""A helper that reads like a check and is called by nothing is worse than none.
+
+    `_vendor_dates` walked every vendor cache, pulled each `collected_at`, and carried
+    its own `assert out, "no vendor cache carries a timestamp"`. Nothing called it. It
+    read exactly like the guard behind `tables/vendor_provenance.tex`, which is why
+    moving a date in that table by thirteen months passed -- the check it looked like
+    did not exist, and its existence as a function is what stopped anyone writing one.
+    Two others, `_math_text` and `_live_span_files`, were dead the same way.
+
+    So the suite may not carry one. A helper written ahead of its caller fails here
+    until the caller arrives, which is the right order for a check and its use.
+    """
+    dead = []
+    for path in sorted((ROOT / "tests").glob("*.py")):
+        tree = ast.parse(path.read_text())
+        defined = {n.name: n.lineno for n in ast.walk(tree)
+                   if isinstance(n, ast.FunctionDef) and n.name.startswith("_")
+                   and not n.name.startswith("__")}
+        used = ({n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
+                | {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
+                | {n.value for n in ast.walk(tree)
+                   if isinstance(n, ast.Constant) and isinstance(n.value, str)})
+        for name, line in sorted(defined.items(), key=lambda kv: kv[1]):
+            if name not in used:
+                dead.append(f"  {path.name}:{line} {name} is defined and never called")
+    assert not dead, "\n".join(dead) + "\n  (call it, or delete it)"
+
+
+def test_the_derived_inputs_the_suite_reads_are_present():
+    """Named here so a fresh clone gets one legible failure instead of thirty-seven.
+
+    `data/processed/` and the corpus sources are gitignored because they are derived,
+    and `make data` is deliberately not a dependency of `make test` -- a machine
+    without docker should still be able to run the suite against data it already has.
+    The cost is that a clean checkout fails thirty-seven tests on missing input, each
+    with a `FileNotFoundError` or a `KeyError` that looks exactly like a real failure.
+    A reviewer cloning this repository cannot tell them apart.
+
+    This does not fix that. It gives it a name and the command, so the one failure
+    anybody reads first says what to run.
+    """
+    needed = [
+        ROOT / "data" / "processed" / "translations.csv",
+        ROOT / "data" / "processed" / "features.csv",
+        ROOT / "data" / "processed" / "heldout_eval.json",
+        ROOT / "data" / "processed" / "heldout_cv.json",
+        ROOT / "data" / "processed" / "rollup_spans.json",
+        ROOT / "data" / "corpus" / "queries.jsonl",
+    ]
+    missing = [str(p.relative_to(ROOT)) for p in needed if not p.exists()]
+    assert not missing, (
+        "the suite reads derived inputs this checkout does not have:\n  "
+        + "\n  ".join(missing)
+        + "\n  run `make notebooks && make data` (both are gitignored because they are "
+          "derived, and neither is a dependency of `make test`). Every other failure "
+          "about a missing file or a missing key is this one."
     )

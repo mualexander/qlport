@@ -29,7 +29,7 @@ from pathlib import Path
 
 import pytest
 
-from texsource import flat, published, rendered, strip_comments
+from texsource import anywhere, flat, rendered, strip_comments, table
 
 ROOT = Path(__file__).resolve().parent.parent
 # rglob, not glob: sections/moved/ holds the blocks the 20-page build defers to an
@@ -55,7 +55,7 @@ def _section_path(name: str) -> Path:
         f"{name} names {len(found)} files under paper/sections: "
         f"{[str(c.relative_to(ROOT)) for c in found]}")
     return found[0]
-    raise AssertionError(f"{name} is bound but no such file exists")
+
 # The abstract moved into body.tex when the paper gained a 20-page and a full
 # build; it is the most-read part of the document and the one place a stale figure
 # survived two passes, so it is scanned like any section.
@@ -85,11 +85,6 @@ def _math(text: str) -> list[str]:
     return re.findall(r"\$([^$]*)\$", text)
 
 
-def _math_text(path: Path) -> str:
-    """Every `$...$` span of one file, joined. Prose outside math is not a figure."""
-    return "\x01".join(_math(published(path)))
-
-
 def _math_in_both_builds(path: Path) -> tuple[str, str]:
     r"""One file's math spans as each of the two PDFs will have them.
 
@@ -108,7 +103,7 @@ def _math_in_both_builds(path: Path) -> tuple[str, str]:
 def _prose_figures() -> dict[tuple[str, float], set[str]]:
     out: dict[tuple[str, float], set[str]] = {}
     for path in [*SECTIONS, MAIN]:
-        for span in _math(published(path)):
+        for span in _math(anywhere(path)):
             for tok, pct in _NUM.findall(span):
                 key = _norm(tok, pct)
                 if key:
@@ -127,7 +122,7 @@ def _accounted() -> set[tuple[str, float]]:
     """
     ok: set[tuple[str, float]] = set()
     for path in TABLES:
-        for tok, pct in _NUM.findall(published(path)):
+        for tok, pct in _NUM.findall(anywhere(path)):
             key = _norm(tok, pct)
             if key:
                 ok.add(key)
@@ -401,7 +396,7 @@ def test_a_historical_figure_is_not_licensed_outside_its_section():
     Putting the superseded kappa in the abstract -- the exact drift that prompted this
     file -- must fail even though §7 is entitled to quote the same number.
     """
-    abstract = published(MAIN)
+    abstract = anywhere(MAIN)
     assert "95.6" not in abstract, "stale kappa in the abstract"
     stale = {k: v for k, v in _prose_figures().items() if k[1] == 95.6}
     assert stale, "the historical kappa should still be quoted somewhere"
@@ -416,7 +411,7 @@ def test_the_registry_agrees_with_the_tables_on_kappa():
     while the paper contradicted itself.
     """
     reg = json.loads(REGISTRY.read_text())
-    coverage = published(ROOT / "paper" / "tables" / "translation_coverage.tex")
+    coverage = table(ROOT / "paper" / "tables" / "translation_coverage.tex")
     assert f"{reg['nb03.kappa_occurrences']:,}" in coverage
     assert f"{reg['nb03.kappa_distinct']:,}" in coverage
     assert f"{reg['nb03.kappa_pct']}\\%" in coverage
@@ -891,10 +886,13 @@ PHRASES: tuple[tuple[str, str], ...] = (
     # so "smaller than the movement either figure carries" was wrong on the figure the
     # reader would check first. Extending a phrase to make it bite harder extended it
     # over a claim that had not been checked.
+    # "dashboard-level jackknives" became "delete-one-dashboard jackknives" when the
+    # two margin errors a few lines away stopped being called clustered ones: one
+    # procedure, one name for it, everywhere in the paper.
     ("04_grammars.tex",
-     r"the ${ho.ex_shrink_points}$-point difference is no larger than the "
+     r"the ${ho.ex_shrink_points}$-point fall is no larger than the "
      r"${ho.ex_shrink_se_points}$ points of spread it inherits from the two "
-     r"dashboard-level jackknives behind it"),
+     r"delete-one-dashboard jackknives behind it"),
     ("07_evaluation.tex",
      r"${ho.gf_shrink_se_points}$ points on the first and "
      r"${ho.ex_shrink_se_points}$ on the second"),
@@ -1160,7 +1158,7 @@ def test_the_baseline_names_no_gap_the_catalogue_has_dropped():
     have to be tied to something that shrinks.
     """
     reg = json.loads(REGISTRY.read_text())
-    catalogue = published(ROOT / "paper" / "tables" / "gap_catalogue.tex")
+    catalogue = table(ROOT / "paper" / "tables" / "gap_catalogue.tex")
     for key in sorted(k for k in reg if k.startswith("oo.gap_")):
         code = key[len("oo.gap_"):].upper().replace(".", "_")
         assert code.replace("_", r"\_") in catalogue, \
@@ -1491,7 +1489,7 @@ def _table_only() -> dict[tuple[str, float], tuple[list[str], list[str]]]:
             reg.add(("pct" if share else "num", round(float(value), 4)))
     tables: dict[tuple[str, float], list[str]] = {}
     for path in TABLES:
-        for tok, pct in _NUM.findall(published(path)):
+        for tok, pct in _NUM.findall(anywhere(path)):
             key = _norm(tok, pct)
             if key:
                 tables.setdefault(key, []).append(path.stem)
@@ -1614,11 +1612,6 @@ def _live_spans() -> "object":
     return _SPANS["counts"]
 
 
-def _live_span_files() -> int:
-    _live_spans()
-    return _SPANS["files"]
-
-
 def _counts(lang: str, which: str, texts) -> "object":
     import collections
 
@@ -1739,23 +1732,6 @@ CORPUS_DERIVED: tuple[tuple[str, float, str, object], ...] = (
 )
 
 
-def _vendor_dates():
-    """Every vendor cache's collection timestamp, as dates."""
-    import json
-    from datetime import datetime
-
-    out = []
-    raw = ROOT / "data" / "raw" / "datadog"
-    for path in sorted(raw.glob("*.json")):
-        doc = json.loads(path.read_text())
-        prov = doc.get("provenance") if isinstance(doc.get("provenance"), dict) else {}
-        at = prov.get("collected_at") or doc.get("collected_at")
-        if at:
-            out.append(datetime.fromisoformat(at).date())
-    assert out, "no vendor cache carries a timestamp"
-    return out
-
-
 def test_every_corpus_figure_still_comes_out_of_the_corpus():
     wrong = []
     for _, value, note, derive in CORPUS_DERIVED:
@@ -1772,3 +1748,139 @@ def test_every_corpus_figure_is_still_quoted():
                if (kind, round(float(v), 4)) not in prose]
     assert not missing, "derived from the corpus but no longer in the paper:\n" + \
         "\n".join(missing)
+
+
+# --- claims written as words ----------------------------------------------------------
+
+_WORD = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+         "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+         "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18,
+         "nineteen": 19, "twenty": 20, "twenty-one": 21, "twenty-two": 22,
+         "twenty-three": 23, "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
+         "twenty-seven": 27, "twenty-eight": 28}
+
+
+def test_the_staircase_thresholds_written_as_words_are_the_registry_curve():
+    r"""The paper's self-described practical result, spelled out in English.
+
+    `_prose_figures` reads `$...$` spans, so a number written as a word is invisible to
+    every binding and every ledger in this file. The staircase's headline thresholds
+    are written as words -- "half the corpus needs nine features; $90\%$ needs sixteen
+    of the twenty-eight" -- and an adversary changed them to three and four, reversing
+    section 7.3 and the paragraph that exists to support it, at 795 passed. Nothing
+    could have caught it: the registry still said what it says.
+
+    The Datadog thresholds are checked against `nb00.ceiling_N_features_pct`, which is
+    the curve those sentences are claims about. WHAT IS NOT CHECKED, and why: the
+    registry carries no such curve for PromQL, so "fourteen features" and "seventeen
+    of twenty-four" are held only to the vocabulary size. Reconstructing the PromQL
+    curve here was tried and abandoned -- a greedy order written from the paper's own
+    description of it reproduced none of the Datadog values, so a guard built on it
+    would have been a second implementation agreeing with neither the notebook nor the
+    paper. The honest state of this is one language bound and one not.
+    """
+    reg = _reg()
+    ceiling = {n: reg[f"nb00.ceiling_{n}_features_pct"]
+               for n in range(reg["cv.dd_vocabulary"] + 1)
+               if f"nb00.ceiling_{n}_features_pct" in reg}
+    assert len(ceiling) >= 20, sorted(ceiling)
+    half = min(n for n, v in sorted(ceiling.items()) if v >= 50)
+    ninety = min(n for n, v in sorted(ceiling.items()) if v >= 90)
+    dd_vocab, pq_vocab = reg["cv.dd_vocabulary"], reg["cv.pq_vocabulary"]
+
+    # The two sentences are told apart by their own punctuation: the Datadog pair is
+    # joined by a semicolon and names "the" vocabulary, the PromQL pair by "and".
+    datadog = re.compile(r"Half the corpus needs (\w+(?:-\w+)?) features; "
+                         r"\$90\\%\$ needs (\w+(?:-\w+)?) of the (\w+(?:-\w+)?)")
+    promql = re.compile(r"half the corpus needs (\w+(?:-\w+)?) features and "
+                        r"\$90\\%\$ needs (\w+(?:-\w+)?) of (\w+(?:-\w+)?)")
+    caption = re.compile(r"after (\w+(?:-\w+)?) of Datadog's (\w+(?:-\w+)?) features "
+                         r"and\s+(\w+(?:-\w+)?) of PromQL's (\w+(?:-\w+)?)")
+    found = 0
+    for name in ("moved/eval_staircase.tex", "07_evaluation.tex"):
+        path = ROOT / "paper" / "sections" / name
+        for full in (False, True):
+            said = flat(rendered(path, full))
+            for m in datadog.finditer(said):
+                found += 1
+                assert _WORD.get(m.group(1)) == half, (
+                    f"{name}: half the corpus is said to need {m.group(1)!r}; the "
+                    f"registry's curve first passes 50% at {half}")
+                assert _WORD.get(m.group(2)) == ninety, (
+                    f"{name}: 90% is said to need {m.group(2)!r}; the curve first "
+                    f"passes 90% at {ninety}")
+                assert _WORD.get(m.group(3)) == dd_vocab, (m.group(3), dd_vocab)
+            for m in promql.finditer(said):
+                found += 1
+                # Only the vocabulary, for the reason the docstring gives.
+                assert _WORD.get(m.group(3)) == pq_vocab, (m.group(3), pq_vocab)
+            for m in caption.finditer(said):
+                found += 1
+                assert _WORD.get(m.group(1)) == ninety, (m.group(1), ninety)
+                assert _WORD.get(m.group(2)) == dd_vocab, (m.group(2), dd_vocab)
+                assert _WORD.get(m.group(4)) == pq_vocab, (m.group(4), pq_vocab)
+    assert found >= 3, (
+        f"only {found} of the spelled-out staircase claims were found, so the "
+        f"sentences have been reworded and these patterns no longer reach them")
+
+
+# The paper quoting its own former claim in order to warn about it is not the paper
+# making the claim, so quoted spans come out before the sweep below looks for it.
+_QUOTED = re.compile(r"``.*?''", re.S)
+
+
+def test_the_inexpressible_column_carries_its_qualification_everywhere():
+    r"""Section 7 states this as a rule and the paper broke it in seven places.
+
+    The rule, at `07_evaluation.tex`: all 287 refused occurrences are unwritten code,
+    "with one qualification this section states where it arises and carries everywhere
+    the column is mentioned: 14 of them are refused on a hypothesis this paper tests
+    for the declared metrics and cannot test for theirs, so they are undecided rather
+    than retracted." Section 8 then states the defensible form in as many words --- the
+    column "is empty of anything demonstrated", "which is a weaker claim than
+    `empty'" --- and forty-four lines later said "The column is empty now, which is a
+    stronger claim than any of the figures it used to hold". The abstract said it
+    twice, the introduction twice, the discussion once more and `concl_evidence` once.
+
+    So the rule is enforced rather than stated. Any sentence asserting that the column
+    is empty, or has emptied, or holds nothing, has to say in what sense, in both
+    builds. The licensed senses are the ones the evidence carries: nothing
+    *demonstrated*, nothing this paper can *show*, a *near*-empty column, or the 14
+    named as undecided.
+
+    What this does not touch, deliberately: sentences about the column's history ("did
+    not start empty"), about what shape would make it empty, and the three that say
+    "empty selection", which is a different object. Narrowing the pattern to present
+    assertions does that without a ledger of exceptions, and a ledger here would be
+    the thing that lets the eighth site in.
+    """
+    claim = re.compile(
+        r"[^.]*\bcolumn\b[^.]*?\b(?:is empty|is now empty|emptied|emptying|"
+        r"holds none|holds nothing|with nothing in it|nothing left beyond it)\b[^.]*\.",
+        re.I)
+    also = re.compile(r"[^.]*\b(?:empty|emptied) column\b[^.]*\.", re.I)
+    qualified = ("demonstrated", "demonstrate", "near-empty", "undecided",
+                 "we can show", "can show", "is shown to", "nothing we can",
+                 "nothing this paper can")
+    bare = []
+    for path in sorted([*SECTIONS, MAIN]):
+        for full in (False, True):
+            said = _QUOTED.sub("", flat(rendered(path, full)))
+            for pattern in (claim, also):
+                for m in pattern.finditer(said):
+                    if any(q in m.group(0) for q in qualified):
+                        continue
+                    build = "main_full" if full else "main"
+                    bare.append(f"  {path.name} in {build}: {m.group(0).strip()[:160]}")
+    assert not bare, (
+        "these assert the inexpressible column is empty without the qualification "
+        "§7 says it carries everywhere:\n" + "\n".join(sorted(set(bare)))
+        + "\n  (say nothing *demonstrated*, or name the 14 undecided)")
+    # And the rule itself has to still be in the paper, in both builds, or this test is
+    # enforcing a convention the paper no longer announces.
+    rule = "carries everywhere the column is mentioned"
+    for full in (False, True):
+        assert rule in flat(rendered(
+                ROOT / "paper" / "sections" / "07_evaluation.tex", full)), (
+            "§7 no longer states the qualification as one that travels, so either "
+            "the rule is gone or it has moved and this test has to move with it")

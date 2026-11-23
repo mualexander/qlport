@@ -15,8 +15,10 @@ the combination, applied to two languages whose systems do not store the same da
 \subsection{Query languages as formal languages}
 
 Rich's §48.1 is the licence for the approach: a query language is a formal language, so
-grammars, automata and decidability apply to it~\citep{rich2008}, and which class a
-language falls in decides what can be settled mechanically. An unambiguous grammar gives
+grammars, automata and decidability apply to it~\citep{rich2008} --- the section itself
+is a short applications note pointing at published SQL grammars, and the classification
+the rest of this paragraph leans on is the book's rather than that section's. Which
+class a language falls in decides what can be settled mechanically. An unambiguous grammar gives
 each query exactly one parse tree, which is the precondition for a translation being
 well defined; an LALR(1) one makes the parse linear and the parser a table, so a corpus
 can be processed in bulk rather than sampled~\citep{aho2006}.
@@ -90,23 +92,26 @@ from and its SHA-256, because the repository is a feature branch with open pull 
 and a force-push would change what the live page says while changing nothing about what
 was claimed on the date recorded there. It arrives independently at three of this paper's devices. Each
 of its rules carries one of four claims --- \emph{exact}, \emph{exact-under},
-\emph{bounded}, \emph{manual} --- which is \S\ref{sec:framework}'s exactness relative to
+\emph{bounded}, \emph{manual} --- with a fifth, \emph{unsupported}, for anything no
+rule covers, which is \S\ref{sec:framework}'s exactness relative to
 a stated condition in all but name; each translated item carries a ledger of the
 assumptions its claim rests on, unioned up the expression tree, which is
 \S\ref{sec:kernel-soundness}'s caveat set; and anything without a rule is refused by the
 name of the construct rather than approximated, which is \S\ref{sec:framework}'s typed
-$\bot$. It also keeps a standing list of its own rules whose only evidence is a unit
-test. That convergence is the useful part of finding it: these are not this paper's
+$\bot$. That convergence is the useful part of finding it: these are not this paper's
 inventions but what the problem forces on anyone unwilling to round a translation up.
 
 What it does not publish is what leaves this paper's claims standing. There is no grammar
-for the Datadog side --- its parser is hand-written recursive descent, and the only
-published grammar it uses is Prometheus's, to check its own output --- and the
-mathematics its rule tables cite throughout, by section and theorem number, is in none of
-the repository's branches. Nor is its coverage figure comparable with $\kappa$: it counts
+for the Datadog side: its parser is hand-written recursive descent, and the only
+published grammar it uses is Prometheus's, to check its own output. Everything said
+about that repository here is in the cached README and nothing is read off the live
+branch --- two earlier observations were, and have been withdrawn rather than
+footnoted, because a claim a reader cannot check against the cache is a claim this
+paper has no business making about a tree that can be force-pushed. Nor is its coverage
+figure comparable with $\kappa$: it counts
 output that parses, which is the one measure \S\ref{sec:baseline} reports separately for
-precisely that reason. None of these three is a criticism of the tools: a migration tool
-is judged by whether the dashboard comes up.
+precisely that reason. Neither of those two is a criticism of the tools: a migration
+tool is judged by whether the dashboard comes up.
 It does mean the quantities this paper reports --- what is impossible rather than
 unbuilt, how often a translation rests on something the query does not say, and how
 often the resulting guess is wrong --- have no \emph{published} measurement to be set

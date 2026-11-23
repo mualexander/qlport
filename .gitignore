@@ -26,3 +26,6 @@ data/processed/*
 # data/corpus/SOURCES.md. data/corpus/queries.jsonl is what the notebooks read.
 data/corpus/sources/
 data/heldout/sources/
+
+# Derived: `make paper` records by content which sources the build read.
+paper/.sources.sha256

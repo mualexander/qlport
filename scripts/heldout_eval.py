@@ -313,7 +313,15 @@ def gain_spread(queries: list, lang: str, corpus_forms: set[str]) -> dict:
     dev = [r - mean for r in reps]
     s2 = sum(d * d for d in dev)
     s4 = sum(d ** 4 for d in dev)
+    # The replicates themselves, so the four scalars below are not the author's word.
+    # `jackknife` below stores its per-dashboard tally for exactly this reason and says
+    # so; this function, four hundred lines above it, went on returning bare scalars.
+    # Setting `gain_se` to zero against a printed 0.9 passed every statistics guard,
+    # and these four carry the paper's central hedge in section 4, section 7 and the
+    # appendix: a fix applied where it was found and not where it belonged, which is
+    # the defect the commit that made it was about.
     return dict(distinct=len(keep), dashboards=n,
+                replicates=sorted(reps),
                 effective_clusters=round(s2 * s2 / s4, 1) if s4 else None,
                 gain=full, gain_se=math.sqrt(var),
                 gain_points=round(full, 1), gain_se_points=round(math.sqrt(var), 1))
@@ -367,33 +375,47 @@ def _cluster_bootstrap(per: list[list[int]]) -> dict:
     doing no work; where it does not, the linearised figure is the one to distrust.
 
     It answers two different questions and they came out differently, which is why
-    both are recorded. The MAGNITUDE agrees: the mean standard deviation over the
-    seeds is within a per cent of the linearised error. The SHAPE does not: the
+    both are recorded. The MAGNITUDE agrees to about a per cent: the mean standard
+    deviation over the seeds against the linearised error. The SHAPE does not: the
     replicate distribution is left-skewed, and its 95 per cent interval is displaced
-    from the normal one by a third of a standard error on the held-out side against a
-    sixth in sample --- the degradation an effective cluster count of two predicts. A
-    comment in this file asserted the shape was fine on the strength of the magnitude
-    agreeing, which does not follow, after an earlier one had asserted the opposite on
-    no evidence at all.
+    from the normal one by a third of a standard error on the held-out side against
+    under a fifth in sample --- the degradation an effective cluster count of two
+    predicts. A comment in this file asserted the shape was fine on the strength of
+    the magnitude agreeing, which does not follow, after an earlier one had asserted
+    the opposite on no evidence at all.
+
+    EVERY FIGURE HERE IS A MEAN OVER THE SEEDS, which the standard deviation became
+    last pass and the shape did not: the skew and both percentiles were taken from
+    `_BOOTSTRAP_SEEDS[0]` alone, and that is the seed this function's own docstring
+    identifies as the outlier of the eight it was picked from. A remedy applied to one
+    of the three things a function returns is the same defect as a fix applied to one
+    guard of fifty-one. The spread of each figure across the seeds is stored beside
+    it, so a third decimal that moves cannot be quoted as though it did not.
     """
     if len(per) < 2:
         return {}
-    sds, out = [], {}
+    sds, skews, lows, highs = [], [], [], []
     for seed in _BOOTSTRAP_SEEDS:
-        reps = _cluster_bootstrap_once(per, seed)
+        reps = sorted(_cluster_bootstrap_once(per, seed))
         mean = sum(reps) / len(reps)
-        sds.append(math.sqrt(sum((r - mean) ** 2 for r in reps) / (len(reps) - 1)))
-        if seed == _BOOTSTRAP_SEEDS[0]:
-            reps.sort()
-            sd = sds[0]
-            # The temporal holdout's three dashboards all translate everything, so
-            # every replicate is the same rate and there is no shape to describe.
-            if sd:
-                out["skew"] = sum((r - mean) ** 3 for r in reps) / len(reps) / sd ** 3
-            out["pct_2_5"] = reps[int(0.025 * len(reps))]
-            out["pct_97_5"] = reps[int(0.975 * len(reps))]
-    out["se_exact"] = sum(sds) / len(sds)
-    out["se_spread"] = max(sds) - min(sds)
+        sd = math.sqrt(sum((r - mean) ** 2 for r in reps) / (len(reps) - 1))
+        sds.append(sd)
+        # The temporal holdout's three dashboards all translate everything, so every
+        # replicate is the same rate and there is no shape to describe.
+        if sd:
+            skews.append(sum((r - mean) ** 3 for r in reps) / len(reps) / sd ** 3)
+        lows.append(reps[int(0.025 * len(reps))])
+        highs.append(reps[int(0.975 * len(reps))])
+
+    def over(xs: list[float]) -> tuple[float, float]:
+        return sum(xs) / len(xs), max(xs) - min(xs)
+
+    out: dict = {}
+    out["se_exact"], out["se_spread"] = over(sds)
+    if skews:
+        out["skew"], out["skew_spread"] = over(skews)
+    out["pct_2_5"], out["pct_2_5_spread"] = over(lows)
+    out["pct_97_5"], out["pct_97_5_spread"] = over(highs)
     return out
 
 
@@ -442,8 +464,11 @@ def jackknife(queries: list, translated: set[str]) -> dict:
                 bootstrap_se_pct=round(boot["se_exact"], 1) if boot else None,
                 bootstrap_se_spread=boot.get("se_spread"),
                 bootstrap_skew=boot.get("skew"),
+                bootstrap_skew_spread=boot.get("skew_spread"),
                 bootstrap_pct_2_5=boot.get("pct_2_5"),
+                bootstrap_pct_2_5_spread=boot.get("pct_2_5_spread"),
                 bootstrap_pct_97_5=boot.get("pct_97_5"),
+                bootstrap_pct_97_5_spread=boot.get("pct_97_5_spread"),
                 bootstrap_draws=_BOOTSTRAP_DRAWS, bootstrap_seeds=list(_BOOTSTRAP_SEEDS),
                 effective_clusters=round(s2 * s2 / s4, 1) if s4 else None,
                 top_cluster_share_pct=round(max((r * r for r in resid), default=0.0)

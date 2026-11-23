@@ -19,11 +19,13 @@ E18's second finding two weeks before anyone read it, which is the reason
 from __future__ import annotations
 
 import json
+import re
+import sys
 from pathlib import Path
 
 import pytest
 
-from texsource import published
+from texsource import builds, flat
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
@@ -169,9 +171,9 @@ def test_e4_recorded_the_divergence_e18_is_credited_with_finding():
     diverging = {k for k in reported if reported[k] != observed[k]}
     assert diverging == {"1m", "5m"}, diverging
     assert reported["1m"] == 1 and observed["1m"] == 10.0
-    remark = published(ROOT / "paper" / "sections" / "moved" / "ing_rollup_spans.tex")
-    assert "it was not new" in remark
-    assert "two of its five ranges" in remark
+    for remark in builds(ROOT / "paper" / "sections" / "moved" / "ing_rollup_spans.tex"):
+        assert "it was not new" in remark
+        assert "two of its five ranges" in remark
 
 
 def test_the_controls_of_the_two_experiments_that_were_re_run_all_hold():
@@ -245,9 +247,9 @@ def test_the_two_kinds_outside_the_corpus_are_the_two_the_remark_names(corpus_te
     for kind, expected in EXTRACTION_EDGE.items():
         missing = {q for q in found[kind] if q not in corpus_texts}
         assert len(missing) == expected, (kind, len(missing), sorted(missing)[:3])
-    remark = published(ROOT / "paper" / "sections" / "moved"
-                       / "eval_extraction_fixes.tex")
-    assert "$9$ Grafana" in remark and "$5$ more behind" in remark
+    for remark in builds(ROOT / "paper" / "sections" / "moved"
+                         / "eval_extraction_fixes.tex"):
+        assert "$9$ Grafana" in remark and "$5$ more behind" in remark
 
 
 def test_the_two_correct_exclusions_really_are_duplicates(corpus_texts):
@@ -291,7 +293,7 @@ def test_the_extractor_reproduces_the_committed_corpus():
     path = ROOT / "data" / "corpus" / "queries.jsonl"
     before = path.read_bytes()
     proc = subprocess.run(
-        [str(ROOT / ".venv" / "bin" / "python"),
+        [sys.executable,
          str(ROOT / "scripts" / "fetch_corpus.py"), "--extract-only"],
         capture_output=True, cwd=ROOT, timeout=600)
     try:
@@ -299,3 +301,128 @@ def test_the_extractor_reproduces_the_committed_corpus():
         assert path.read_bytes() == before, "re-extraction changed the corpus"
     finally:
         path.write_bytes(before)
+
+
+def test_the_span_table_written_by_hand_is_the_table_e18_recorded():
+    r"""Ten spans, two rows, typed into a section file and checked by nothing.
+
+    `tables/` is generated and `test_only_four_hours_takes_the_emitted_interval` reads
+    the cache, but this table is a `tabular` inside `moved/ing_rollup_spans.tex`, so it
+    is neither. Changing the observed interval at `1h` from $20$ to $60$ and the
+    sentence under it from "out by a factor of three" to "exactly right" answered RQ4
+    backwards with the suite green: the emitter's assumed 60 seconds would have been
+    right for the modal span, repudiating section 7.6 and
+    `rs.modal_declared_span_factor`.
+
+    Both rows are in E18's own cache, so both are read off it here. The reported row is
+    what a response says its interval is; the observed row is the spacing of the
+    samples it actually returned, and the gap between them is the finding.
+    """
+    interp = json.loads((RAW / "datadog" / "e18.json").read_text())["interpretation"]
+    reported, observed = interp["reported_by_range"], interp["observed_by_range"]
+
+    rows = {}
+    for text in builds(ROOT / "paper" / "sections" / "moved" / "ing_rollup_spans.tex"):
+        head, body = None, {}
+        for line in text.split("\n"):
+            if line.startswith("Range &"):
+                head = line
+            elif head is not None and line.strip().startswith(("Reported", "Observed")):
+                body[line.split("&")[0].strip()] = line
+        assert head and set(body) == {"Reported (s)", "Observed (s)"}, sorted(body)
+        # The header's span names, and each row's cells, both wrap across two lines in
+        # the source, so the table is taken from the flattened text a reader sees.
+        flat_text = flat(text)
+        spans = re.search(r"Range ((?:& \\texttt\{\w+\}\s*)+)\\\\", flat_text)
+        assert spans, "the span header no longer parses"
+        names = re.findall(r"\\texttt\{(\w+)\}", spans.group(1))
+        assert len(names) == 10, names
+        for label, key in (("Reported", reported), ("Observed", observed)):
+            cells = re.search(rf"{label} \(s\) ((?:& [^\\]+)+)\\\\", flat_text)
+            assert cells, f"the {label} row no longer parses"
+            values = [c.strip() for c in cells.group(1).split("&") if c.strip()]
+            assert len(values) == 10, (label, values)
+            rows[label] = dict(zip(names, values))
+
+    for span, printed in rows["Reported"].items():
+        assert _as_seconds(printed) == reported[span], (
+            f"the table reports {printed} at {span}; E18 recorded {reported[span]}")
+    for span, printed in rows["Observed"].items():
+        want = observed[span]
+        if want is None:
+            assert printed == "---", (
+                f"E18 read no spacing at {span} and the table prints {printed}")
+            continue
+        assert _as_seconds(printed) == want, (
+            f"the table observes {printed} at {span}; E18 measured {want}")
+    # And the sentence the second row exists to support, which is the one an adversary
+    # inverted: the modal declared span is out by the factor the cache computes.
+    factor = json.loads(
+        (ROOT / "data" / "processed" / "rollup_spans.json").read_text())["figures"][
+            "rs.modal_declared_span_factor"]
+    assert factor > 1, "the modal span is no longer out by a factor at all"
+    for text in builds(ROOT / "paper" / "sections" / "moved" / "ing_rollup_spans.tex"):
+        assert "out by a factor of three" in flat(text), (
+            "the remark no longer states the divergence the second row shows")
+
+
+def _as_seconds(cell: str) -> int:
+    """One table cell as a number: `$3{,}600$` is 3600."""
+    return int(cell.replace("$", "").replace("{,}", "").replace(",", "").strip())
+
+
+def test_every_anchored_figure_is_the_one_the_cache_produced():
+    r"""Six registry keys that were the only unchecked family left.
+
+    `na.*` is the whole evidence for Proposition~\ref{prop:anchored}'s second branch,
+    and `scripts/verify_anchored.py` wrote the keys straight to the registry with no
+    cache-to-registry pin of the kind `ho.*` has. Registry and prose moved together
+    and nothing objected: an adversary took `na.no_anchor_plain` from $31.7$ to $51.7$
+    and rewrote the proof to match, which changes the extrapolation control reading
+    that separates the proposition from one of its two plausible failures.
+
+    Every one is re-derived here from `data/raw/anchored/no_anchor_60.json`, which is
+    committed, so this needs no server and no live Prometheus.
+    """
+    import sys as _sys
+
+    _sys.path.insert(0, str(ROOT / "scripts"))
+    import verify_anchored as va
+
+    payload = json.loads(
+        (RAW / "anchored" / "no_anchor_60.json").read_text())
+    sums = {float(k): v for k, v in payload["model_bucket_sums"].items()}
+    t0, interval = payload["t0"], payload["interval"]
+    read = {label: {round(t - t0 - interval + va.EVAL_EPSILON): v
+                    for t, v in va.series_from_response(c["response"]).items()}
+            for label, c in payload["candidates"].items()}
+    anchored, plain = read["increase(x[D] anchored)"], read["increase(x[D])"]
+    buckets = sorted(sums)
+    exact = [b for b in buckets if abs(anchored.get(b, 1e30) - sums[b]) < 1e-9]
+    b0 = buckets[0]
+    series = va.no_anchor_series()
+
+    want = {
+        "na.buckets": len(buckets),
+        "na.buckets_exact": len(exact),
+        "na.no_anchor_bucket_sum": round(sums[b0], 6),
+        "na.no_anchor_anchored": round(anchored[b0], 6),
+        "na.no_anchor_plain": round(plain[b0], 1),
+        "na.first_value": round(float(series.vs[0]), 6),
+    }
+    reg = json.loads((ROOT / "paper" / "quoted_figures.json").read_text())
+    wrong = [f"  {k}: registry {reg.get(k)!r}, cache gives {v!r}"
+             for k, v in want.items() if reg.get(k) != v]
+    assert not wrong, "\n".join(wrong)
+
+    # And the two relations the proof turns on, so that a consistent edit of all six
+    # still has to be a consistent edit of the physics.
+    assert want["na.no_anchor_anchored"] == want["na.no_anchor_bucket_sum"], (
+        "the anchored form no longer returns the unextrapolated sum, which is what "
+        "the proposition needs")
+    assert want["na.no_anchor_plain"] > want["na.no_anchor_bucket_sum"], (
+        "plain increase no longer overshoots, so the extrapolation control reading "
+        "the proof quotes is not a control for anything")
+    assert want["na.first_value"] > 10 * want["na.no_anchor_bucket_sum"], (
+        "the first sample's value no longer separates the reading from the failure "
+        "where the form takes that sample for a delta")

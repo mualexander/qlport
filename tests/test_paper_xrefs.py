@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from texsource import published
+from texsource import anywhere, builds, source
 
 ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "paper"
@@ -44,7 +44,7 @@ _SOURCE = re.compile(r"((?:[A-Za-z0-9.]|\\_|/|\\slash\s*)+\.py)")
 def _scan(pattern: re.Pattern[str]) -> dict[str, set[str]]:
     found: dict[str, set[str]] = {}
     for path in TEX:
-        for match in pattern.finditer(published(path)):
+        for match in pattern.finditer(source(path)):
             captured = next((g for g in match.groups() if g is not None), "")
             for item in captured.split(","):
                 found.setdefault(item.strip(), set()).add(path.name)
@@ -65,7 +65,7 @@ def _count(pattern: re.Pattern[str]) -> collections.Counter[str]:
     """Occurrences rather than files, which is the distinction `_scan` cannot make."""
     found: collections.Counter[str] = collections.Counter()
     for path in TEX:
-        for match in pattern.finditer(published(path)):
+        for match in pattern.finditer(source(path)):
             captured = next((g for g in match.groups() if g is not None), "")
             for item in captured.split(","):
                 found[item.strip()] += 1
@@ -145,7 +145,7 @@ def test_every_source_file_the_paper_names_exists():
     """
     missing: dict[str, list[str]] = {}
     for path in TEX:
-        for match in _SOURCE.finditer(published(path)):
+        for match in _SOURCE.finditer(source(path)):
             name = (match.group(1).replace(r"\_", "_")
                                   .replace(r"\slash", "/")
                                   .replace(" ", ""))
@@ -161,12 +161,12 @@ _BIBITEM = re.compile(r"\\bibitem\[[^\]]*\]\{([^}]*)\}")
 def _cited() -> set[str]:
     return {key.strip()
             for path in TEX
-            for match in _CITE.finditer(published(path))
+            for match in _CITE.finditer(source(path))
             for key in match.group(1).split(",")}
 
 
 def test_every_citation_has_an_entry():
-    entries = set(_BIBITEM.findall(published(PAPER / "references.tex")))
+    entries = set(_BIBITEM.findall(source(PAPER / "references.tex")))
     dangling = sorted(_cited() - entries)
     assert not dangling, f"cited with no bibliography entry: {dangling}"
 
@@ -178,7 +178,7 @@ def test_every_entry_is_cited():
     original entry cited by nothing, which is the signal that the repoint was
     incomplete rather than that the source stopped mattering.
     """
-    entries = set(_BIBITEM.findall(published(PAPER / "references.tex")))
+    entries = set(_BIBITEM.findall(source(PAPER / "references.tex")))
     orphans = sorted(entries - _cited())
     assert not orphans, f"in the bibliography, cited nowhere: {orphans}"
 
@@ -195,7 +195,7 @@ def test_the_paper_has_no_placeholders_left():
     """
     left: dict[str, list[str]] = {}
     for path in TEX:
-        for match in _PLACEHOLDER.finditer(published(path)):
+        for match in _PLACEHOLDER.finditer(source(path)):
             left.setdefault(match.group(0), []).append(path.name)
     assert not left, f"placeholder left in the paper: {left}"
 
@@ -254,7 +254,7 @@ def test_every_experiment_that_ran_reaches_the_paper():
     exactly where E17 and E18 are. They are listed rather than hidden, so the list
     shrinks as they are written and fails when a new one joins them unnoticed.
     """
-    text = "\n".join(published(p) for p in TEX)
+    text = "\n".join(anywhere(p) for p in TEX)
     uncited = []
     for cache, citations in EXPERIMENTS:
         if not any(c in text for c in citations):
@@ -307,7 +307,7 @@ def test_the_remarks_nothing_points_at_do_not_multiply():
     is the difference between a remark a reader can reach from the claim it supports and
     one they can only stumble on.
     """
-    text = "\n".join(published(p) for p in TEX)
+    text = "\n".join(anywhere(p) for p in TEX)
     labels = set(_REMARK.findall(text))
     cited = set(_REF.findall(text))
     uncited = sorted(labels - cited)
@@ -339,7 +339,7 @@ def test_the_proof_convention_matches_the_statements():
     files = sorted(sections.glob("*.tex")) + sorted((sections / "moved").glob("*.tex"))
     labels, proofs = {}, set()
     for path in files:
-        text = published(path)
+        text = anywhere(path)
         for m in re.finditer(
                 r"\\begin\{(theorem|lemma|proposition|corollary)\}"
                 r"(?:\[[^\]]*\])?\s*\\label\{([^}]+)\}", text, re.S):
@@ -351,5 +351,5 @@ def test_the_proof_convention_matches_the_statements():
     unproved = {k for k in labels if k not in proofs}
     assert unproved == {"prop:decidable", "cor:raw", "cor:quantile", "cor:rate",
                         "prop:disjunction"}, sorted(unproved)
-    body = published(PAPER / "sections" / "03_framework.tex")
-    assert "$20$ numbered results" in body and "$15$ are" in body
+    for body in builds(PAPER / "sections" / "03_framework.tex"):
+        assert "$20$ numbered results" in body and "$15$ are" in body

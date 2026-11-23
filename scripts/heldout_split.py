@@ -49,6 +49,15 @@ REGISTRY = ROOT / "paper" / "quoted_figures.json"
 
 LANGS = ("datadog", "promql")
 SEED = 20261121
+# The staircase cross-validation runs over all five, for the reason `staircase_cv`
+# gives: at one seed its printed figure was a seed artefact. `SEED` still drives
+# `vocabulary_cv`, whose figures are means over far less variable quantities and are
+# printed with their own standard deviation beside them.
+# The first is the one this figure was shipped at (`SEED + 1`, as the single-seed
+# version spelled it), so the change here is the pooling and nothing else. The rest are
+# `heldout_eval.py`'s bootstrap seeds, because two seeded scripts drawing from two
+# private lists is one list too many.
+CV_SEEDS = (20261122, 1, 2, 7, 12345)
 FRACTIONS = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 
 
@@ -148,36 +157,76 @@ def vocabulary_cv(by_dash: dict[str, list[frozenset[str]]], reps: int) -> list[d
 
 
 def staircase_cv(by_dash: dict[str, list[frozenset[str]]], reps: int,
-                 frac: float = 0.5) -> dict:
+                 frac: float = 0.5, at: int = 16) -> dict:
     """Refit the greedy order on half the dashboards; score both halves at every size.
 
     The train curve is section 7's staircase recomputed on a sample. The test curve is
     what the same build order would have delivered on dashboards it was not chosen
     from, and the vertical distance between them at a given size is the part of the
     staircase that is a property of this corpus rather than of the language.
+
+    OVER FIVE SEEDS, AND THE EXACT MEANS KEPT. This ran at one seed and the paper
+    printed the distance at `at` features as "a gap of one point". At another seed it
+    is 1.2: the Monte-Carlo error on the mean of 200 replicates is 0.18, which is
+    nearly twice the last digit printed, and the replicate-level standard deviation is
+    2.5, so a third of individual half-splits show no gap at all. Pooling five seeds
+    and storing both spreads is what lets the paper say which of those it means. The
+    same seed artefact was corrected in `heldout_eval.py` for the bootstrap in the
+    pass before this one, and this script -- the other seeded one -- was not touched.
+
+    The gap is also taken from the exact means rather than from the two curves after
+    rounding. That made no difference at this run's values and it is the shape of the
+    error that put a tenth of a point into three printed figures.
     """
     names = sorted(by_dash)
     k = max(1, round(len(names) * frac))
-    rng = random.Random(SEED + 1)
     width = len(set().union(*(f for n in names for f in by_dash[n])))
-    train_runs, test_runs = [], []
-    for _ in range(reps):
-        train_names = set(rng.sample(names, k))
-        train = [f for n in train_names for f in by_dash[n]]
-        test = [f for n in names if n not in train_names for f in by_dash[n]]
-        if not test:
-            continue
-        order = greedy(train)
-        tr = staircase(train, order)
-        te = staircase(test, order)
-        pad = width + 1 - len(tr)
-        train_runs.append(tr + [tr[-1]] * pad)
-        test_runs.append(te + [te[-1]] * pad)
+    train_runs, test_runs, by_seed = [], [], []
+    for seed in CV_SEEDS:
+        rng = random.Random(seed)
+        tr_runs, te_runs = [], []
+        for _ in range(reps):
+            train_names = set(rng.sample(names, k))
+            train = [f for n in train_names for f in by_dash[n]]
+            test = [f for n in names if n not in train_names for f in by_dash[n]]
+            if not test:
+                continue
+            order = greedy(train)
+            tr = staircase(train, order)
+            te = staircase(test, order)
+            pad = width + 1 - len(tr)
+            tr_runs.append(tr + [tr[-1]] * pad)
+            te_runs.append(te + [te[-1]] * pad)
+        if at <= width:
+            by_seed.append(st.mean(r[at] for r in tr_runs)
+                           - st.mean(r[at] for r in te_runs))
+        train_runs += tr_runs
+        test_runs += te_runs
     mean = lambda runs, i: st.mean(r[i] for r in runs)  # noqa: E731
-    return dict(
-        fraction=frac, reps=len(train_runs), width=width,
+    gaps = [t[at] - s[at] for t, s in zip(train_runs, test_runs)] if at <= width else []
+    out = dict(
+        fraction=frac, reps=len(train_runs), seeds=list(CV_SEEDS), width=width,
         train=[round(mean(train_runs, i), 2) for i in range(width + 1)],
         test=[round(mean(test_runs, i), 2) for i in range(width + 1)])
+    if gaps:
+        sd = st.stdev(gaps)
+        out.update(
+            at=at,
+            train_at=mean(train_runs, at), test_at=mean(test_runs, at),
+            gap_at=mean(train_runs, at) - mean(test_runs, at),
+            # The uncertainty ON THE FIGURE PRINTED, which is the Monte-Carlo error of
+            # the pooled mean and nothing else. The range of the per-seed means is
+            # stored beside it as a tripwire rather than as that uncertainty: five
+            # seeds chosen after the fact agreed to 0.11 while eight spanned 0.39, so
+            # a range over a handful of seeds bounds the next seed by luck. That is
+            # the same mistake as last pass's bootstrap spread, which bounded the mean
+            # it was quoted beside by accident.
+            gap_at_mc_se=sd / len(gaps) ** 0.5,
+            gap_at_seed_range=max(by_seed) - min(by_seed),
+            gap_at_per_seed=[round(g, 4) for g in by_seed],
+            gap_at_replicate_sd=sd,
+            gap_at_share_not_positive=sum(1 for g in gaps if g <= 0) / len(gaps))
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -284,9 +333,16 @@ def main() -> int:
         fig[f"cv.{p}_vocabulary"] = int(res[lang]["staircase"]["width"])
     fig["cv.reps"] = args.reps
     s = res["datadog"]["staircase"]
-    fig["cv.dd_stair_gap_16_pct"] = round(s["train"][16] - s["test"][16], 1)
-    fig["cv.dd_stair_train_16_pct"] = round(s["train"][16], 1)
-    fig["cv.dd_stair_test_16_pct"] = round(s["test"][16], 1)
+    # From the exact means, not from the two curves after rounding, and with both
+    # spreads stored: across seeds, and across the replicates themselves.
+    fig["cv.dd_stair_gap_16_pct"] = round(s["gap_at"], 1)
+    fig["cv.dd_stair_train_16_pct"] = round(s["train_at"], 1)
+    fig["cv.dd_stair_test_16_pct"] = round(s["test_at"], 1)
+    fig["cv.dd_stair_gap_16_mc_se"] = round(s["gap_at_mc_se"], 2)
+    fig["cv.dd_stair_gap_16_seed_range"] = round(s["gap_at_seed_range"], 2)
+    fig["cv.dd_stair_gap_16_replicate_sd"] = round(s["gap_at_replicate_sd"], 1)
+    fig["cv.dd_stair_gap_16_share_not_positive_pct"] = round(
+        s["gap_at_share_not_positive"] * 100)
     print("\nregistry:")
     for k, v in sorted(fig.items()):
         print(f"  {k:<34} {v}")

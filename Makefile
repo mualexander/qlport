@@ -66,6 +66,10 @@ paper:
 	    || { echo "paper/$$m.tex FAILED"; exit 1; }; \
 	  echo "paper/$$m.pdf built: $$(grep -oE '[0-9]+ pages' paper/$$m.log | tail -1)"; \
 	done
+# What the build actually read, by content. The suite's staleness check was an mtime
+# comparison, so `touch paper/main.log` satisfied every test downstream of it against a
+# build that no longer existed. A digest cannot be touched into agreement.
+	@$(PY) scripts/stamp_sources.py
 
 # A fresh checkout, in the order the dependencies actually run: the corpus becomes
 # data/processed, the scripts finish it, the suite reads it, the paper quotes it.

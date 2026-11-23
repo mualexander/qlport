@@ -24,9 +24,9 @@ two languages are \emph{designed}, then no amount of engineering removes it, and
 query language is a retention mechanism whether or not anyone intended it as one.
 
 This paper asks which it is, and answers with measurement rather than assertion. The
-question is tractable because query languages are formal languages: Rich's §48.1 treats
-them as such, and the classification it offers --- regular, context-free, decidable ---
-is the frame this paper works in~\citep{rich2008}. If the two languages are context-free,
+question is tractable because query languages are formal languages: Rich treats them as
+such (§48.1), and the book's classification --- regular, context-free, decidable --- is
+the frame this paper works in~\citep{rich2008}. If the two languages are context-free,
 they have grammars; if their grammars are unambiguous, each query has one parse tree; if
 each construct of one has a meaning-preserving counterpart in the other, a translator
 exists; and where a construct does not, the obstruction can be exhibited as a theorem
@@ -51,7 +51,7 @@ no Datadog translation \emph{at all}, for reasons of information rather than syn
 
 \paragraph{What we did.}
 We inferred a grammar for each language and checked each for conflicts, finding
-Datadog's conflict-free and PromQL's LALR(1) modulo one documented resolution; defined an
+Datadog's conflict-free and PromQL's LALR(1) modulo one resolution this paper documents; defined an
 intermediate representation with a denotation; built a translator that lowers Datadog
 queries into it and emits PromQL, refusing with a named gap code rather than guessing;
 proved the translations exact under stated preconditions and verified the PromQL side
@@ -97,8 +97,8 @@ implementation order were fitted to, which \S\ref{sec:threats} states as the thr
 is. \S\ref{sec:heldout} scores the grammar and the translator frozen on dashboards nobody
 here had read: the grammar parses more of $497$ community dashboards than of the ones it
 was built from, and on a disjoint repository of Datadog dashboards the translator reaches
-$96.7\%$ of $3{,}065$ occurrences, which is indistinguishable from the figure here. Reaching an empty column took eight corrections, six of which emptied a row of the
-gap catalogue, so
+$96.7\%$ of $3{,}065$ occurrences, which is indistinguishable from the figure here. Reaching a column with nothing demonstrated in it took eight corrections, six of
+which emptied a row of the gap catalogue, so
 \S\ref{sec:discussion} treats the zero as the least certain number here rather than the
 most. That ceiling carries a condition it usually travels without: $139$ of
 those $287$ occurrences are \texttt{top(...)}, whose PromQL form needs the dashboard's
@@ -111,7 +111,7 @@ Translating is not the same as translating correctly, and the distance between t
 measurable here. Every expression we emit assumes a metric type the query does not
 state; the repository the dashboards come from declares that type for $89.5\%$ of them,
 and our inference is wrong on $6.5\%$ of those --- $491$ occurrences, against an
-inexpressible column with nothing in it. The translations are exact, and exact relative to context
+inexpressible column with nothing demonstrated in it. The translations are exact, and exact relative to context
 the query omits; no coverage number can see that, which is why $\kappa$ is not this
 paper's main result (\S\ref{sec:emission}, \S\ref{sec:caveats}).
 

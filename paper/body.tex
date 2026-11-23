@@ -14,16 +14,17 @@ whether that cost follows from how the query languages are designed, and answer 
 building the translator and measuring it. We infer a grammar for each language --- the
 first published one for Datadog's, which the vendor documents only by example --- and both
 admit deterministic one-token-lookahead parsers: Datadog's conflict-free, PromQL's modulo
-one documented resolution. Soundness is stated relative to an \emph{ingestion mapping},
+one resolution this paper documents and the reference server makes. Soundness is stated relative to an \emph{ingestion mapping},
 because the two systems do not store the same thing: a Prometheus counter is a running
 total and a Datadog counter a sequence of per-interval deltas. Every refusal carries a
 typed gap code.
 
 Over the $8{,}770$ Datadog metric queries of a corpus of $22{,}894$ extracted from
-published dashboards, $96.6\%$ of occurrences translate, and \emph{none} of the shortfall
+published dashboard and alerting documents, $96.6\%$ of occurrences translate, and \emph{none} of the shortfall
 is shown to be beyond reach: what fails is work this translator has not done rather than
-expressiveness the target lacks. The column we had called inexpressible emptied while the
-paper was being written, and most of the corrections that emptied it were to our own
+expressiveness the target lacks. The column we had called inexpressible emptied of
+everything we can demonstrate while the paper was being written, bar $14$ occurrences
+left undecided, and most of the corrections that emptied it were to our own
 earlier claims rather than to the vendor's behaviour. The grammar and the implementation
 order were fitted to this corpus, which makes $96.6\%$ a resubstitution estimate; frozen
 and run on a disjoint repository of dashboards by other authors it returns an
@@ -35,7 +36,8 @@ leaves to the dashboard's time range, and for the $6.0\%$ of those where a widge
 range itself, the interval a translator would obviously supply is wrong two times in three.
 The metric's type is a second thing no query states, and the one we can check against the
 vendor's own declarations: there our inference is wrong for $6.5\%$ of the cases it can
-settle --- $491$ occurrences, against an inexpressible column that holds none at all.
+settle --- $491$ occurrences, against an inexpressible column holding nothing we can show
+belongs there.
 Coverage and correctness differ by a measured amount that no coverage number can see,
 because a query that does not fix its own meaning parses and translates like any other.
 
@@ -46,7 +48,8 @@ where a common query language would not reach.
 
 Going back is different in kind: a Datadog tag filter is a glob, glob-expressibility of a
 regular expression is decidable, and every refusal we measure in that direction is a
-theorem about globs rather than unfinished work. Leaving costs work; returning costs
+theorem about globs, or that theorem together with a union-size bound we choose and
+state, rather than unfinished work. Leaving costs work; returning costs
 expressiveness. We measure the query layer only, and the reverse direction is evidence
 about tag filtering drawn from the other half of the corpus with no translator built.
 \end{abstract}

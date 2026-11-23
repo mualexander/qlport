@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from texsource import flat, published
+from texsource import builds, flat, rendered, table
 
 ROOT = Path(__file__).resolve().parent.parent
 TABLES = ROOT / "paper" / "tables"
@@ -44,10 +44,14 @@ GRAMMARS = ROOT / "paper" / "sections" / "04_grammars.tex"
 # fails to reconcile, and each must say enough to be the statement: a previous version
 # of this check was a single literal in one file, and setting it to the word
 # "difference" left the suite green.
+STAIRCASE = ROOT / "paper" / "sections" / "moved" / "eval_staircase.tex"
 RECONCILED = (
     (GRAMMARS, "taken from the counts and not from each other"),
     (HELDOUT, "quotient of counts and every margin a difference of two of them, "
               "taken before either is rounded"),
+    (STAIRCASE, "each a mean over $1{,}000$ replicates rather than a quotient of "
+                "counts, with the gap between them taken from the means and not from "
+                "these two printed figures"),
 )
 
 
@@ -58,7 +62,7 @@ def reg() -> dict:
 
 def rows(name: str) -> list[list[str]]:
     """A generated `tabular` as a list of cell lists, rules and preamble dropped."""
-    text = published(TABLES / f"{name}.tex")
+    text = table(TABLES / f"{name}.tex")
     out = []
     for line in text.splitlines():
         line = line.strip()
@@ -303,8 +307,8 @@ def test_the_extrapolation_is_labelled_and_is_an_upper_estimate(reg):
     s = _spans()["figures"]
     share = s["rs.span_declared_wrong"] / s["rs.span_declared_occurrences"]
     assert s["rs.extrapolated_wrong"] == round(s["rs.rollup_default_occurrences"] * share)
-    body = published(ROOT / "paper" / "sections" / "07_evaluation.tex")
-    assert "extrapolation and should not be read as a second measurement" in body
+    for body in builds(ROOT / "paper" / "sections" / "07_evaluation.tex"):
+        assert "extrapolation and should not be read as a second measurement" in body
     # And it must exceed what was measured, or it is not the thing being warned about.
     assert s["rs.extrapolated_wrong"] > s["rs.span_declared_wrong"]
 
@@ -332,8 +336,8 @@ def test_the_unimplemented_column_decomposes_to_its_total():
         "PHI_QUANTILE": 34, "SCOPE_EMPTY_VALUE": 5, "SCOPE_DISJUNCTION": 4,
     }, dict(by_code)
     assert sum(by_code.values()) == 287
-    body = published(ROOT / "paper" / "sections" / "moved" / "eval_unsupported.tex")
-    assert "five codes and $287$ occurrences" in body
+    for body in builds(ROOT / "paper" / "sections" / "moved" / "eval_unsupported.tex"):
+        assert "five codes and $287$ occurrences" in body
 
 
 # --- the two parsers, compared --------------------------------------------------------
@@ -498,15 +502,49 @@ def test_the_vocabulary_ceiling_saturates_well_inside_the_corpus(reg):
 
 
 def test_the_staircase_survives_being_scored_on_dashboards_it_was_not_built_from(reg):
-    """§8 calls the staircase the paper's practical result, so it must not be a fit."""
+    """§8 calls the staircase the paper's practical result, so it must not be a fit.
+
+    The three figures are taken from the exact means and not from the two curves after
+    rounding, and the gap is pooled over five seeds. At one seed it read 1.0; the five
+    per-seed means run 1.00 to 1.23 and the shipped one was the lowest of them, so the
+    printed tenth of a point was a seed artefact of the same kind, and at the same
+    scale, as the bootstrap figure corrected in the pass before this one.
+
+    The spread stored beside it is the Monte-Carlo error of the pooled mean, 0.08, and
+    not the range of the per-seed means: a range over a handful of seeds bounds the
+    next seed by luck, which is how last pass's bootstrap spread came to be quoted as
+    an uncertainty on something it was not an uncertainty on. The range is kept as a
+    tripwire and asserted against what the replicate spread predicts for it.
+    """
     s = _cv()["datadog"]["staircase"]
-    train, test = s["train"][16], s["test"][16]
-    assert train == pytest.approx(reg["cv.dd_stair_train_16_pct"], abs=0.05)
-    assert test == pytest.approx(reg["cv.dd_stair_test_16_pct"], abs=0.05)
-    assert train - test == pytest.approx(reg["cv.dd_stair_gap_16_pct"], abs=0.05)
-    assert 0 <= train - test < 5, (
+    assert s["at"] == 16 and s["reps"] == 1000 and len(s["seeds"]) == 5
+    assert reg["cv.dd_stair_train_16_pct"] == round(s["train_at"], 1)
+    assert reg["cv.dd_stair_test_16_pct"] == round(s["test_at"], 1)
+    assert reg["cv.dd_stair_gap_16_pct"] == round(s["gap_at"], 1)
+    assert s["gap_at"] == pytest.approx(s["train_at"] - s["test_at"], abs=1e-9)
+    assert 0 <= s["gap_at"] < 5, (
         "a build order chosen on one half should not be worth much less on the other")
     assert s["train"][0] < s["train"][8] < s["train"][16], "the staircase should rise"
+
+    # The Monte-Carlo error of the mean, from the replicate spread and the count.
+    assert reg["cv.dd_stair_gap_16_mc_se"] == round(
+        s["gap_at_replicate_sd"] / s["reps"] ** 0.5, 2)
+    assert reg["cv.dd_stair_gap_16_replicate_sd"] == round(s["gap_at_replicate_sd"], 1)
+    # Each seed's own mean is 200 replicates, so its error is sqrt(5) times the pooled
+    # one and the range of five draws should sit inside a few of those. Wider than that
+    # and the seeds are not interchangeable, which is the thing this pooling assumes.
+    per_seed_se = s["gap_at_replicate_sd"] / (s["reps"] / len(s["seeds"])) ** 0.5
+    assert s["gap_at_seed_range"] <= 4 * per_seed_se, (
+        f"the five per-seed means span {s['gap_at_seed_range']:.3f} where one seed's "
+        f"own Monte-Carlo error is {per_seed_se:.3f}")
+    assert reg["cv.dd_stair_gap_16_seed_range"] == round(s["gap_at_seed_range"], 2)
+    # And the figure the prose has to carry: a third of individual half-splits show no
+    # gap at all, which is why the mean is not a statement about one reader's split.
+    assert reg["cv.dd_stair_gap_16_share_not_positive_pct"] == round(
+        s["gap_at_share_not_positive"] * 100)
+    assert 0.2 < s["gap_at_share_not_positive"] < 0.5, (
+        "the share of replicates with no gap has moved far enough that the sentence "
+        "about what one split would show needs rewriting")
 
 
 def test_the_held_out_set_is_disjoint_from_the_corpus():
@@ -733,14 +771,21 @@ def test_the_held_out_kappa_is_indistinguishable_from_the_in_sample_one(reg):
 
 
 def _require_the_rounding_note(because: str) -> None:
-    """Both builds must carry the note, in their own words, and say enough to be it."""
+    """Both builds must carry the note, in their own words, and say enough to be it.
+
+    This said "both builds" and read the comment-stripped source, which is neither of
+    them. Parking the note behind `\\iffalse` and printing "are each read off the
+    other" in its place left the note in no PDF, the paper asserting the opposite, and
+    nothing but the build tripwire failing. The guard added to close a defect class was
+    an instance of it; `builds` is now the only way to ask what a document says.
+    """
     for path, want in RECONCILED:
-        text = flat(published(path))
         assert len(want) > 40 and "counts" in want, (
             "RECONCILED has been weakened to something that is not the statement")
-        assert want in text, (
-            f"{because}, and {path.name} does not say its figures come from the "
-            f"counts rather than from each other")
+        for text in builds(path):
+            assert want in flat(text), (
+                f"{because}, and {path.name} does not say its figures come from the "
+                f"counts rather than from each other")
 
 
 def test_every_printed_trio_either_reconciles_or_is_accounted_for(reg):
@@ -764,16 +809,34 @@ def test_every_printed_trio_either_reconciles_or_is_accounted_for(reg):
          "ho.ex_gain_points"),
         ("the Datadog fall", "ho.dd_in_sample_gain_points", "ho.ex_gain_points",
          "ho.ex_shrink_points"),
+        ("the PromQL in-sample margin", "ho.gf_in_sample_v2_pct",
+         "ho.gf_in_sample_v1_pct", "ho.gf_in_sample_gain_points"),
+        ("the PromQL held-out margin", "ho.gf_v2_pct", "ho.gf_v1_pct",
+         "ho.gf_novel_gain_points"),
         ("the PromQL fall", "ho.gf_in_sample_gain_points", "ho.gf_novel_gain_points",
          "ho.gf_shrink_points"),
+        ("the ceiling overstatement", "ho.ex_ceiling_pct", "ho.ex_sstar_pct",
+         "ho.ex_ceiling_overstatement_points"),
+        ("the cross-validated staircase gap", "cv.dd_stair_train_16_pct",
+         "cv.dd_stair_test_16_pct", "cv.dd_stair_gap_16_pct"),
     )
     unreconciled = [name for name, a, b, c in diffs
-                    if round(reg[a] - reg[b], 1) != reg[c]]
-    # And the one that is a ratio rather than a difference.
+                    if a in reg and b in reg and round(reg[a] - reg[b], 1) != reg[c]]
+    missing = [name for name, a, b, c in diffs if not (a in reg and b in reg)]
+    assert not missing, f"these trios name keys the registry does not have: {missing}"
+    # The one that is a ratio rather than a difference.
     deff = round((reg["ho.ex_kappa_se_points"]
                   / reg["ho.ex_kappa_srs_se_points"]) ** 2, 1)
     if deff != reg["ho.ex_kappa_design_effect"]:
         unreconciled.append("the design effect")
+    # And the two that are sums in quadrature.
+    for name, a, b, c in (
+            ("the Datadog fall's spread", "ho.ex_gain_se_points",
+             "ho.dd_in_sample_gain_se_points", "ho.ex_shrink_se_points"),
+            ("the PromQL fall's spread", "ho.gf_novel_gain_se_points",
+             "ho.gf_in_sample_gain_se_points", "ho.gf_shrink_se_points")):
+        if round(math.hypot(reg[a], reg[b]), 1) != reg[c]:
+            unreconciled.append(name)
     assert unreconciled, (
         "every printed trio now reconciles, so the rounding note in section 4 and in "
         "eval_heldout is telling the reader about a problem the paper no longer has")
@@ -905,6 +968,69 @@ def test_every_cluster_statistic_is_a_function_of_the_stored_tally(reg):
         "the held-out interval is no longer displaced further than the in-sample one, "
         "so the concentration costs nothing in shape and `jackknife`'s comment about "
         "the tails is now the wrong way round")
+
+
+def test_every_margin_spread_is_a_function_of_its_stored_replicates(reg):
+    """The four gain standard errors, re-derived from the jackknife behind each.
+
+    `jackknife` stores its per-dashboard tally with a comment saying that a cached
+    number nothing can recompute is a number on the author's word, and the eight
+    kappa scalars are derived from it next door. `gain_spread`, four hundred lines
+    above it in the same file, returned bare scalars: the four margins' standard
+    errors were written by the script and read by nothing but a `math.hypot` of two of
+    them. Setting the in-sample Datadog one to zero against a printed 0.9 passed every
+    statistics guard in this suite.
+
+    Those four, and the two quadratures they make, carry the central hedge of section
+    4, of section 7 and of this appendix -- that neither fall is larger than the
+    spread it inherits. So the replicates are stored and everything is derived here.
+    """
+    run = _ho()
+    for key in ("gain_dd_in_sample", "gain_ex_held",
+                "gain_gf_in_sample", "gain_gf_held"):
+        block = run[key]
+        reps = block["replicates"]
+        n = len(reps)
+        assert n == block["dashboards"], (
+            f"{key} stores {n} replicates for {block['dashboards']} dashboards")
+        assert reps == sorted(reps), f"{key}'s replicates are not in sorted order"
+        mean = sum(reps) / n
+        # The delete-one-cluster jackknife, as `gain_spread` computes it: each
+        # replicate drops one dashboard's exclusively-held strings and recomputes.
+        var = (n - 1) / n * sum((r - mean) ** 2 for r in reps)
+        se = math.sqrt(var)
+        assert block["gain_se"] == pytest.approx(se, abs=1e-9), (
+            f"{key} stores a standard error of {block['gain_se']} where its own "
+            f"{n} replicates give {se:.6f}")
+        assert block["gain_se_points"] == round(se, 1), (
+            f"{key} prints {block['gain_se_points']} where its replicates give "
+            f"{se:.4f}")
+        # And the concentration, the same quantity the kappa block reports: how many
+        # dashboards the spread is really resting on.
+        dev = [r - mean for r in reps]
+        s2 = sum(d * d for d in dev)
+        s4 = sum(d ** 4 for d in dev)
+        assert block["effective_clusters"] == round(s2 * s2 / s4, 1), (
+            f"{key} stores an effective count of {block['effective_clusters']} "
+            f"against {s2 * s2 / s4:.3f} from its replicates")
+
+    # The two quadratures, from the re-derived errors rather than from the cache, so
+    # that an edit to a stored `gain_se` cannot survive by being consistent with them.
+    for a, b, shrink, se_key in (
+            ("gain_dd_in_sample", "gain_ex_held", "shrink_dd", "ho.ex_shrink_se_points"),
+            ("gain_gf_in_sample", "gain_gf_held", "shrink_gf",
+             "ho.gf_shrink_se_points")):
+        quad = math.hypot(*(_jackknife_se(run[k]["replicates"]) for k in (a, b)))
+        assert run[shrink]["se_points"] == round(quad, 1) == reg[se_key], (
+            f"{shrink}: the run stores {run[shrink]['se_points']} and the registry "
+            f"{reg[se_key]} where the two sets of replicates give {quad:.4f}")
+
+
+def _jackknife_se(reps: list[float]) -> float:
+    """A delete-one-cluster standard error, from the replicates alone."""
+    n = len(reps)
+    mean = sum(reps) / n
+    return math.sqrt((n - 1) / n * sum((r - mean) ** 2 for r in reps))
 
 
 def test_the_fit_decompositions_are_reported_with_their_own_spread(reg):
@@ -1247,3 +1373,211 @@ def test_the_temporal_holdout_names_both_commits_and_its_own_size(reg):
     assert reg["ho.dd_kappa_occurrences"] < 1000, (
         "if the temporal holdout ever gets big enough to estimate kappa, the prose "
         "that calls it underpowered has to be rewritten")
+
+
+# --- the generated tables, held to the data -------------------------------------------
+# Every guard in this suite joined prose to the registry or the registry to the data.
+# Nothing joined a TABLE to anything. A table cell only ever licensed a prose figure, so
+# an adversary changed the LALR conflict count from two to four, a floating-point
+# agreement from 8.6e-14 to 8.6e-2, the `.rollup` count by a hundred, the no-glob
+# columns so they summed to 27 against a registry that says 7, and a provenance date by
+# thirteen months -- five tables, five false claims in print, 795 passed each time.
+#
+# These are the authorities the suite can reach. What a table says and what the thing it
+# reports says are now one assertion each.
+
+def test_the_grammar_table_is_the_table_the_parsers_build():
+    """Section 4's answer to RQ1, re-derived rather than read off a generated file.
+
+    The conflict count is the result: "Datadog is conflict-free LALR(1)" and "PromQL's
+    table carries 2 conflicts" are the section's two findings, and both are cells in
+    this table. `lalr_conflict_report` computes them in process and this suite already
+    calls it -- `test_promql_has_exactly_one_lalr_conflict` asserts the parser -- but
+    nothing compared the answer to the paper. Changing the cell to four, and the
+    remark beside it to match, was green.
+    """
+    from qlport.parse import get_parser, lalr_conflict_report
+
+    printed = table(TABLES / "grammar_stats.tex")
+    rows = [[c.strip() for c in ln.split("&")]
+            for ln in printed.split("\n") if "&" in ln and "Language" not in ln]
+    seen = {}
+    for lang, version, terminals, rules, states, conflicts in rows:
+        seen[(lang, version)] = (terminals, rules, states,
+                                 conflicts.removesuffix(r"\\").strip())
+    assert len(seen) == 4, sorted(seen)
+    for (lang, version), (terminals, rules, states, cell) in sorted(seen.items()):
+        p = get_parser(lang, version)
+        report = lalr_conflict_report(lang, version)
+        assert terminals == str(len(p.terminals)), (lang, version, terminals)
+        assert rules == str(len(p.rules)), (lang, version, rules)
+        assert states == str(len(p.parser.parser._parse_table.states)), (lang, version)
+        if not report:
+            want = "none"
+        else:
+            kinds = sorted({(c["kind"], c["terminal"]) for c in report})
+            assert len(kinds) == 1, kinds
+            want = (f"{len(report)}" + r"$\times$ \texttt{"
+                    + f"{kinds[0][0]} on {kinds[0][1]}" + "}")
+        assert cell == want, (
+            f"{lang} {version}: the table says {cell!r}, the parser gives {want!r}")
+
+
+def test_the_conflict_count_the_prose_states_is_the_one_the_parser_reports():
+    """And in both builds, because the count is stated in a condensed body paragraph
+    in one and in a deferred remark in the other."""
+    from qlport.parse import lalr_conflict_report
+
+    import re as _re
+
+    n = len(lalr_conflict_report("promql", "v2"))
+    assert n == 2, f"the PromQL table now carries {n} conflicts, not 2"
+    sections = ROOT / "paper" / "sections"
+    for full in (False, True):
+        said = []
+        for path in sorted(sections.rglob("*.tex")):
+            said += _re.findall(r"\$(\d+)\$ conflicts", flat(rendered(path, full)))
+        build = "main_full" if full else "main"
+        assert said, f"{build} states no conflict count at all"
+        assert set(said) == {str(n)}, (
+            f"{build} states conflict counts {sorted(set(said))} where the parser "
+            f"reports {n}")
+
+
+def test_the_model_verification_table_says_floating_point_and_means_it():
+    """Section 3b calls this agreement "floating-point precision", which is a claim
+    about a magnitude, so the magnitude is what gets asserted.
+
+    An adversary moved the largest deviation from 8.60e-14 to 8.60e-02 -- twelve orders
+    of magnitude, across 1,680 buckets per candidate -- and nothing failed, because the
+    table was generated and therefore trusted and therefore unchecked.
+    """
+    printed = table(TABLES / "model_verification.tex")
+    rows = [[c.strip() for c in ln.split("&")]
+            for ln in printed.split("\n") if "&" in ln and "candidate" not in ln]
+    assert len(rows) == 3, rows
+    for candidate, buckets, worst, nan_mismatch in rows:
+        assert int(buckets.replace(",", "")) >= 1000, (candidate, buckets)
+        assert float(worst) < 1e-10, (
+            f"{candidate} deviates by {worst} from the server, which is not what "
+            f"section 3b means by floating-point precision")
+        assert nan_mismatch.removesuffix(r"\\").strip() == "0", (candidate, nan_mismatch)
+
+
+def test_the_no_glob_table_columns_are_the_registry_totals(reg):
+    """Two rows whose columns have to add to the figures section 6 quotes.
+
+    The three-way split of section 6 rests on these two numbers and on the glob counts
+    beside them. Adding ten to each distinct count made the column sum to 27 against a
+    registry that says 7, and the suite had nothing to say about it.
+    """
+    printed = table(TABLES / "regex_glob_reasons.tex")
+    rows = [[c.strip() for c in ln.split("&")]
+            for ln in printed.split("\n") if "&" in ln and "Construct" not in ln]
+    assert len(rows) == 2, rows
+    assert sum(int(r[1]) for r in rows) == reg["nb04.no_glob_distinct"]
+    assert sum(int(r[2]) for r in rows) == reg["nb04.no_glob_occurrences"]
+    # And each row's example really is a pattern with no glob, in the cache that says so.
+    import csv
+    refused = {r["regex"] for r in csv.DictReader(
+        (ROOT / "data" / "processed" / "regex_glob.csv").open()) if r["reason"]}
+    for row in rows:
+        example = row[3].removesuffix(r"\\").strip()
+        example = example.removeprefix(r"\texttt{").removesuffix("}")
+        assert example.replace(r"\_", "_") in refused, (
+            f"{example} is the table's example of a construct with no glob, and the "
+            f"cache does not record it as one")
+
+
+def test_the_operator_table_is_a_recount_of_the_corpus():
+    """Thirty-two cells of corpus frequency that section 4 argues from.
+
+    `.rollup` moved from 331 to 431 with nothing to stop it. The counters the notebook
+    used are importable, so the table is recounted here rather than trusted.
+    """
+    import collections
+    import json
+
+    from qlport import corpus as c
+
+    texts: dict[str, list[str]] = collections.defaultdict(list)
+    with (ROOT / "data" / "corpus" / "queries.jsonl").open() as fh:
+        for line in fh:
+            row = json.loads(line)
+            # The same exclusion notebook 00 makes and states: some community
+            # dashboards under the Prometheus datasource carry Loki panels, and LogQL
+            # is no evidence about PromQL. Leaving it out here is what makes this a
+            # recount of the table's population rather than of a different one -- it
+            # is three occurrences of `sum` on the PromQL side.
+            if row["lang"] == "promql" and not c.is_promql(row["text"]):
+                continue
+            texts[row["lang"]].append(row["text"])
+
+    counted: dict[tuple[str, str, str], int] = {}
+    for lang in ("datadog", "promql"):
+        funcs: collections.Counter = collections.Counter()
+        aggs: collections.Counter = collections.Counter()
+        for t in texts[lang]:
+            funcs += c.function_names(lang, t)
+            aggs += c.aggregation_ops(lang, t)
+        for kind, tally in (("aggregator", aggs), ("function", funcs)):
+            for name, n in tally.items():
+                counted[(lang, kind, name)] = n
+
+    printed = table(TABLES / "operator_frequency.tex")
+    rows = [[col.strip() for col in ln.split("&")]
+            for ln in printed.split("\n") if "&" in ln and "Language" not in ln]
+    assert len(rows) == 32, len(rows)
+    for lang, kind, name, occurrences in rows:
+        plain = (name.removeprefix(r"\texttt{").removesuffix("}")
+                 .replace(r"\_", "_"))
+        got = int(occurrences.removesuffix(r"\\").strip().replace(",", ""))
+        assert counted.get((lang, kind, plain)) == got, (
+            f"the table says {lang} {kind} {plain} occurs {got} times; the corpus "
+            f"gives {counted.get((lang, kind, plain))}")
+
+
+def test_the_provenance_table_dates_are_the_dates_the_caches_carry():
+    """The table a reader checks the vendor experiments against.
+
+    A helper that collects exactly these timestamps was written, carries its own
+    assertion, and was called by nothing -- so it read like the check behind this table
+    while the table was unchecked, and a date moved thirteen months with the suite
+    green. Given which trial window these experiments ran in, a provenance table
+    nobody checks is worth more than its size suggests.
+    """
+    import json
+    import re as _re
+    from datetime import date, datetime
+
+    carried = set()
+    raw = ROOT / "data" / "raw" / "datadog"
+    for path in sorted(raw.glob("*.json")):
+        doc = json.loads(path.read_text())
+        prov = doc.get("provenance") if isinstance(doc.get("provenance"), dict) else {}
+        at = prov.get("collected_at") or doc.get("collected_at")
+        if at:
+            carried.add(datetime.fromisoformat(at).date())
+    assert carried, "no vendor cache carries a timestamp"
+
+    printed = table(TABLES / "vendor_provenance.tex")
+    rows = [[col.strip() for col in ln.split("&")]
+            for ln in printed.split("\n") if "&" in ln and "Experiment" not in ln]
+    assert len(rows) >= 5, rows
+    seen = set()
+    for experiment, taken, _site, _what in rows:
+        # One row gives a run reference rather than a date, for a probe taken on a rig
+        # whose cache records the run and not the day. That is the only other form the
+        # column may take, and saying so here is what keeps it from becoming the form
+        # a wrong date can hide in.
+        if _re.fullmatch(r"run r\d+", taken):
+            continue
+        assert _re.fullmatch(r"\d{1,2} \w{3} \d{4}", taken), (
+            f"{experiment} has an unparseable date {taken!r}")
+        when = datetime.strptime(taken, "%d %b %Y").date()
+        assert when in carried, (
+            f"{experiment} is dated {taken}, which no cache under data/raw/datadog "
+            f"records; the dates the caches carry are {sorted(carried)}")
+        seen.add(when)
+    assert len(seen) >= 4 and seen <= carried, sorted(seen)
+    assert isinstance(next(iter(carried)), date)
