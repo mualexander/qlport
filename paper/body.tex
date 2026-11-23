@@ -12,7 +12,8 @@ because of their dashboards: thousands of saved queries that a migration must re
 hand, with no way to tell whether a rewrite preserved what the original meant. We ask
 whether that cost follows from how the query languages are designed, and answer by
 building the translator and measuring it. We infer a grammar for each language --- the
-first published one for Datadog's, which the vendor documents only by example --- and both
+first we have found published for Datadog's, which is a statement about a search and is
+reported as one, and which the vendor documents only by example --- and both
 admit deterministic one-token-lookahead parsers: Datadog's conflict-free, PromQL's modulo
 one resolution this paper documents and the reference server makes. Soundness is stated relative to an \emph{ingestion mapping},
 because the two systems do not store the same thing: a Prometheus counter is a running
@@ -27,8 +28,11 @@ everything we can demonstrate while the paper was being written, bar $14$ occurr
 left undecided, and most of the corrections that emptied it were to our own
 earlier claims rather than to the vendor's behaviour. The grammar and the implementation
 order were fitted to this corpus, which makes $96.6\%$ a resubstitution estimate; frozen
-and run on a disjoint repository of dashboards by other authors it returns an
-indistinguishable $96.7\%$, refusing only in ways the gap catalogue already names.
+and run on a disjoint repository of dashboards by other authors it returns $96.7\%$,
+refusing only in ways the gap catalogue already names. That is a tenth of a point from
+the figure here, against $1.1$ points of dashboard-clustered standard error resting on
+an effective two dashboards: nothing large is hiding on that side, which is weaker than
+the two rates agreeing.
 
 That is not where the switching cost turns out to be. A dashboard query does not determine
 its own meaning. $97.0\%$ of our translations depend on a rollup interval the source query

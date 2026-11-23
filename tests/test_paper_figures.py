@@ -61,6 +61,7 @@ def _section_path(name: str) -> Path:
 # survived two passes, so it is scanned like any section.
 MAIN = ROOT / "paper" / "body.tex"
 TABLES = sorted((ROOT / "paper" / "tables").glob("*.tex"))
+ORDER = ROOT / "paper" / "tables" / "implementation_order.tex"
 REGISTRY = ROOT / "paper" / "quoted_figures.json"
 
 _NUM = re.compile(r"(\d[\d{},]*(?:\.\d+)?)\s*(\\%)?")
@@ -122,7 +123,13 @@ def _accounted() -> set[tuple[str, float]]:
     """
     ok: set[tuple[str, float]] = set()
     for path in TABLES:
-        for tok, pct in _NUM.findall(anywhere(path)):
+        # `table`, not `anywhere`. A generated table is inputted by both builds and
+        # must therefore render identically in them, which `table` asserts; reading
+        # the union instead meant an `\iffull 7\else 999\fi` in a table licensed both
+        # 7 and 999 for any prose figure, in the one path every prose figure is
+        # licensed through. Sixteen of the twenty-two tables were read through `table`
+        # somewhere else in this suite and the licensing path was not one of them.
+        for tok, pct in _NUM.findall(table(path)):
             key = _norm(tok, pct)
             if key:
                 ok.add(key)
@@ -194,8 +201,6 @@ ALLOWED: dict[tuple[str, float], str] = {
     ("num", 221): "unregistered (nb 01): PromQL queries the first six features "
                   "complete",
     ("pct", 2.7): "and what that is as a share of the PromQL corpus",
-    ("pct", 70): "unregistered (nb 03): .weighted() occurrences as a share; also the "
-                 "second share in the discussion's hypothetical illustration",
     ("num", 22608): "historical: the second run's bucket comparisons, quoted beside "
                     "the third run's 22,692 to say the agreement did not move",
 }
@@ -236,11 +241,13 @@ ALLOWED_IN: dict[tuple[str, float], tuple[str, set[str]]] = {
                      "6's caption said 11,628 until the tenth pass, where it broke "
                      "the corpus arithmetic on its own page",
                      {"eval_held_aside.tex"}),
-    ("num", 54): ("E9: the superseded count of forms attaching .weighted() to sum:, "
-                  "now 52", {"eval_weighted.tex"}),
     ("pct", 56): ("E9: the superseded share of distinct forms carrying .weighted(), "
                   "now 52 --- and, separately, the share of Datadog queries using "
                   "by {...}", {"eval_weighted.tex", "eval_language_use.tex"}),
+    ("num", 0.23): ("the seed spread the staircase cross-validation reported while "
+                    "its tie-break still depended on the interpreter's hash salt, "
+                    "quoted beside the 0.08 that replaced it",
+                    {"eval_heldout.tex"}),
     ("pct", 76.2): ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
     ("num", 6381): ("the occurrences that share carried", {"tr_gauge.tex"}),
     ("num", 31): ("LABEL_NAME_GLOB's occurrences. The code left the catalogue when "
@@ -453,7 +460,7 @@ BOUND: tuple[tuple[str, str], ...] = (
     ("ho.ex_v1_pct", "eval_heldout.tex"),
     ("ho.ex_jackknife_high_pct", "eval_heldout.tex"),
     ("ho.gf_novel_distinct", "eval_heldout.tex"),
-    ("nb00.ceiling_8_features_pct", "eval_staircase.tex"),
+    ("nb00.ceiling_7_features_pct", "eval_staircase.tex"),
     ("oo.corpus", "07_evaluation.tex"),
     ("oo.invalid", "07_evaluation.tex"),
     ("oo.invalid_matchall", "07_evaluation.tex"),
@@ -825,16 +832,24 @@ PHRASES: tuple[tuple[str, str], ...] = (
      r"${ho.kappa_in_sample_pct}\%$ here"),
     # body.tex states the rate with no population beside it, so the phrase is the
     # pinning: a registry that said 96.6 would require the abstract to say 96.6.
+    # "indistinguishable" came out when the abstract stopped claiming the two rates
+    # agree: the held-out figure's spread rests on an effective two dashboards, so
+    # what the comparison licenses is that nothing large is hiding, which `eval_heldout`
+    # had said at length three levels down and the abstract had not.
     ("body.tex",
-     r"it returns an indistinguishable ${ho.ex_kappa_pct}\%$"),
+     r"by other authors it returns ${ho.ex_kappa_pct}\%$"),
     # 1.1 is a cluster-robust standard error, which a 20,000-draw cluster bootstrap
     # puts at 1.085. It is not a drop-one quantity: the largest move any single
     # dashboard makes is 0.93 and the whole drop-one range is 1.01, which is what the
     # appendix's 96.7-to-97.7 prints. Both this phrase and the one in \S7 pinned the
     # drop-one description for a commit, so both named the wrong quantity in step.
+    # Repinned when the conclusion stopped setting the distinct-form gap against this
+    # figure: the 1.1 is a spread on the occurrence-weighted rate, and the sentence
+    # now says which of the two gaps it bounds. `eval_heldout` carried that
+    # correction for a commit and the conclusion did not.
     ("09_conclusion.tex",
      r"against the ${ho.ex_kappa_se_points}$ points of dashboard-clustered standard "
-     r"error on the held-out figure"),
+     r"error on that occurrence-weighted figure"),
     # The grammar rates, each beside the population it was measured on.
     ("eval_heldout.tex",
      r"Frozen grammar v2 parses ${ho.ex_v2_pct}\%$ of those ${ho.ex_distinct}$ "
@@ -1226,7 +1241,23 @@ def _alphabet() -> str:
     return TAG_ALPHABET
 
 
+def _flat_prefix_completions() -> int:
+    """Queries completed by the greedy order before its step, off the order table.
+
+    Read as a prefix length and a sum rather than as a literal, because the step moved
+    when `greedy`'s tie-break stopped depending on the interpreter's hash salt and the
+    sentence quoting this stayed at six features for a commit.
+    """
+    body = [r.split("&") for r in table(ORDER).splitlines() if r.count("&") == 5]
+    rows = [[c.strip() for c in r] for r in body if r[0].strip().isdigit()]
+    step = next(i for i, r in enumerate(rows) if int(r[4].replace(",", "")) > 100)
+    return sum(int(r[4].replace(",", "")) for r in rows[:step])
+
+
 DERIVED: tuple[tuple[str, float, str, object], ...] = (
+    ("num", 44, "queries the flat prefix of the greedy order completes, summed off "
+                "the table that generates the staircase",
+     _flat_prefix_completions),
     ("num", 7.4, "the eight misclassifications as a share of the corpus",
      lambda: round(648 / _reg()["nb03.corpus_occurrences"] * 100, 1)),
     ("num", 648, "and their sum, with the four disjunctions a residue of the 124",
@@ -1398,6 +1429,7 @@ def test_every_derivable_figure_is_still_quoted():
 # nothing on the other side, and this is what notices.
 
 SUPERSEDED: tuple[tuple[float, str, str], ...] = (
+    (0.23, "cv.dd_stair_gap_16_seed_range", "eval_heldout.tex"),
     (22608, "nb05.bucket_comparisons", "07_evaluation.tex"),
     (325, "nb05.shapes", "eval_differential_fixes.tex"),
     (335, "nb05.shapes", "eval_differential_fixes.tex"),
@@ -1458,9 +1490,24 @@ TABLE_COINCIDENCE: frozenset[tuple[str, float]] = frozenset({
     # 95: the upper edge of the vocabulary figure's bootstrap band, which the gap
     # tables also happen to print. It was accounted for by a derivation of the per cent
     # of Datadog space aggregators that are sum or avg until that ledger learnt kinds.
+    # 54: E9's superseded count of forms attaching .weighted() to sum:, which this
+    # ledger carried a sentence for until the greedy tie-break fix rewrote
+    # implementation_order and its pending-uses column started printing a 54. The
+    # sentence is the better record and the coincidence is what the guard now sees.
+    ("num", 54),
+    # 200: the most-downloaded Prometheus dashboards the corpus took, licensed by
+    # `cv.reps` until the cross-validation pooled five seeds and that key became 1,000.
+    # It was never a replicate count; corpus_sources carries the real one.
+    ("num", 200),
     ("num", 91), ("num", 95), ("num", 100), ("num", 160), ("num", 208), ("num", 262),
     ("num", 266), ("num", 300), ("num", 329), ("num", 330), ("num", 1680),
     ("num", 1766), ("num", 7546), ("num", 8102), ("num", 8365),
+    # 80: the proverb's 80% of the queries, and one of the four thresholds the shape
+    # distribution is summarised at -- the measured figures there are the shape counts
+    # beside each threshold, not the thresholds. It was licensed by
+    # `cv.pq_complete_at_pct` until pooling five seeds showed PromQL has no saturation
+    # point at any sample size and the run stopped emitting that key at all.
+    ("pct", 80),
     ("pct", 3.8), ("pct", 5.3), ("pct", 11.8), ("pct", 20.2),
     ("pct", 27.4), ("pct", 71.2), ("pct", 83.6), ("pct", 91.4),
     ("pct", 94.7), ("pct", 98.3),
@@ -1489,7 +1536,7 @@ def _table_only() -> dict[tuple[str, float], tuple[list[str], list[str]]]:
             reg.add(("pct" if share else "num", round(float(value), 4)))
     tables: dict[tuple[str, float], list[str]] = {}
     for path in TABLES:
-        for tok, pct in _NUM.findall(anywhere(path)):
+        for tok, pct in _NUM.findall(table(path)):
             key = _norm(tok, pct)
             if key:
                 tables.setdefault(key, []).append(path.stem)
@@ -1521,12 +1568,14 @@ def test_the_coincidence_list_has_no_dead_entries():
 # figure whose only accountant is a sentence in a ledger is a figure nothing
 # recomputes, and three of those were found wrong in one afternoon. It was 81 before
 # the derivations above, 38 after them, and 35 once E17 and E18 put four historical
-# figures on the record that cannot be derived. It is 33 now; the two the ratchet
-# earned when `ho.ex_refused_distinct` and the extras gap codes gained registry keys
-# sat unbanked for a commit. The ratchet is against drift, not against putting history
-# on the record: a bump needs a reason in this comment, and a reduction needs a
-# derivation.
-UNCHECKED_CEILING = 33
+# figures on the record that cannot be derived. It was 33, and it is 32: the queries
+# the greedy order's flat prefix completes moved into DERIVED, where it is summed off
+# the table that generates the staircase, and that paid for the one figure this pass
+# added -- the 0.23-point seed spread the cross-validation reported while its tie-break
+# still depended on the interpreter's hash salt, which is history and cannot be
+# derived. The ratchet is against drift, not against putting history on the record: a
+# bump needs a reason in this comment, and a reduction needs a derivation.
+UNCHECKED_CEILING = 32
 
 
 def test_the_unchecked_figures_do_not_multiply():
@@ -1796,13 +1845,13 @@ def test_the_staircase_thresholds_written_as_words_are_the_registry_curve():
                         r"\$90\\%\$ needs (\w+(?:-\w+)?) of (\w+(?:-\w+)?)")
     caption = re.compile(r"after (\w+(?:-\w+)?) of Datadog's (\w+(?:-\w+)?) features "
                          r"and\s+(\w+(?:-\w+)?) of PromQL's (\w+(?:-\w+)?)")
-    found = 0
+    found: dict[str, int] = {}
     for name in ("moved/eval_staircase.tex", "07_evaluation.tex"):
         path = ROOT / "paper" / "sections" / name
         for full in (False, True):
             said = flat(rendered(path, full))
             for m in datadog.finditer(said):
-                found += 1
+                found["datadog"] = found.get("datadog", 0) + 1
                 assert _WORD.get(m.group(1)) == half, (
                     f"{name}: half the corpus is said to need {m.group(1)!r}; the "
                     f"registry's curve first passes 50% at {half}")
@@ -1811,17 +1860,23 @@ def test_the_staircase_thresholds_written_as_words_are_the_registry_curve():
                     f"passes 90% at {ninety}")
                 assert _WORD.get(m.group(3)) == dd_vocab, (m.group(3), dd_vocab)
             for m in promql.finditer(said):
-                found += 1
+                found["promql"] = found.get("promql", 0) + 1
                 # Only the vocabulary, for the reason the docstring gives.
                 assert _WORD.get(m.group(3)) == pq_vocab, (m.group(3), pq_vocab)
             for m in caption.finditer(said):
-                found += 1
+                found["caption"] = found.get("caption", 0) + 1
                 assert _WORD.get(m.group(1)) == ninety, (m.group(1), ninety)
                 assert _WORD.get(m.group(2)) == dd_vocab, (m.group(2), dd_vocab)
                 assert _WORD.get(m.group(4)) == pq_vocab, (m.group(4), pq_vocab)
-    assert found >= 3, (
-        f"only {found} of the spelled-out staircase claims were found, so the "
-        f"sentences have been reworded and these patterns no longer reach them")
+    # Per pattern, not as a total. This was `found >= 3` over the sum of three
+    # patterns, which measured 6; rewording the one sentence that binds the
+    # half-corpus threshold left the total at 4 and the guard passing with "three
+    # features" in print against a curve that says nine. A total is exactly the wrong
+    # shape for a completeness check: it lets any one member go missing.
+    assert found and all(n >= 2 for n in found.values()), (
+        f"a spelled-out staircase claim is no longer matched by the pattern that "
+        f"binds it, so it is unbound rather than wrong: {dict(found)} (each should be "
+        f"2 -- one per build)")
 
 
 # The paper quoting its own former claim in order to warn about it is not the paper
@@ -1854,11 +1909,26 @@ def test_the_inexpressible_column_carries_its_qualification_everywhere():
     assertions does that without a ledger of exceptions, and a ledger here would be
     the thing that lets the eighth site in.
     """
+    # Plural too. `\bcolumn\b` does not match "columns", which is how
+    # `eval_beyond_reach.tex` -- the one block whose paragraph heading IS this
+    # question -- kept "The first two columns are empty" through the sweep that fixed
+    # the other seven sites.
+    #
+    # And the verb list is wider, because "stands empty", "contains nothing" and "has
+    # no entries" all passed the first one. That list is a pattern and so is not a
+    # completeness argument: what makes the paper's current text right is the one-time
+    # sweep that found eight sites, and what this does is stop a ninth being written in
+    # one of the shapes anyone would reach for. Said plainly because the first version
+    # of this docstring claimed the rule was "enforced rather than stated", which was
+    # more than a verb list can do.
     claim = re.compile(
-        r"[^.]*\bcolumn\b[^.]*?\b(?:is empty|is now empty|emptied|emptying|"
-        r"holds none|holds nothing|with nothing in it|nothing left beyond it)\b[^.]*\.",
+        r"[^.]*\bcolumns?\b[^.]*?\b(?:is|are|stands?|sits?|remains?|stays?)\s+"
+        r"(?:empty|bare|vacant)\b[^.]*\.|"
+        r"[^.]*\bcolumns?\b[^.]*?\b(?:emptied|emptying|empties|"
+        r"holds? none|holds? nothing|contains? nothing|has no entries|have no entries|"
+        r"with nothing in (?:it|them)|nothing left beyond it)\b[^.]*\.",
         re.I)
-    also = re.compile(r"[^.]*\b(?:empty|emptied) column\b[^.]*\.", re.I)
+    also = re.compile(r"[^.]*\b(?:empty|emptied|bare) columns?\b[^.]*\.", re.I)
     qualified = ("demonstrated", "demonstrate", "near-empty", "undecided",
                  "we can show", "can show", "is shown to", "nothing we can",
                  "nothing this paper can")
@@ -1884,3 +1954,120 @@ def test_the_inexpressible_column_carries_its_qualification_everywhere():
                 ROOT / "paper" / "sections" / "07_evaluation.tex", full)), (
             "§7 no longer states the qualification as one that travels, so either "
             "the rule is gone or it has moved and this test has to move with it")
+
+
+_VERBATIM = re.compile(r"\\begin\{(lstlisting|verbatim)\}.*?\\end\{\1\}", re.S)
+_MACRO_ARG = re.compile(
+    r"\\(?:label|ref|apref|apin|cite[a-z]*|input|includegraphics|url|href|"
+    r"lstinputlisting)\s*\{[^}]*\}")
+
+
+def test_every_percentage_and_thousand_in_the_prose_is_in_math_mode():
+    r"""The whole figure apparatus is built on `$...$`, so a numeral outside one is
+    invisible to all of it.
+
+    `_math` extracts math spans; `_prose_figures`, `_accounted`, every ledger in this
+    file, `_unchecked` and `UNCHECKED_CEILING` are built on that. Nothing required a
+    numeral to be in a span. `16.5\%` typesets indistinguishably from `$16.5\%$` at a
+    glance, and an adversary put it in the introduction as the type-inference error
+    rate --- two and a half times the $6.5\%$ every other site in the paper states ---
+    with the census blind, the ratchet unmoved at 33, and the suite green.
+
+    The commit before this one closed the sibling spelling, a numeral written as a
+    word, and called the class handled. The un-dollared digit is the same class and is
+    the wider hole, because it needs no rewriting of the sentence.
+
+    WHAT THIS COVERS, exactly: a numeral followed by `\%`, and a numeral carrying the
+    paper's thousands separator `{,}`. Those two shapes are figures wherever they
+    appear. WHAT IT DOES NOT: bare integers and decimals, of which there are about 460
+    outside math mode and almost none a figure --- `LALR(1)`, `\$65M`, `3.15.0`,
+    `November~2026`, `numbered above~3`, the section numbers of `\S48.1`. A ledger of
+    those would be noise, and noise is what a ledger cannot afford to be. So this is a
+    rule about two shapes, and says so, rather than a rule about numerals that would
+    need 460 exceptions to hold.
+    """
+    bad = []
+    for path in sorted([*SECTIONS, MAIN]):
+        for full in (False, True):
+            text = _MACRO_ARG.sub(" ", _VERBATIM.sub(" ", rendered(path, full)))
+            text = text.replace(r"\$", "\x00\x00")
+            spans = [(m.start(), m.end()) for m in re.finditer(r"\$[^$]*\$", text)]
+            for m in re.finditer(r"\d[\d{},]*(?:\.\d+)?", text):
+                if any(a <= m.start() < b for a, b in spans):
+                    continue
+                tail = text[m.end():m.end() + 2]
+                shape = ("a percentage" if tail == r"\%"
+                         else "a thousands-separated figure"
+                         if "{,}" in m.group(0) else None)
+                if shape is None:
+                    continue
+                build = "main_full" if full else "main"
+                near = text[max(0, m.start() - 40):m.end() + 6].replace("\n", " ")
+                bad.append(f"  {path.name} in {build}: {shape} outside math mode "
+                           f"--- ...{near}...")
+    assert not bad, (
+        "these are figures the census cannot see, because every ledger in this file "
+        "reads `$...$` spans:\n" + "\n".join(sorted(set(bad)))
+        + "\n  (wrap them in $...$)"
+    )
+
+
+# Claims written as words that carry a result, each with what decides it. A guard that
+# binds one sentence pair and reports the class closed is the shape of the last three
+# rounds; this is the list, and it is a list rather than a pattern because each of
+# these is a different kind of claim.
+#
+# `(file, regex with one word group, what the word must equal)`. The regex is searched
+# in both builds, and a pattern that stops matching fails rather than passing quietly
+# -- which is how `found >= 3` over a total let the staircase sentence go unbound.
+_SPELLED_FRACTION = {("two", "three"): 2 / 3, ("one", "three"): 1 / 3,
+                     ("two", "ten"): 0.2, ("three", "four"): 0.75}
+
+
+def test_the_claims_written_as_words_are_the_ones_the_data_supports():
+    r"""Three sites where a result is spelled out, and nothing read any of them.
+
+    `16.5\%` is caught by the math-mode rule next door; a word is not. An adversary
+    changed the abstract's "wrong two times in three" to "one time in three" --- the
+    registry says the interval is *right* one time in three --- and §7's to "two times
+    in ten" three lines below a printed `$66.9\%$`, both at 812 passing. And
+    `concl_evidence` writes §4's LALR result as "§4's two conflicts", which the
+    conflict-count guard's `\$(\d+)\$ conflicts` regex cannot reach, so it became "six
+    conflicts" against a parser that reports two.
+    """
+    from qlport.parse import lalr_conflict_report
+
+    reg = _reg()
+    wrong = reg["rs.span_declared_wrong_pct"]
+    conflicts = len(lalr_conflict_report("promql", "v2"))
+
+    checks = [
+        (MAIN, r"is wrong (\w+) times? in (\w+)", "fraction", wrong),
+        (ROOT / "paper" / "sections" / "09_conclusion.tex",
+         r"is wrong (\w+) times? in (\w+)", "fraction", wrong),
+        (ROOT / "paper" / "sections" / "moved" / "concl_evidence.tex",
+         r"'s (\w+) conflicts", "count", conflicts),
+    ]
+    for path, pattern, kind, want in checks:
+        seen = 0
+        for full in (False, True):
+            said = flat(rendered(path, full))
+            for m in re.finditer(pattern, said):
+                seen += 1
+                if kind == "fraction":
+                    key = (m.group(1).lower(), m.group(2).lower())
+                    assert key in _SPELLED_FRACTION, (
+                        f"{path.name} spells a fraction this test cannot read: "
+                        f"{m.group(0)!r}")
+                    got = _SPELLED_FRACTION[key] * 100
+                    assert abs(got - want) < 2.0, (
+                        f"{path.name} says the interval is wrong {m.group(0)!r}, "
+                        f"which is {got:.1f}% against the registry's {want}%")
+                else:
+                    assert _WORD.get(m.group(1).lower()) == want, (
+                        f"{path.name} states the conflict count as {m.group(1)!r}; "
+                        f"the parser reports {want}")
+        assert seen == 2, (
+            f"{path.name}: the sentence this binds was found {seen} times across the "
+            f"two builds, not twice, so it has been reworded and is now unbound "
+            f"rather than wrong (pattern {pattern!r})")

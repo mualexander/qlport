@@ -25,9 +25,15 @@ STAMP = PAPER / ".sources.sha256"
 
 
 def sources() -> list[Path]:
-    """Every `.tex` a build reads, in the order `_sources()` in the suite uses."""
+    """Every file a build reads, in the order `_sources()` in the suite uses.
+
+    The generated figures under `paper/figures/` count: they are build inputs that the
+    notebooks and `scripts/heldout_split.py` rewrite, and leaving them out meant a
+    regenerated figure left this stamp agreeing with a log that predated it.
+    """
     return sorted([*PAPER.glob("*.tex"), *(PAPER / "sections").rglob("*.tex"),
-                   *(PAPER / "tables").glob("*.tex")])
+                   *(PAPER / "tables").glob("*.tex"),
+                   *(PAPER / "figures").glob("*.pdf")])
 
 
 def digest() -> tuple[str, int]:

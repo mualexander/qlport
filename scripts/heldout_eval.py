@@ -375,12 +375,17 @@ def _cluster_bootstrap(per: list[list[int]]) -> dict:
     doing no work; where it does not, the linearised figure is the one to distrust.
 
     It answers two different questions and they came out differently, which is why
-    both are recorded. The MAGNITUDE agrees to about a per cent: the mean standard
-    deviation over the seeds against the linearised error. The SHAPE does not: the
-    replicate distribution is left-skewed, and its 95 per cent interval is displaced
-    from the normal one by a third of a standard error on the held-out side against
-    under a fifth in sample --- the degradation an effective cluster count of two
-    predicts. A comment in this file asserted the shape was fine on the strength of
+    both are recorded. The MAGNITUDE agrees to about a per cent, and not equally on the
+    two sides: the mean standard deviation over the seeds is 1.1 per cent below the
+    linearised error on the held-out side and 0.1 per cent above it in sample, so "to
+    about a per cent" is an upper bound covering a sevenfold difference. The SHAPE does
+    not agree: the replicate distribution is left-skewed on both sides, and the furthest
+    edge of its 95 per cent interval is displaced from the normal one by 0.34 of a
+    standard error on the held-out side against 0.17 in sample. The held-out
+    displacement is itself lopsided -- 0.24 at the lower edge and 0.34 at the upper --
+    while the in-sample one is not, which is the degradation an effective cluster count
+    of two predicts and the reason the comparison is between the two sides rather than
+    against any threshold. A comment in this file asserted the shape was fine on the strength of
     the magnitude agreeing, which does not follow, after an earlier one had asserted
     the opposite on no evidence at all.
 

@@ -325,8 +325,17 @@ def greedy_order(feature_sets: list[frozenset[str]]) -> pd.DataFrame:
                 residual[f] += 1
         if not residual:
             break
-        pick = (completes.most_common(1)[0][0] if completes
-                else residual.most_common(1)[0][0])
+        # Ties by name rather than by insertion order, for the reason
+        # `scripts/heldout_split.py::greedy` gives at length: these Counters are fed by
+        # iterating a set of strings, so `most_common` was choosing on Python's
+        # per-process hash salt. The order this cell computes has one tie in it, at the
+        # fifth pick, and it is load-bearing: broken the other way the staircase's step
+        # lands a feature later and the twelve `nb00.ceiling_*` keys from the sixth
+        # feature on all read lower. Section 7, section 8, section 9 and the staircase
+        # appendix each quote part of that curve, so this cell is not free to pick
+        # either one.
+        source = completes if completes else residual
+        pick = min(sorted(source.items()), key=lambda kv: (-kv[1], kv[0]))[0]
         gained = completes.get(pick, 0)
         for m in missing:
             m.discard(pick)

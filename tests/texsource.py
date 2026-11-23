@@ -68,11 +68,14 @@ from pathlib import Path
 # and read a document LARGER -- which let a pinned sentence be satisfied by text
 # behind a `\\%`, with the visible sentence saying the opposite and the suite green.
 #
-# Reverting this line to either bug once left the whole suite passing, because the fix
-# was hand-checked in a shell and the hand-check was never committed. It is checked now
-# by `test_the_comment_stripper_reads_a_percent_the_way_latex_does`, which owns its own
-# cases: a table of them here would be a ledger the audit reads, satisfied by
-# construction, which is a defect this suite has already had once.
+# Reverting this line to the ONE-backslash bug once left the whole suite passing,
+# because the fix was hand-checked in a shell and the hand-check was never committed.
+# Not either bug: the two-backslash direction fails twenty-three tests, loudly, for the
+# reason the asymmetry above gives, and a commit message here said "either" of a
+# correction whose own docstring explains why only one direction is silent. It is
+# checked now by `test_the_comment_stripper_reads_a_percent_the_way_latex_does`, which
+# owns its own cases: a table of them here would be a ledger the audit reads, satisfied
+# by construction, which is a defect this suite has already had once.
 COMMENT = re.compile(r"(?<!\\)((?:\\\\)*)%.*")
 # Python's own comments, for the audit below, which reads source lines.
 _PY_COMMENT = re.compile(r"#.*")
@@ -88,6 +91,10 @@ _CONDITIONAL = re.compile(r"\\(if[a-zA-Z]*|else|fi)(?![a-zA-Z])")
 # `rendered` refuse `main.tex` for containing the definition of the thing it resolves.
 _DECLARE = re.compile(r"\\newif\\if([a-zA-Z]+)")
 
+# A macro definition, which contributes no text to either document.
+_DEFINITION = re.compile(
+    r"\\(?:re)?newcommand\{\\\w+\}(?:\[\d+\])?\{(?:[^{}]|\{[^{}]*\})*\}")
+
 
 def strip_comments(text: str) -> str:
     """Comments gone, for text already in hand -- a `$...$` span, a line, a file."""
@@ -99,46 +106,104 @@ def flat(text: str) -> str:
     return re.sub(r"\s+", " ", text)
 
 
+def _apphead(args: list[str], full: bool) -> str:
+    r"""`\apphead{title}{label}`: a subsection inline, a section when deferred."""
+    head = r"\subsection{" if full else r"\section{"
+    return head + args[0] + "}" + r"\label{" + args[1] + "}"
+
+
+# Every macro in `paper/macros.tex` whose body is build-conditional, its arity, and
+# what it expands to in each build. `rendered` must expand all of them, and
+# `test_the_build_variant_macros_are_the_ones_rendered_expands` holds this to
+# macros.tex so that a sixth one cannot be defined without being taught here.
+#
+# It held two for one commit. `\apref`, `\apin` and `\apphead` are build-conditional
+# in exactly the same way -- "below" against "Appendix~N", a subsection against a
+# section -- and were left in place in both builds, so a sentence containing one was
+# checked against the macro call rather than against either rendering, and a heading
+# level was checked against neither.
+BUILD_VARIANT: dict[str, tuple[int, object]] = {
+    "inlineonly": (1, lambda a, full: a[0] if full else ""),
+    "shortonly": (1, lambda a, full: "" if full else a[0]),
+    "apref": (1, lambda a, full: "below" if full
+              else r"Appendix~\ref{" + a[0] + "}"),
+    "apin": (1, lambda a, full: "below" if full
+             else r"in Appendix~\ref{" + a[0] + "}"),
+    "apphead": (2, _apphead),
+}
+
+# Any build-variant macro still standing in `rendered`'s output.
+_VARIANT = re.compile(r"\\(" + "|".join(sorted(BUILD_VARIANT)) + r")(?![a-zA-Z])")
+
+
 def rendered(path: Path, full: bool) -> str:
     r"""One source file as *one* of the two builds will have it.
 
-    `full` picks the build: `False` is `main.tex`'s 103 pages, which defer the
-    apparatus to appendices, and `True` is `main_full.tex`'s 102, which set it inline.
+    `full` picks the build: `False` is `main.tex`, which defers the apparatus to
+    appendices, and `True` is `main_full.tex`, which sets it inline. Neither page count
+    is written here any more. They were, and they went stale on the next commit that
+    added a paragraph, which is the same mistake as keeping a count in a docstring
+    `test_every_printed_trio_either_reconciles_or_is_accounted_for` has twice lost;
+    `test_the_two_builds_are_the_same_length` holds the counts against each other and
+    is the only place either belongs.
 
-    Everything behind a `%` goes, then `\inlineonly{X}` and `\shortonly{X}` keep X in
-    one build each, then `\iffalse A \fi` and `\iftrue A \fi` resolve the same way for
-    both -- `\iffalse` being how a block is parked while it is redrafted, which is the
-    scenario this module exists for -- and `\iffull A \else B \fi` resolves per build,
-    innermost first so a nested hook resolves with its parent.
+    Everything behind a `%` goes; then every macro in `BUILD_VARIANT` is expanded to
+    what this build prints; then `\iffalse A \fi` and `\iftrue A \fi` resolve the same
+    way for both -- `\iffalse` being how a block is parked while it is redrafted, which
+    is the scenario this module exists for -- and `\iffull A \else B \fi` resolves per
+    build, innermost first so a nested hook resolves with its parent.
 
-    Then anything left that looks like a conditional is an error, because a construct
-    this function does not know is a construct it cannot have resolved.
+    Then anything left that looks like a conditional, or like a build-variant macro,
+    is an error: a construct this function does not know is one it cannot have
+    resolved, and passing it through is how a guard comes to read a document nobody
+    has. THE ARGUMENT IS TAKEN WITH WHITESPACE ALLOWED BEFORE IT, because TeX skips
+    spaces when it grabs one. `\inlineonly {X}` -- one space -- did not match the
+    literal `\inlineonly{` this searched for, so both arms of a condition survived
+    into both builds: a reviewer split the pinned kappa sentence into a false
+    `\shortonly` arm and the true `\inlineonly` arm, and the two PDFs printed
+    opposite held-out results with the whole suite green.
     """
     text = strip_comments(path.read_text())
+    # A definition prints nothing, so it leaves before anything is expanded. Without
+    # this, `rendered(macros.tex)` tries to read an argument off
+    # `\newcommand{\inlineonly}[1]{...}`, where the macro's own name is followed by a
+    # closing brace. Sections may not define macros, so this only ever fires on
+    # `macros.tex` -- which is the paper's vocabulary and not a document, but is a
+    # `.tex` under `paper/` and so reachable by any guard that sweeps them.
+    text = _DEFINITION.sub("", text)
     for switch in _DECLARE.findall(text):
         text = re.sub(rf"\\newif\\if{switch}(?![a-zA-Z])", "", text)
         text = re.sub(rf"\\{switch}(?:true|false)(?![a-zA-Z])", "", text)
-    for macro, keep in (("inlineonly", full), ("shortonly", not full)):
-        needle = "\\" + macro + "{"
-        while (at := text.find(needle)) != -1:
-            end = _group(text, at + len(needle) - 1)
-            body = text[at + len(needle):end]
-            text = text[:at] + (body if keep else "") + text[end + 1:]
+    for macro, (arity, expand) in BUILD_VARIANT.items():
+        # `\macro` then, for each argument, optional whitespace and a braced group.
+        head = re.compile(rf"\\{macro}(?![a-zA-Z])")
+        while (m := head.search(text)) is not None:
+            args, at = [], m.end()
+            for _ in range(arity):
+                while at < len(text) and text[at].isspace():
+                    at += 1
+                assert at < len(text) and text[at] == "{", (
+                    f"{path.name}: \\{macro} at {m.start()} is not followed by "
+                    f"{arity} braced argument(s)")
+                end = _group(text, at)
+                args.append(text[at + 1:end])
+                at = end + 1
+            text = text[:m.start()] + expand(args, full) + text[at:]
     for name, keep in (("iffalse", False), ("iftrue", True)):
         text = _resolve(text, name, keep)
     text = _resolve(text, "iffull", full)
-    left = _CONDITIONAL.search(text)
+    left = _CONDITIONAL.search(text) or _VARIANT.search(text)
     assert left is None, (
         f"{path.name} still has {left.group(0)!r} in it after rendering, so this is "
-        f"not what the build prints: a conditional nothing here resolves keeps its "
-        f"body in what every guard reads and out of every PDF. Teach `rendered` the "
+        f"not what the build prints: a construct nothing here resolves keeps its body "
+        f"in what every guard reads and out of every PDF. Teach `rendered` the "
         f"construct, or take it out of the paper."
     )
     return text
 
 
 def builds(path: Path) -> tuple[str, str]:
-    """Both documents, in build order: the 103-page one, then the 102-page one.
+    """Both documents, in build order: the short build, then the complete one.
 
     For a claim about what the paper says, which has to hold in each of them.
     """
@@ -207,6 +272,15 @@ SOURCE_READS = {
     "test_every_entry_is_cited": "the bibliography again, the other way round",
     "test_the_paper_has_no_placeholders_left":
         "drafting placeholders, which must be in no build and so in neither document",
+    "_environment":
+        "whether a numbered result's statement is conditional on the build at all, "
+        "which is a question about the source and not about either rendering of it",
+    "test_an_appendix_pointer_carries_its_own_preposition":
+        "which preposition precedes an `\\apref` call, a fact about what the author "
+        "wrote rather than about either of the two things the macro prints",
+    "test_the_build_variant_macros_are_the_ones_rendered_expands":
+        "which macros macros.tex defines as build-conditional, a fact about the file "
+        "and the one question `rendered` cannot be asked, since it is the answer",
 }
 
 
@@ -312,6 +386,34 @@ def unstripped_reads(directory: Path) -> list[str]:
                 continue
             out.append(f"  {path.name}:{node.lineno} {line}")
     return sorted(set(out))
+
+
+def raw_reads_used(directory: Path) -> set[str]:
+    """Which `RAW_READS` keys a real read in `directory` actually matches.
+
+    The companion the ledger lacked. `test_no_raw_read_is_excused_for_a_line_no_test
+    _has` asked only whether each key occurs as a substring of the joined suite
+    source -- comments and docstrings included -- so an excuse stayed live after the
+    read it excused was deleted, as long as the line survived anywhere in any comment.
+    Commenting out `before = path.read_bytes()` and leaving the text in the comment
+    passed both that test and the audit. `SOURCE_READS` has been an equality since it
+    was written and this makes `RAW_READS` one too, which is the direction a ledger
+    drifts if nothing holds it: it keeps excusing what has moved on.
+    """
+    used = set()
+    for path in sorted(directory.rglob("*.py")):
+        if path.resolve() == Path(__file__).resolve():
+            continue
+        text = path.read_text()
+        lines = text.split("\n")
+        for node in ast.walk(ast.parse(text)):
+            if _reader_name(node) is None:
+                continue
+            line = lines[node.lineno - 1].strip()
+            for key in (line, _PY_COMMENT.sub("", line).strip()):
+                if key in RAW_READS:
+                    used.add(key)
+    return used
 
 
 def _reader_name(node: ast.AST) -> str | None:

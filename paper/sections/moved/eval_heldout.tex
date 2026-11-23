@@ -14,11 +14,22 @@ it can be, on dashboards nobody involved in this work has read.
 \paragraph{The vocabulary saturates long before the corpus ends.}
 Splitting is by dashboard and never by query: queries inside one dashboard share a house
 style, and letting them straddle the boundary would leak that style across it and flatter
-every number below. Over $200$ replicates at each size, a vocabulary read off $28$ of the
-$283$ Datadog dashboards holds $25.4$ of the corpus's $28$ features and already covers
-$97.5\%$ ($\pm2.0$) of the queries in the $255$ it did not read; past $60\%$ of the
-dashboards no replicate misses a feature at all. The PromQL side behaves the same way,
-from a tenth of its $240$ dashboards to $21.3$ of $24$ features and $98.0\%$.
+every number below. Over $1{,}000$ replicates at each size --- five seeds' worth, pooled
+--- a vocabulary read off $28$ of the $283$ Datadog dashboards holds $25.6$ of the
+corpus's $28$ features and already covers $97.6\%$ of the queries in the $255$ it did not
+read; past $70\%$ of the dashboards no replicate misses a feature at all. Every figure in
+this paragraph is a mean over those replicates rather than a quotient of counts, and the
+$97.6\%$ carries a replicate-to-replicate standard deviation of $2.1$ points --- the
+spread one reader who read $28$ dashboards would face, not an error on the mean, which is
+smaller than it by the square root of the replicate count. The saturation point is the
+exception and the reason the replicates were multiplied: it is read off where the
+worst replicate first stops missing anything, so it is a maximum over draws rather than a
+mean over them, and it moved once the draws went from one seed to five. The PromQL
+side behaves the same way on coverage, from a tenth of its $240$ dashboards to $21.4$
+of $24$ features and $98.2\%$, but it has no saturation point to report: its worst
+replicate is still missing a feature at nine-tenths of its dashboards. Over one seed it
+appeared to saturate at four-fifths, and that is the figure the previous draft's registry
+carried.
 Figure~\ref{fig:heldout} is both curves. So the ceiling is not the artefact that paragraph
 feared. \emph{Which features dashboards use} is answered by a small fraction of this
 corpus, and the rest of it keeps confirming the answer rather than extending it --- which
@@ -27,17 +38,32 @@ makes the staircase steep.
 
 \paragraph{The build order survives being scored on dashboards it was not chosen from.}
 Recomputing the greedy order on half the dashboards and scoring it on the other half
-gives $89.9\%$ at sixteen features where the order's own half gives $91.0\%$, a gap of
-$1.2$ points. This is the one figure in this subsection that is an estimate from a
-sampling procedure rather than a quotient of counts, and so the one with a Monte-Carlo
-error: $0.08$ points on the mean of $1{,}000$ replicates, five seeds of $200$. It was
-reported as one point for three drafts, off a single seed of $200$ whose mean was the
-lowest of the five and whose last digit the other four do not share. What a reader
-planning one migration needs is not that mean but the spread behind it: the gap's
-standard deviation across replicates is $2.6$ points, and $33\%$ of single
-half-splits show no gap at all. \S\ref{sec:discussion} calls the staircase the practical result of
-this paper, and what survives being scored elsewhere is its shape --- the order travels
---- rather than any particular toll for travelling in it.
+gives $89.9\%$ at sixteen features where the order's own half gives $90.9\%$. This is the
+one figure in this subsection that is an estimate from a sampling procedure rather than a
+quotient of counts, and so the one with a Monte-Carlo error: the gap averages $1.06$
+points over $25{,}000$ replicates pooled from five seeds, with an error of $0.02$ on that
+mean and a spread of $0.08$ across the five seeds' own means.
+
+For three drafts it was none of those things, because the procedure was not reproducible.
+The greedy order breaks ties between features that complete the same number of queries,
+and it broke them by taking the first such feature out of a counter whose insertion order
+came from a set of dashboard names. Python salts string hashing per process, so the same
+seed gave a different order in a different interpreter --- three runs of the shipped seed
+gave three answers, none of them the one in the cache. Ties now break on the feature name,
+which is a property of the data rather than of the interpreter, and the figure is
+reproducible across processes; a test runs the seeded paths twice under different hash
+salts and requires one answer. The $0.23$-point seed spread that the previous draft
+reported as a tripwire against seed artefacts was mostly this: with ties broken
+deterministically the five means span $0.08$.
+
+What a reader planning one migration needs is not that mean anyway. Its Monte-Carlo error
+is $0.02$ points and the replicate-to-replicate standard deviation behind it is $2.6$ ---
+a hundred and thirty times larger, and the figure that describes what one half-split would
+show. In $34\%$ of single half-splits there is no gap to pay: the order scores at least as
+well on the half it was not chosen from as on the half it was.
+\S\ref{sec:discussion} calls the staircase the practical result of this paper, and what
+survives being scored elsewhere is its shape --- the order travels --- rather than any
+particular toll for travelling in it.
 
 \paragraph{The grammar, on $497$ dashboards it has never seen.}
 The corpus took the $200$ most-downloaded Prometheus dashboards from a catalogue that
@@ -126,11 +152,13 @@ rate: two strings fail here and six fail in sample, and the two rates agree to f
 significant figures, separating only in the fifth. Meanwhile v1 parses $94.4\%$ against
 $92.9\%$, so the margin \S\ref{sec:datadog-inference}'s corpus-driven productions bought
 falls from $7.0$ points to $5.6$, a fall of $1.5$. Neither figure is an estimate.
-Every rate in this subsection is a quotient of counts and every margin a difference of
-two of them, taken before either is rounded, so differencing or dividing the
-one-decimal figures printed beside each other will sometimes miss the figure the paper
-states by a tenth of a point: these three are an instance, as is the design effect
-below. Both sides are
+Every rate in this subsection other than the two cross-validation paragraphs above is
+a quotient of counts and every margin a difference of two of them, taken before either
+is rounded, so differencing or dividing the one-decimal figures printed beside each
+other will sometimes miss the figure the paper states by a tenth of a point: these three
+are an instance, as is the design effect below. The two exceptions are exceptions
+because they resample this corpus rather than count it, and they are the only estimates
+here. Both sides are
 censuses of their repositories: $209$ of the $209$ dashboard files
 \texttt{integrations-extras} ships at its pinned commit were read, and $525$ of the
 $534$ \texttt{integrations-core} ships at the corpus's own, the other $9$ being
@@ -197,7 +225,7 @@ of the catalogue in sample could have anticipated it.
 \paragraph{Two vocabularies, and the one that bounds $\kappa$.}
 That construct is also the single feature the corpus's $28$ Datadog features do not have,
 so the corpus vocabulary covers $99.9\%$ of these occurrences rather than all of them,
-where the cross-validation above found no replicate missing a feature at all past $60\%$
+where the cross-validation above found no replicate missing a feature at all past $70\%$
 of the corpus. But the set that bounds $\kappa$ is not that one. It is $S^\star$, the
 $25$ features the translator demonstrably handles (\S\ref{sec:evaluation}), and
 $S^\star$ covers $97.3\%$ of these occurrences --- the same $97.3\%$ it covers in sample
@@ -219,8 +247,9 @@ check against breakage, and re-running it against a commit a year from now costs
 \paragraph{Where that leaves the threat.}
 All three fitted things now have an out-of-sample reading. The vocabulary and the build
 order are functions of the corpus and were refitted on part of it: the vocabulary
-saturates after a tenth of the dashboards and the order loses one point --- and on the
-disjoint repository the corpus vocabulary turns out to miss one aggregator after all. The
+saturates after a tenth of the dashboards and the order loses about a point --- and on
+the disjoint repository the corpus vocabulary turns out to miss one aggregator after
+all. The
 grammar is not refittable by any script, so it was frozen and run on populations nobody
 here had read: $497$ community dashboards on the PromQL side, $99.6\%$ against $99.0\%$,
 and a disjoint Datadog repository, $99.9\%$ against $99.9\%$. And $\kappa$ is $96.7\%$
@@ -235,8 +264,11 @@ points on the PromQL side and $5.6$ on the Datadog one, with delete-one-dashboar
 jackknife standard errors of $0.3$ and $1.7$ --- and on both, how much of that margin the
 corpus kept for itself is no larger than the spread it inherits from the two. Each of
 those margins rests on about as few dashboards as $\kappa$ does: the effective number
-behind the held-out one is $2.0$, the same figure reported for $\kappa$ above, and
-behind the in-sample one $19.3$. On $\kappa$ there is no such margin to carry over; what
+behind the held-out one is $2.0$ and behind the in-sample one $19.3$. The $2.0$ is the
+same to one decimal as the one reported for $\kappa$ above and is a different statistic
+on different data --- these are the margin jackknife's per-dashboard deviations, those
+were $\kappa$'s residuals --- so the agreement is a coincidence of rounding and not an
+identity. On $\kappa$ there is no such margin to carry over; what
 there is, is two readings a tenth of a point apart where the dashboard-clustered
 standard error --- a linearised one, and not the jackknife of the sentence before --- is
 $1.1$. Nothing on either side was sampled, so none of these is an interval on
@@ -258,7 +290,7 @@ unmet. It is the one test this paper cannot run rather than the one it declined 
 \includegraphics[width=0.92\linewidth]{figures/heldout_vocabulary}
 \caption{Refitting the two things that are functions of the corpus. Left: a feature
 vocabulary read off a sample of the dashboards, scored on the dashboards it did not read;
-the band is the $5$th to $95$th percentile over $200$ replicates. Right: the greedy
+the band is the $5$th to $95$th percentile over $1{,}000$ replicates. Right: the greedy
 implementation order recomputed on half the dashboards, scored on both halves. Neither
 panel is a held-out $\kappa$ --- they bound the ceiling and the build order, which are
 the parts of the fit a script can undo.}

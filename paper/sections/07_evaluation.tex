@@ -106,14 +106,14 @@ only acceptable number of syntactically invalid outputs is zero.
 That bound has a shape, and the shape is a result in its own right. Coverage is
 conjunctive over features --- a query translates only when \emph{every} feature it uses is
 supported --- while popularity is marginal, so the coverage a fragment buys does not grow
-with the fragment. Taking Datadog's features in greedy order, the best six reach $1.6\%$
+with the fragment. Taking Datadog's features in greedy order, the best five reach $1.6\%$
 of the corpus, of which $1.1\%$ is queries that use no feature at all; the next two,
-template-variable scopes and \texttt{sum:}, take it to $49.2\%$; and reaching $90.9\%$
+template-variable scopes and \texttt{sum:}, take it to $48.8\%$; and reaching $90.5\%$
 needs sixteen of the $28$. PromQL behaves the same way and slightly worse. For anyone
-building one of these translators that is the paper's practical finding --- a partial
-translator is worth almost nothing, because no prefix of the feature list buys
-proportional coverage --- and it is why the bound below is read off the translator's own
-feature set rather than off the curve. \apref{app:eval} gives both orders and both curves.
+building one of these translators that is the paper's practical finding --- effort and
+coverage are not proportional in either direction, so stopping early is close to
+worthless while half the features reach $88.7\%$ --- and it is why the bound below is
+read off the translator's own feature set rather than off the curve. \apref{app:eval} gives both orders and both curves.
 
 }
 The feature bound of \S\ref{sec:staircase} applies to $\kappa$, and applying it correctly
@@ -247,7 +247,8 @@ and the $9$ occurrences of \texttt{\{*,!*\}} turn out not to need one:
 Remark~\ref{rem:negated-all} reports the account selecting the series for both
 \texttt{\{*,!*\}} and \texttt{\{!*\}}, so the term is not the empty selection the
 catalogue assumed and the translation is to drop it. Every refusal this emitter raises
-is now code nobody has written, and most of it is code whose shape is known.
+is now code nobody has written, bar the $14$ undecided above, and most of it is code
+whose shape is known.
 
 \iffull\input{sections/moved/eval_gap_rows}\fi
 \iffull\input{sections/moved/reg_trial_probes}\fi

@@ -27,7 +27,9 @@ from pathlib import Path
 
 import pytest
 
-from texsource import (COMMENT, RAW_READS, SOURCE_READS, anywhere, builds, flat,
+from texsource import (BUILD_VARIANT, COMMENT, RAW_READS, SOURCE_READS, anywhere,
+                       raw_reads_used,
+                       builds, flat,
                        rendered, source, source_reads, source_readers, strip_comments,
                        suite_source, table, unstripped_reads)
 
@@ -43,8 +45,17 @@ _INPUT = re.compile(r"\\input\{sections/([A-Za-z0-9_/]+)\}")
 
 
 def _sources() -> list[Path]:
+    """Every file a build reads: the `.tex` and the generated figures.
+
+    The figures were outside this for a commit, so regenerating one left the stamp
+    agreeing with a log that predated it -- a build product of the paper changing with
+    nothing downstream objecting, which is the defect the digest exists to close one
+    file type short. `scripts/stamp_sources.py` keeps the same list and both sides
+    recompute it, so a divergence between them fails loudly rather than silently.
+    """
     return sorted(
-        [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex"), *(PAPER / "tables").glob("*.tex")]
+        [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex"),
+         *(PAPER / "tables").glob("*.tex"), *(PAPER / "figures").glob("*.pdf")]
     )
 
 
@@ -178,11 +189,19 @@ def test_every_guard_reads_the_document_the_paper_publishes():
     )
 
 
-def test_no_raw_read_is_excused_for_a_line_no_test_has():
-    """A stale excuse is an assertion that a line exists which does not."""
-    suite = suite_source(ROOT / "tests")
-    dead = sorted(line for line in RAW_READS if line not in suite)
-    assert not dead, f"RAW_READS excuses lines no test has: {dead}"
+def test_the_raw_read_ledger_names_exactly_the_reads_that_need_it():
+    """Held to the suite in both directions, as `SOURCE_READS` already was.
+
+    This asked whether each key occurs as a substring of the joined suite source,
+    comments and docstrings included. So an excuse outlived the read it excused:
+    commenting the read out and leaving its text in the comment passed this and the
+    audit both. An equality cannot drift that way.
+    """
+    used = raw_reads_used(ROOT / "tests")
+    assert set(RAW_READS) == used, (
+        f"excuses no read needs: {sorted(set(RAW_READS) - used)}\n"
+        f"reads excused by no entry: {sorted(used - set(RAW_READS))}"
+    )
 
 
 def test_the_comment_stripper_reads_a_percent_the_way_latex_does():
@@ -195,9 +214,11 @@ def test_the_comment_stripper_reads_a_percent_the_way_latex_does():
     direction, because a guard asserting a sentence is present is satisfied by text no
     reader sees.
 
-    Reverting `COMMENT` to either bug left the whole suite passing, through all
-    fifty-one call sites, because the fix was checked by hand in a shell and the
-    hand-check was never committed. This is that hand-check. The cases are written out
+    Reverting `COMMENT` to the one-backslash bug left the whole suite passing, through
+    all fifty-one call sites, because the fix was checked by hand in a shell and the
+    hand-check was never committed. Not to either bug: the two-backslash direction
+    fails twenty-three tests, which is the asymmetry above and which a commit message
+    here got wrong in the flattering direction. This is that hand-check. The cases are written out
     here rather than imported, because a table of them in `texsource` would be a
     ledger the audit reads and would be satisfied by construction.
     """
@@ -458,7 +479,10 @@ def test_an_appendix_pointer_carries_its_own_preposition():
     """
     bad = []
     for path in [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex")]:
-        text = flat(anywhere(path))
+        # `source`, not a document: `rendered` expands `\apref` to what each build
+        # prints, and this is a question about the call site rather than about either
+        # rendering -- which preposition the author wrote in front of the macro.
+        text = flat(source(path))
         for m in re.finditer(r"(\w+(?:\s+\w+){0,2})\s+\\apref\{", text):
             lead = m.group(1).lower().split()[-1]
             if lead in {"out", "collected", "given", "listed", "recorded", "stated"}:
@@ -596,10 +620,27 @@ def test_no_module_defines_a_private_helper_nothing_calls():
         defined = {n.name: n.lineno for n in ast.walk(tree)
                    if isinstance(n, ast.FunctionDef) and n.name.startswith("_")
                    and not n.name.startswith("__")}
-        used = ({n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
-                | {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
-                | {n.value for n in ast.walk(tree)
-                   if isinstance(n, ast.Constant) and isinstance(n.value, str)})
+        # A helper defined in this module is called by bare name. The first version of
+        # this also counted every attribute name and every string constant as a use,
+        # which is two escapes: a module-level `_cluster_bootstrap` passed because the
+        # module calls `mod._cluster_bootstrap(...)` on an imported script, and any
+        # dead helper passed if its name appeared anywhere as a string literal. The
+        # two deliberate dynamic references -- `globals()["name"] = ...` for the
+        # monkeypatch in `test_paper_figures`, and `getattr(x, "name")` -- are counted
+        # for what they are rather than by letting every string count.
+        used = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
+        for n in ast.walk(tree):
+            if (isinstance(n, ast.Subscript) and isinstance(n.value, ast.Call)
+                    and isinstance(n.value.func, ast.Name)
+                    and n.value.func.id == "globals"
+                    and isinstance(n.slice, ast.Constant)
+                    and isinstance(n.slice.value, str)):
+                used.add(n.slice.value)
+            if (isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+                    and n.func.id == "getattr" and len(n.args) > 1
+                    and isinstance(n.args[1], ast.Constant)
+                    and isinstance(n.args[1].value, str)):
+                used.add(n.args[1].value)
         for name, line in sorted(defined.items(), key=lambda kv: kv[1]):
             if name not in used:
                 dead.append(f"  {path.name}:{line} {name} is defined and never called")
@@ -634,4 +675,32 @@ def test_the_derived_inputs_the_suite_reads_are_present():
         + "\n  run `make notebooks && make data` (both are gitignored because they are "
           "derived, and neither is a dependency of `make test`). Every other failure "
           "about a missing file or a missing key is this one."
+    )
+
+
+def test_the_build_variant_macros_are_the_ones_rendered_expands():
+    r"""`macros.tex` decides which macros are build-conditional; `rendered` must know
+    all of them, and only them.
+
+    `BUILD_VARIANT` held two for a commit --- `\inlineonly` and `\shortonly` --- while
+    `macros.tex` defined five. `\apref`, `\apin` and `\apphead` are conditional in
+    exactly the same way ("below" against "Appendix~N", a subsection against a
+    section), so a sentence containing one was checked against the macro call rather
+    than against either rendering, and `\apphead`'s heading level against neither.
+
+    The set is read off `macros.tex` rather than listed here, so defining a sixth is
+    what fails, which is the only arrangement that does not need the author to
+    remember. `\todo` is excluded: it is conditional on nothing and its body has no
+    `\iffull`.
+    """
+    text = source(PAPER / "macros.tex")
+    defined = {m.group(1) for m in re.finditer(
+        r"\\newcommand\{\\(\w+)\}(?:\[\d+\])?\{((?:[^{}]|\{[^{}]*\})*)\}", text)
+        if r"\iffull" in m.group(2)}
+    assert defined, "no build-conditional macro found in macros.tex; the scan broke"
+    assert defined == set(BUILD_VARIANT), (
+        f"macros.tex defines build-conditional macros rendered does not expand: "
+        f"{sorted(defined - set(BUILD_VARIANT))}\n"
+        f"BUILD_VARIANT names macros macros.tex does not define: "
+        f"{sorted(set(BUILD_VARIANT) - defined)}"
     )

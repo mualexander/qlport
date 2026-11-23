@@ -17,7 +17,12 @@ from __future__ import annotations
 
 import json
 import math
+import os
+import random
 import re
+import subprocess
+import sys
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -49,7 +54,7 @@ RECONCILED = (
     (GRAMMARS, "taken from the counts and not from each other"),
     (HELDOUT, "quotient of counts and every margin a difference of two of them, "
               "taken before either is rounded"),
-    (STAIRCASE, "each a mean over $1{,}000$ replicates rather than a quotient of "
+    (STAIRCASE, "each a mean over $25{,}000$ replicates rather than a quotient of "
                 "counts, with the gap between them taken from the means and not from "
                 "these two printed figures"),
 )
@@ -459,6 +464,42 @@ def test_every_held_out_figure_is_the_one_the_run_produced(reg):
         f"registry keys under `ho.` that the run does not produce: {orphans}")
 
 
+def test_every_cross_validation_figure_is_the_one_the_run_produced(reg):
+    """The `cv.*` keys, recomputed from the cached run and compared, orphans included.
+
+    The `ho.*` keys have had this since the round that found four hand-edited figures
+    in them. The `cv.*` keys did not, and two things got through in one pass:
+
+    `cv.dd_stair_gap_16_pct` was renamed to `..._points` when the gap went to two
+    decimal places, and the old key stayed in the registry at its old value, because
+    `--write-registry` merges rather than replaces. A dead key is not inert. The paper
+    can quote it, and the figure ledger licenses any prose numeral of its magnitude.
+
+    `cv.pq_complete_at_pct` was worse, because it was never renamed. The writer only
+    emits a saturation point when some sample size has a replicate maximum of zero, and
+    pooling five seeds took PromQL's maximum off zero at every size -- its worst
+    replicate still misses a feature at nine-tenths of its dashboards. So the run
+    stopped producing the key and the registry kept the one-seed value, which claimed a
+    saturation PromQL does not have.
+    """
+    import importlib.util
+
+    path = ROOT / "scripts" / "heldout_split.py"
+    spec = importlib.util.spec_from_file_location("heldout_split", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    want = mod.figures(_cv())
+    assert len(want) > 25, "the run produced almost no figures; it is not the run"
+    drifted = [f"  {k}: registry {reg.get(k, '(absent)')} vs run {v}"
+               for k, v in sorted(want.items()) if reg.get(k) != v]
+    assert not drifted, (
+        "the registry no longer says what the run says:\n" + "\n".join(drifted))
+    orphans = sorted(k for k in reg if k.startswith("cv.") and k not in want)
+    assert not orphans, (
+        f"registry keys under `cv.` that the run does not produce: {orphans}")
+
+
 def test_the_cross_validated_greedy_is_the_staircase_of_notebook_00(reg):
     """The split experiment must refit the paper's instrument, not a near neighbour.
 
@@ -474,6 +515,77 @@ def test_the_cross_validated_greedy_is_the_staircase_of_notebook_00(reg):
     for k, got in enumerate(full):
         want = reg[f"nb00.ceiling_{k}_features_pct"]
         assert abs(got - want) < 0.051, f"at {k} features: {got} vs notebook 00's {want}"
+
+
+def test_the_one_tie_in_the_whole_corpus_order_is_broken_the_defensible_way(reg):
+    """The staircase's step sits where an arbitrary tie-break put it, so pin the tie.
+
+    `greedy` used to resolve ties through `Counter.most_common`, which returns the
+    first-inserted of an equal-count group; the Counters are built by iterating sets of
+    strings, so the winner followed CPython's per-process hash salt. The comment that
+    introduced the fix asserted the whole-corpus order was tie-free and that no printed
+    figure moved. It is not and twelve did: there is one tie, and resolving it the other
+    way delays the step by a feature and lowers every ceiling past it.
+
+    Breaking on the name is deterministic but says nothing about the data, so this also
+    checks the choice against the rule that does: among features completing equally many
+    queries, prefer the one the most still-uncovered occurrences need. At this tie the
+    two agree, and not narrowly, which is what §\ref{sec:staircase} claims when it says
+    the order is not the alphabetical accident it could have been. If a recount ever
+    makes them disagree, the prose is wrong and the tie-break is a real choice that has
+    to be argued for rather than noted.
+    """
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "_hs", ROOT / "scripts" / "heldout_split.py")
+    hs = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(hs)
+
+    sets = [f for fs in hs.load()["datadog"].values() for f in fs]
+    missing = [set(s) for s in sets]
+    ties, by_name, by_residual = [], [], []
+    while True:
+        completes, residual = Counter(), Counter()
+        for m in missing:
+            if len(m) == 1:
+                completes[next(iter(m))] += 1
+            for f in m:
+                residual[f] += 1
+        if not residual:
+            break
+        source = completes if completes else residual
+        top = max(source.values())
+        tied = sorted(f for f, c in source.items() if c == top)
+        name = min(sorted(source.items()), key=lambda kv: (-kv[1], kv[0]))[0]
+        wide = min(sorted(source.items()),
+                   key=lambda kv: (-kv[1], -residual[kv[0]], kv[0]))[0]
+        if len(tied) > 1:
+            ties.append((len(by_name), tied, residual[name], residual[wide]))
+        by_name.append(name)
+        by_residual.append(wide)
+        for m in missing:
+            m.discard(name)
+
+    assert len(ties) == 1, (
+        f"the whole-corpus order has {len(ties)} ties, not one: "
+        f"{[(i, t) for i, t, *_ in ties]} --- the prose says there is exactly one")
+    at, tied, got_res, wide_res = ties[0]
+    assert len(tied) == 2 and at == 4, f"the tie moved: {at}, {tied}"
+    assert by_name[at] == by_residual[at], (
+        f"at the one tie, breaking on the name takes {by_name[at]} and breaking on "
+        f"remaining coverage takes {by_residual[at]}; the prose claims they agree")
+    assert got_res > 10 * wide_res or got_res == wide_res, (
+        "the prose says the two rules agree by a wide margin, and the margin is "
+        f"{got_res} uncovered occurrences against {wide_res}")
+
+    # And the order this produces is the one the registry's ceilings were read off.
+    curve = hs.staircase(sets, by_name)
+    for k in range(reg["nb00.datadog_features"] + 1):
+        want = reg[f"nb00.ceiling_{k}_features_pct"]
+        assert abs(curve[k] - want) < 0.051, (
+            f"at {k} features the name tie-break gives {curve[k]:.2f} and the registry "
+            f"says {want} --- the registry was written by a different tie-break")
 
 
 def test_the_vocabulary_ceiling_saturates_well_inside_the_corpus(reg):
@@ -500,28 +612,51 @@ def test_the_vocabulary_ceiling_saturates_well_inside_the_corpus(reg):
         "if nothing is missed at any smaller size either, the figure is not the "
         "saturation point it is quoted as")
 
+    # `cv.reps` is quoted in the figure caption as the count the band is drawn over,
+    # and the script used to write `args.reps` into it. Pooling five seeds multiplied
+    # the band's replicates by five and left the caption claiming a fifth of them,
+    # which no guard noticed because both numbers were real counts of something.
+    counts = {r["reps"] for r in rows.values()}
+    assert counts == {reg["cv.reps"]}, (
+        f"`cv.reps` is {reg['cv.reps']} and the vocabulary rows hold {sorted(counts)}")
+
 
 def test_the_staircase_survives_being_scored_on_dashboards_it_was_not_built_from(reg):
     """§8 calls the staircase the paper's practical result, so it must not be a fit.
 
-    The three figures are taken from the exact means and not from the two curves after
-    rounding, and the gap is pooled over five seeds. At one seed it read 1.0; the five
-    per-seed means run 1.00 to 1.23 and the shipped one was the lowest of them, so the
-    printed tenth of a point was a seed artefact of the same kind, and at the same
-    scale, as the bootstrap figure corrected in the pass before this one.
+    The figures are taken from the exact means and not from the two curves after
+    rounding, and the gap is pooled over five seeds at 5,000 replicates each.
 
-    The spread stored beside it is the Monte-Carlo error of the pooled mean, 0.08, and
-    not the range of the per-seed means: a range over a handful of seeds bounds the
-    next seed by luck, which is how last pass's bootstrap spread came to be quoted as
-    an uncertainty on something it was not an uncertainty on. The range is kept as a
-    tripwire and asserted against what the replicate spread predicts for it.
+    For three drafts this procedure was not reproducible, so none of the spreads below
+    meant what they said. `greedy` broke ties by taking the first feature out of a
+    `Counter` whose insertion order came from iterating a `set` of dashboard names,
+    and CPython salts string hashing per process: the shipped seed gave three
+    different answers in three interpreters and none matched the committed cache. The
+    0.23-point seed range the previous draft stored AS A TRIPWIRE AGAINST SEED
+    ARTEFACTS was mostly that salt; with ties broken on the feature name the five
+    per-seed means span 0.08. `test_every_seeded_path_is_deterministic_across_
+    processes` is the guard that would have caught it, and it fails on the old
+    tie-break.
+
+    The gap is now carried to two places, because one is not a resolution this has:
+    1.06 with a Monte-Carlo error of 0.02 contains both 1.0 and 1.1. The two printed
+    percentages are one place each, so subtracting them cannot reproduce it, which is
+    why this trio is not in the registry's reconciliation list.
     """
     s = _cv()["datadog"]["staircase"]
-    assert s["at"] == 16 and s["reps"] == 1000 and len(s["seeds"]) == 5
+    assert s["at"] == 16 and s["reps"] == 25000 and len(s["seeds"]) == 5
     assert reg["cv.dd_stair_train_16_pct"] == round(s["train_at"], 1)
     assert reg["cv.dd_stair_test_16_pct"] == round(s["test_at"], 1)
-    assert reg["cv.dd_stair_gap_16_pct"] == round(s["gap_at"], 1)
+    assert reg["cv.dd_stair_gap_16_points"] == round(s["gap_at"], 2)
     assert s["gap_at"] == pytest.approx(s["train_at"] - s["test_at"], abs=1e-9)
+    # No bound is asserted between the two-place gap and the difference of the two
+    # one-place percentages. One was, and it could not fail: the three assertions above
+    # pin all three figures to the same cache entry, and `gap_at` is `train_at` less
+    # `test_at` exactly, so rounding each percentage to a tenth cannot move their
+    # difference more than 0.1 from the gap. A guard whose neighbours imply it is the
+    # thing `test_no_allowance_licenses_anything_it_is_still_needed_for` exists to find,
+    # and writing one into this file while closing a round of them would have been
+    # funnier than it was useful.
     assert 0 <= s["gap_at"] < 5, (
         "a build order chosen on one half should not be worth much less on the other")
     assert s["train"][0] < s["train"][8] < s["train"][16], "the staircase should rise"
@@ -538,8 +673,11 @@ def test_the_staircase_survives_being_scored_on_dashboards_it_was_not_built_from
         f"the five per-seed means span {s['gap_at_seed_range']:.3f} where one seed's "
         f"own Monte-Carlo error is {per_seed_se:.3f}")
     assert reg["cv.dd_stair_gap_16_seed_range"] == round(s["gap_at_seed_range"], 2)
-    # And the figure the prose has to carry: a third of individual half-splits show no
-    # gap at all, which is why the mean is not a statement about one reader's split.
+    # And the figure the prose has to carry. "No gap at all" was the wrong reading of
+    # it: this is the share of replicates with gap <= 0, and the gap is train minus
+    # test, so those are splits where the order scores AT LEAST AS WELL on the half it
+    # was not chosen from. The prose said a third of splits show no gap, which would
+    # mean a mass at exactly zero; there is none.
     assert reg["cv.dd_stair_gap_16_share_not_positive_pct"] == round(
         s["gap_at_share_not_positive"] * 100)
     assert 0.2 < s["gap_at_share_not_positive"] < 0.5, (
@@ -791,16 +929,24 @@ def _require_the_rounding_note(because: str) -> None:
 def test_every_printed_trio_either_reconciles_or_is_accounted_for(reg):
     """Three figures, two of which the reader will difference to get the third.
 
-    The paper prints six such trios and three of them do not reconcile at one decimal
-    place. That is ordinary --- a difference of counts is not the difference of two
-    rounded quotients --- and it is also exactly the shape of a defect this suite has
-    had twice: a guard asserted the printed subtraction and agreed with the error it
-    was added to catch, and the guard that replaced it asserted only the exact
-    arithmetic and stopped noticing that the reader gets a third number.
+    Some of what the paper prints does not reconcile at one decimal place. That is
+    ordinary --- a difference of counts is not the difference of two rounded quotients
+    --- and it is also exactly the shape of a defect this suite has had twice: a guard
+    asserted the printed subtraction and agreed with the error it was added to catch,
+    and the guard that replaced it asserted only the exact arithmetic and stopped
+    noticing that the reader gets a third number.
 
-    So every trio is enumerated here and the disagreement is counted rather than
-    tolerated silently. While any of them disagrees, the note has to be in the paper.
-    If a future run makes all six reconcile, this fails and the note comes out.
+    So every printed relation is enumerated below --- differences, the design-effect
+    ratio, both quadratures --- and the disagreement is counted rather than tolerated
+    silently. While any of them disagrees, the note has to be in the paper; if a future
+    run makes all of them reconcile, this fails and the note comes out.
+
+    NO COUNT APPEARS IN THIS DOCSTRING, deliberately. It said "six such trios and three
+    of them do not reconcile" while the code enumerated five relations of which three
+    failed, and then went on saying it while the code enumerated eleven of which four
+    failed --- through two commits, one of whose messages claimed this docstring had
+    been rewritten to state the property instead of a count. A count here is a second
+    place to keep the same fact, and this file has lost that argument twice.
     """
     diffs = (
         ("the Datadog in-sample margin", "ho.dd_in_sample_v2_pct",
@@ -811,14 +957,25 @@ def test_every_printed_trio_either_reconciles_or_is_accounted_for(reg):
          "ho.ex_shrink_points"),
         ("the PromQL in-sample margin", "ho.gf_in_sample_v2_pct",
          "ho.gf_in_sample_v1_pct", "ho.gf_in_sample_gain_points"),
-        ("the PromQL held-out margin", "ho.gf_v2_pct", "ho.gf_v1_pct",
+        # The NOVEL-subset pair, not the whole-set one. This trio paired
+        # `ho.gf_novel_gain_points` -- the margin over the strings the corpus does not
+        # hold -- with `ho.gf_v1_pct`, which is v1 on all 13,960 held-out strings. The
+        # two differ by a tenth of a point, so the trio reported a relation that does
+        # not reconcile, and the commit that added it advertised that as a
+        # non-reconciliation nobody had noticed. The relation the paper actually prints
+        # is 99.6 less 98.8, and it reconciles exactly.
+        ("the PromQL held-out margin", "ho.gf_novel_v2_pct", "ho.gf_novel_v1_pct",
          "ho.gf_novel_gain_points"),
         ("the PromQL fall", "ho.gf_in_sample_gain_points", "ho.gf_novel_gain_points",
          "ho.gf_shrink_points"),
         ("the ceiling overstatement", "ho.ex_ceiling_pct", "ho.ex_sstar_pct",
          "ho.ex_ceiling_overstatement_points"),
-        ("the cross-validated staircase gap", "cv.dd_stair_train_16_pct",
-         "cv.dd_stair_test_16_pct", "cv.dd_stair_gap_16_pct"),
+        # The cross-validated staircase gap is NOT here. It is the one relation in the
+        # registry whose three figures carry different numbers of decimal places -- two
+        # one-place percentages and a two-place gap, because a tenth of a point is not
+        # a resolution the procedure has -- so subtracting the printed pair cannot
+        # reproduce it. The staircase test checks it as a rounding bound instead; this
+        # list is for relations a reader can verify by subtraction.
     )
     unreconciled = [name for name, a, b, c in diffs
                     if a in reg and b in reg and round(reg[a] - reg[b], 1) != reg[c]]
@@ -960,8 +1117,12 @@ def test_every_cluster_statistic_is_a_function_of_the_stored_tally(reg):
         return max(abs(j["bootstrap_pct_2_5"] - lo),
                    abs(j["bootstrap_pct_97_5"] - hi)) / se
 
-    # Measured today: skew -0.61 against -0.31, and the furthest edge displaced by
-    # 0.33 of a standard error against 0.19, a ratio of 1.8.
+    # Measured over the five seeds the figures are now means of: skew -0.59 against
+    # -0.32, and the furthest edge displaced by 0.34 of a standard error against 0.17,
+    # a ratio of 2.0. The numbers that stood here were the first seed's alone -- the
+    # seed this file's own comments identify as the outlier -- recorded while the
+    # assertion below was moved to the pooled values. A record of what was measured is
+    # worth exactly as much as the measurement it records.
     assert run["kappa_extras"]["jackknife"]["bootstrap_skew"] < -0.4
     assert run["kappa_in_sample"]["jackknife"]["bootstrap_skew"] < 0
     assert displacement("kappa_extras") > 1.5 * displacement("kappa_in_sample"), (
@@ -995,6 +1156,17 @@ def test_every_margin_spread_is_a_function_of_its_stored_replicates(reg):
             f"{key} stores {n} replicates for {block['dashboards']} dashboards")
         assert reps == sorted(reps), f"{key}'s replicates are not in sorted order"
         mean = sum(reps) / n
+        # And they have to be replicates OF THIS MARGIN. Everything below is a
+        # function of the deviations, so adding a constant to every replicate
+        # preserved the standard error, the rounded points and the effective count
+        # exactly: the stored list could have been a jackknife of a different
+        # quantity than the figure it is printed beside. A delete-one-cluster
+        # replicate mean sits within the replicates' own spread of the full-sample
+        # value, so this is loose enough to be true and tight enough to catch a shift.
+        spread = math.sqrt(sum((r - mean) ** 2 for r in reps) / max(n - 1, 1))
+        assert abs(mean - block["gain"]) <= max(0.5, spread), (
+            f"{key}'s replicates average {mean:.4f} where the margin they are the "
+            f"spread of is {block['gain']:.4f}, so they are not replicates of it")
         # The delete-one-cluster jackknife, as `gain_spread` computes it: each
         # replicate drops one dashboard's exclusively-held strings and recomputes.
         var = (n - 1) / n * sum((r - mean) ** 2 for r in reps)
@@ -1335,17 +1507,28 @@ def test_the_grafana_comparator_reproduces_the_promql_residual(reg):
 
 
 def test_the_staircase_figure_the_ledger_cannot_see(reg):
-    """The queries the first six Datadog features complete, recomputed.
+    """The queries the first five Datadog features complete, recomputed.
 
-    This is 45, and since the held-out run so is ho.ex_gap_phi_quantile. The figure
-    ledger accounts for a prose numeral by magnitude, so that unrelated key now
-    licenses this one, and ALLOWED_IN's scope is consulted only for figures the
-    registry cannot account for -- which this no longer is. The table that generates
-    the staircase is the real source, so the check belongs here.
+    It was six features and 45 queries, and 45 is also `ho.ex_gap_phi_quantile`: the
+    figure ledger accounts for a prose numeral by magnitude, so that unrelated key
+    licensed this one and ALLOWED_IN's scope was never consulted, because that is only
+    reached for figures the registry cannot account for. The collision is gone now --
+    the tie-break fix moved the step to the sixth feature, so the prefix the prose calls
+    worthless is five features and 44 queries -- but the reason for checking it here
+    rather than in a ledger has not changed, and the collision could come back on any
+    run that moves `ho.ex_gap_phi_quantile` onto whatever this becomes.
+
+    The prefix length is asserted too. Taking it from the prose and the count from the
+    table would let the two drift apart silently, which is how the sentence came to
+    describe six features while the step had moved under it.
     """
     body = rows("implementation_order")[1:]
-    assert sum(num(r[4]) for r in body[:6]) == 45, (
-        "eval_staircase.tex says the first six features complete 45 queries")
+    step = next(i for i, r in enumerate(body) if num(r[4]) > 100)
+    assert step == 5, (
+        f"the staircase's step is at feature {step + 1}, and eval_staircase.tex, §7, "
+        "§8 and §9 all describe the flat prefix as five features")
+    assert sum(num(r[4]) for r in body[:step]) == 44, (
+        "eval_staircase.tex says the first five features complete 44 queries")
 
 
 def test_the_temporal_holdout_names_both_commits_and_its_own_size(reg):
@@ -1537,47 +1720,336 @@ def test_the_operator_table_is_a_recount_of_the_corpus():
             f"gives {counted.get((lang, kind, plain))}")
 
 
-def test_the_provenance_table_dates_are_the_dates_the_caches_carry():
-    """The table a reader checks the vendor experiments against.
+# The caches each experiment's rows were taken from, where the filename does not say.
+# `eN.json` and `eN_*.json` belong to EN by name; these three do not, and a row dated
+# from one of them would otherwise have to be excused rather than checked.
+EXPERIMENT_CACHE = {
+    "E7": ["as_rate_order"],
+    "E9": ["type_declared"],
+    "E13": ["scope_empty_tag"],
+    "E14": ["top"],
+}
 
-    A helper that collects exactly these timestamps was written, carries its own
-    assertion, and was called by nothing -- so it read like the check behind this table
-    while the table was unchecked, and a date moved thirteen months with the suite
-    green. Given which trial window these experiments ran in, a provenance table
-    nobody checks is worth more than its size suggests.
+
+def test_the_provenance_table_dates_are_the_dates_its_own_caches_carry():
+    """Each row against ITS experiment's cache, not against the set of all of them.
+
+    The first version of this built one set of every `collected_at` under
+    `data/raw/datadog/` and asked only that each row's date was in it. So a date could
+    move freely inside that set: E18, the rollup-span experiment whose cache the span
+    table is bound to, could be dated two experiments earlier, and E12 a day earlier,
+    with the suite green. It caught a date moved thirteen months out of the set and
+    nothing finer, which is the shape of a guard written to the one perturbation that
+    motivated it.
+
+    Given which trial window produced these runs and that it has closed, a provenance
+    table is the one thing a reader can check the vendor experiments against, so each
+    row is now tied to the cache that produced it.
     """
-    import json
+    import json as _json
     import re as _re
-    from datetime import date, datetime
+    from datetime import datetime
 
-    carried = set()
     raw = ROOT / "data" / "raw" / "datadog"
+    dates, ids = {}, set()
     for path in sorted(raw.glob("*.json")):
-        doc = json.loads(path.read_text())
+        doc = _json.loads(path.read_text())
         prov = doc.get("provenance") if isinstance(doc.get("provenance"), dict) else {}
         at = prov.get("collected_at") or doc.get("collected_at")
         if at:
-            carried.add(datetime.fromisoformat(at).date())
-    assert carried, "no vendor cache carries a timestamp"
+            dates[path.stem] = datetime.fromisoformat(at).date()
+        ids.update(_re.findall(r"\br\d{8,}\b", _json.dumps(doc)))
+    assert dates, "no vendor cache carries a timestamp"
 
     printed = table(TABLES / "vendor_provenance.tex")
     rows = [[col.strip() for col in ln.split("&")]
             for ln in printed.split("\n") if "&" in ln and "Experiment" not in ln]
     assert len(rows) >= 5, rows
-    seen = set()
+    checked = 0
     for experiment, taken, _site, _what in rows:
-        # One row gives a run reference rather than a date, for a probe taken on a rig
-        # whose cache records the run and not the day. That is the only other form the
-        # column may take, and saying so here is what keeps it from becoming the form
-        # a wrong date can hide in.
-        if _re.fullmatch(r"run r\d+", taken):
+        n = experiment.removeprefix("E")
+        own = {stem: when for stem, when in dates.items()
+               if stem == f"e{n}" or stem.startswith(f"e{n}_")
+               or stem in EXPERIMENT_CACHE.get(experiment, [])}
+        # A row may give a run reference instead of a day, for a probe whose cache
+        # records the run and not the date. That escape is bound too: the id has to
+        # appear in a cache. It was a bare `continue` before, which is an escape and
+        # not a check, and rewriting any cell as `run r1234` disabled the row.
+        if (m := _re.fullmatch(r"run (r\d+)", taken)):
+            assert m.group(1) in ids, (
+                f"{experiment} is dated by run {m.group(1)}, which appears in no "
+                f"cache under data/raw/datadog")
+            checked += 1
             continue
         assert _re.fullmatch(r"\d{1,2} \w{3} \d{4}", taken), (
             f"{experiment} has an unparseable date {taken!r}")
         when = datetime.strptime(taken, "%d %b %Y").date()
-        assert when in carried, (
-            f"{experiment} is dated {taken}, which no cache under data/raw/datadog "
-            f"records; the dates the caches carry are {sorted(carried)}")
-        seen.add(when)
-    assert len(seen) >= 4 and seen <= carried, sorted(seen)
-    assert isinstance(next(iter(carried)), date)
+        assert own, (
+            f"{experiment} has no cache under data/raw/datadog; name it in "
+            f"EXPERIMENT_CACHE or the row rests on nothing")
+        assert when in set(own.values()), (
+            f"{experiment} is dated {taken}; its own caches "
+            f"{sorted(own)} were collected {sorted(set(own.values()))}")
+        checked += 1
+    assert checked == len(rows), (checked, len(rows))
+
+
+def test_every_seeded_path_is_deterministic_across_processes():
+    r"""Two processes, two string-hash salts, one answer. Or it is not a measurement.
+
+    `greedy` broke ties with `Counter.most_common`, and both its Counters are fed by
+    iterating `m`, a set of feature-name strings. Insertion order therefore followed
+    Python's per-process hash salt, `most_common` returns the first-inserted of an
+    equal-count group, and there is about one tie per half-split. So the
+    cross-validated staircase could not be reproduced by the code that wrote it: three
+    runs gave three answers and none matched the committed cache. The guard over those
+    figures pinned the registry to the cache rather than to a derivation, so it could
+    not notice, and the paper printed a tenth of a point off a quantity whose last
+    digit moved between runs of the same seed.
+
+    `shape_differential` had the same defect in plainer form: `seed=hash(key) % 2**31`
+    for every synthetic series, so the 22,692-bucket agreement it reports was built
+    from different values on every run.
+
+    Fixing both was two lines. Keeping them fixed is this, which is the part the last
+    three rounds have shown matters more: a seeded script with no determinism check is
+    a script whose reproducibility is an assertion in a docstring.
+
+    TWO SALTS WERE NOT ENOUGH. The subprocess probe below ran at PYTHONHASHSEED 0 and
+    524287, and reverting `greedy` to `most_common` did not move either of them: the
+    whole-corpus order has one tie, and whether a salt flips it is luck. A perturbation
+    battery caught that the guard did not fire on the defect it was written for.
+
+    So the property is asserted directly first, in this process and without salts.
+    `greedy`'s answer must not depend on the order of its input list, because that
+    order is what a set's iteration gives it and the hash salt is what sets that. Under
+    `most_common` half of twelve shuffles move the order; under a tie-break on the
+    feature name none of them can. The cross-process probe stays as the check on the
+    paths as a whole, now over four salts rather than two.
+    """
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "_hs_det", ROOT / "scripts" / "heldout_split.py")
+    hs = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(hs)
+    by_dash = hs.load()["datadog"]
+    sets = [f for n in sorted(by_dash) for f in by_dash[n]]
+    base = hs.greedy(sets)
+    for seed in range(12):
+        shuffled = sets[:]
+        random.Random(seed).shuffle(shuffled)
+        got = hs.greedy(shuffled)
+        assert got == base, (
+            "`greedy` is not invariant to the order of its input list, so its answer "
+            "depends on how a set happened to iterate:\n"
+            f"  shuffle {seed} diverges at feature "
+            f"{next(i for i, (a, b) in enumerate(zip(base, got)) if a != b)}")
+
+    probe = (
+        "import sys\n"
+        f"sys.path[:0] = [{str(ROOT / 'scripts')!r}, {str(ROOT / 'src')!r}]\n"
+        "import heldout_split as H, shape_differential as S\n"
+        "d = H.load()['datadog']\n"
+        "names = sorted(d)\n"
+        "print('greedy', H.greedy([f for n in names for f in d[n]])[:8])\n"
+        "print('half  ', H.greedy([f for n in names[:140] for f in d[n]])[:8])\n"
+        "s = H.staircase_cv(d, 3)\n"
+        "print('cv    ', round(s['gap_at'], 9), round(s['train_at'], 9))\n"
+        "print('series', S._seed(('qlport.requests', (('env', 'prod'),))))\n"
+    )
+    out = []
+    for salt in ("0", "524287", "1", "99991"):
+        env = {**os.environ, "PYTHONHASHSEED": salt}
+        run = subprocess.run([sys.executable, "-I", "-c", probe], cwd=ROOT,
+                             env=env, capture_output=True, text=True)
+        assert run.returncode == 0, f"PYTHONHASHSEED={salt}:\n{run.stderr[-2000:]}"
+        out.append(run.stdout)
+    assert out[0] == out[1], (
+        "a seeded path gives different answers in two processes, so nothing it "
+        f"produces is reproducible:\n--- salt 0 ---\n{out[0]}--- salt 524287 ---\n"
+        f"{out[1]}"
+    )
+
+
+def test_the_glob_outcome_table_is_a_recount_of_the_matcher_cache():
+    """Section 6's three-way split, re-derived from `regex_glob.csv` row by row.
+
+    This table is the one section 6 calls the measurement of how little of this corpus
+    a single glob reaches, and nothing read it. Swapping the "finite union" and
+    "neither" rows made the table report unions reaching 3.8% of patterns where it
+    measures 63.0%, and neither-expressible reaching 63.0% where it measures 3.8% ---
+    the exact reversal of the section's result, with 812 passing.
+    """
+    import csv
+
+    rows = list(csv.DictReader(
+        (ROOT / "data" / "processed" / "regex_glob.csv").open()))
+    by_kind = {}
+    for r in rows:
+        d, o = by_kind.setdefault(r["kind"], [0, 0])
+        by_kind[r["kind"]] = [d + 1, o + int(r["occurrences"])]
+    total_d = sum(v[0] for v in by_kind.values())
+    total_o = sum(v[1] for v in by_kind.values())
+
+    printed = table(TABLES / "regex_glob.tex")
+    cells = {}
+    for line in printed.split("\n"):
+        if "&" not in line or "Outcome" in line:
+            continue
+        parts = [c.strip().removesuffix(r"\\").strip() for c in line.split("&")]
+        cells[parts[0]] = parts[1:]
+    want = {"One glob": "single", "A finite union of globs": "union",
+            "Neither ($\\bot$)": "none"}
+    assert set(want) <= set(cells), sorted(cells)
+    for label, kind in want.items():
+        distinct, share_d, occ, share_o = cells[label]
+        d, o = by_kind[kind]
+        assert int(distinct) == d, (label, distinct, d)
+        assert int(occ.replace(",", "")) == o, (label, occ, o)
+        assert share_d == f"{d / total_d * 100:.1f}" + r"\%", (label, share_d)
+        assert share_o == f"{o / total_o * 100:.1f}" + r"\%", (label, share_o)
+
+
+def test_the_no_glob_rows_are_the_two_reasons_the_cache_records(reg):
+    """Row by row, not by column sum --- because the split IS the claim.
+
+    The binding added for this table last pass asserted only that the two Distinct
+    cells sum to `nb04.no_glob_distinct` and the two Occurrences cells to
+    `nb04.no_glob_occurrences`. Swapping the rows preserves both sums, and the split
+    is what the abstract's hedge rests on: "a theorem about globs, or that theorem
+    together with a union-size bound we choose and state". Swap it and $74$ of the $84$
+    refusals become unconditional theorems instead of $10$, which turns a result the
+    paper presents as contingent on a maintenance threshold into an impossibility
+    result. Table and prose swapped together passed 812.
+
+    `regex_glob.csv` records which reason each refused pattern carries, so each row is
+    derived rather than summed.
+    """
+    import csv
+
+    rows = list(csv.DictReader(
+        (ROOT / "data" / "processed" / "regex_glob.csv").open()))
+    by_reason = {}
+    for r in rows:
+        if not r["reason"]:
+            continue
+        d, o = by_reason.setdefault(r["reason"], [0, 0])
+        by_reason[r["reason"]] = [d + 1, o + int(r["occurrences"])]
+    assert set(by_reason) == {"union-too-large", "unbounded-character-class"}, by_reason
+
+    printed = table(TABLES / "regex_glob_reasons.tex")
+    got = {}
+    for line in printed.split("\n"):
+        if "&" not in line or "Construct" in line:
+            continue
+        parts = [c.strip().removesuffix(r"\\").strip() for c in line.split("&")]
+        got[parts[0]] = (int(parts[1]), int(parts[2]), parts[3])
+    bound = "More branches than the bound $B$ admits"
+    star = r"No bounded alphabet under a star (\texttt{[a-z]+})"
+    assert set(got) == {bound, star}, sorted(got)
+    for label, reason in ((bound, "union-too-large"),
+                          (star, "unbounded-character-class")):
+        d, o = by_reason[reason]
+        assert got[label][0] == d, (label, got[label][0], d)
+        assert got[label][1] == o, (label, got[label][1], o)
+    # The sums still have to agree with the registry, which is the weaker check this
+    # replaces rather than removes.
+    assert sum(v[0] for v in got.values()) == reg["nb04.no_glob_distinct"]
+    assert sum(v[1] for v in got.values()) == reg["nb04.no_glob_occurrences"]
+    # And the hedge the abstract carries is about this split, in this direction: most
+    # of the refused occurrences rest on the bound rather than on a theorem outright.
+    assert got[bound][1] > got[star][1], (
+        "the abstract and section 6 say most reverse-direction refusals rest on a "
+        "union-size bound this paper chose rather than on a theorem outright, and "
+        "this table now says the opposite")
+
+
+def test_the_live_rollup_table_still_says_plain_rate_never_matches():
+    r"""The table `prop:anchored` and the whole `na.*` control reading exist for.
+
+    An adversary set every plain `rate(x[$\Delta$])` row to `100.0\%` exact with median
+    and max deviation `0.000`, and nothing failed: the table reported plain `rate`
+    reproducing Datadog's rollup exactly on every workload including the bursty ones,
+    which removes the entire motivation for the anchored form.
+
+    THIS IS A CONSISTENCY CHECK AND NOT A RE-DERIVATION, which is worth saying plainly.
+    The rows come from `data/raw/anchored/*.json` through notebook 02's phi-series
+    pipeline --- `phi_series`, the model candidates, `dd.as_rate`, and an
+    epsilon-snapping step that exists because `rate`'s extrapolation magnifies float
+    dirt --- and reimplementing that here would be a second implementation to disagree
+    with. What is asserted instead is the property the paper argues from: plain `rate`
+    is exact nowhere, the two corrected forms are exact somewhere, and the deviation
+    columns agree with the Exact column about which is which.
+    """
+    printed = table(TABLES / "rollup_translation_live.tex")
+    rows = []
+    for line in printed.split("\n"):
+        if "&" not in line or "Workload" in line:
+            continue
+        parts = [c.strip().removesuffix(r"\\").strip() for c in line.split("&")]
+        if len(parts) == 6:
+            rows.append(parts)
+    assert len(rows) >= 9, len(rows)
+    plain, corrected = [], []
+    for workload, delta, candidate, exact, median_d, max_d in rows:
+        pct = float(exact.removesuffix(r"\%"))
+        (plain if candidate == r"\texttt{rate(x[$\Delta$])}" else corrected).append(
+            (workload, delta, pct, float(median_d), float(max_d)))
+        # A row that claims exactness must show no deviation, and the reverse.
+        assert (pct == 100.0) == (float(max_d) == 0.0), (
+            f"{workload}/{delta}/{candidate}: {exact} exact against a maximum "
+            f"deviation of {max_d}")
+    assert plain and corrected, (len(plain), len(corrected))
+    # Plain rate is exact on the steady workload and nowhere else: a counter with no
+    # burstiness gives extrapolation nothing to distort, which is why the paper argues
+    # from the bursty rows. So the claim is not "exact nowhere" -- that was this test's
+    # first version and the table refuted it -- but "exact on no workload the
+    # proposition is about".
+    bursty = [(w, d, pct, mx) for w, d, pct, _, mx in plain if "bursty" in w]
+    assert bursty, "the table no longer carries a bursty workload for plain rate"
+    assert all(pct == 0.0 for _, _, pct, _ in bursty), (
+        "plain rate(x[D]) is now exact on a bursty workload, which is what "
+        "Proposition prop:anchored and the anchored-form argument exist to deny: "
+        + str([(w, d, p) for w, d, p, _ in bursty if p]))
+    assert all(mx > 0 for _, _, _, mx in bursty), (
+        "a bursty plain-rate row shows no deviation at all, so the table no longer "
+        "measures the thing section 3b reads off it")
+    assert any(pct == 100.0 for _, _, pct, _, _ in corrected), (
+        "neither corrected form is exact anywhere, so the repair this paper proposes "
+        "is not shown to repair anything")
+
+
+def test_the_grammar_gap_table_agrees_with_the_two_rows_section_four_quotes(reg):
+    """The repairs the corpus forced, and the two counts §4 states from them.
+
+    Partial, and the limit is worth stating: binding every row would mean re-running
+    each repair against grammar v1, which is the notebook's job and minutes of work.
+    What is bound is the overlap between the table and the prose --- §4 names the two
+    largest repairs and their counts --- plus the shape of the column, which is sorted
+    and must stay sorted for "the single most common" to mean anything.
+    """
+    printed = table(TABLES / "grammar_gaps.tex")
+    by_lang: dict[str, list[tuple[int, str]]] = {}
+    for line in printed.split("\n"):
+        if "&" not in line or "Missing construct" in line:
+            continue
+        parts = [c.strip() for c in line.split("&")]
+        by_lang.setdefault(parts[0], []).append((int(parts[3]), parts[1]))
+    assert "datadog" in by_lang, sorted(by_lang)
+    # Sorted WITHIN a language: the table runs Datadog's repairs and then PromQL's, so
+    # the column restarts. Asserting one global ordering was this test's first version
+    # and the table refuted it at the eleventh row.
+    for lang, lang_rows in sorted(by_lang.items()):
+        got = [n for n, _ in lang_rows]
+        assert got == sorted(got, reverse=True), (
+            f"{lang}'s repairs are no longer in descending order, so section 4's "
+            f"'the single most common' names whichever row comes first: {got}")
+    counts = [n for n, _ in by_lang["datadog"]]
+    labels = [lab for _, lab in by_lang["datadog"]]
+    assert len(counts) >= 6, counts
+    for text in builds(ROOT / "paper" / "sections" / "04_grammars.tex"):
+        said = flat(text)
+        assert f"appears in ${counts[0]}$ distinct queries" in said, (
+            f"§4 should state the largest repair as {counts[0]} distinct queries")
+        assert "boolean scope" in labels[0].lower(), labels[0]

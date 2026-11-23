@@ -125,6 +125,9 @@ the language is not ambiguous, since the ambiguous-looking expression has one pa
 which Prometheus produces and then rejects for want of an operand. We make no claim
 about the whole class of grammars for this language.}
 
+\iffull\input{sections/moved/gr_conflict_cause}\fi
+\iffull\input{sections/moved/gr_conflict_resolution}\fi
+
 So RQ1's answer is asymmetric --- conflict-free for the language with no published
 grammar, LALR(1) modulo one resolution this paper documents for the language that has one --- and
 it is not where the switching cost lives. A tie-break on an optional parenthesised label
@@ -133,9 +136,6 @@ and an earlier version of this section offered it as evidence for this paper's t
 which it is not. What the section does buy is narrower and load-bearing elsewhere: one
 parse tree per query for \S\ref{sec:translation} to translate, and the measurement below
 of how far a vendor's documentation falls short of the vendor's own language.
-
-\iffull\input{sections/moved/gr_conflict_cause}\fi
-\iffull\input{sections/moved/gr_conflict_resolution}\fi
 
 \iffull\input{sections/moved/gr_lexical}\fi
 
@@ -176,20 +176,18 @@ misses a measurable fraction of the vendor's own shipped dashboards. That $7$-po
 climb is also the largest fit this paper makes to its corpus, and
 \S\ref{sec:heldout} measures what it is worth away from it: on $2{,}572$ distinct queries
 from a disjoint repository of Datadog dashboards, v2's absolute rate stays at $99.9\%$
-and the climb is $5.6$ points rather than seven; both margins, and the difference
-between them, are taken from the counts and not from each other, so neither
+and the climb is $5.6$ points rather than $7$. The held-out margin may not have fallen
+at all: the $1.5$-point fall is no larger than the $1.9$ points of spread it inherits
+from the two delete-one-dashboard jackknives behind it, so what the two repositories
+settle about this fit is the margin and not its decomposition. The ratio of the two
+margins --- about four fifths --- is a quotient of two censuses and so a fact about
+these two repositories rather than an estimate of anything, but it inherits that same
+spread, which leaves four fifths and one indistinguishable here. Both margins, and the
+difference between them, are taken from the counts and not from each other, so neither
 differencing nor dividing the figures printed here need reproduce what this paragraph
-says about them. The held-out margin is about four fifths of the in-sample one; the
-printed pair divides to exactly four fifths and the counts to a little under. That
-ratio is a quotient of two censuses, so it is a fact about these two repositories
-rather than an estimate of anything --- but it is no better determined than the
-difference behind it, and the difference is not determined at all: the $1.5$-point
-fall is no larger than the $1.9$ points of spread it inherits from the two
-delete-one-dashboard jackknives behind it, which leaves four fifths and one
-indistinguishable here. What the two do not settle, then, is how much of the shortfall
-is fit rather than a difference between two populations. What moves is v1 rather than v2, which would make it a
-difference between two populations rather than a measurement of overfitting in any
-case.
+says about them. And what moves between the two is v1 rather than v2, which would make
+the difference one between two populations rather than a measurement of overfitting in
+any case.
 
 Second, the gap between the raw and instantiated columns is large in both languages:
 $11.8\%$ against $99.9\%$ for Datadog, $71.2\%$ against $99.1\%$ for PromQL. Every rate
@@ -209,9 +207,10 @@ form for that reason.
 
 \iffull\input{sections/moved/gr_template_shares}\fi
 
-What remains unparsed is not a grammar gap. The PromQL residual is almost entirely
-queries in which a variable is substituted into the middle of an identifier, so that no
-fixed string is a query at all; the Datadog residual is a single undocumented construct,
+What remains unparsed is a grammar gap in only one of the two languages. The PromQL
+residual is almost entirely queries in which a variable is substituted into the middle of
+an identifier, so that no fixed string is a query at all, which is not a gap in any
+grammar; the Datadog residual is one, and a small one: a single undocumented construct,
 the conditional aggregator \texttt{count(v: v>=0):}, which appears in Datadog's own
 shipped dashboards. Inventing a production for an undocumented construct would be worse
 than reporting it.

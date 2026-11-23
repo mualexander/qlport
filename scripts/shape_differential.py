@@ -281,8 +281,25 @@ def build_data(reps: list[dict], t0: float) -> dict:
             if key in data:
                 continue
             data[key] = {"spec": spec, "ts": grid,
-                         "vs": make_values(spec["kind"], len(grid), seed=hash(key) % 2**31)}
+                         "vs": make_values(spec["kind"], len(grid), seed=_seed(key))}
     return data
+
+
+def _seed(key: tuple) -> int:
+    r"""A stable seed for one synthetic series, from its own name.
+
+    This was `hash(key) % 2**31`. Python salts the hash of a string per process, so
+    the same series was built from different pseudo-random values on every run and the
+    corpus-scale differential -- 330 shapes, 22,692 bucket comparisons, the agreement
+    this paper reports at floating-point precision -- was not re-runnable. The cache is
+    committed, so no printed figure was ever wrong; but a measurement nobody can repeat
+    is a measurement on the author's word, and the trial window that produced it has
+    closed. SHA-256 of the key's own text does not move between processes.
+    """
+    import hashlib
+
+    return int.from_bytes(
+        hashlib.sha256(repr(key).encode()).digest()[:4], "big") % 2**31
 
 
 def write_prometheus(workdir: Path, data: dict) -> str:

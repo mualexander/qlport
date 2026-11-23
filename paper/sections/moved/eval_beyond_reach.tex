@@ -1,16 +1,21 @@
 \paragraph{How much of the shortfall is beyond reach.}
 Separating the kinds of refusal is the point of having codes at all, and on this corpus
-the separation has an answer this paper did not set out to report: none of it is beyond
-reach. Three kinds are possible and the catalogue keeps them apart --- what Prometheus
-does not \emph{hold}, what PromQL cannot \emph{say}, and what this translator has not
-\emph{built} --- with a fourth, a query Datadog itself rejects, which
-Remark~\ref{rem:third-refusal} describes and which is empty here too. The first two
-columns are empty. All $287$ refused occurrences, $3.3\%$ of the corpus, are constructs
-this translator has not implemented, \texttt{top(...)} chief among them.
+the separation has an answer this paper did not set out to report: none of it is shown
+to be beyond reach. Three kinds are possible and the catalogue keeps them apart --- what
+Prometheus does not \emph{hold}, what PromQL cannot \emph{say}, and what this translator
+has not \emph{built} --- with a fourth, a query Datadog itself rejects, which
+Remark~\ref{rem:third-refusal} describes and which holds nothing demonstrated here
+either. The first two columns hold nothing demonstrated. Of the $287$ refused
+occurrences, $3.3\%$ of the corpus, all but $14$ are constructs this translator has not
+implemented, \texttt{top(...)} chief among them; those $14$ are refused on a hypothesis
+this paper tests for the declared metrics and cannot test for theirs
+(\S\ref{sec:evaluation}): undecided rather than retracted, and carried here as
+everywhere the column is mentioned.
 
 The column did not start empty, and \S\ref{sec:discussion} keeps the running count of
 what left it and why, because the pattern is more informative than the total. The last
-three to go were the percentile aggregators ($34$), the tag-key globs ($31$) and the
+three to go were the percentile aggregators --- $20$ of their $34$ occurrences, the
+other $14$ being the undecided ones above --- the tag-key globs ($31$) and the
 scopes separating an absent tag from one present with an empty value ($5$): a corollary
 applied where its own hypothesis fails, a construct this paper's normaliser fabricated
 out of a template variable, and an information barrier that turns out to decide the
@@ -31,7 +36,8 @@ $99.9\%$ with $8$ occurrences unclassified: the instrument does not reach them, 
 nothing in this paper says a translator could. Against the $96.6\%$
 measured here, the whole distance to the ceiling is engineering, as the disjunction rule
 demonstrated by closing $1.4$ points of it and \texttt{.weighted()} by closing $0.8$
-more. That is the finding to carry into \S\ref{sec:discussion}: going this way, the
-apparent incompatibility is work, all of it, and what is left over is small enough to
-enumerate query by query.
+more. That is the finding to carry into \S\ref{sec:discussion}: going this way, every part
+of the apparent incompatibility that this paper can classify is work, and what is left
+over --- $14$ occurrences undecided and $8$ unparsed --- is small enough to enumerate
+query by query.
 

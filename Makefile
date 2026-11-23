@@ -72,11 +72,15 @@ paper:
 	@$(PY) scripts/stamp_sources.py
 
 # A fresh checkout, in the order the dependencies actually run: the corpus becomes
-# data/processed, the scripts finish it, the suite reads it, the paper quotes it.
-all: install notebooks data test paper
+# data/processed, the scripts finish it, the paper quotes it, the suite reads both.
+# `paper` comes before `test` because the build-log layer checks a content digest of
+# what the build read, so the suite now reads the paper's build products -- and the
+# old ordering made `make all` on a fresh clone fail at `test` without ever reaching
+# `paper`, which is the order the comment itself used to describe.
+all: install notebooks data paper test
 
 clean:
-	rm -f paper/*.aux paper/*.log paper/*.out paper/*.toc
+	rm -f paper/*.aux paper/*.log paper/*.out paper/*.toc paper/.sources.sha256
 	rm -f notebooks/*.ipynb
 
 distclean: clean

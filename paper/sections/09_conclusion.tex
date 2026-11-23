@@ -20,7 +20,10 @@ cost lives, which is itself worth knowing.
 \textbf{RQ2.} The largest exactly-translating fragment we could build covers $96.6\%$ of
 Datadog query occurrences, and the soundness theorems of \S\ref{sec:kernel-soundness} and
 \S\ref{sec:binop-soundness} between them cover every expression the translator emits, so
-nothing is shipped that is not proved. Outside the fragment, no query is shown to be beyond reach: the
+nothing is shipped from outside a proved fragment. What those proofs are conditional on
+is a separate matter and is measured: one hypothesis, the metric's type, is wrong for
+$491$ of the occurrences where the vendor's own repository can settle it
+(\S\ref{sec:caveats}). Outside the fragment, no query is shown to be beyond reach: the
 column that held the information barriers and the expressiveness gaps holds nothing
 demonstrated on this corpus and $14$ occurrences undecided, the $3.3\%$ carrying a gap
 code is work this translator has not done, and the
@@ -37,9 +40,9 @@ concrete --- and the fourth carries $10$ of those with no bound at all.
 the shortfall matters more than its size: coverage against implementation effort is a
 staircase rather than a curve, because a query translates only when every feature it uses
 is supported, while the popularity that would guide an implementation order is marginal.
-Effort and coverage are not proportional in either direction: six of $28$ features
-reach $1.6\%$ and the seventh reaches $29.8\%$, so stopping early is close to worthless
-while half the features reach $88.8\%$. Set against another
+Effort and coverage are not proportional in either direction: five of $28$ features
+reach $1.6\%$ and the sixth reaches $29.5\%$, so stopping early is close to worthless
+while half the features reach $88.7\%$. Set against another
 vendor's translator on the same corpus, coverage by \emph{valid} output is $96.7\%$ to
 $94.7\%$ (\S\ref{sec:baseline}): the tool that refuses nothing emits less usable PromQL
 than the one that refuses $3.3\%$, which is the case for typed refusal in one line ---
@@ -50,9 +53,10 @@ coverage on the corpus this paper's grammar was fitted to, and both are judged b
 grammar; neither is a held-out estimate, although \S\ref{sec:heldout} now reads that grammar on
 $497$ community dashboards it never saw and that translator on a disjoint Datadog
 repository, and finds the grammar no worse there than here and the two $\kappa$ readings
-too close to tell apart: a tenth of a point over occurrences and two tenths the other
-way over distinct forms, against the $1.1$ points of dashboard-clustered standard
-error on the held-out figure.
+too close to tell apart: a tenth of a point over occurrences, against the $1.1$ points
+of dashboard-clustered standard error on that occurrence-weighted figure, and two tenths
+the other way over distinct forms, for which no dashboard-level spread is computed and
+which is therefore reported without one.
 
 \textbf{RQ4.} No. A dashboard query does not determine its own meaning, and this is the
 answer we would now put first. Of the translations we emit, $97.0\%$ depend on a rollup
@@ -82,7 +86,9 @@ in three, and three times too wide at the modal span. Where the type can be sett
 $89.5\%$ of translated occurrences and is wrong for $6.5\%$, the interval can be settled
 for $6.0\%$ and is wrong for $66.9\%$. Neither moves $\kappa$, and that is the point of
 reporting both: the assumption a translator can audit is the one that is nearly always
-right, and the assumption it cannot audit is the one that is usually wrong.
+right, and the assumption it cannot audit is wrong two times in three wherever it can be
+checked at all. What it does on the rest is not measured here, and \S\ref{sec:evaluation}
+gives the reason to expect the checkable part to be the worse of the two.
 Coverage and correctness differ, by a measured amount, and no coverage number could have
 told us: a query that does not fix its own meaning parses and translates like any
 other.
@@ -118,8 +124,9 @@ relative to context that arrives from the layer above both languages. The expres
 gap is real, provable, and in the direction teams do not travel.
 
 That is the asymmetry --- leaving costs work, returning costs something work cannot buy
---- and it is worth being exact about whom it binds, because it is not the mechanism the
-lock-in literature usually describes. We measured the exit and found it cheap. What is
+--- and it is worth being exact about whom it binds. The literature predicts this
+asymmetry and does not measure one (\S\ref{sec:background}), so what is new here is the
+measurement rather than the mechanism. We measured the exit and found it cheap. What is
 expensive is the return, so nobody is held by what we measured; a team that wants to
 leave, can. The cost falls instead on the team that has left and wants back, and on the
 team that will not leave because it cannot price the option to return. That is a cost of

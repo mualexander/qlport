@@ -200,8 +200,10 @@ were each reported as a qualification on something else, which is how they went 
 without being read as one result.
 
 The first is \S\ref{sec:caveats}'s: $97.0\%$ of our translations depend on a rollup
-interval the source query left to the dashboard's time range, and $100\%$ on a metric
-type no query in either language declares. The second is \S\ref{sec:corpus}'s: $88.6\%$
+interval the source query left to the dashboard's time range --- better read as an upper
+estimate of what a customer estate would show, for the reason given above --- and
+$100\%$ on a metric type no query in either language declares, which is not an estimate
+of anything, since no query in either language can declare it. The second is \S\ref{sec:corpus}'s: $88.6\%$
 of Datadog query occurrences and $82.5\%$ of PromQL ones carry at least one template
 variable, and a parse rate of $11.8\%$ on Datadog and $71.2\%$ on PromQL as shipped
 becomes $99.9\%$ and $99.1\%$ once a dashboard's own substitutions are performed. The
@@ -219,11 +221,16 @@ exactly like a query and is counted as covered.
 
 Two consequences follow and neither is a hedge. For a migration, the work is not where
 $\kappa$ points: the $287$ refused occurrences are $262$ distinct strings to rewrite by
-hand, while $8{,}217$ translated occurrences need an interval supplied from a dashboard
-setting and all $8{,}475$ need a metric type supplied from somewhere outside the query ---
-and on the evidence of \S\ref{sec:caveats} a tool that guesses the type gets $491$ of them
-wrong. Recovering context is the task; translating the query text is the part that is
-nearly solved. For the standardisation effort of \citet{sharma2025}, a common query
+hand, while $8{,}217$ translated occurrences need an interval supplied from outside the query
+and all $8{,}475$ need a metric type supplied the same way --- and on the evidence of
+\S\ref{sec:caveats} a tool that guesses the type gets $491$ of them wrong. For $496$ of
+those intervals the dashboard holds a value to read; for the other $7{,}721$ it does not,
+because a widget that pins nothing takes its span from the time selector, which is a
+viewer's choice at view time and appears nowhere in the JSON
+(\S\ref{sec:caveats}). That is what distinguishes this from the engineering the other
+direction costs: for most of the estate there is no value anywhere to recover, only a
+decision to make. Recovering context is the task; translating the query text is the part
+that is nearly solved. For the standardisation effort of \citet{sharma2025}, a common query
 language leaves this untouched. Agreeing on syntax and semantics for metric queries would
 not make the corpus portable, because what the corpus is missing is not in the query.
 
@@ -319,18 +326,20 @@ expressiveness'' is a claim about two differently-drawn populations.
 staircase rather than a curve: the first few features buy almost nothing, and then one
 buys a great deal. The reason is structural. A query translates only when \emph{every}
 feature it uses is supported, so coverage is conjunctive over features, while the
-popularity that would guide an implementation order is marginal. A feature in $60\%$ of
-queries is worth nothing on its own if those queries also use a second feature in $70\%$
-of them.
+popularity that would guide an implementation order is marginal. A feature used by
+most queries is worth nothing on its own if those queries also use a second feature that
+is almost as common. The two shares this sentence used to name were invented to
+illustrate the point, and a paper that traces every other figure it prints to a count
+should not print two that trace to nothing.
 
 This is a switching cost of its own, and not one the gap catalogue shows. It means a
-migration cannot be staged in proportion to effort, and an earlier version of this
-paragraph drew the wrong conclusion from that --- that half the work ports less than
-half the estate and a team stopping halfway has a tool that handles almost nothing.
-Table~\ref{tab:implementation-order} says the opposite about halfway: of $28$ features,
-the first $14$ reach $88.8\%$. Where the paragraph was right is nearer the start. Six
-features, a fifth of the work, reach $1.6\%$; the seventh reaches $29.8\%$ and the
-eighth $49.2\%$. So the non-proportionality is severe and it runs in the migration's
+migration cannot be staged in proportion to effort --- which an earlier version of this
+paragraph, and of \S\ref{sec:staircase}'s, read as meaning that a team stopping halfway
+has a tool that handles almost nothing. Table~\ref{tab:implementation-order} says the
+opposite about halfway: of $28$ features, the first $14$ reach $88.7\%$. Both paragraphs
+now say what the table says, which is the less quotable claim and the one the numbers
+support. Where they were right is nearer the start. Five
+features reach $1.6\%$; the sixth reaches $29.5\%$ and the seventh $48.8\%$. So the non-proportionality is severe and it runs in the migration's
 favour everywhere past the step, which is the useful thing to tell a team: stopping
 early is close to worthless and stopping late costs little, and nothing in between
 behaves like a fraction. The corollary for anyone reading \S\ref{sec:gaps} as a work
@@ -425,8 +434,9 @@ of eleven vendor measurements to confirm rather than correct. And it is a measur
 ingestion path on one account: the OpenMetrics check converting a Prometheus counter,
 which is the path this paper models and not the only one Datadog has.
 
-Finally, the comparison of $0$ against $3.3\%$ in \S\ref{sec:gaps} is a comparison
-between a property of the languages and a property of one translator's state on one
-afternoon. The first number is stable; the second falls as work is done, and has already
-fallen twice during this paper. Read as an argument that the main direction's cost is
+Finally, the comparison of what the first two columns hold against the $3.3\%$ in
+\S\ref{sec:gaps} is a comparison between a property of the languages and a property of
+one translator's state on one afternoon. The second falls as work is done, and has
+already fallen twice during this paper; the first is not stable either, having moved
+eight times and holding $0.2\%$ of the corpus undecided even now. Read as an argument that the main direction's cost is
 engineering, it is sound. Read as a precise ratio, it is not.

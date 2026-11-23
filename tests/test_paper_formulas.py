@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from texsource import builds, table
+from texsource import builds, source, table
 
 ROOT = Path(__file__).resolve().parent.parent
 SECTIONS = ROOT / "paper" / "sections"
@@ -60,8 +60,28 @@ def _environment(path: Path, kind: str, label: str) -> str:
         opened = text.rindex(f"\\begin{{{kind}}}", 0, start)
         closed = text.index(f"\\end{{{kind}}}", start)
         bodies.append(text[opened:closed])
-    assert bodies[0] == bodies[1], (
-        f"{label} is stated differently in the two builds, so the paper has two of it")
+    # Identical apart from where they point. A result's CONTENT may not be
+    # build-conditional -- that would give the paper two of the same theorem, which is
+    # what this check exists to prevent -- but its POINTER may, and must: `\apref`
+    # renders as "below" inline and "Appendix~A" when deferred, which is the whole
+    # reason the macro exists. Corollary `cor:rate` carries one. So the pointer
+    # renderings are normalised away and anything else surviving is the defect.
+    _POINTER = re.compile(r"(?:in )?Appendix~\\ref\{[^}]*\}|\bbelow\b")
+    same = [_POINTER.sub("<pointer>", b) for b in bodies]
+    assert same[0] == same[1], (
+        f"{label} is stated differently in the two builds for reasons other than "
+        f"where it points, so the paper has two of it")
+    # And the content may not be conditional at all: an `\inlineonly` or `\shortonly`
+    # inside a numbered statement is one build getting a different result.
+    structural = source(path)
+    start = structural.index(f"\\label{{{label}}}")
+    opened = structural.rindex(f"\\begin{{{kind}}}", 0, start)
+    closed = structural.index(f"\\end{{{kind}}}", start)
+    raw = structural[opened:closed]
+    for macro in (r"\inlineonly", r"\shortonly", r"\iffull"):
+        assert macro not in raw, (
+            f"{label}'s statement is conditional on the build via {macro}, so the two "
+            f"PDFs state different results under one number")
     return bodies[0]
 
 

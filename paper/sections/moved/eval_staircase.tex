@@ -26,28 +26,45 @@ seventeen of PromQL's twenty-four.}
 \label{fig:cumulative-coverage}
 \end{figure}
 
-The shape is the finding. The first six Datadog features complete $45$ queries between
+The shape is the finding. The first five Datadog features complete $44$ queries between
 them --- $0.5\%$ of the corpus, on top of the $1.1\%$ that use no feature at all --- and
-then template-variable scopes and \texttt{sum:} take two steps to $49.2\%$. Half the corpus
-needs nine features; $90\%$ needs sixteen of the twenty-eight. PromQL behaves the same way
+then template-variable scopes and \texttt{sum:} take two steps to $48.8\%$. Half the corpus
+needs eight features; $90\%$ needs sixteen of the twenty-eight.
+
+Where the step falls was not a property of the corpus until this draft. The greedy order
+is tie-free except at one position, where two features each complete a single query, and
+the tie was broken by whichever of the two a \texttt{Counter} happened to yield first ---
+which is to say by the interpreter's string-hash salt rather than by anything in the
+data. Broken the other way the step lands one feature later and every ceiling past it
+reads lower, and that is the version three drafts of this paragraph printed. Ties now
+break on the feature name. At this tie that is also the feature a tie-break on remaining
+coverage would take, and by a wide margin, so the order the paper prints is not merely
+the alphabetical accident it could have been; the suite asserts both halves of that. PromQL behaves the same way
 and slightly worse: its first six features complete $221$ of $8{,}102$ queries
 ($2.7\%$), half the corpus needs fourteen features and $90\%$ needs seventeen of
 twenty-four.
 
-For anyone building one of these translators this is the practical result of the paper. A
-partial translator is worth almost nothing: there is no prefix of the feature list that
-buys proportional coverage, because coverage is conjunctive over features while
-popularity is marginal. The ``$80\%$ of queries with $20\%$ of the work'' intuition is
-simply false here, and that asymmetry is a switching cost in its own right --- an
-incremental migration cannot show incremental progress.
+For anyone building one of these translators this is the practical result of the paper,
+and it cuts both ways rather than one. There is no prefix of the feature list that buys
+proportional coverage, because coverage is conjunctive over features while popularity is
+marginal, so the ``$80\%$ of queries with $20\%$ of the work'' intuition is simply false
+here. But the non-proportionality runs in the migration's favour everywhere past the
+step: five of the twenty-eight features reach $1.6\%$, and half of them reach $88.7\%$.
+Stopping early is close to worthless and stopping late costs little, and nothing in
+between behaves like a fraction. An earlier version of this paragraph read the first
+half of that and not the second, and concluded that a partial translator is worth almost
+nothing and an incremental migration cannot show incremental progress; the order's own
+table says otherwise about halfway, and \S\ref{sec:discussion} carries the correction.
 
 The order is computed over this corpus, which makes the staircase a fit like everything
 else in \S\ref{sec:threats}'s list. \S\ref{sec:heldout} recomputes it on half the
 dashboards and scores it on the other half: $89.9\%$ at sixteen features where the half
-it was chosen from gives $91.0\%$ --- each a mean over $1{,}000$ replicates rather than
+it was chosen from gives $90.9\%$ --- each a mean over $25{,}000$ replicates rather than
 a quotient of counts, with the gap between them taken from the means and not from these
 two printed figures. The shape is not an artefact of choosing the order and the corpus
-together. Its size is a weaker claim than its sign: the gap's standard deviation across
-replicates is $2.6$ points and $33\%$ of single splits show none at all, so what the
-exercise establishes is that the order travels, not what it costs to carry.
+together. Its size is a weaker claim than its direction, and its direction holds of the
+mean and not of a split: the gap's standard deviation across replicates is $2.6$ points,
+and in $34\%$ of single splits the order does at least as well on the half it was not
+chosen from, so what the exercise establishes is that the order travels, not what it
+costs to carry.
 
