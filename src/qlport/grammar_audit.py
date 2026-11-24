@@ -63,6 +63,29 @@ def grammar_text(lang: str, version: str = "v2") -> str:
     return files("qlport.grammars").joinpath(name).read_text()
 
 
+def naive_outcome(lang: str, mutate, witness: str) -> str:
+    """What the naive grammar does to the witness, and what the real one must not.
+
+    The table prints the witness and the exception its naive form raises, and neither
+    column was checked by anything: a witness that the naive grammar ACCEPTS could be
+    printed under a column asserting it fails. The notebook does check it; the notebook
+    is not run by the suite.
+    """
+    from lark import Lark
+
+    from .parse import get_parser
+
+    naive = Lark(mutate(grammar_text(lang, "v2")), parser="lalr",
+                 lexer="contextual", propagate_positions=True,
+                 maybe_placeholders=True)
+    get_parser(lang).parse(witness)  # the real grammar must accept it
+    try:
+        naive.parse(witness)
+    except Exception as exc:
+        return type(exc).__name__
+    return "parses"
+
+
 def queries_lost(lang: str, mutate, texts: list[str] | None = None) -> int:
     """How many of those the naive grammar fails to parse."""
     from lark import Lark

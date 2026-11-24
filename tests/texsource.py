@@ -98,6 +98,25 @@ _PY_COMMENT = re.compile(r"#.*")
 # construct it does not know must fail rather than be guessed at.
 _CONDITIONAL = re.compile(r"\\(if[a-zA-Z]*|else|fi|unless)(?![a-zA-Z])")
 
+# AND THE CONSTRUCTS THAT SWALLOW THEIR ARGUMENT WITHOUT BEING CONDITIONALS. This is
+# the same hole a sixth time. It has been `published` returning the comment-stripped
+# source, `% `-parking, `\iffalse`-parking, `\ifnum0=1`, `\unless\iftrue`, and now
+# the box and phantom family: `\sbox0{X}`, `\setbox0=\hbox{X}`, `\phantom{X}` and
+# `\hphantom{X}` all typeset NOTHING -- measured against pdflatex, which prints "AB"
+# for `A \sbox0{PARKED}B` -- while this module handed `X` to every guard. `\sbox` is
+# the worst of them for a reader, because it occupies zero width and leaves no gap in
+# the paragraph where the text was.
+#
+# THIS LIST CANNOT BE COMPLETE AND IT IS NOT CLAIMED TO BE. Five rounds have closed
+# this class by adding a spelling, and a sixth has now been needed; the comment on
+# `_READERS` below says what that measures. What does close it is
+# `test_every_pinned_sentence_is_in_the_pdf_a_reader_gets`, which stopped asking this
+# module what a build prints and started asking the build. Everything here is the
+# cheap first line: it fails fast, in-process, on the shapes anyone would reach for.
+_SWALLOWS = re.compile(
+    r"\\(s?box|setbox|savebox|[hv]?phantom|smash|makebox|raisebox|"
+    r"discretionary|hbox|vbox|vtop|write|message|typeout)(?![a-zA-Z])")
+
 # `\newif\iffull` declares the switch and `\fulltrue`/`\fullfalse` set it. Those are
 # the two build drivers' first lines and they are not conditionals: nothing is
 # conditional on them in the file that holds them, and leaving them in would have
@@ -205,7 +224,8 @@ def rendered(path: Path, full: bool) -> str:
     for name, keep in (("iffalse", False), ("iftrue", True)):
         text = _resolve(text, name, keep)
     text = _resolve(text, "iffull", full)
-    left = _CONDITIONAL.search(text) or _VARIANT.search(text)
+    left = (_CONDITIONAL.search(text) or _VARIANT.search(text)
+            or _SWALLOWS.search(text))
     assert left is None, (
         f"{path.name} still has {left.group(0)!r} in it after rendering, so this is "
         f"not what the build prints: a construct nothing here resolves keeps its body "
@@ -333,6 +353,12 @@ RAW_READS = {
     # an edit to a comment -- which is a change to the source and so to the build.
     "h = hashlib.sha256(f.read_bytes()).hexdigest()":
         "a figure PDF's bytes, to tell two plots apart; not a document",
+    "data = chunk.read_bytes()":
+        "the cached OpenObserve chunk, to check it against the digest its manifest "
+        "records; JavaScript, and not a document this paper publishes",
+    'src = (PAPER / "macros.tex").read_text()':
+        "the macro definitions themselves, which `rendered` strips before it reads "
+        "anything -- so the only way to see inside a macro body is to read the file",
     "assert stamp.read_text().strip() == want, (":
         "that digest, which is a hex string and not LaTeX",
 }

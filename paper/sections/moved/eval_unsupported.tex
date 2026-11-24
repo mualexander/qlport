@@ -8,8 +8,12 @@ this row happens to be; one is a \texttt{.rollup(max)} over a known counter, whi
 proof of Theorem~\ref{thm:kernel} classifies as a case where no rule exists rather than
 as unwritten code; and one is a rollup whose \emph{width} is not numeric,
 \texttt{.rollup(count, daily)}, refused where the interval is parsed rather than where a
-function is looked up. All three stay in the unimplemented column: PromQL can denote an empty
-selection with a contradictory matcher pair, the individual deltas a
+function is looked up. All three stay in the unimplemented column, though the first of them for a duller
+reason than \S\ref{sec:gaps} first gave: an earlier draft argued that PromQL can
+denote an empty selection with a contradictory matcher pair and that \texttt{\{*,!*\}}
+asks for one. The first is true and the second is false
+(Remark~\ref{rem:empty-tag}) --- the term is discarded, and the exact translation is
+to drop it. The individual deltas a
 \texttt{max} rollup needs are reachable through a subquery over a sample grid the
 query does not state --- the same omission the rollup interval makes everywhere else
 --- and a

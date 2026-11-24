@@ -466,6 +466,26 @@ class GlobConversion:
 # the structural proposal
 # ---------------------------------------------------------------------------
 
+# How each refusal reads in the paper. Notebook 04 writes
+# `paper/tables/regex_glob_reasons.tex` and the worked-example table from this, and the
+# suite checks both against it. It lived in the notebook alone, so the example table's
+# second column -- the one whose job is to say WHICH refusal a pattern is an example of
+# -- was checked by nothing: the two reasons could be swapped and the suite stayed
+# green, which inverts the split that the abstract's union-bound hedge rests on.
+REASON_LABEL = {
+    "single-character-wildcard": r"No single-character wildcard (\texttt{.}, \texttt{5..})",
+    "nonempty-wildcard": r"No non-empty wildcard (\texttt{.+})",
+    "unbounded-character-class": r"No bounded alphabet under a star (\texttt{[a-z]+})",
+    "negated-character-class": r"No negated class (\texttt{[\textasciicircum{}a]})",
+    "repeated-group": r"No repeated group (\texttt{(ab)*})",
+    "interior-anchor": r"Anchor inside the pattern",
+    "unparsed": r"Not parsed as a regular expression",
+    # Not a construct at all, which is the point: this one is the bound.
+    "union-too-large": r"More branches than the bound $B$ admits",
+    "too-many-combinations": r"Intermediate product wider than $B$",
+}
+
+
 class _NoGlob(Exception):
     """Raised with a reason naming the construct that has no glob."""
 

@@ -101,6 +101,26 @@ def shift_to(s: Series, new_start: float) -> Series:
                   np.asarray(s.vs, dtype=float), kind=s.kind)
 
 
+def per_bucket_totals(recording: dict, *, instant: str = "inside") -> list[float]:
+    """Datadog's own per-bucket totals across status classes, sorted ascending.
+
+    Both the appendix's traffic claim and the suite's check of it are derivations from
+    this, and the six lines were copied into two test modules -- which is the
+    arrangement the build digest's comment in this repository calls out, two places to
+    keep one fact right. The candidate is fixed because every candidate reports the
+    same Datadog side; the instant is the evaluation convention of the closure remark.
+    """
+    from collections import defaultdict
+
+    rows = recording["rows"]
+    candidate = rows[0]["candidate"]
+    totals: dict[object, float] = defaultdict(float)
+    for row in rows:
+        if row["candidate"] == candidate and row["instant"] == instant:
+            totals[row["bucket"]] += row["datadog"]
+    return sorted(totals.values())
+
+
 def busiest_window(times, *, width: float) -> tuple[float, float]:
     """The `width`-second window containing the most events.
 

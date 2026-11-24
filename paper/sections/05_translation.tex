@@ -199,7 +199,7 @@ its comma --- put to the account rather than read off the manual
 What remains refused is every disjunction whose branches do not all constrain
 \emph{one} key --- across different keys, or within a branch that constrains two at
 once --- which \S\ref{sec:gaps} measures at four query occurrences in the corpus, sorted into
-their three shapes in \apref{app:eval}. Those stay sayable in
+their three shapes \apin{app:eval}. Those stay sayable in
 PromQL --- as a set union of selectors with the rollup distributed over the branches,
 $2^k$ selectors for $k$ disjunctions --- but not as the syntax-directed translation of a
 scope, which is what this translator is.
@@ -276,8 +276,8 @@ and because $258$ of the kernel's occurrences set it: an earlier version of this
 listed three of $\mathrm{Rollup}$'s four arguments, which put every \texttt{.as\_rate()}
 rollup outside the kernel as literally defined while the counts included them; the
 version that fixed the count then wrote the flag and the series in the wrong order, so
-no term of $\mathcal{K}$ was well sorted either, which is the same defect caught twice. The proof
-in \apref{app:proofs} treats the case.
+no term of $\mathcal{K}$ was well sorted either, which is the same defect caught twice. The
+proof \apin{app:proofs} treats the case.
 
 \begin{lemma}[Scopes and selectors agree]\label{lem:scope}
 For every Datadog scope $\sigma$ that lowering does not refuse, the matchers

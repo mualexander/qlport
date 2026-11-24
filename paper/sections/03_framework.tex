@@ -13,7 +13,10 @@ cannot proceed. This section fixes them, and the rest of the paper is stated in 
 vocabulary it sets up.
 
 \begin{problem}
-Let $L_s$ and $L_t$ be query languages over a shared class of time-series databases.
+Let $L_s$ and $L_t$ be query languages over time-series databases related by an
+ingestion mapping rather than shared --- \S\ref{sec:framework} makes that precise, and
+an earlier statement of this problem said ``a shared class'', which is the premise
+\S\ref{sec:intro} denies and everything after it is built to do without.
 Determine the largest fragment of $L_s$ that admits a meaning-preserving translation into
 $L_t$, exhibit the obstructions outside it, and measure what share of queries written in
 practice the fragment contains.
@@ -47,9 +50,10 @@ Proposition~\ref{prop:disjunction}, are
 argued in the text that states them, each in a few lines, with no proof environment of
 their own. This paragraph said ``every proof'' and named one exception until the
 fifteenth pass, which was four short, and counted nineteen results until the twentieth
-was found. Remarks numbered above~3 are likewise in the appendices, which is
+was found. Remarks numbered above~3 are likewise in the appendices, with the one
+exception \S\ref{sec:intro} names, which is
 where the measurements and the apparatus live; a remark cited below by number alone is
-one of those, and \apref{app:experiments} collects what the vendor was asked.
+one of those, and what the vendor was asked is collected \apin{app:experiments}.
 
 \subsection{What the systems store}
 

@@ -523,7 +523,10 @@ def _cache_figures(relative: str) -> dict:
 
 
 _TEX_LITERAL = (("\\textasciicircum{}", "^"), ("\\textbar{}", "|"),
-                ("\\_", "_"), ("\\%", "%"), ("\\&", "&"), ("\\#", "#"))
+                ("\\_", "_"), ("\\%", "%"), ("\\&", "&"), ("\\#", "#"),
+                # Braces last of the escapes, before the empty-group strip below, so
+                # `up\{job="x"\}` comes back as the query it stands for.
+                ("\\{", "{"), ("\\}", "}"))
 
 
 def _unescape(cell: str) -> tuple[str, bool]:
@@ -535,6 +538,11 @@ def _unescape(cell: str) -> tuple[str, bool]:
     s = s.replace("\\dots{}", "")
     for tex, plain in _TEX_LITERAL:
         s = s.replace(tex, plain)
+    # `{}` typesets as nothing, and what is left of it here is the ligature break that
+    # makes the glob `5--` print as two hyphens rather than an en-dash. The string it
+    # stands for has no braces. This runs AFTER the escapes above, because
+    # `\textasciicircum{}` needs its braces to be recognised as one of them.
+    s = s.replace("{}", "")
     return s, cut
 
 
@@ -550,6 +558,8 @@ def test_the_glob_example_table_is_a_recount_of_the_matcher_cache():
     stated here rather than left as a silent weakness.
     """
     import csv
+
+    from qlport.regular import REASON_LABEL
 
     # Not `rows`: that is this module's table reader, and shadowing it here is the
     # mistake this file has made three times.
@@ -577,12 +587,32 @@ def test_the_glob_example_table_is_a_recount_of_the_matcher_cache():
                 f"{match['occurrences']}")
         assert match["regex"] not in seen, f"{match['regex']!r} is tabulated twice"
         seen.add(match["regex"])
-        # The second column says which outcome this row is an example of, so the
-        # cached row has to be that outcome and not another.
+        # THE SECOND COLUMN, not just whether it is bottom. The guard checked only
+        # `"\bot" in cells[1]`, so the glob set could be anything: `k8s_*` printed as
+        # `k9s_*` passed, in the table whose job is to print the exact members of a
+        # union, and the two refusal reasons could be swapped -- which inverts the
+        # split between "no union reaches it" and "a union does but exceeds the bound"
+        # that the abstract's hedge rests on.
         bottom = "\\bot" in cells[1]
         assert bottom == (not match["globs"]), (
             f"{regex!r} is printed as {'inexpressible' if bottom else 'a union'} and "
             f"the cache has globs={match['globs'][:40]!r}")
+        if bottom:
+            want_label = REASON_LABEL[match["reason"]].split("(")[0].strip()
+            assert want_label in cells[1], (
+                f"{regex!r} is refused as {match['reason']!r}, which reads "
+                f"{want_label!r}, and the table prints {cells[1].strip()!r}")
+        else:
+            printed_globs, cut_globs = _unescape(cells[1])
+            want_globs = str(match["globs"]).replace(" ", ", ")
+            if cut_globs:
+                assert want_globs.startswith(printed_globs.rstrip(", ")), (
+                    f"{regex!r}: the table prints globs beginning {printed_globs!r} "
+                    f"and the cache has {want_globs[:60]!r}")
+            else:
+                assert printed_globs == want_globs, (
+                    f"{regex!r}: the table prints {printed_globs!r} and the cache has "
+                    f"{want_globs!r}")
 
 
 def test_the_grammar_decision_table_separates_the_witness_from_the_corpus():
@@ -603,21 +633,36 @@ def test_the_grammar_decision_table_separates_the_witness_from_the_corpus():
     STAR row costs zero corpus queries -- its witness is the keyless scope this paper's
     own normaliser manufactured.
     """
-    from qlport.grammar_audit import DECISIONS, corpus_texts, queries_lost
+    from qlport.grammar_audit import (DECISIONS, corpus_texts, naive_outcome,
+                                      queries_lost)
 
     body = rows("grammar_decisions")[1:]
     assert len(body) == 4, f"the table has {len(body)} decisions, not 4"
     lost = {_unescape(r[1])[0].strip(): int(r[4].replace(",", "")) for r in body}
+    by_decision = {_unescape(r[1])[0].strip(): r for r in body}
 
     assert len(DECISIONS) == 4, f"{len(DECISIONS)} decisions in the package, not 4"
     texts = {lang: corpus_texts(lang) for lang in {d[0] for d in DECISIONS}}
-    for lang, decision, _why, mutate, _witness in DECISIONS:
+    for lang, decision, _why, mutate, witness in DECISIONS:
         key = _unescape(decision)[0].strip()
         assert key in lost, f"{key!r} is not a row of the table: {sorted(lost)}"
         got = queries_lost(lang, mutate, texts[lang])
         assert lost[key] == got, (
             f"{key!r} is printed at {lost[key]:,} queries lost and re-deriving it "
             f"against {len(texts[lang]):,} parsed {lang} queries gives {got:,}")
+        # Columns 0, 2 and 3 as well: language, witness, and what the naive grammar
+        # does to it. None was checked, so the table could print a witness the naive
+        # grammar ACCEPTS under a column asserting it raises -- and a witness that
+        # witnesses nothing is the whole of a row's qualitative content.
+        row = by_decision[key]
+        assert _unescape(row[0])[0].strip() == lang, (
+            f"{key!r} is printed under {row[0].strip()!r} and is a {lang} decision")
+        assert _unescape(row[2])[0].strip() == witness, (
+            f"{key!r} prints the witness {_unescape(row[2])[0].strip()!r} and the "
+            f"module's is {witness!r}")
+        assert _unescape(row[3])[0].strip() == naive_outcome(lang, mutate, witness), (
+            f"{key!r} prints the naive outcome {_unescape(row[3])[0].strip()!r} and "
+            f"the naive grammar gives {naive_outcome(lang, mutate, witness)!r}")
     zero = sorted(k for k, v in lost.items() if v == 0)
     assert zero == ["no separate STAR terminal"], (
         f"the decisions costing no corpus query are {zero}; gr_lexical names the STAR "
@@ -651,15 +696,9 @@ def test_the_replayed_traffic_is_as_bursty_as_the_appendix_says():
     the rollup grid; the unaligned grid splits the same bursts differently and reads
     9.89, which is a property of where the boundaries fall rather than of the traffic.
     """
-    from collections import defaultdict
+    from qlport.harness.replay import per_bucket_totals
 
-    rec = _derived_raw("replay/dualwrite_aligned.json")
-    candidate = rec["rows"][0]["candidate"]
-    per_bucket: dict[object, float] = defaultdict(float)
-    for row in rec["rows"]:
-        if row["candidate"] == candidate and row["instant"] == "inside":
-            per_bucket[row["bucket"]] += row["datadog"]
-    counts = sorted(per_bucket.values())
+    counts = per_bucket_totals(_derived_raw("replay/dualwrite_aligned.json"))
     assert len(counts) == 28, f"{len(counts)} buckets, not the 28 of a half hour"
     low, high = round(counts[0]), round(counts[-1])
     for build in builds(ROOT / "paper" / "sections" / "moved" / "ing_replay.tex"):
@@ -669,6 +708,235 @@ def test_the_replayed_traffic_is_as_bursty_as_the_appendix_says():
             "appendix states some other pair")
     assert 4.5 <= high / low < 5.5, (
         f"the appendix calls that a factor of five and it is {high / low:.2f}")
+
+
+def test_every_promtool_figure_is_the_one_the_run_produced(reg):
+    r"""The ten `pt.*` keys against `promtool.json`, which none of them was tied to.
+
+    Five tests already open this cache. All five read `fig[...]` out of it and compare
+    registry keys from OTHER families -- `nb03.kappa_occurrences`, `oo.emits`,
+    `oo.invalid` -- so not one `pt.*` key was ever compared with the file it came from,
+    and there was no orphan check either. Moving `pt.theirs_rejected_exprs` from 386 to
+    486 and `pt.disagreements` from 0 to 3 fired only the prose ledgers.
+
+    `pt.disagreements = 0` is the paper's claim that this paper's grammar and
+    Prometheus's own parser refuse exactly the same expressions. The substantive form
+    of that claim is asserted at the cache by
+    `test_the_two_parsers_agree_on_every_expression`; what was loose is the registry
+    and prose copy of it, which is what a reader sees.
+    """
+    want = _cache_figures("promtool.json")
+    assert len(want) == 10, f"the cache holds {len(want)} figures, not 10"
+    drifted = [f"  {k}: registry {reg.get(k, '(absent)')} vs run {v}"
+               for k, v in sorted(want.items()) if reg.get(k) != v]
+    assert not drifted, (
+        "the registry no longer says what the promtool run says:\n" + "\n".join(drifted))
+    orphans = sorted(k for k in reg if k.startswith("pt.") and k not in want)
+    assert not orphans, f"registry keys under `pt.` the run does not produce: {orphans}"
+
+    # The relations the run's own arithmetic fixes, so a hand-edited cache has to be
+    # internally consistent too.
+    cache = _derived("promtool.json")
+    assert want["pt.exprs"] == want["pt.ours_exprs"] + want["pt.theirs_exprs"]
+    assert sum(cache["reasons"].values()) == want["pt.theirs_rejected_exprs"], (
+        "the per-reason counts do not sum to the rejected total")
+    assert want["pt.ours_rejected_exprs"] == 0 and want["pt.ours_rejected_occ"] == 0, (
+        "the paper states that every expression this translator emits is accepted by "
+        "both parsers")
+    assert want["pt.theirs_rejected_occ"] == reg["oo.invalid"], (
+        "the occurrences Prometheus rejects are the ones the baseline table counts as "
+        "not PromQL, and the two no longer agree")
+
+
+def test_the_out_of_alphabet_census_is_a_recount_of_the_matcher_cache(reg):
+    r"""\S6's literal-alphabet census, recounted from `regex_glob.csv`.
+
+    These five keys were the demonstration that `SHARES` cannot hold a family together.
+    Moving all five -- 34 patterns to 44, 133 occurrences to 433, 12.8% to 41.6%, and
+    the two upper-case figures with them -- together with every one of the five prose
+    sites in \S6, left the suite at 831 passed while the cache went on measuring
+    34/133/12.8/33/130. Three of the five had no accountant but a magnitude collision:
+    133 with the `.+` row of the worked-example table, 130 and 33 with `grammar_stats`'
+    grammar-size columns.
+
+    The derivation is notebook 04's, over the committed CSV: a decided pattern whose
+    globs contain a literal outside the tag alphabet is out of alphabet, and the
+    upper-case ones are counted apart because Datadog lower-cases on ingest, so their
+    globs match nothing in any Datadog database.
+    """
+    import csv
+    import string
+
+    from qlport.regular import TAG_ALPHABET
+
+    cached = list(csv.DictReader((ROOT / "data" / "processed" / "regex_glob.csv").open()))
+    sigma, noise = set(TAG_ALPHABET), set("[],' \"")
+    up_d = up_o = other_d = other_o = 0
+    # The denominator is every CONCRETE pattern -- the cache's whole population, which
+    # is the patterns with no template variable in them -- and not just the decided
+    # ones. Over the decided subset the share reads 13.9% rather than 12.8%, which is
+    # the kind of near-miss that makes a recount worth writing down.
+    concrete_o = sum(int(row["occurrences"]) for row in cached)
+    for row in cached:
+        n = int(row["occurrences"])
+        if row["kind"] == "none":
+            continue
+        literals = set(re.sub(r"[*]", "", row["globs"] or "")) - sigma - noise
+        if not literals:
+            continue
+        if literals <= set(string.ascii_uppercase):
+            up_d += 1
+            up_o += n
+        else:
+            other_d += 1
+            other_o += n
+
+    want = {
+        "nb04.out_of_alphabet_distinct": up_d + other_d,
+        "nb04.out_of_alphabet_occurrences": up_o + other_o,
+        "nb04.out_of_alphabet_pct": round((up_o + other_o) / concrete_o * 100, 1),
+        "nb04.out_of_alphabet_upper_distinct": up_d,
+        "nb04.out_of_alphabet_upper_occurrences": up_o,
+    }
+    drifted = [f"  {k}: registry {reg.get(k, '(absent)')} vs recount {v}"
+               for k, v in sorted(want.items()) if reg.get(k) != v]
+    assert not drifted, (
+        "the registry no longer says what the matcher cache measures:\n"
+        + "\n".join(drifted))
+    assert up_d > 0 and other_d > 0, (
+        "the census has collapsed to one kind, so the split the prose draws is gone")
+
+
+def test_the_cached_translator_is_the_artefact_the_manifest_records():
+    r"""The provenance record for the baseline comparison, which nothing read.
+
+    `rem:baseline` says the chunk "is cached under `data/raw/openobserve/` with its
+    SHA-256 and the date it was retrieved", and calls that "the same discipline the
+    vendor experiments above apply". The discipline was not applied: no test and not
+    `scripts/openobserve_baseline.py` ever compared the recorded digest with the
+    committed file. Rewriting the manifest's sha256 to zeros, its byte count to 1, its
+    date to 2019 and its asset URL to `example.invalid` left the suite green.
+
+    The dash0 twin is guarded -- `dash0_claims.figures()` raises on a digest or
+    byte-count mismatch and the date is pinned -- so this closes an asymmetry the
+    paper's own sentence asserts away. §7.4 is the comparison against the other
+    translator, which the paper calls its thesis arriving from outside it; the
+    artefact it is a measurement of should be the artefact on disk.
+    """
+    import hashlib
+
+    raw = ROOT / "data" / "raw" / "openobserve"
+    man = json.loads((raw / "MANIFEST.json").read_text())
+    chunk = raw / Path(man["asset"]).name
+    assert chunk.exists(), (
+        f"the manifest names {Path(man['asset']).name} and it is not in {raw.name}/")
+    data = chunk.read_bytes()
+    assert len(data) == man["bytes"], (
+        f"the manifest records {man['bytes']:,} bytes and the file is {len(data):,}")
+    assert hashlib.sha256(data).hexdigest() == man["sha256"], (
+        "the cached chunk is not the artefact the manifest records, so the baseline "
+        "comparison is of something else")
+    assert man["retrieved"] == "2026-11-18", (
+        f"the paper states the retrieval date as 18 November 2026 and the manifest "
+        f"says {man['retrieved']}")
+    assert man["asset"].startswith("https://migration.openobserve.ai/"), man["asset"]
+    # And that the module the script slices out is actually there, through the script
+    # itself rather than a substring of my own devising: `extract_module` raises if
+    # module 27461 is not registered in the chunk, and its body is what the comparison
+    # runs under node.
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_oo_baseline", ROOT / "scripts" / "openobserve_baseline.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert str(mod.MODULE_ID) == str(man["module"]), (
+        f"the script slices module {mod.MODULE_ID} and the manifest records "
+        f"{man['module']}")
+    body = mod.extract_module()
+    assert len(body) > 1000 and "translateDDQuery" in body, (
+        "module 27461 is in the chunk but does not export the translator the manifest "
+        "names")
+
+
+def test_the_caveat_census_is_the_one_the_emitter_produces(reg):
+    r"""Every row of Table~\ref{tab:caveats}, re-derived by running the emitter.
+
+    Nothing did. The table and the twelve `nb03.caveat_*` keys came off
+    `translations.csv`'s `caveats` column, which notebook 03 builds by calling
+    `emit_detail`, and the suite re-summed exactly one code out of that CSV. So the
+    rule deciding when a caveat attaches was unpinned: flipping
+    `m.value == ".+"` to `!= ".+"` in `emit/promql.py` moves `TAG_PRESENCE_EMPTY` from
+    120 occurrences to 187 -- onto a disjoint set, precisely the selectors the caveat
+    does not describe -- while the table, \S5, \S8 and the registry go on saying 120
+    and 1.4%, with the whole suite green.
+
+    `ROLLUP_DEFAULT` happened to be pinned by a unit example
+    (`test_missing_rollup_interval_is_refused_not_guessed`), which is why the same
+    mutation there is caught. That is one caveat of six, by luck rather than by design.
+
+    This re-runs the loop `classify` runs, over the committed corpus, and holds the
+    table, its shares and the registry to the result. Two seconds, because the corpus
+    is eight thousand queries and the emitter is not slow.
+    """
+    from collections import Counter
+
+    from qlport import corpus as c
+    from qlport.diagnostics import Bottom
+    from qlport.emit.promql import emit_detail
+    from qlport.lower.datadog import lower_all
+    from qlport.parse import parse
+
+    counts: Counter = Counter()
+    forms: Counter = Counter()
+    translated = 0
+    seen: Counter = Counter()
+    for q in c.read_queries(ROOT / "data" / "corpus" / "queries.jsonl"):
+        if q.lang == "datadog":
+            seen[c.normalise("datadog", q.text)] += 1
+    for text, n in seen.items():
+        if not c.parse_outcome("datadog", text).ok:
+            continue
+        caveats, ok = [], True
+        for e in lower_all(parse("datadog", text)):
+            got = e if isinstance(e, Bottom) else emit_detail(e, default_rollup=60.0)
+            if isinstance(got, Bottom):
+                ok = False
+                break
+            caveats += [g.name for g in got.caveats]
+        if not ok:
+            continue
+        translated += n
+        for name in set(caveats):
+            counts[name] += n
+            forms[name] += 1
+
+    assert translated == reg["nb03.kappa_occurrences"], (
+        f"the emitter translates {translated} occurrences and the registry says "
+        f"{reg['nb03.kappa_occurrences']}")
+
+    printed = rows("translation_caveats")[1:]
+    assert len(printed) == len(counts), (
+        f"the table has {len(printed)} caveats and the emitter raises {len(counts)}: "
+        f"{sorted(counts)}")
+    for cells in printed:
+        name = _unescape(cells[0])[0].strip()
+        assert name in counts, f"{name} is tabulated and the emitter never raises it"
+        want_occ, want_distinct = counts[name], forms[name]
+        assert int(cells[1].replace(",", "")) == want_occ, (
+            f"{name}: the table prints {cells[1].strip()} occurrences and the emitter "
+            f"raises {want_occ:,}")
+        assert int(cells[2].replace(",", "")) == want_distinct, (
+            f"{name}: the table prints {cells[2].strip()} distinct and the emitter "
+            f"raises {want_distinct:,}")
+        share = cells[3].replace("\\%", "").strip()
+        assert float(share) == round(100 * want_occ / translated, 1), (
+            f"{name}: the table prints {share}% and the count gives "
+            f"{100 * want_occ / translated:.1f}%")
+        key = f"nb03.caveat_{name.lower()}_occurrences"
+        assert reg[key] == want_occ, f"{key} is {reg[key]} and the emitter gives {want_occ}"
+        assert reg[f"nb03.caveat_{name.lower()}_pct"] == round(
+            100 * want_occ / translated, 1)
 
 
 def test_every_baseline_figure_is_the_one_the_run_produced(reg):

@@ -24,6 +24,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -114,6 +115,76 @@ def test_each_plot_is_the_plot_its_caption_says_it_is():
                              re.finditer(r"n = ([\d,]+)", flat_text)} - {dd_size[4:]}
     assert len(promql_sizes) == 1, (
         f"the two plots disagree on the PromQL corpus size: {sorted(promql_sizes)}")
+
+
+def test_every_perturbation_in_the_battery_still_applies():
+    r"""The harness's anchors, which go stale silently and then lie about the suite.
+
+    `scripts/perturb.py` is how "verified by N perturbations" is checked. A case whose
+    anchor no longer matches the source applies nothing, the suite stays green, and the
+    case reports MISSED -- which reads as a hole in the guard it names rather than a
+    hole in the harness. That has happened twice. Once a crashed run left a planted
+    sentence in `eval_staircase.tex` and it was nearly committed, because `restore()`
+    after a loop does not run if the loop raises; once a case reported MISSED for a
+    defect that was closed, because it ran only the module where every failure is the
+    build digest the harness filters out.
+
+    So the dry run is part of the suite: it applies every case, restores at once, and
+    reports only the anchors that no longer resolve. It does not run the battery --
+    that is twenty minutes and a tree full of perturbations -- and it is not a
+    substitute for running it. It is the check that the battery is still about this
+    paper.
+    """
+    done = subprocess.run([sys.executable, str(ROOT / "scripts" / "perturb.py"),
+                           "--dry-run"], cwd=ROOT, capture_output=True, text=True)
+    assert done.returncode == 0, (
+        "perturbations whose anchors no longer match the source:\n" + done.stdout
+        + "\n  (a stale case tests nothing and reports MISSED, which reads as a hole "
+          "in the suite)\n" + done.stderr[-800:])
+    assert "0 stale" in done.stdout, done.stdout
+    cases = int(done.stdout.split()[0])
+    assert cases >= 43, f"the battery has shrunk to {cases} cases"
+
+
+def test_no_macro_body_carries_a_figure():
+    r"""A numeral in a macro body prints and no audit in this suite can see it.
+
+    `test_every_prose_figure_is_accounted_for` scans `paper/sections/**` and
+    `body.tex`. `macros.tex` is in neither, and `rendered` strips `\newcommand` bodies
+    before it does anything else -- a change made so that rendering `macros.tex` would
+    stop asserting on its own definitions. The two together leave a hole a reader can
+    see straight through: `\newcommand{\hedge}{$123.4\%$}` used once in a section
+    prints "123.4%" in both PDFs, and the unaccounted-figure census, the placeholder
+    scan, the column rule and the spelled-claims guard are all blind to it.
+
+    The rule is the narrow one that closes it: a macro body may carry no digit except
+    as a parameter reference, and no math span. Figures belong in the prose where the
+    census reads them, or in a generated table. Nothing in `macros.tex` needs either --
+    its digits today are all package options and `#1`/`#2`, which is why this can be a
+    prohibition rather than a ledger.
+    """
+    src = (PAPER / "macros.tex").read_text()
+    bodies = []
+    for m in re.finditer(r"\\(?:re)?newcommand\{\\(\w+)\}(?:\[\d+\])?\{", src):
+        depth, i = 1, m.end()
+        while i < len(src) and depth:
+            if src[i] == "{" and src[i - 1] != "\\":
+                depth += 1
+            elif src[i] == "}" and src[i - 1] != "\\":
+                depth -= 1
+            i += 1
+        bodies.append((m.group(1), src[m.end():i - 1]))
+    assert bodies, "no macro definitions found, so this guard is reading the wrong file"
+
+    bad = []
+    for name, body in bodies:
+        if re.search(r"(?<!#)\d", body):
+            bad.append(f"  \\{name} carries a digit outside a parameter: {body[:70]!r}")
+        if "$" in body:
+            bad.append(f"  \\{name} carries a math span: {body[:70]!r}")
+    assert not bad, (
+        "a figure in a macro body prints and no figure audit here reads it:\n"
+        + "\n".join(bad))
 
 
 def test_the_digest_covers_every_file_a_build_could_read():
@@ -591,11 +662,40 @@ def test_an_appendix_pointer_carries_its_own_preposition():
         # prints, and this is a question about the call site rather than about either
         # rendering -- which preposition the author wrote in front of the macro.
         text = flat(source(path))
+        # A PREPOSITION BEFORE `\apref` IS ALWAYS WRONG, because `\apin` is the macro
+        # that carries one. The earlier version of this guard tested a whitelist of
+        # leading words -- "out", "collected", "given", "listed", "recorded",
+        # "stated" -- which omitted "in", and "in \apref" was three of the four sites
+        # that printed "in below" in the complete build.
+        for m in re.finditer(
+                r"\b(in|at|of|from|within|under|into|through)\s+\\apref\{", text):
+            bad.append(f'  {path.name}: "{m.group(1)} \\apref" wants \\apin')
         for m in re.finditer(r"(\w+(?:\s+\w+){0,2})\s+\\apref\{", text):
             lead = m.group(1).lower().split()[-1]
             if lead in {"out", "collected", "given", "listed", "recorded", "stated"}:
-                bad.append(f"  {path.name}: \"{m.group(1)} \\apref\" wants \\apin")
-    assert not bad, "\n".join(bad) + "\n  (\\apref renders as 'below'; \\apin as 'in Appendix N')"
+                bad.append(f'  {path.name}: "{m.group(1)} \\apref" wants \\apin')
+
+    # AND WHAT THE COMPLETE BUILD PRINTS, because a call-site rule cannot see the
+    # fourth shape: `\apref` used as a subject gives "below collects what the vendor
+    # was asked", which is not a sentence. "below" is an adverb in that build and has
+    # to sit where one fits.
+    # "below" AS A SUBJECT, which needs a clause boundary in front of it. "Every claim
+    # below names the rho it holds" is fine -- there "below" post-modifies "claim" --
+    # so the lead has to be a conjunction, a relative pronoun or punctuation for this
+    # to be the broken shape.
+    _VERB_AFTER = re.compile(
+        r"(?:\band\b|\bbut\b|\bor\b|\bwhich\b|\bthat\b|[,;:.])\s+below\s+"
+        r"(collects?|gives?|reports?|treats?|lists?|shows?|states?|sets? out|"
+        r"records?|holds?|carries|names?)\b")
+    for path in [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex")]:
+        said = flat(rendered(path, True))
+        for pattern, why in ((re.compile(r"\bin below\b"), "'in below'"),
+                             (_VERB_AFTER, "'below' as a subject")):
+            for m in pattern.finditer(said):
+                bad.append(f"  {path.name} prints {why} in main_full.pdf: "
+                           f"{said[max(0, m.start() - 40):m.end() + 20].strip()!r}")
+    assert not bad, "\n".join(sorted(set(bad))) + (
+        "\n  (\\apref renders as 'below'; \\apin as 'in Appendix N')")
 
 
 def test_make_paper_is_reproducible_from_a_clean_tree():
@@ -637,7 +737,7 @@ def test_the_compared_shape_count_matches_the_differential_table():
 
 
 def test_the_feature_bound_slack_is_the_registry_value():
-    """§7 quoted this gap as 82 where the notebook computes 87.
+    """The feature-bound slack, which §7 once quoted as a different number entirely.
 
     `BOUND` will not take it -- 87 is too plain a value for a whole-file match to mean
     anything, which that file enforces deliberately. So it is pinned here to the clause
@@ -768,9 +868,13 @@ def test_the_derived_inputs_the_suite_reads_are_present():
     This does not fix that. It gives it a name and the command, so the one failure
     anybody reads first says what to run.
     """
+    # `features.csv` is NOT here. It was, under a docstring saying these are the
+    # inputs "the suite reads", and nothing read it: truncating it to five lines left
+    # the suite green. Notebook 00 writes it and §7's feature census is derived inside
+    # that notebook, so it is a published artefact rather than a suite input, and
+    # listing it here claimed a dependency that does not exist.
     needed = [
         ROOT / "data" / "processed" / "translations.csv",
-        ROOT / "data" / "processed" / "features.csv",
         ROOT / "data" / "processed" / "heldout_eval.json",
         ROOT / "data" / "processed" / "heldout_cv.json",
         ROOT / "data" / "processed" / "rollup_spans.json",

@@ -257,7 +257,11 @@ def test_every_experiment_that_ran_reaches_the_paper():
     text = "\n".join(anywhere(p) for p in TEX)
     uncited = []
     for cache, citations in EXPERIMENTS:
-        if not any(c in text for c in citations):
+        # WHOLE TOKENS. This was `c in text`, and "E1" is a prefix of E10 through E18,
+        # all nine of which the paper cites -- so the two E1 caches were cited by
+        # containment whatever the prose said. Removing all four genuine "E1" mentions
+        # left this green, which is the one thing it exists to notice.
+        if not any(re.search(rf"\b{re.escape(c)}(?![0-9])", text) for c in citations):
             uncited.append(f"  {cache} is cited by none of {citations}")
     assert not uncited, "\n".join(uncited)
 

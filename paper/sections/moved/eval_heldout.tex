@@ -65,10 +65,12 @@ budget is twenty-five times larger, and a range over five draws of a quantity wh
 error is $0.04$ is about what that predicts. The tripwire was reading noise either way.
 
 What a reader planning one migration needs is not that mean anyway. Its Monte-Carlo error
-is $0.02$ points and the replicate-to-replicate standard deviation behind it is $2.6$ ---
-larger by the square root of the replicate count, which is what the ratio of a spread to
-the error on its own mean always is --- and that is the figure describing what one
-half-split would show. In $34\%$ of single half-splits there is no gap to pay: the order
+is $0.02$ points and the replicate-to-replicate standard deviation behind it is $2.6$.
+The second is larger by $\sqrt{25{,}000}$, which is not a finding --- the error on a
+mean is the spread over the root of the count, by construction, so dividing the two
+printed figures gives $130$ where the quantities stand in a ratio of $158$. What
+matters is which of them a reader planning one migration needs, and it is the $2.6$:
+that is the figure describing what one half-split would show. In $34\%$ of single half-splits there is no gap to pay: the order
 scores at least as well on the half it was not chosen from as on the half it was.
 \S\ref{sec:discussion} calls the staircase the practical result of this paper, and what
 survives being scored elsewhere is its shape --- the order travels --- rather than any
@@ -111,7 +113,10 @@ so the figure is not an interval on anything, and what it measures is how far th
 would move were the population's dashboards to change. How much more
 they were worth here is a question this population cannot answer.
 
-The vocabulary result repeats out of sample exactly as the cross-validation predicts: the
+The vocabulary result repeats out of sample, and better than the cross-validation
+predicts --- that one has no saturation point for PromQL at all, its worst replicate
+still missing a feature at nine-tenths of the dashboards, so a clean sweep here is
+the luckier end of what it allows: the
 $24$ features cover $100.0\%$ of those $16{,}569$ occurrences with none outside them, on
 a population twice the corpus's size.
 
@@ -278,7 +283,9 @@ $19.3$, against $2.0$ and $9.6$ for $\kappa$ on the same two sides. So the held-
 margin is as concentrated as $\kappa$ is and the in-sample one is twice as spread, which
 is the opposite of what an earlier version of this sentence said when it offered the
 pair as showing both margins rest on as few dashboards as $\kappa$. The PromQL
-margins are less concentrated again, at $3.4$ held out and $4.2$ in sample. The
+margins sit between the two, at $3.4$ held out and $4.2$ in sample --- less
+concentrated than the Datadog held-out margin and more concentrated than its in-sample
+one. The
 Datadog held-out $2.0$ is the same to one decimal as the one reported for $\kappa$
 above and is a different statistic on different data --- these are the margin jackknife's per-dashboard deviations, those
 were $\kappa$'s residuals --- so the agreement is a coincidence of rounding and not an
@@ -293,9 +300,9 @@ which is the different-authors test, but those dashboards are built with the ven
 integration scaffolding against the vendor's own documentation, so their house style is
 not independent of \texttt{integrations-core}'s --- \S\ref{sec:threats} puts a number on
 how far it differs. The second is that string-level disjointness is not structural
-novelty. Nothing in this population survives even whitespace- and tag-order-blind
-matching against the corpus, and yet $90.0\%$ of its occurrences have a feature set that
-occurs there verbatim: these are largely the same query shapes over different metrics,
+novelty. Almost all of this population survives whitespace- and tag-order-blind matching
+against the corpus --- seven forms and eight occurrences do not --- and yet $90.0\%$ of
+its occurrences have a feature set that occurs there verbatim: these are largely the same query shapes over different metrics,
 which is what a grammar is tested by and not what a body of unfamiliar practice would
 be. So \S\ref{sec:threats}'s preference for private, customer-written dashboards stands
 unmet. It is the one test this paper cannot run rather than the one it declined to.

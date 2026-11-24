@@ -72,8 +72,11 @@ PromQL's slot is obligatory where it applies, and $55.6\%$ of the corpus's range
 selectors fill it with a dashboard variable anyway --- so the contrast between the two
 languages is one of degree, and what they share is that the value comes from a layer
 outside either of them. On the Datadog side $88.6\%$ of query occurrences carry at least
-one template variable and on the PromQL side $82.5\%$ do, which is the measurement that
-stops this being a complaint about one vendor. The metric's type is a second thing no
+one template variable and on the PromQL side $82.5\%$ do, which is the measurement
+that stops this being a complaint about one vendor. The level is this corpus's rather
+than the tools': on a Datadog repository by other authors the same share is $77.0\%$
+(\S\ref{sec:threats}), so what the holdout supports is that both languages carry the
+dependency and not how far. The metric's type is a second thing no
 query states and is not a second instance of the same property:
 \S\ref{sec:cost} is careful that what makes it bite here is the ingestion
 mapping branching on it rather than anything either language can or cannot say. The
@@ -91,8 +94,9 @@ Going from Datadog to PromQL, $96.6\%$ of query occurrences translate, and the s
 is \emph{all} unfinished work bar $14$ occurrences: no query in the corpus is shown to be beyond reach. The $3.3\%$
 carrying a gap code is code this translator has not written and the $0.1\%$ beside it
 does not parse --- $8$ occurrences of one undocumented construct, which this paper
-declines to classify, so the ceiling is $99.9\%$ once the first is written with those $8$
-left undecided. Both numbers are measured on the corpus the grammar and the
+declines to classify, so the ceiling is $99.9\%$ once the first is written, with those
+$8$ left undecided and on the reading that the $14$ percentile occurrences this paper
+cannot decide turn out to be writable too --- $99.7\%$ if they do not. Both numbers are measured on the corpus the grammar and the
 implementation order were fitted to, which \S\ref{sec:threats} states as the threat it
 is. \S\ref{sec:heldout} scores the grammar and the translator frozen on dashboards nobody
 here had read: the grammar parses more of $497$ community dashboards than of the ones it
@@ -235,4 +239,6 @@ and \S\ref{sec:conclusion} what remains. Three appendices carry the apparatus: t
 proofs and constructions, what the vendor was asked and what came back, and the corpus
 and evaluation machinery. Every proof but one is in the first of them --- the
 exception is \S\ref{sec:regular}'s decision procedure, which is stated and built in
-the same place --- and every remark numbered above~3 is in one of the three.
+the same place --- and every remark numbered above~3 is in one of the three, bar
+Remark~\ref{rem:directional}, which states the directional barrier in \S\ref{sec:ingestion}
+because the sections after it argue from it.

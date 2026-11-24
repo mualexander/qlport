@@ -38,6 +38,7 @@ from pathlib import Path
 import pandas as pd
 
 from qlport import corpus as c
+from qlport import regular
 from qlport.regular import (
     MAX_UNION as R_MAX_UNION, TAG_ALPHABET as R_TAG_ALPHABET, regex_to_globs,
 )
@@ -173,18 +174,7 @@ tabular("lrrrr", ["Outcome", "Distinct", "Share", "Occurrences", "Share"],
 # is undocumented.
 
 # %%
-REASON_LABEL = {
-    "single-character-wildcard": r"No single-character wildcard (\texttt{.}, \texttt{5..})",
-    "nonempty-wildcard": r"No non-empty wildcard (\texttt{.+})",
-    "unbounded-character-class": r"No bounded alphabet under a star (\texttt{[a-z]+})",
-    "negated-character-class": r"No negated class (\texttt{[\textasciicircum{}a]})",
-    "repeated-group": r"No repeated group (\texttt{(ab)*})",
-    "interior-anchor": r"Anchor inside the pattern",
-    "unparsed": r"Not parsed as a regular expression",
-    # Not a construct at all, which is the point: this one is the bound.
-    "union-too-large": r"More branches than the bound $B$ admits",
-    "too-many-combinations": r"Intermediate product wider than $B$",
-}
+REASON_LABEL = regular.REASON_LABEL  # see that module for why
 refused = df[df.kind == "none"]
 reason_rows = []
 for reason, sub in sorted(refused.groupby("reason"),

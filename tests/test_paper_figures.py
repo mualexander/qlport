@@ -990,6 +990,93 @@ def test_a_pinned_sentence_still_says_what_the_registry_says():
     assert not missing, "\n".join(missing)
 
 
+def test_every_pinned_sentence_is_in_the_pdf_a_reader_gets():
+    r"""The same pins, against `pdftotext` instead of against this suite's reader.
+
+    THIS IS THE CLASS-CLOSING CHECK, and it exists because the reader could not be
+    made to close it. Six rounds have found a construct that typesets nothing while
+    `rendered` handed its body to every guard: `published` returning the
+    comment-stripped source, `%`-parking, `\iffalse`-parking, `\ifnum0=1`,
+    `\unless\iftrue`, and the box and phantom family. Each was closed by adding a
+    spelling to a list, and the list has never been complete. `\sbox0{...}` is the
+    sharpest of them: it occupies zero width, so a reader sees no gap where the text
+    was, and the abstract can be made to print a held-out kappa of 100.0% with the
+    whole suite green.
+
+    A list of what to refuse measures the author's imagination. What a reader sees is
+    a fact about the PDF, so this asks the PDF. It does not replace the reader --
+    `rendered` is what makes per-build and per-figure checking possible at all, and it
+    runs in milliseconds where this needs a build -- but every pinned sentence, which
+    is to say every claim a phrase was written to protect, now has to survive the
+    document rather than the model of it.
+
+    The comparison keeps letters and digits and nothing else, because `pdftotext`
+    hyphenates at line ends, collapses runs of space, and renders math as glyphs --
+    `$\kappa={ho.ex_kappa_pct}\%$` comes out as "\u03ba = 96.7%", whose \u03ba this
+    then drops. So the pinned side has its control words removed first, which is what
+    makes the two sides comparable at all: a pin survives if its words and its digits
+    are in the document in that order. A pin that does not survive is either absent or
+    typeset differently from what the source says, and both are findings.
+    """
+    import shutil
+    import subprocess
+
+    reg = json.loads(REGISTRY.read_text())
+    pdfs = {"main": ROOT / "paper" / "main.pdf",
+            "main_full": ROOT / "paper" / "main_full.pdf"}
+    for name, pdf in pdfs.items():
+        assert pdf.exists(), f"{pdf.relative_to(ROOT)} is missing -- run `make paper`"
+    assert shutil.which("pdftotext"), (
+        "pdftotext is not on PATH, and this is the one guard that reads the built "
+        "document rather than a model of it -- install poppler-utils rather than "
+        "skipping it")
+
+    # Control words go first on the pinned side: `\kappa` is a glyph in the PDF and a
+    # word here, and `\texttt{x}` is `x` there and seven more letters here.
+    control = re.compile(r"\\[a-zA-Z]+|\\.")
+
+    def bare(s: str, latex: bool = False) -> str:
+        if latex:
+            s = control.sub(" ", s)
+        return re.sub(r"[^0-9a-z]+", "", s.lower())
+
+    def strip_folios(out: str) -> str:
+        """Drop each page's folio before joining the pages up.
+
+        `pdftotext` emits the page number in the text stream, so a sentence crossing a
+        page boundary comes out with a number wedged into it: the complete build prints
+        "of which 63 64 forms carrying", where 64 is the folio. Only the first and last
+        non-empty line of each page is eligible, because a bare number on a line in the
+        middle of a page is a table cell.
+        """
+        pages = []
+        for page in out.split("\f"):
+            lines = page.split("\n")
+            live = [i for i, ln in enumerate(lines) if ln.strip()]
+            for i in (live[:1] + live[-1:]) if live else []:
+                if lines[i].strip().isdigit():
+                    lines[i] = ""
+            pages.append("\n".join(lines))
+        return "\n".join(pages)
+
+    said = {}
+    for name, pdf in pdfs.items():
+        out = subprocess.run(["pdftotext", str(pdf), "-"], capture_output=True,
+                             text=True, check=True).stdout
+        said[name] = bare(strip_folios(out))
+
+    missing = []
+    for section, template in PHRASES:
+        want = _PHRASE_KEY.sub(lambda m: _spell(reg[m.group(1)]), template)
+        for name in pdfs:
+            if bare(flat(want), latex=True) not in said[name]:
+                missing.append(f"  {name}.pdf does not print, from {section}: "
+                               f"{flat(want)[:110]}")
+    assert not missing, (
+        "these sentences are pinned to the registry and are not in the document a "
+        "reader gets:\n" + "\n".join(missing))
+
+
 def test_every_pinned_sentence_pins_something():
     """A phrase with no registry key in it records a check that cannot drift."""
     bare = [t for _, t in PHRASES if not _PHRASE_KEY.search(t)]
@@ -1261,19 +1348,32 @@ def _flat_prefix_completions() -> int:
 
 
 def _replay_per_minute() -> list[float]:
-    """Requests a minute in the aligned replay recording, across status classes."""
-    from collections import defaultdict
+    """Requests a minute in the aligned replay recording, across status classes.
 
-    rec = _cache("replay/dualwrite_aligned.json")
-    candidate = rec["rows"][0]["candidate"]
-    per_bucket: dict[object, float] = defaultdict(float)
-    for row in rec["rows"]:
-        if row["candidate"] == candidate and row["instant"] == "inside":
-            per_bucket[row["bucket"]] += row["datadog"]
-    return sorted(per_bucket.values())
+    Through `qlport.harness.replay`, not a copy: this aggregation was written out here
+    and again in `test_paper_tables.py`, differing in nothing but the cache helper.
+    """
+    from qlport.harness.replay import per_bucket_totals
+
+    return per_bucket_totals(_cache("replay/dualwrite_aligned.json"))
 
 
 DERIVED: tuple[tuple[str, float, str, object], ...] = (
+    ("pct", 99.7, "the reachable ceiling with the 14 undecided percentiles counted as "
+                  "beyond reach rather than as writable, which is the qualification "
+                  "the gap catalogue says travels everywhere the column is mentioned",
+     lambda: round(100 * (_reg()["nb03.corpus_occurrences"] - 8 - 14)
+                   / _reg()["nb03.corpus_occurrences"], 1)),
+    ("num", 158, "the ratio of the staircase gap's replicate spread to the error on "
+                 "its mean, which is the root of the replicate count by construction",
+     lambda: round(_reg()["cv.stair_reps"] ** 0.5)),
+    ("num", 130, "and what dividing the two ROUNDED figures gives instead, which is "
+                 "the arithmetic the same subsection tells the reader not to do",
+     lambda: round(_reg()["cv.dd_stair_gap_16_replicate_sd"]
+                   / _reg()["cv.dd_stair_gap_16_mc_se"])),
+    ("num", 8645, "occurrences our two outcomes account for, the 8 the Datadog "
+                  "grammar does not parse aside",
+     lambda: _reg()["oo.ours_emits"] + _reg()["oo.ours_refuses"]),
     ("num", 163, "calls of top() in the corpus, which is the denominator the function "
                  "mix is over rather than the 139 occurrences beside it",
      lambda: sum(_reg()[f"nb00.top_rank_{f}_calls"]
@@ -1299,8 +1399,9 @@ DERIVED: tuple[tuple[str, float, str, object], ...] = (
     ("num", 887, "translated occurrences whose declared type is not decidable",
      lambda: _reg()["nb03.kappa_occurrences"]
      - _reg()["nb03.type_decidable_occurrences"]),
-    ("num", 7867, "PromQL panel queries: the population less its alerting and recording rules",
-     lambda: 8102 - 139 - 96),
+    # 7,867 is not here either: `CORPUS_DERIVED` recounts it from the corpus, and
+    # `8102 - 139 - 96` was arithmetic on three literals that only the test file can
+    # change. A derivation that reads nothing is a second place to keep a number.
     ("num", 41, "the tag alphabet", lambda: len(_alphabet())),
     ("num", 255, "Datadog dashboards a tenth-of-the-corpus vocabulary does not read",
      lambda: _reg()["cv.dd_dashboards"] - _reg()["cv.dd_tenth_dashboards"]),
@@ -1310,9 +1411,11 @@ DERIVED: tuple[tuple[str, float, str, object], ...] = (
     ("num", 541, "tag keys only ever filtered and never grouped: what widening the census "
           "from the grouping lists to every key a matcher can name added",
      lambda: 1264 - 723),
-    ("num", 37070, "declared metric names: the unambiguous ones plus the three two "
-            "integrations declare incompatibly",
-     lambda: 23597 + 13140 + 330 + 3),
+    # 37,070 is NOT here twice any more. It was: once as a sum of four literals and
+    # once from the cache, and `test_differential_cache.py` already pins that cache's
+    # `declared_population` to exactly those four numbers -- so the literal entry
+    # could only fail if the cache-derived one did. The cache-derived one is kept,
+    # below, because it is the one that reads data.
     ("num", 14, "PHI_QUANTILE occurrences whose metric the repository does not declare, so "
          "the corollary's hypothesis is untested rather than shown to fail",
      lambda: 34 - 20),
@@ -1862,10 +1965,13 @@ def test_the_template_variable_counts_are_the_ones_the_corpus_carries():
 
     `CORPUS_DERIVED` is for figures the paper quotes, and it quotes only the
     percentages. The counts are registry-only, which is exactly the shape that let the
-    PromQL pair move: `SHARES` tied `nb00.promql_with_variable_pct` to
-    `nb00.promql_with_variable` and both are registry keys, so a consistent edit of the
-    pair satisfied it. Recounting the numerator from the committed corpus is what makes
-    the share mean anything.
+    PromQL pair move: `SHARES` has no entry for it at all -- the Datadog pair has one
+    relating its share to its count, and both of those are registry keys, so even there
+    a consistent edit of the pair satisfied it. The PromQL pair had neither. An earlier
+    version of this docstring said `SHARES` tied the PromQL share to the PromQL count,
+    which is the Datadog arrangement described in the wrong place, and it contradicted
+    `_with_variable`'s own docstring a hundred lines above in this file. Recounting the
+    numerator from the committed corpus is what makes either share mean anything.
     """
     reg = _reg()
     for lang in ("datadog", "promql"):
@@ -2025,7 +2131,16 @@ def test_the_inexpressible_column_carries_its_qualification_everywhere():
         # they forbid, with the subject moved to the front -- matched neither. It was
         # added to the discussion and the whole suite stayed green.
         r"[^.]*\b(?:nothing|none|no entry|no entries|not one entry)\b[^.]*?"
-        r"\bcolumns?\b[^.]*\.",
+        r"\bcolumns?\b[^.]*\.|"
+        # THE THING, NOT THE WORD. All three branches above need "column" in the
+        # sentence, and "The inexpressible category is now vacuous" has none -- a
+        # fourth phrasing past the rule, and one that carries no numeral so nothing
+        # else trips either. This branch keys on what the claim is ABOUT, which is the
+        # only part a rewording cannot drop.
+        r"[^.]*\b(?:inexpressible|beyond reach|beyond the reach)\b[^.]*?"
+        r"\b(?:empty|emptied|bare|vacant|vacuous|holds? nothing|holds? none|"
+        r"contains? nothing)\b[^.]*\.|"
+        r"[^.]*\b(?:empty|vacuous|bare)\b[^.]*?\binexpressible\b[^.]*\.",
         re.I)
     also = re.compile(r"[^.]*\b(?:empty|emptied|bare) columns?\b[^.]*\.", re.I)
     qualified = ("demonstrated", "demonstrate", "near-empty", "undecided",

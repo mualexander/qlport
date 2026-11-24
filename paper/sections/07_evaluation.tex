@@ -23,7 +23,7 @@ queries and a community's queries on the same footing
 \input{tables/corpus_sources}
 \caption{Corpus sources. Queries are extracted from dashboard and alerting definitions,
 not written for this paper. The Datadog figure counts metric queries; the same documents
-also contribute $6{,}022$ formula expressions, held aside in \apref{app:eval}.}
+also contribute $6{,}022$ formula expressions, held aside \apin{app:eval}.}
 \label{tab:corpus-sources}
 \end{table}
 
@@ -248,12 +248,13 @@ making it: \S\ref{sec:discussion} takes up both.
 it, led by \texttt{top(...)} at $139$ occurrences, which is expressible after all
 (\apref{app:eval}): PromQL denotes Datadog's ranking with an \texttt{@}-pinned
 \texttt{topk}, read off a real server, and the vendor's own \texttt{top()} was then
-measured to behave as its documentation says. Of the rest, the $36$ constant fills and
-the four surviving disjunctions are sayable by constructions this paper has written out,
-and the $9$ occurrences of \texttt{\{*,!*\}} turn out not to need one:
-Remark~\ref{rem:negated-all} reports the account selecting the series for both
-\texttt{\{*,!*\}} and \texttt{\{!*\}}, so the term is not the empty selection the
-catalogue assumed and the translation is to drop it. Every refusal this emitter raises
+measured to behave as its documentation says. Nine more of its $208$ are not
+functions at all but a negated match-all, \texttt{\{*,!*\}}, and those turn out not to
+need a construction: Remark~\ref{rem:negated-all} reports the account selecting the
+series for both \texttt{\{*,!*\}} and \texttt{\{!*\}}, so the term is not the empty
+selection the catalogue assumed and the translation is to drop it. Of the $79$
+occurrences outside that code, the $36$ constant fills and the four surviving
+disjunctions are sayable by constructions this paper has written out. Every refusal this emitter raises
 is now code nobody has written, bar the $14$ undecided above, and most of it is code
 whose shape is known.
 
@@ -305,7 +306,11 @@ that refuses \texttt{SCOPE\_EMPTY\_VALUE} outright, appearing here as a conditio
 target database rather than as a refusal. \texttt{METRIC\_TYPE\_UNKNOWN} marks
 $100\%$ of them, for the reason \S\ref{sec:emission} gives, and it is the one
 precondition here whose violation rate can be measured: on the $89.5\%$ of translated
-occurrences whose type the vendor's own repository declares, the front end's inference
+occurrences whose type the vendor's own repository settles one way or the other ---
+$887$ it does not, of which $736$ name metrics it never declares, $134$ are rate
+metrics it declares and this translator reads as counters, and $17$ are the three
+two integrations declare incompatibly (Remark~\ref{rem:type-measured}) --- the
+front end's inference
 is wrong for $6.5\%$. So $\kappa$ counts $491$ translations that are, on that
 declaration, wrong. What the repository declares is what an integration \emph{submits}, so
 a disagreement says the inference is wrong and not that it must be --- a dashboard can
@@ -447,7 +452,7 @@ agreement rate is.
 \iffull\input{sections/moved/eval_differential_limits}\fi
 
 The run leaves three of the $333$ shapes uncompared and its series are synthetic, both
-of which \apref{app:eval} sets out. The sharper limit is which hypotheses the run can
+of which are set out \apin{app:eval}. The sharper limit is which hypotheses the run can
 reach, and the honest answer is none of them: all six of
 Theorem~\ref{thm:kernel}'s hypotheses hold by construction, and so do both of its
 side conditions. An earlier version of this paragraph named two and called them ``the
@@ -498,9 +503,10 @@ this paper's PromQL grammar (\S\ref{sec:grammars}), which predates both translat
 output and is tuned to neither --- and which Prometheus~3.15.0's own parser now agrees
 with on every one of the $14{,}555$ distinct expressions the two translators emit between
 them, in both directions (Remark~\ref{rem:baseline}). Our two rows sum to $99.9\%$ rather
-than $100\%$: the $8$ occurrences \S\ref{sec:grammars}'s Datadog grammar does not
-parse never reach \emph{our} translator's input, while their emitter sees them, which
-is why their column is over the full $8{,}653$ and ours is eight short of it.}
+than $100\%$: both columns are over the full $8{,}653$, and the $8$ occurrences
+\S\ref{sec:grammars}'s Datadog grammar does not parse never reach \emph{our}
+translator's input, so our two outcomes account for $8{,}645$ of them. Their emitter
+sees all $8{,}653$.}
 \label{tab:baseline}
 \end{table}
 
@@ -508,11 +514,11 @@ Table~\ref{tab:baseline} is the comparison, and it does not run in the direction
 coverage number would suggest.
 Their translator refuses nothing: it emits an expression for every one of the $8{,}653$
 occurrences, against our $96.7\%$. But $457$ of those --- $5.3\%$ --- are not PromQL.
-$235$ carry Datadog's match-all scope \texttt{\{*\}} into a language where \texttt{*} is
-multiplication and $111$ fail for other reasons; $346$ are the Datadog text passed
-through unchanged, which is not a third category --- every match-all occurrence is
-also a pass-through, so the two groups that partition the $457$ are the match-all
-ones and the $111$ that are neither. Every expression we emit parses, under this paper's grammar and under
+They divide in three. $235$ carry Datadog's match-all scope \texttt{\{*\}} into a
+language where \texttt{*} is multiplication; a further $111$ are the Datadog text
+passed through unchanged without carrying that scope; and $111$ fail for other
+reasons. The first two groups are both pass-throughs, $346$ in all, so the two-way
+division is $346$ passed through against the $111$ that are not. Every expression we emit parses, under this paper's grammar and under
 Prometheus's: the two instruments refuse the same $386$ expressions and accept the same
 rest, so the column is not an artefact of measuring PromQL with our own ruler. So on the
 one measure both tools can be
@@ -634,7 +640,7 @@ second, each at least as large as the fall beside it. Nothing was sampled on eit
 side, so that is not a test of anything; it is the statement that a fall this size is
 within what changing a population's dashboards would do to it. What survives on both sides is the
 held-out margin itself. And
-$\kappa$ itself, which the paragraph above this one said had no holdout, is
+$\kappa$ itself, which \S\ref{sec:threats} calls a resubstitution estimate, is
 $96.7\%$ of those $3{,}065$ occurrences against $96.6\%$ here --- the same figure as
 \S\ref{sec:baseline}'s coverage by valid output above, and an unrelated quantity, and a
 tenth of a point where the dashboard-clustered standard error on the held-out
