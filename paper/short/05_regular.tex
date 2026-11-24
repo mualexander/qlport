@@ -1,0 +1,325 @@
+% ---------------------------------------------------------------------------
+% The core of this version. Theorem labels are the complete paper's, because the
+% four proof blocks under sections/moved/ are input verbatim: one copy of each
+% proof, so the two documents cannot drift. Numbers come from notebook 04 and
+% data/processed/regex_glob.csv.
+% ---------------------------------------------------------------------------
+
+\section{The Regular Sub-problem}
+\label{s:sec:regular}
+
+Both languages filter on tag values, and both do it with a pattern language, but not the
+same one. Datadog's is a glob; PromQL's is a regular expression. One is a proper subclass
+of the other, so the two directions of this sub-problem are not the same question asked
+twice: the forward direction needs a translation that always exists, and the reverse
+direction needs a decision procedure for whether one does. This section gives both, and
+the decision procedure is where the course's machinery does the work.
+
+\subsection{Globs, and what they can say}
+\label{s:sec:globs}
+
+\begin{definition}[Tag glob]\label{def:glob}
+Fix an alphabet $\Sigma$ of tag-value characters. A \emph{glob} is a string over
+$\Sigma\cup\{*\}$, written $g=s_0*s_1*\cdots*s_n$ with $n\ge 0$ stars and literal
+segments $s_i\in\Sigma^{*}$. It denotes
+\[
+L(g)=\{\,s_0w_1s_1w_2\cdots w_ns_n \;:\; w_i\in\Sigma^{*}\,\}.
+\]
+Datadog documents prefix, suffix and substring wildcards and no other
+construct~\citep{ddfilter}: there is no single-character wildcard, no alternation inside
+a value, no character class, and no escape that would make a literal \texttt{*}. That
+sentence is the whole premise of this section's negative results, and it was read from
+the documentation until we put it to a real account instead --- the account was asked for
+all three constructs and the query parser rejected all three, which is a stronger answer
+than selecting nothing. Write $m(g)=\sum_i|s_i|$ for the total literal length.
+
+Which set $\Sigma$ is matters, and is fixed in \S\ref{s:sec:glob-corpus} rather than
+assumed here. Every language in this section is read over it, including the $\Sigma^{*}$
+that Proposition~\ref{prop:glob-regex} reads \texttt{.*} as, and the two available
+readings differ on $238$ of this corpus's matcher occurrences.
+\end{definition}
+
+The forward direction needs only the easy half, and gets it by construction.
+
+\begin{proposition}[Globs are regular, uniformly]\label{prop:glob-regex}
+Let $\mathrm{glob}(g)$ be the regular expression obtained from $g$ by replacing every
+\texttt{*} with \texttt{.*} and escaping every other character. Then
+$L(\mathrm{glob}(g))=L(g)$, where the regular expression is read under PromQL's
+whole-value anchoring.
+\end{proposition}
+
+\input{sections/moved/reg_glob_regex_pf}
+
+\noindent
+Every glob therefore has an exact PromQL matcher, which is why no gap code in
+Table~\ref{s:tab:gaps} mentions globs on tag \emph{values}. The remaining direction is
+the interesting one, and one structural fact decides most of it.
+
+\begin{lemma}[Dichotomy]\label{lem:dichotomy}
+For every glob $g$ over a non-empty $\Sigma$: if $n=0$ then $L(g)=\{s_0\}$ is a single
+word; and if $n\ge 1$ then $L(g)$ contains a word of every length $\ell\ge m(g)$, and
+every word of $L(g)$ contains each $s_i$ as a factor, in order.
+\end{lemma}
+
+\input{sections/moved/reg_dichotomy_pf}
+
+\noindent
+So a glob language is either a singleton or unbounded in length. That is a strong
+restriction, and together with what a star admits --- every character of $\Sigma$, by
+Definition~\ref{def:glob} --- it settles each construct the corpus refuses, not by
+measurement but by proof. The second ingredient is easy to lose sight of: parts~(1)
+and~(2) below come from the dichotomy alone, and part~(3) does not.
+
+\begin{corollary}[Three things no glob says]\label{cor:no-glob}
+Assume $|\Sigma|\ge 2$. Then
+\begin{enumerate}
+\item no glob denotes a finite language with two or more words --- in particular none
+denotes $\Sigma$, so there is no single-character wildcard, and none denotes an
+alternation of distinct literals;
+\item no glob denotes $\Sigma^{+}$, the non-empty values;
+\item for $\emptyset\neq A\subsetneq\Sigma$, no glob denotes $A^{+}$ --- a star cannot be
+restricted to part of the alphabet.
+\end{enumerate}
+\end{corollary}
+
+\input{sections/moved/reg_no_glob_pf}
+
+\noindent
+Part~(3) generalises, and the generalisation is what the unconditional refusals of
+\S\ref{s:sec:glob-corpus} rest on, so it is stated rather than left as an aside.
+
+\begin{corollary}[A character a language never uses]\label{cor:absent-char}
+Let $L$ be infinite and let some $\sigma\in\Sigma$ occur in no word of $L$. Then $L$ is
+not a union of finitely many glob languages.
+\end{corollary}
+
+\input{sections/moved/reg_absent_char_pf}
+
+\noindent
+This is the one result here that holds against an \emph{arbitrary} union, with no bound
+on how many branches a translator may spend, which is why \S\ref{s:sec:glob-corpus} can
+separate ten refusals from the rest.
+
+\subsection{Deciding whether a regular expression has a glob}
+\label{s:sec:decide}
+
+Corollary~\ref{cor:no-glob} rules particular shapes out. The general question --- given a
+regular expression, is there \emph{any} glob denoting the same language? --- is settled by
+a single observation about shortest words.
+
+\begin{proposition}[Glob-expressibility is decidable]\label{prop:decidable}
+Let $r$ be a regular expression with $L(r)\neq\emptyset$, read \texttt{*} as matching the
+empty string, and read $L(r)$, the candidate globs and the automata below over one fixed
+non-empty alphabet $\Sigma$ --- the same $\Sigma$ Definition~\ref{def:glob} defers and
+\S\ref{s:sec:glob-corpus} fixes. It is decidable whether some glob $g$ has $L(g)=L(r)$,
+and a witness is produced when one exists.
+\end{proposition}
+\begin{proof}
+Suppose $L(r)=L(g)$ for $g=s_0*\cdots*s_n$. Taking every $w_i=\varepsilon$ gives the word
+$s_0s_1\cdots s_n\in L(g)$ of length $m(g)$, and every other word of $L(g)$ has some
+$w_i\neq\varepsilon$ and so is strictly longer. Hence $s_0s_1\cdots s_n$ is the shortest
+word of $L(g)$ \emph{and the only word of that length}.
+
+So the procedure is: construct a DFA for $r$ --- Rich's regular-expression-to-FSM
+construction (Thm 6.1) followed by the subset construction (Thm 5.3) --- and find its
+shortest accepted word $w$ by breadth-first search from the start state, together with
+the number of accepting paths of that length. If $L(r)$ has no unique shortest word, no
+glob exists. If it does, then $w=s_0s_1\cdots s_n$, so $g$ is $w$ with stars inserted at
+some subset of its $|w|+1$ gaps: at most $2^{|w|+1}$ candidates. Each is settled by
+deciding $L(r)=L(\mathrm{glob}(g))$, which is decidable by Rich Thm 9.5. The search is
+finite and exhaustive, so it answers either way.
+\end{proof}
+
+\noindent
+The witness is what makes this useful rather than merely true: a decision procedure that
+returned only a bit would tell a migration that a glob exists without telling it which
+one. \S\ref{s:sec:glob-corpus} runs this procedure over the corpus and uses it to check
+the refusals of the syntax-directed proposer rather than trust them, which is
+Remark~\ref{s:rem:refusal}'s standard applied to this paper's own output.
+
+\subsection{Unions, and the bound}
+\label{s:sec:glob-unions}
+
+A single glob is the wrong target. By Proposition~\ref{prop:disjunction} a Datadog scope
+can disjoin over one tag key, and read in this direction that proposition says the reverse
+translation of a regular expression should be sought as a \emph{finite union} of globs;
+$\mathtt{LIST|GET}\mapsto k \in (\texttt{LIST},\texttt{GET})$ is then immediate.
+
+The union must be bounded, and the bound is part of the claim rather than an
+implementation detail. Every finite language is a union of singleton globs, one per word,
+so boundedness is what stops the question from being trivial --- and it is not only a
+matter of taste. By Corollary~\ref{cor:no-glob} no glob denotes $\Sigma^{+}$, yet
+$\bigcup_{c\in\Sigma}L(c*)=\Sigma^{+}$, so the non-empty values \emph{are} a finite union
+of globs: one for every character of the alphabet. A scope is a piece of text somebody
+maintains, so a union of a million branches is not a translation.
+
+We fix $B=|\Sigma|^{2}$ --- two unconstrained character positions --- and report anything
+needing more as a refusal, naming the bound. What makes that the choice rather than a
+round number is the corpus's own distribution. The union sizes this corpus actually needs
+stop at $206$ and then jump straight to $|\Sigma|^{2}$, the signature of two free
+positions; nothing in between occurs at all. So every bound from $206$ up to
+$|\Sigma|^{2}-1$ admits exactly the same patterns, and the square is the next choice that
+is a different decision rather than a different number. The bound is about maintenance and
+not about the service: a real account was asked how long a scope it will accept, and the
+answer is about four times what $B$ needs.
+
+Whether glob-union-expressibility is decidable without a bound we leave open. The
+shortest-word argument does not transfer: each glob of a minimal union contributes its own
+shortest word, and nothing bounds those by the shortest word of the union, so the
+candidate space is no longer finite. Within the bound the procedure used here is sound but
+not known to be complete --- it proposes a union from the regular expression's syntax and
+then decides equivalence, so what it returns is exact, while a refusal is in general a
+statement about the proposer. Proposition~\ref{prop:decidable} removes that caveat for the
+single-glob case.
+
+\subsection{What the corpus contains}
+\label{s:sec:glob-corpus}
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/regex_glob}
+\caption{Every \texttt{=\textasciitilde{}} and \texttt{!\textasciitilde{}} matcher in the
+PromQL half of the corpus. Shares are of the concrete regular expressions; the
+template-valued row is counted but not classified, because the pattern is not in the query
+text.}
+\label{s:tab:regex-glob}
+\end{table}
+
+The first result is not about regular languages. Of $8{,}587$ regex matchers, $7{,}546$
+--- $87.9\%$ --- have a Grafana template variable as their pattern, as in
+\texttt{\{pod=\textasciitilde{}"\$pod"\}}. The value is chosen when somebody looks at the
+dashboard, so there is no pattern to convert. For these the reverse direction is not hard
+but \emph{statically undefined}, and that is a property of how dashboards are written
+rather than of either language.
+
+Among the $1{,}041$ occurrences whose pattern is concrete,
+Table~\ref{s:tab:regex-glob} gives the three-way split. A glob exists for $957$ of them
+($91.9\%$), but for more than half of those only as a union: one glob covers $309$
+occurrences ($29.7\%$) and a bounded union covers $648$ ($62.2\%$). Treating a single glob
+as the target --- the obvious reading of ``does this regex have a glob'' --- would
+therefore have understated the reverse direction by the $62.2\%$ of occurrences a union
+reaches and a single glob does not, and the construction that recovers them is
+Proposition~\ref{prop:disjunction}, already proved for the other direction.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/regex_glob_reasons}
+\caption{The constructs behind the $84$ refused occurrences. The first is ruled out as a
+single glob by Corollary~\ref{cor:no-glob} and the second by
+Corollary~\ref{cor:absent-char}; only the second is also beyond a bounded union of globs.}
+\label{s:tab:regex-glob-reasons}
+\end{table}
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/regex_glob_examples}
+\caption{Worked cases, most frequent first: the PromQL pattern, the Datadog scope value
+the reverse translation produces, and how many occurrences carry it. A $\bot$ row names
+the reason rather than a scope. \texttt{LIST|GET} is the case of
+\S\ref{s:sec:glob-corpus}'s closing paragraph on case folding: the scope is an exact
+translation of the pattern and matches nothing in any Datadog database.}
+\label{s:tab:regex-glob-examples}
+\end{table}
+
+\paragraph{Which alphabet.}
+Every equivalence here is decided over an alphabet, and the question is not a formality:
+``does this regular expression denote the same set as that glob'' has two readings, and on
+this corpus they differ by $238$ matcher occurrences. Over strings from an unbounded
+character set \texttt{.+} is no finite union of globs at all, so the $21$ patterns that
+contain it are refused; over the strings a Datadog tag value may contain, \texttt{.+} is
+the union of $c$\texttt{*} for each character $c$ --- $41$ branches --- and a scope can say
+every one of them. Datadog documents that set --- lower-case letters, digits, underscores,
+minuses, colons, periods and slashes, with the value lower-cased on ingest --- which is
+$41$ characters. The corpus is censused rather than trusted: every distinct tag value in
+the instantiated corpus, read through this paper's own Datadog parser, uses only those
+$41$ characters, and every one of the $41$ is written somewhere in it. That is the right
+universe, and not as a convenience: a string that is not a legal tag value cannot appear
+on either side of the equivalence, so admitting it compares two languages on words neither
+will ever be asked about.
+
+That census is over the Datadog half of the corpus, and the patterns being decided come
+from the PromQL half, which does not obey it. $34$ of the $184$ distinct patterns, $133$
+of the $1{,}041$ concrete matcher occurrences or $12.8\%$, write literal characters
+outside $\Sigma$: $33$ of them upper-case only --- \texttt{LIST|GET},
+\texttt{POST|PUT|PATCH|DELETE}, \texttt{Pending|Running} --- and \texttt{<none>|Job}
+adding angle brackets. What the decider substitutes $\Sigma$ for is the class \texttt{.}
+denotes, and it leaves literals as written, so those $34$ are decided over $\Sigma$
+together with their own literals. Both sides of each equivalence are read the same way, so
+the verdicts stand as equivalences of languages and Table~\ref{s:tab:regex-glob}'s split
+does not move.
+
+The mismatch it hides is worth more than the bookkeeping. Datadog lower-cases a tag value
+on ingest, so no value in any Datadog database is \texttt{GET}, and the scope
+\texttt{k IN (GET, LIST)} that this section reports as an exact reverse translation of
+\texttt{LIST|GET} matches nothing at all. Those $130$ upper-case occurrences are
+expressible as globs and empty as queries. That is a second reverse-direction cost beside
+the refusals of Table~\ref{s:tab:regex-glob-reasons}; it is not a fact about globs --- a
+PromQL matcher on a mixed-case label value has no Datadog counterpart whatever the target
+construct --- and this paper does not model it.
+
+\paragraph{What refuses, and on what authority.}
+With $\Sigma$ that set, Table~\ref{s:tab:regex-glob-reasons} has to be read against the
+union target of \S\ref{s:sec:glob-unions} rather than against a single glob. Two
+constructs account for every refusal, and neither is a single-character wildcard:
+\texttt{5..} is the union of $|\Sigma|^{2}$ globs, one per pair of characters, and
+\texttt{.+} the union of $|\Sigma|$ of them, and a scope can be made to say either. The
+three impossibility results are untouched as theorems --- they are about a \emph{single}
+glob, and Table~\ref{s:tab:regex-glob} is the measurement of how little of this corpus a
+single glob reaches; what they no longer do, against a union target over a finite
+alphabet, is refuse a corpus pattern on their own.
+
+What refuses is each of them together with something else. Four patterns are proposed a
+union of more branches than the bound admits: \texttt{2..|5..} is two free positions twice
+over at $3{,}362$ branches against a bound of $41^{2}$, and the two that carry $71$ of
+those $74$ occurrences are alternations over device names, each branch of which ends in
+\texttt{.+} and costs $41$. Those refusals rest on a number this paper chose and states,
+and they decide if the number is raised --- into a scope with thousands of branches in it,
+which is the sense in which the bound is about maintenance rather than about language.
+They also rest on the proposer: these are the branch counts of the union the
+syntax-directed proposal produces, and nothing here establishes that no smaller union
+denotes the same language, so ``$3{,}362$ branches'' is an upper bound on what the pattern
+costs and not a lower bound on what it needs. \texttt{5[0-9]+} is different:
+it would need a star that never admits a non-digit, forbidden by
+Corollary~\ref{cor:absent-char} --- not by part~(3) of Corollary~\ref{cor:no-glob}, which
+is about $A^{+}$ itself, and which \texttt{5[0-9]+} is not, its shortest word having three
+characters where $A^{+}$ has words of one.
+
+Only the second kind is unconditional: an infinite language needs a star, a glob's star
+admits every character, and no union of finitely many such globs confines it to the
+digits. So $74$ of the $84$ occurrences are refused by a theorem about single globs plus a
+bound this paper chose, and $10$ by a theorem about globs outright.
+
+\paragraph{The proposer checked against the decision procedure.}
+For the single-glob question the same conclusion can be reached by measurement rather than
+by proof. Re-deciding every concrete regular expression with the complete procedure of
+Proposition~\ref{prop:decidable} reaches \emph{all} $184$ distinct patterns --- counts in
+this paragraph are of patterns rather than of occurrences --- and disagrees with the
+syntax-directed proposer on \emph{none} of them. It recovers the same glob for all $61$ of
+the single-glob cases, and finds no glob for all $7$ refusals and all $116$ unions.
+Nothing is left undecided: no pattern exceeds the search's own candidate bound, so the
+agreement is over the whole population rather than over a reachable part of it, though
+``complete'' is relative to the dialect the search parses.
+
+\paragraph{One assumption the vendor does not document.}
+Corollary~\ref{cor:no-glob}(2) assumed a glob's \texttt{*} matches the empty string, and
+the two readings cannot both hold: a glob has exactly one wildcard, which either requires
+a character or does not. That is not a detail about two patterns. Re-deciding the corpus
+with the constant flipped --- a measurement of this paper's procedure under the other
+reading, not of what that reading makes expressible, since
+Proposition~\ref{prop:decidable}'s search assumes the reading taken --- refuses $599$ of
+the $1{,}041$ concrete occurrences where the reading taken refuses $84$. Of the $184$
+patterns, $72$ change classification and $515$ occurrences with them, every one of them
+toward refusal, because a star that cannot stand for nothing cannot stand for the
+\texttt{.*} most of these patterns are built from. It was put to a real account rather than
+guessed, and the wildcard does match the empty string, so the figures above stand as
+computed.
+
+\paragraph{What the reverse direction costs.}
+The practical conclusion is wider than Table~\ref{s:tab:regex-glob} suggests on its own,
+and narrower than the refusal count suggests. A Datadog scope reaches $91.9\%$ of what
+this corpus's concrete matchers say, but two thirds of that is reached only as a union, and
+a union of $41$ branches is a scope somebody has to maintain --- expressible and unpleasant
+are different properties, and only the first is what a theorem decides. What is left over
+is small and of two kinds. \texttt{2..|5..} is refused by the branch bound, which this
+paper chose; raise the bound and it decides, at the price of a scope nobody would write.
+\texttt{5[0-9]+} is refused by a theorem, and no bound removes it. That second kind is the
+gap this paper set out to distinguish from unfinished work, and in this corner of the
+problem there is no unfinished work at all: every refusal is a theorem about globs, or that
+theorem together with a bound this paper states.

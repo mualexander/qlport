@@ -1,0 +1,51 @@
+\title{\textbf{Leaving Costs Work, Returning Costs Expressiveness:}\\
+\Large An Asymmetry in Observability Query Translation}
+\author{Marshall Uy Alexander\\ \small CS 681 Applications of Computability --- Research Paper}
+\date{\small \today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}\noindent
+Teams stay with a proprietary observability vendor less because of their data than
+because of their dashboards: thousands of saved queries that a migration must rewrite by
+hand, with no way to tell whether a rewrite preserved what the original meant. We asked
+whether that cost is a syntactic accident or a semantic necessity. The answer depends on
+the direction, and the asymmetry is the result.
+
+Forward --- Datadog metric queries into PromQL --- it is an accident. Over the $8{,}770$
+Datadog metric queries of a corpus of $22{,}894$ extracted from published dashboard and
+alerting documents, $96.6\%$ of occurrences translate, and the column we had reserved for
+constructs beyond the target language's reach emptied of everything we can demonstrate,
+bar $14$ occurrences left undecided. What remains is work this translator has not done
+rather than expressiveness PromQL lacks.
+
+Backward it is a necessity, and provably so. A Datadog tag filter is a glob and a PromQL
+tag filter is a regular expression, and globs are a proper subclass. We prove that a glob
+language is either a singleton or unbounded in length; that no glob denotes a finite
+language with two or more words, nor $\Sigma^{+}$, nor $A^{+}$ for a proper non-empty
+$A\subsetneq\Sigma$; and that an infinite language omitting some character of the
+alphabet is not a union of finitely many glob languages, which is the one bound-free
+result here. We then show that glob-expressibility of a regular expression is decidable,
+by an argument about shortest words, with a witness when one exists --- and run that
+procedure over every concrete pattern in the corpus, where it agrees with the
+syntax-directed translator on all $184$ distinct patterns. Of the $1{,}041$ concrete
+matcher occurrences a Datadog scope reaches $91.9\%$, but two thirds of that only as a
+union of globs, and of the $84$ refusals $74$ rest on a theorem about single globs
+together with a branch bound we choose and state, $10$ on a theorem about globs outright.
+
+Leaving costs work; returning costs expressiveness. One finding of the complete paper is
+deliberately not carried here, and \S\ref{s:sec:asymmetry} says what it is: a dashboard
+query does not determine its own meaning, and no coverage number can see it.
+\end{abstract}
+
+\input{short/01_intro}
+\input{short/02_background}
+\input{short/03_framework}
+\input{short/04_forward}
+\input{short/05_regular}
+\input{short/06_asymmetry}
+\input{short/07_conclusion}
+
+\small
+\input{references}

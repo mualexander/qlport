@@ -1,0 +1,67 @@
+% ---------------------------------------------------------------------------
+% Draws the asymmetry, states what this version leaves out, and says what would
+% have to be true for the asymmetry claim to be wrong.
+% ---------------------------------------------------------------------------
+
+\section{The Asymmetry}
+\label{s:sec:asymmetry}
+
+Put the two directions beside each other. Forward, $96.6\%$ of occurrences translate, the
+shortfall is five named gap codes, and every candidate for inexpressibility was removed by
+writing the code or by exhibiting the expression --- bar $14$ occurrences left undecided.
+A team that wants to leave is looking at work: unglamorous, enumerable, and finite.
+Backward, a tag filter must become a glob; $91.9\%$ of concrete matchers have one, two
+thirds of those only as a union --- $41$ branches for the commonest case and $206$ at the
+widest this corpus needs --- and the residue divides into refusals that rest on a bound we
+chose and refusals that rest on a theorem. A team that
+wants to come back is looking at expressiveness it cannot buy.
+
+That is the asymmetry, and the two halves are not symmetric in kind. ``Work remains''
+is a statement about this translator, and Remark~\ref{s:rem:refusal} says such a statement
+is weak evidence about a language. ``No glob denotes this language'' is a statement about
+globs, and no amount of engineering changes it. The reverse direction is the only part of
+this work where the refusals have that stronger warrant, which is why it is the part this
+version keeps.
+
+\paragraph{What would have to be true for this to be wrong.}
+Three things, and each is worth stating because each is reachable. First, the forward
+figure is a resubstitution estimate on a corpus the grammar was fitted to; the held-out
+run returns $96.7\%$, but on an effective two dashboards' worth of independent variation.
+A forward corpus with genuinely different conventions could lower it, though to overturn
+the asymmetry it would have to lower it to where the shortfall contained a demonstrated
+inexpressibility, which no evidence here suggests. Second, the reverse direction has no
+translator behind it. Its numbers come from deciding the PromQL half of the corpus against
+the glob target, not from running a converter anybody can use, so they describe what a
+converter could achieve rather than what one does. Third, the ten unconditional refusals
+are ten; a different corpus could contain none, and the theorems would still hold while the
+asymmetry they support would be a smaller empirical fact.
+
+\paragraph{What this version leaves out.}
+One finding of the complete paper is deliberately absent here, and it is the largest one,
+so this section names it rather than letting its absence pass for its non-existence. A
+dashboard query does not determine its own meaning. $97.0\%$ of our translations depend on
+a rollup interval the source query leaves to the dashboard's time range, and for the
+$6.0\%$ of those where a widget pins that range itself, the interval a translator would
+obviously supply is wrong two times in three. The metric's type is a second thing no query
+states, and the one that can be checked against the vendor's own declarations: there our
+inference is wrong for $6.5\%$ of the cases it can settle, $491$ occurrences. Nor is this
+one vendor's doing --- $88.6\%$ of Datadog and $82.5\%$ of PromQL query occurrences carry a
+template variable, a share that falls to $77.0\%$ on dashboards by other authors, so read
+it as a property of this corpus rather than of the tools. What a migration ports is a query
+schema plus a resolution layer belonging to the dashboard tool.
+
+That finding is invisible to everything this version reports. A query that does not fix its
+own meaning parses, translates, and is counted as covered, so neither $\kappa$ nor the gap
+catalogue nor the grammars can see it; coverage and correctness differ by a measured amount
+that no coverage number can detect. It does not contradict the asymmetry --- it sits beside
+it, and it is a cost on the forward direction that the forward direction's own instruments
+report as success. A reader who takes $96.6\%$ as the practical difficulty of leaving will
+have taken the wrong number, and the complete paper is where that case is made.
+
+\paragraph{What is measured, and what is not.}
+We measure the query layer only. The corpus is queries extracted from published dashboard
+and alerting documents, which is a sample of what people are willing to publish and not of
+what a private estate contains. The reverse direction is evidence about tag filtering drawn
+from the other half of that corpus. Stored history, alert evaluation semantics, dashboard
+rendering and the cost of retraining the people who read the dashboards are all outside
+it, and the last of those may well dominate the switching cost in practice.

@@ -1,0 +1,95 @@
+% ---------------------------------------------------------------------------
+% The short version's introduction. Poses the proposal's question, says plainly
+% what the proposal got right and what it got wrong, and promises only what the
+% five sections after it deliver. Numbers are quoted from the complete paper and
+% carry the same registry keys.
+% ---------------------------------------------------------------------------
+
+\section{Introduction}
+\label{s:sec:intro}
+
+An observability bill is one of the few software costs that can grow faster than the
+system it measures, and the published cases are startling: one company's monitoring
+invoice reached \$65M a year, run up, by the account its own engineers give, because
+nobody was watching infrastructure spend~\citep{orosz2023}. The obvious response is to
+move to something cheaper, and for metrics the cheap option is well established ---
+Prometheus is free, widely deployed, and its query language is a de facto standard. Teams
+nonetheless stay, and when they explain why, the reason is rarely the data. It is the
+dashboards.
+
+A mature observability estate is thousands of saved queries: panels, alerting rules,
+service-level objectives, runbook links. Moving vendors means rewriting all of them in
+another language, by hand, without a way to tell whether a rewrite preserved what the
+original meant. That is a switching cost, and the question worth asking is where it comes
+from. If it is incidental --- different keywords, different punctuation --- then a
+translator removes it and the lock-in was never real. If it follows from how the two
+languages are \emph{designed}, then no amount of engineering removes it, and the query
+language is a retention mechanism whether or not anyone intended it as one.
+
+The question is tractable because query languages are formal languages. Rich treats them
+as such (§48.1), and the book's classification --- regular, context-free, decidable ---
+is the frame this paper works in~\citep{rich2008}. If the two languages are context-free,
+they have grammars; if their grammars are unambiguous, each query has one parse tree; if
+each construct of one has a meaning-preserving counterpart in the other, a translator
+exists; and where a construct does not, the obstruction can be exhibited as a theorem
+instead of reported as a limitation.
+
+\paragraph{What was proposed, and what the measurement did to it.}
+This work was proposed as a single question --- is the lock-in a syntactic accident or a
+semantic necessity? --- with a plan attached: formalise both languages as
+$(\text{grammar},\text{semantics})$ pairs, define what it means for a translation between
+them to be sound, build a syntax-directed transpiler through a shared intermediate
+representation, and measure on real dashboards how much of each language actually
+translates. That plan was carried out as written, and three things happened to it.
+
+The first is a correction the proposal could not have anticipated, and it changed the
+definition of the central term. Soundness cannot be an equation between two queries
+evaluated on one database, because the two systems do not receive the same database: a
+Prometheus counter is a running total and a Datadog counter a sequence of per-interval
+deltas. Soundness here is therefore stated relative to an \emph{ingestion mapping}
+$\phi$, and every theorem names the class of databases it holds on
+(\S\ref{s:sec:framework}).
+
+The second is that the expected answer did not arrive. The proposal took for granted that
+some constructs would turn out to be semantically inexpressible, and the paper reserved a
+column for them. In the forward direction that column emptied of everything we can
+demonstrate, bar $14$ occurrences left undecided: of the $8{,}770$ Datadog metric query
+occurrences in our corpus, $96.6\%$ translate, and none of the shortfall is shown to be
+beyond PromQL's reach. Most of the
+corrections that emptied it were to our own earlier claims rather than to the vendor's
+behaviour. Forward lock-in, on this evidence, is work somebody has not done.
+
+The third is that the necessity was real, and in the direction the proposal treated as
+secondary. Going back --- PromQL to Datadog --- a tag filter must become a glob, globs
+are a proper subclass of the regular languages, and the refusals there are theorems
+rather than unfinished work. That asymmetry is this paper's result, and it is the reason
+this version is organised around the reverse direction rather than the forward one.
+LogQL and Splunk SPL were named in the proposal as stretch targets and remain stretch
+targets; no grammar or translator for either appears here.
+
+\paragraph{Scope.}
+We study \emph{forward portability}: once a team dual-writes or switches, a translated
+query must mean the same thing as the original on the data each system receives from then
+on. Migrating stored history is a different problem and is out of scope. We measure the
+query layer only. The main translation direction is Datadog metric queries into PromQL,
+because that is the direction teams actually take; the reverse direction is evidence
+about tag filtering drawn from the other half of the corpus, with no translator built for
+it, and the theorems of \S\ref{s:sec:regular} are about what any translator in that
+direction could achieve rather than about one we wrote.
+
+\paragraph{What this version carries.}
+This is the short version of a longer paper, and it carries one of that paper's results
+in full. \S\ref{s:sec:background} places the question among the four literatures it
+belongs to, the last of which predicts the shape of the answer.
+\S\ref{s:sec:framework} fixes the framework: what the systems store, what a
+query denotes, when two denotations agree, and what a translator may do when it cannot
+proceed. \S\ref{s:sec:forward} reports the forward direction compactly --- the grammars
+exist and admit deterministic one-token-lookahead parsers, the transpiler is
+syntax-directed through an intermediate representation, and the coverage it achieves is
+the number above. \S\ref{s:sec:regular} is the core: globs, what they provably cannot
+say, a decision procedure for whether a regular expression has a glob at all, and what
+the corpus turns out to contain. \S\ref{s:sec:asymmetry} draws the asymmetry and names
+the finding this version leaves out. \S\ref{s:sec:conclusion} answers the proposal's
+question. Proofs of the forward-direction results, the grammar conflict analysis, the
+ingestion mapping in full, the evaluation apparatus and the experiments put to live
+accounts are in the complete paper and are cited here by name rather than reproduced.

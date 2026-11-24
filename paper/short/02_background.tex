@@ -1,0 +1,140 @@
+% ---------------------------------------------------------------------------
+% Related work, compressed to the four traditions and what each leaves open.
+% The economics paragraph is load-bearing here: the asymmetry this paper
+% measures is the testable form of the switching-cost claim.
+% ---------------------------------------------------------------------------
+
+\section{Background and Related Work}
+\label{s:sec:background}
+
+Four traditions bear on the question of \S\ref{s:sec:intro} and none of them answers it.
+Formal-language theory supplies the frame; compiler correctness supplies the standard of
+proof; the expressiveness literature supplies the notion of ``cannot say''; and the
+economics of switching costs supplies both the reason anybody should care and, as it turns
+out, the shape of the answer.
+
+\paragraph{Query languages as formal languages.}
+Rich's treatment of query languages as formal languages is the licence for the approach: a
+query language is a formal language, so grammars, automata and decidability apply to it,
+and which class a language falls in decides what can be settled
+mechanically~\citep{rich2008}. §48.1 is where the book says so directly, in a short
+applications note pointing at published SQL grammars; the
+regular/context-free/decidable classification this paper leans on is the book's frame
+rather than that section's. An unambiguous grammar gives each query exactly one parse
+tree, which is the precondition for a translation being well defined; an LALR(1) one makes
+the parse linear and the parser a table, so a corpus can be processed in bulk rather than
+sampled~\citep{aho2006}. The translation itself has a classical form: a syntax-directed
+transduction associates an output with each production and composes them over the parse
+tree~\citep{lewis1968}, and where a node's output depends on information held elsewhere,
+Knuth's attribute grammars are the standard account~\citep{knuth1968} --- which this
+problem needs, because two of the attributes a translation requires are not in the Datadog
+query text at all. Regular languages then enter directly, and it is where the sharpest
+negative results live: both languages filter tag values with a pattern language, a glob in
+one and a regular expression in the other, so whether one pattern has a counterpart is a
+question about two classes of regular languages (\S\ref{s:sec:regular}).
+
+\paragraph{The two languages.}
+PromQL is documented and its reference parser is open source, so a grammar can be checked
+against an implementation rather than inferred~\citep{promql}. It is a vector-valued
+expression language: selectors denote sets of series, range selectors denote windows,
+functions reduce windows, and aggregation operators reduce across series. Counters are
+stored as running totals and reset handling lives inside the range functions. Datadog's
+metric query language is not documented as a grammar; what is published is a reference
+manual with examples, enough to infer the syntax and not to verify it. The important
+difference is not syntactic: Datadog stores a counter as per-interval deltas, and a query
+is evaluated first by time and then by space~\citep{datadog,ddnested} --- a rollup reduces
+each series alone and a space aggregator combines the results. Neither the rollup interval
+nor the metric's type is part of the query text, which is the subject of the complete
+paper's largest finding and of \S\ref{s:sec:asymmetry} here.
+
+\paragraph{What a translation guarantees.}
+SQL dialect translation is the closest established practice. Apache Calcite parses SQL
+into a relational algebra, optimises, and generates dialect-specific SQL on the way
+out~\citep{begoli2018}; SQLGlot does the same across more than twenty
+dialects~\citep{sqlglot}. Both are engineering successes and neither offers a statement of
+what a translation preserves: their criterion is that the output parses and behaves as
+users expect, and where a construct has no counterpart the usual outcome is a best-effort
+rewrite that leaves no record of the approximation. That is a reasonable engineering choice
+and a poor measurement instrument, which is why \S\ref{s:sec:framework} requires a
+translator to be total with every failure a named $\bot$.
+
+Converters for this language pair exist, and we have found no published result among them
+--- a negative about a literature, which is the weakest kind of claim this paper makes and
+is stated as a search rather than as a fact. Chronosphere describes the closest thing to
+this paper's method, a Datadog grammar written from scratch with queries parsed to an AST
+and emitted through the open-source Prometheus grammar, and reports getting ``about
+$90\%$'' of the way~\citep{marcopoli2024}; what the percentage is a percentage of, and what
+a converted query is meant to preserve, are not stated. OpenObserve's dashboard migrator
+marks each object migrated, needing review, or skipped~\citep{openobserve} --- a coarse
+form of the typed failure \S\ref{s:sec:framework} requires, reported without counts. A
+third converter is closer to this paper than either: a public repository with no
+accompanying publication, which translates Datadog dashboards and monitors into PromQL and
+reports reaching $92.4\%$ of $14{,}172$ distinct queries and monitors~\citep{dd2dash0}.
+Those figures are its own and not this paper's, and they are read from a cached copy of its
+README because the repository is a feature branch. It arrives independently at three of
+this paper's devices: each of its rules carries one of four claims, each translated item
+carries a ledger of the assumptions its claim rests on, and anything without a rule is
+refused by the name of the construct rather than approximated. That convergence is the
+useful part of finding it --- these are not this paper's inventions but what the problem
+forces on anyone unwilling to round a translation up. What none of them publishes is a
+grammar for the Datadog side, or a measurement of what is impossible as against unbuilt,
+which is what leaves this paper's claims standing.
+
+\paragraph{The standard of proof, and the form of a negative.}
+Compiler verification supplies the first. McCarthy and Painter proved a compiler for
+arithmetic expressions correct by relating source and target denotations~\citep{mccarthy1967},
+and CompCert carries the idea through a realistic C compiler with machine-checked
+proofs~\citep{leroy2009}. That is the shape of this paper's soundness theorems though not
+their rigour --- the proofs here are on paper and for a fragment --- and it differs in one
+way that is not incidental: a verified compiler may assume source and target run on the
+same input, and here they do not. Database theory supplies the adjacent decision problem,
+equivalence and containment of conjunctive queries being decidable by the homomorphism
+characterisation~\citep{chandra1977,abiteboul1995}; it does not transfer, since the
+quantities here are numeric aggregates over time windows and exactness has to be stated up
+to floating point. The borrowing is the habit: state the equivalence you mean, then decide
+it.
+
+``PromQL cannot say this'' is also a claim with a literature behind it. Felleisen
+formalises expressive power by asking whether a construct can be eliminated by a local,
+meaning-preserving rewriting~\citep{felleisen1991}, and Mitchell relates expressiveness to
+observational equivalence~\citep{mitchell1993}. What this paper borrows is the
+\emph{distinction} rather than the criterion: \S\ref{s:sec:regular}'s results are of a
+blunter kind, containment facts about two classes of regular languages where the target has
+no term with the denotation at all. They are the only claims here that hold regardless of
+how much engineering is applied.
+
+\paragraph{Observability, standardisation, and the asymmetry.}
+The closest observability work compares implementations of \emph{one} language rather than
+translating between two. Volz's compliance testing found that vendors advertising PromQL
+support disagree with Prometheus on a generated conformance suite~\citep{volz2020} --- this
+paper's problem in miniature, and a warning: if one language's implementations already
+differ, a translation between two needs its soundness stated rather than assumed. The
+practice of verifying a candidate against a real server rather than a model is taken from
+that result. Standardisation approaches it from the other end: OpenTelemetry has largely
+settled the \emph{data} question~\citep{otel}, leaving queries as the remaining lock-in
+surface, and the CNCF's Observability TAG has an active effort towards a common query
+language~\citep{sharma2025} --- which needs exactly the evidence this paper produces, namely
+which constructs are genuinely hard to translate and which merely have not been.
+
+Switching costs themselves are well developed in industrial organisation. Farrell and
+Klemperer survey lock-in and its competitive effects~\citep{farrell2007}, and Shapiro and
+Varian give the lock-in cycle its standard informal treatment for information
+goods~\citep{shapiro1999}. The structural point matters more here than any quantity, and it
+is what this paper ends up measuring: what retains a customer is not that leaving is
+impossible but that \emph{the terms of return differ from the terms of entry}, so a
+decision made cheaply cannot be unmade cheaply. That is an asymmetry claim, it is testable,
+and \S\ref{s:sec:asymmetry} is the test. The concrete case that motivates the question is
+on the public record~\citep{orosz2023}.
+
+\paragraph{What this paper adds.}
+Each tradition leaves the same thing open. The transpilers translate without stating what
+is preserved, and the migration tools for this pair report neither what they preserve nor
+what they refuse; the verification work states what is preserved but assumes a shared
+input; the expressiveness literature gives the form of a negative result but is rarely
+pointed at query languages; the observability work compares implementations of one
+language, and the standardisation work needs evidence about which differences are
+essential; the economics predicts an asymmetry without measuring one. The contribution is
+the combination: soundness stated relative to an ingestion mapping, so that two
+differently-stored systems can be compared at all; a translator whose refusals are typed
+and counted rather than papered over; non-expressibility proved where it holds; and all of
+it measured on a corpus of queries nobody wrote for the purpose.

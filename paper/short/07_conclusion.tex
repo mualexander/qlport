@@ -1,0 +1,48 @@
+% ---------------------------------------------------------------------------
+% Answers the proposal's question in the terms the proposal asked it.
+% ---------------------------------------------------------------------------
+
+\section{Conclusion}
+\label{s:sec:conclusion}
+
+The question this work was proposed to answer was whether observability lock-in is a
+syntactic accident or a semantic necessity. It is both, and which one it is depends on
+which way you are going.
+
+Leaving a proprietary vendor for an open one is a syntactic accident. We built the
+translator the proposal described --- two inferred grammars, both admitting deterministic
+one-token-lookahead parsers, a syntax-directed lowering into an intermediate
+representation, an emission into PromQL, soundness stated relative to an ingestion mapping
+because the two systems do not store the same thing --- and it translates $96.6\%$ of the
+$8{,}770$ Datadog metric query occurrences in our corpus. The column we had reserved for
+constructs beyond the target language's reach emptied of everything we can demonstrate,
+and most of what emptied it were corrections to our own claims. $14$ occurrences remain
+undecided and are reported as such. On this evidence, forward lock-in is work nobody has
+done rather than a property of the languages.
+
+Coming back is a semantic necessity, and the necessity is provable. A Datadog tag filter
+is a glob, and globs are a proper subclass of the regular languages in a way that bites:
+a glob language is a singleton or it is unbounded in length, no glob denotes a finite
+language with two or more words, none denotes $\Sigma^{+}$, none denotes $A^{+}$ for a
+proper non-empty $A\subsetneq\Sigma$, and an infinite language that omits a character of
+the alphabet is not a union of finitely many glob languages at all. Whether a regular
+expression has a glob is decidable, by a short argument about shortest words, with a
+witness when one exists; run over all $184$ distinct concrete patterns in the corpus, that
+procedure agrees with the syntax-directed proposer on every one. Of the $84$ refused
+occurrences, $74$ are refused by a theorem about single globs together with a branch bound
+we chose and state, and $10$ by a theorem about globs outright. No implementation effort
+removes those ten.
+
+So the lock-in is real, and it is not where the question assumed it would be. It is not
+that a proprietary language says things an open one cannot; on this corpus the open
+language said everything we could demonstrate the proprietary one saying. It is that the
+proprietary filter language is weaker, so the migration is one-way: the queries that
+survive the trip out are not all of the queries that could make the trip back. Leaving
+costs work; returning costs expressiveness.
+
+Two directions follow from this and are not pursued here. Whether glob-union-expressibility
+is decidable without a bound on the number of branches is open, and the shortest-word
+argument does not transfer to it. And the complete paper's finding that a dashboard query
+does not determine its own meaning suggests the measurement that matters next is not of
+query languages at all but of the resolution layer above them, which belongs to neither
+vendor and which a common query language would not reach.

@@ -40,7 +40,10 @@ PAPER = ROOT / "paper"
 SECTIONS = PAPER / "sections"
 MOVED = SECTIONS / "moved"
 WRAPPERS = {"app_proofs", "app_experiments", "app_eval"}
-BUILDS = ("main", "main_full")
+# `main_short` is the twenty-page version on the inexpressibility spine: a different
+# document rather than a third rendering of this one, so it is held to the same build
+# hygiene as the other two and excluded from the page-length comparison below.
+BUILDS = ("main", "main_full", "main_short")
 
 _HOOK = re.compile(r"\\iffull\\input\{sections/moved/([A-Za-z0-9_]+)\}\\fi")
 _INPUT = re.compile(r"\\input\{sections/([A-Za-z0-9_/]+)\}")
@@ -208,6 +211,7 @@ def test_the_digest_covers_every_file_a_build_could_read():
     # must not invalidate a build log, and a change to the paper must not be excused by
     # it -- which is why it is named here rather than quietly matched by a suffix rule.
     outputs = {PAPER / "main.pdf", PAPER / "main_full.pdf",
+               PAPER / "main_short.pdf",
                PAPER / "quoted_figures.json"}
     missing = sorted(
         p.relative_to(ROOT) for p in PAPER.rglob("*")
@@ -337,6 +341,8 @@ def test_the_two_builds_are_the_same_length():
         found = re.findall(r"\((\d+) pages", _log(build))
         assert found, f"no page count in {build}.log"
         pages[build] = int(found[-1])
+    # Only these two. `main_short` holds a subset of this prose by design, so a length
+    # comparison against it would be asserting the opposite of what it is for.
     a, b = pages["main"], pages["main_full"]
     assert abs(a - b) <= 3, (
         f"main.pdf is {a} pages and main_full.pdf is {b}; the same prose in both means a "

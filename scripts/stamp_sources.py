@@ -33,6 +33,7 @@ def sources() -> list[Path]:
     regenerated figure left this stamp agreeing with a log that predated it.
     """
     return sorted([*PAPER.glob("*.tex"), *(PAPER / "sections").rglob("*.tex"),
+                   *(PAPER / "short").rglob("*.tex"),
                    *(PAPER / "tables").glob("*.tex"),
                    *(PAPER / "figures").glob("*.pdf")])
 

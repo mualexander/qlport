@@ -1,0 +1,11 @@
+% The twenty-page version, on the inexpressibility spine. `main.tex` and `main_full.tex`
+% are the complete paper; this one carries the asymmetry result and the theorems behind
+% it, and says in the text where it has left something out rather than implying it has
+% left out nothing. `\fullfalse` because the apparatus macros read it, but this build
+% has no appendices: nothing here calls `\apref` or `\apin`, which would otherwise
+% reference a label no short build defines.
+\documentclass[11pt]{article}
+\newif\iffull\fullfalse
+\input{macros}
+\input{short/body_short}
+\end{document}

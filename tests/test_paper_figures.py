@@ -36,6 +36,13 @@ ROOT = Path(__file__).resolve().parent.parent
 # appendix and the full build keeps inline. They are the same prose either way, so
 # every check here has to see them.
 SECTIONS = sorted((ROOT / "paper" / "sections").rglob("*.tex"))
+# The twenty-page build's own prose. It is NOT folded into SECTIONS: `_section_path`
+# requires exactly one file per name and `02_background.tex` exists in both trees, so
+# folding it in would make every binding ambiguous. It is swept by the three checks
+# that ask about the paper rather than about one named file -- the figure census, the
+# inexpressible-column rule and the math-mode rule -- because a figure quoted in a
+# second document is a figure this suite has to account for just the same.
+SHORT = sorted((ROOT / "paper" / "short").rglob("*.tex"))
 
 
 def _section_path(name: str) -> Path:
@@ -103,7 +110,7 @@ def _math_in_both_builds(path: Path) -> tuple[str, str]:
 
 def _prose_figures() -> dict[tuple[str, float], set[str]]:
     out: dict[tuple[str, float], set[str]] = {}
-    for path in [*SECTIONS, MAIN]:
+    for path in [*SECTIONS, *SHORT, MAIN]:
         for span in _math(anywhere(path)):
             for tok, pct in _NUM.findall(span):
                 key = _norm(tok, pct)
@@ -2147,7 +2154,7 @@ def test_the_inexpressible_column_carries_its_qualification_everywhere():
                  "we can show", "can show", "is shown to", "nothing we can",
                  "nothing this paper can")
     bare = []
-    for path in sorted([*SECTIONS, MAIN]):
+    for path in sorted([*SECTIONS, *SHORT, MAIN]):
         for full in (False, True):
             said = _QUOTED.sub("", flat(rendered(path, full)))
             for pattern in (claim, also):
@@ -2201,7 +2208,7 @@ def test_every_percentage_and_thousand_in_the_prose_is_in_math_mode():
     need 460 exceptions to hold.
     """
     bad = []
-    for path in sorted([*SECTIONS, MAIN]):
+    for path in sorted([*SECTIONS, *SHORT, MAIN]):
         for full in (False, True):
             text = _MACRO_ARG.sub(" ", _VERBATIM.sub(" ", rendered(path, full)))
             text = text.replace(r"\$", "\x00\x00")

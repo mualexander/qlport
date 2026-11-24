@@ -1,0 +1,123 @@
+% ---------------------------------------------------------------------------
+% The forward direction in three pages: grammars, the transpiler, coverage, and
+% the emptying of the inexpressible column. Tables are the complete paper's.
+% ---------------------------------------------------------------------------
+
+\section{The Forward Direction, Briefly}
+\label{s:sec:forward}
+
+The forward direction is reported compactly here because its answer is negative in the
+useful sense: it found no obstruction. This section says what was built, what it covers,
+and why the shortfall is not evidence of inexpressibility --- which is what makes
+\S\ref{s:sec:regular} the interesting half.
+
+\paragraph{The grammars exist, and they are deterministic.}
+Neither vendor publishes a grammar. We infer one for each language, and the Datadog
+grammar is, as far as we have found, the first published for it --- which is a statement
+about a search and is reported as one; the vendor documents the language only by example.
+Both grammars admit deterministic one-token-lookahead parsers, at the sizes
+Table~\ref{s:tab:grammars} reports. Datadog's is conflict-free. PromQL's carries two shift/reduce conflicts on a left parenthesis, both
+resolved the way the reference server resolves them, and the complete paper documents the
+resolution and shows it is the one the published implementation makes. That matters only
+because it licenses what follows: a unique parse tree per query is what makes a
+syntax-directed translation well defined at all.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/grammar_stats}
+\caption{The two inferred grammars, at the two revisions this work produced for each.
+Conflicts are LALR(1) conflicts reported by the generator; Datadog's grammar has none at
+either revision, and PromQL's two are the shift/reduce pair on a left parenthesis that the
+reference server resolves the same way.}
+\label{s:tab:grammars}
+\end{table}
+
+\paragraph{The translator.}
+$T$ factors as $\pi_1\circ E\circ L$ through an intermediate representation, as
+Definition~\ref{s:def:translator} sets out. The lowering reads a Datadog query into the
+IR; the emission writes PromQL and returns, beside the expression, a set of
+\emph{caveats} recording what it had to assume. Every refusal is a $\bot$ with a gap
+code. The IR is the only object in this work whose denotation is written out, and the
+exactness results of the complete paper are proved over $E(L(q))$ rather than over $T(q)$,
+because they need the caveat set that $E$ returns alongside the expression.
+
+\paragraph{One forward result the reverse direction needs.}
+The scope syntax of Datadog admits a disjunction over a single tag key, written
+$k \in (g_1,\dots,g_B)$ or $k{:}g_1 \vee \cdots \vee k{:}g_B$, and this is the one
+forward-direction result \S\ref{s:sec:regular} uses, so it is stated here rather than
+cited.
+
+\begin{proposition}[Scope disjunction is one matcher]\label{prop:disjunction}
+A Datadog scope disjoining globs $g_1,\dots,g_B$ over one tag key $k$ denotes exactly the
+set denoted by the single PromQL matcher
+$k\,\texttt{=\textasciitilde{}}\,\mathrm{glob}(g_1)\texttt{|}\cdots\texttt{|}\mathrm{glob}(g_B)$,
+under PromQL's whole-value anchoring.
+\end{proposition}
+
+\noindent
+The argument is one line in each direction: a value matches the scope exactly when it
+matches some $g_i$, and matches the alternation exactly when it matches some
+$\mathrm{glob}(g_i)$, which Proposition~\ref{prop:glob-regex} identifies with $L(g_i)$.
+The anchoring is read off a live server rather than assumed, and the complete paper
+reports that measurement. Read in the other direction the same proposition says that the
+reverse translation of a regular expression should be sought as a \emph{finite union} of
+globs --- the two directions are not two results but one fact used twice.
+
+\paragraph{What it covers.}
+The corpus is $22{,}894$ queries extracted from published dashboard and alerting
+documents, of which $8{,}770$ are Datadog metric queries. Table~\ref{s:tab:coverage}
+gives the outcome for every occurrence.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/translation_coverage}
+\caption{Outcomes over the $8{,}770$ Datadog metric query occurrences. Shares are of
+occurrences and of distinct query strings respectively; a query used on forty dashboards
+counts forty times in the first and once in the second.}
+\label{s:tab:coverage}
+\end{table}
+
+So $\kappa=96.6\%$. The grammar and the implementation order were both fitted to this
+corpus, which makes that a resubstitution estimate and not a prediction. Frozen and run
+on a disjoint repository of dashboards by other authors it returns $96.7\%$, refusing
+only in ways the gap catalogue already names --- a tenth of a point from the figure here,
+against $1.1$ points of dashboard-clustered standard error resting on an effective two
+dashboards. Nothing large is hiding on that side, which is a weaker claim than the two
+rates agreeing, and it is the one the data supports.
+
+\paragraph{The whole shortfall is named, and none of it is inexpressibility.}
+The $3.3\%$ that refuses is not a residue. It is five gap codes, listed in
+Table~\ref{s:tab:gaps}, and each names a construct rather than a difficulty.
+
+\begin{table}[htbp]\centering\scriptsize
+\input{tables/gap_catalogue}
+\caption{The complete gap catalogue for the forward direction. Five codes account for
+every refusal. Shares are of the $8{,}770$ occurrences.}
+\label{s:tab:gaps}
+\end{table}
+
+\noindent
+This paper reserved a sixth column for constructs beyond PromQL's reach, and over the
+course of the work that column emptied of everything we can demonstrate, bar $14$
+occurrences left undecided. Each candidate for it was removed in one of two
+ways: an implementation that produced an exact PromQL expression for the construct, which
+shows the refusal was never a gap; or an argument that the construct is expressible,
+which shows the same thing without the code being written. What survives is $14$
+occurrences left undecided --- a quantile construct whose Datadog semantics we could not
+pin down well enough to say either way --- and they are reported as undecided rather than
+assigned to either side. Remark~\ref{s:rem:refusal} is the reason this distinction is
+drawn so insistently: before those removals, each of those constructs had a gap code, and
+a gap code reads like a fact about the languages.
+
+It is worth being exact about what that does and does not establish. It does not say
+PromQL can express every Datadog metric query; it says that among the constructs this
+corpus contains, we can demonstrate no case where it cannot, and that the demonstrations
+run in the direction of expressiveness rather than away from it. Most of the corrections
+that emptied the column were to our own earlier claims rather than to the vendor's
+behaviour, which is the kind of finding that is easy to leave unsaid.
+
+A translator's willingness is also not the same as its correctness, and the complete
+paper separates the two: it runs every distinct emitted query shape against a live
+Datadog account and a local Prometheus and compares results under
+Definition~\ref{s:def:d}. That run found four translator defects, and once they were
+fixed the willingness measure and the agreement measure coincided on every shape it could
+compare. The forward number above is therefore a coverage figure with a correctness check
+behind it, which is the strongest form in which this work can offer it.
