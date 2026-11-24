@@ -107,13 +107,17 @@ def greedy(sets: list[frozenset[str]]) -> list[str]:
         if not residual:
             return chosen
         # Ties broken by name, not by insertion order. `most_common` returns the
-        # first-inserted of an equal-count group, and these Counters are fed by
-        # iterating `m`, a set of strings, so the insertion order followed Python's
-        # per-process hash salt. Two runs of this function on the same seed therefore
-        # chose different features at a tie, which is about one tie per half-split:
-        # the cached cross-validation figures could not be reproduced by the code that
-        # wrote them, and the guard over them pinned the registry to the cache rather
-        # than to a derivation, so it could not notice.
+        # first-inserted of an equal-count group, and `completes` is fed by
+        # `next(iter(m))` on single-element sets -- so its insertion order is the order
+        # of `sets`, the list handed in, and NOT a set's iteration order. (`residual`
+        # does iterate multi-element sets, but it only decides a pick when nothing
+        # completes anything.) An earlier version of this comment said the Counters
+        # were fed by iterating a set of feature names and that the hash salt reached
+        # the tie-break directly. It does not: it reaches the list order, and only
+        # where the caller built that list out of a set. `staircase_cv` did, over
+        # dashboard names, which is why its figures could not be reproduced by the code
+        # that wrote them -- about one tie per half-split -- while the whole-corpus
+        # order below is identical at every salt even under `most_common`.
         #
         # THE WHOLE-CORPUS ORDER IS NOT TIE-FREE, and the first version of this comment
         # said it was. There is exactly one tie in it, at the fifth pick, between two
@@ -197,31 +201,47 @@ def staircase_cv(by_dash: dict[str, list[frozenset[str]]], reps: int,
     from, and the vertical distance between them at a given size is the part of the
     staircase that is a property of this corpus rather than of the language.
 
-    IT WAS NOT REPRODUCIBLE AT ALL UNTIL THIS PASS. `greedy` broke ties between
-    features completing the same number of queries by taking the first out of a
-    `Counter`, whose insertion order came from iterating a `set` of dashboard names.
-    CPython salts string hashing per process, so the same seed gave a different build
-    order in a different interpreter: three runs of the shipped seed gave three
-    answers at `at` features and none of them matched the committed cache. Ties now
-    break on the feature name. A test in the suite runs this path in two subprocesses
-    at different values of PYTHONHASHSEED and requires one answer; it fails on the
-    old tie-break.
+    IT WAS NOT REPRODUCIBLE, AND THE CHANNEL NEEDED BOTH HALVES OF THE FIX. The earlier
+    version of this docstring blamed `greedy` alone and named the wrong mechanism, so
+    it is worth stating exactly.
 
-    That is also what the previous draft's seed spread was measuring. It stored a
-    0.23-point range over five seeds AS A TRIPWIRE AGAINST SEED ARTEFACTS, and most
-    of the range was the hash salt rather than the seeds: broken deterministically
-    the five per-seed means span 0.08. A tripwire that fires on the wrong thing reads
-    as a clean bill of health for the thing it was pointed at.
+    `greedy`'s `completes` counter is fed by `next(iter(m))` on SINGLE-element sets, so
+    its insertion order is the order of the list handed in, not a set's iteration
+    order. Under `most_common` the tie therefore went to whichever tied feature
+    appeared first in that list. For the whole corpus the list is built from
+    `sorted(names)`, and the resulting order is identical at every string-hash salt --
+    measured at five. What was salt-dependent is here: `train` was built as
+    `[f for n in train_names ...]` over a SET of dashboard names, so its order, and
+    with it the tie-break, followed the salt. Three runs of the shipped seed gave three
+    answers at `at` features.
+
+    Ties break on the feature name now and `train_names` is sorted. Either change alone
+    makes the result deterministic; both are kept because each removes a different half
+    of the channel. `test_every_seeded_path_is_deterministic_across_processes` asserts
+    the property in process -- `greedy` must not depend on its input order -- and runs
+    the paths end to end at four salts.
+
+    THE SEED SPREAD DID NOT SHRINK BECAUSE OF THAT FIX. The previous draft stored a
+    0.23-point range over five seeds as a tripwire against seed artefacts, and this
+    docstring said the hash salt was most of it. It was not. Two things changed at
+    once, and the other one was the replicate budget: at 200 replicates per seed with
+    the tie-break fixed the five means span 0.278 -- WIDER than the 0.23 it replaced --
+    and the range only falls to 0.08 because 5,000 replicates per seed cut the per-seed
+    Monte-Carlo error from 0.185 to 0.037. The expected range of five draws is about
+    2.33 sigma, which is 0.43 at the old budget and 0.085 at the new one; the observed
+    0.0795 is that and nothing else. The tripwire was measuring noise either way, which
+    is the point that survives, but the cause named was wrong.
 
     OVER FIVE SEEDS AT 5,000 REPLICATES EACH, AND THE EXACT MEANS KEPT. At 200
-    replicates -- what this ran at for three drafts -- the Monte-Carlo error is 0.18
-    against a printed last digit of 0.1, so the tenth of a point was never resolved
-    whatever the tie-break did. Pooled, the gap is 1.06 with an error of 0.02, which
-    does not settle a first decimal place: 1.0 and 1.1 are both inside it. So the
-    registry carries the gap to two places with its error beside it, and the paper
-    leans on the replicate standard deviation -- 2.6 points, a hundred and thirty
-    times the error on the mean -- because that is the figure that describes one
-    reader's split rather than the average of twenty-five thousand.
+    replicates total -- one seed, which is what this ran at for three drafts -- the
+    Monte-Carlo error is 0.185 against a printed last digit of 0.1, so the tenth of a
+    point was never resolved whatever the tie-break did. Pooled, the gap is 1.06 with
+    an error of 0.02, which straddles the 1.05 rounding boundary and so settles no
+    first decimal place. The registry carries two places with the error beside them,
+    and the paper leans on the replicate standard deviation -- 2.6 points, which is
+    sqrt(25,000) = 158 times the error on the mean, not the 130 an earlier draft got
+    by dividing the two ROUNDED figures -- because that is what describes one reader's
+    split rather than the average of twenty-five thousand.
 
     The gap is also taken from the exact means rather than from the two curves after
     rounding, which is why `cv.dd_stair_gap_16_points` is not the difference of the

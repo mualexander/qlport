@@ -75,7 +75,7 @@ outside either of them. On the Datadog side $88.6\%$ of query occurrences carry 
 one template variable and on the PromQL side $82.5\%$ do, which is the measurement that
 stops this being a complaint about one vendor. The metric's type is a second thing no
 query states and is not a second instance of the same property:
-\S\ref{sec:dashboard-layer} is careful that what makes it bite here is the ingestion
+\S\ref{sec:cost} is careful that what makes it bite here is the ingestion
 mapping branching on it rather than anything either language can or cannot say. The
 object a migration ports is therefore a query schema plus a resolution layer belonging
 to the dashboard tool, which is where the switching cost we measured actually sits, and
@@ -191,8 +191,9 @@ Datadog-to-PromQL translator, run over this same corpus --- the first such compa
 know of (Remark~\ref{rem:search}), and possible only because its translation turns out to
 run in the browser. It
 refuses nothing and emits for every occurrence, yet $5.3\%$ of what it emits is not
-PromQL, and it returns an expression for all $275$ queries this paper refuses, the
-percentiles among them.
+PromQL, and it returns an expression for every one of the refusals in the comparison's
+population --- $275$ of the $287$, the other $12$ sitting in the $117$ multi-query
+occurrences \S\ref{sec:evaluation} holds aside --- the percentiles among them.
 \end{enumerate}
 
 \paragraph{A note on method.}
@@ -210,8 +211,9 @@ single key covers as beyond PromQL two paragraphs from the sentence explaining h
 PromQL says them; a fifth called $36$ zero-fills inexpressible on the strength of
 one candidate expression, when a real server supplies the value per series for another
 (Remark~\ref{rem:fill}); a sixth filed $31$ occurrences of a construct this paper's own
-normaliser had manufactured; a seventh refused $34$ percentile queries under a corollary
-whose hypothesis none of them meets; and an eighth refused $5$ scopes for a distinction
+normaliser had manufactured; a seventh refused $34$ percentile queries under a
+corollary whose hypothesis provably fails for $20$ of them and is untested for the
+other $14$; and an eighth refused $5$ scopes for a distinction
 the target's data model defines away, which is the reason the exact translation is to
 drop the term. All eight
 would have produced a stronger-sounding claim, and all eight erred in the same direction.

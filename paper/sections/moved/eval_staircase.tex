@@ -31,15 +31,19 @@ them --- $0.5\%$ of the corpus, on top of the $1.1\%$ that use no feature at all
 then template-variable scopes and \texttt{sum:} take two steps to $48.8\%$. Half the corpus
 needs eight features; $90\%$ needs sixteen of the twenty-eight.
 
-Where the step falls was not a property of the corpus until this draft. The greedy order
-is tie-free except at one position, where two features each complete a single query, and
-the tie was broken by whichever of the two a \texttt{Counter} happened to yield first ---
-which is to say by the interpreter's string-hash salt rather than by anything in the
-data. Broken the other way the step lands one feature later and every ceiling past it
-reads lower, and that is the version three drafts of this paragraph printed. Ties now
-break on the feature name. At this tie that is also the feature a tie-break on remaining
-coverage would take, and by a wide margin, so the order the paper prints is not merely
-the alphabetical accident it could have been; the suite asserts both halves of that. PromQL behaves the same way
+Where the step falls turns on an arbitrary choice, and this draft is the first to say
+so. The greedy order is tie-free except at one position, where two features each
+complete a single query, and until this draft the tie went to whichever of the two came
+first in the list of query feature sets --- a stable order, so three drafts printed a
+reproducible curve, but one with nothing behind it at that step. Resolved the other way
+the step lands one feature later and every ceiling past it reads lower, which is the
+curve those drafts printed.
+
+Ties break on the feature name now. That is still arbitrary, so it is worth saying what
+recommends it beyond determinism: at this tie it takes the same feature a tie-break on
+remaining coverage would take, and by a factor of nineteen in occurrences still
+uncovered, so the order is not the alphabetical accident it could have been. The suite
+asserts the count of ties, which feature each rule takes at it, and that margin. PromQL behaves the same way
 and slightly worse: its first six features complete $221$ of $8{,}102$ queries
 ($2.7\%$), half the corpus needs fourteen features and $90\%$ needs seventeen of
 twenty-four.

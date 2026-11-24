@@ -262,6 +262,15 @@ def _derived(name: str) -> dict:
     return json.loads(path.read_text())
 
 
+def _derived_raw(name: str) -> dict:
+    """The same, for a cache under `data/raw/`: a recorded vendor run rather than a
+    derivation. These are committed, but the trial account they came from has lapsed,
+    so they are the only record and nothing can re-measure them."""
+    path = ROOT / "data" / "raw" / name
+    assert path.exists(), f"{path.relative_to(ROOT)} is missing"
+    return json.loads(path.read_text())
+
+
 def _spans() -> dict:
     return _derived("rollup_spans.json")
 
@@ -388,7 +397,15 @@ def test_the_match_all_scope_is_the_largest_single_reason():
     reasons = _promtool()["reasons"]
     top, count = max(reasons.items(), key=lambda kv: kv[1])
     assert "inside braces" in top and "'*'" in top
-    assert count == max(reasons.values()) and count > sum(reasons.values()) / 2
+    # `count` came out of `max(..., key=...)`, so `count == max(reasons.values())` was
+    # true by construction -- verified over every dict of up to four keys. What the
+    # sentence needs is that this reason is strictly the largest and carries a
+    # majority, so the runner-up is named explicitly.
+    runner_up = max(v for k, v in reasons.items() if k != top)
+    assert count > runner_up, (
+        f"{top} at {count} does not beat {runner_up}, so it is not the largest "
+        "single reason the prose calls it")
+    assert count > sum(reasons.values()) / 2
 
 
 def test_the_measurement_records_the_build_it_came_off():
@@ -500,6 +517,285 @@ def test_every_cross_validation_figure_is_the_one_the_run_produced(reg):
         f"registry keys under `cv.` that the run does not produce: {orphans}")
 
 
+def _cache_figures(relative: str) -> dict:
+    """The `figures` block a script cached beside its run."""
+    return _derived(relative)["figures"]
+
+
+_TEX_LITERAL = (("\\textasciicircum{}", "^"), ("\\textbar{}", "|"),
+                ("\\_", "_"), ("\\%", "%"), ("\\&", "&"), ("\\#", "#"))
+
+
+def _unescape(cell: str) -> tuple[str, bool]:
+    """A `\texttt{...}` cell as the string it stands for, and whether it was cut short."""
+    s = cell.strip()
+    if s.startswith("\\texttt{") and s.endswith("}"):
+        s = s[len("\\texttt{"):-1]
+    cut = "\\dots{}" in s
+    s = s.replace("\\dots{}", "")
+    for tex, plain in _TEX_LITERAL:
+        s = s.replace(tex, plain)
+    return s, cut
+
+
+def test_the_glob_example_table_is_a_recount_of_the_matcher_cache():
+    r"""\S6's nine worked examples, re-derived from `regex_glob.csv`.
+
+    No test named this table. Its occurrence column is the only quantitative content it
+    has, and a reader takes each row as a measured example of the three outcomes \S6
+    distinguishes. The counts were editable with the suite green.
+
+    Rows whose regex is printed in full are matched exactly. Rows truncated with an
+    ellipsis are matched on their prefix, which is the most the printed cell supports --
+    stated here rather than left as a silent weakness.
+    """
+    import csv
+
+    # Not `rows`: that is this module's table reader, and shadowing it here is the
+    # mistake this file has made three times.
+    cached = list(csv.DictReader((ROOT / "data" / "processed" / "regex_glob.csv").open()))
+    by_regex = {r["regex"]: r for r in cached}
+    printed = rows("regex_glob_examples")[1:]
+    assert len(printed) == 9, f"the table has {len(printed)} example rows, not 9"
+
+    seen = set()
+    for cells in printed:
+        regex, cut = _unescape(cells[0])
+        want = int(cells[2].replace(",", "").strip())
+        if cut:
+            hits = [r for k, r in by_regex.items() if k.startswith(regex)]
+            assert hits, f"no cached pattern begins with {regex!r}"
+            assert any(int(r["occurrences"]) == want for r in hits), (
+                f"{regex!r}... is printed at {want} occurrences and the cache has "
+                f"{sorted({int(r['occurrences']) for r in hits})}")
+            match = next(r for r in hits if int(r["occurrences"]) == want)
+        else:
+            assert regex in by_regex, f"{regex!r} is not in the matcher cache"
+            match = by_regex[regex]
+            assert int(match["occurrences"]) == want, (
+                f"{regex!r} is printed at {want} occurrences and the cache says "
+                f"{match['occurrences']}")
+        assert match["regex"] not in seen, f"{match['regex']!r} is tabulated twice"
+        seen.add(match["regex"])
+        # The second column says which outcome this row is an example of, so the
+        # cached row has to be that outcome and not another.
+        bottom = "\\bot" in cells[1]
+        assert bottom == (not match["globs"]), (
+            f"{regex!r} is printed as {'inexpressible' if bottom else 'a union'} and "
+            f"the cache has globs={match['globs'][:40]!r}")
+
+
+def test_the_grammar_decision_table_separates_the_witness_from_the_corpus():
+    r"""Table~\ref{tab:grammar-decisions}'s "queries lost" column, and what \S A.1 says.
+
+    No test named this table either: its 474 could be edited to 974 with the suite
+    green, and that column is the whole quantitative justification for the four
+    grammar-inference decisions.
+
+    The column is RE-DERIVED, by applying the same mutation to the same grammar and
+    re-parsing the same corpus. That is possible because the decision list moved out of
+    the notebook into `qlport.grammar_audit`; while it lived in the notebook the suite
+    could only have kept a second copy of the mutations it was checking, which is the
+    arrangement that has gone wrong twice elsewhere in this file.
+
+    The table's own claim is checked too, because it was wrong: gr_lexical said every
+    decision is load-bearing against the corpus as well as against its witness, and the
+    STAR row costs zero corpus queries -- its witness is the keyless scope this paper's
+    own normaliser manufactured.
+    """
+    from qlport.grammar_audit import DECISIONS, corpus_texts, queries_lost
+
+    body = rows("grammar_decisions")[1:]
+    assert len(body) == 4, f"the table has {len(body)} decisions, not 4"
+    lost = {_unescape(r[1])[0].strip(): int(r[4].replace(",", "")) for r in body}
+
+    assert len(DECISIONS) == 4, f"{len(DECISIONS)} decisions in the package, not 4"
+    texts = {lang: corpus_texts(lang) for lang in {d[0] for d in DECISIONS}}
+    for lang, decision, _why, mutate, _witness in DECISIONS:
+        key = _unescape(decision)[0].strip()
+        assert key in lost, f"{key!r} is not a row of the table: {sorted(lost)}"
+        got = queries_lost(lang, mutate, texts[lang])
+        assert lost[key] == got, (
+            f"{key!r} is printed at {lost[key]:,} queries lost and re-deriving it "
+            f"against {len(texts[lang]):,} parsed {lang} queries gives {got:,}")
+    zero = sorted(k for k, v in lost.items() if v == 0)
+    assert zero == ["no separate STAR terminal"], (
+        f"the decisions costing no corpus query are {zero}; gr_lexical names the STAR "
+        "terminal as the one whose witness the corpus does not exhibit")
+    assert all(v > 0 for k, v in lost.items() if k not in zero), (
+        f"a second decision costs nothing against the corpus: {lost}")
+    # The UNIVERSAL, not the phrase. The corrected paragraph says three of the four are
+    # load-bearing against the corpus, so forbidding "load-bearing against the corpus as
+    # well" would forbid the correction along with the error.
+    for build in builds(ROOT / "paper" / "sections" / "moved" / "gr_lexical.tex"):
+        said = flat(build)
+        for universal in ("Every decision is load-bearing",
+                          "All four decisions are load-bearing",
+                          "each decision is load-bearing"):
+            assert universal not in said, (
+                f"gr_lexical says {universal!r}, and the STAR row costs zero corpus "
+                "queries, so one of the four is load-bearing against its witness only")
+
+
+def test_the_replayed_traffic_is_as_bursty_as_the_appendix_says():
+    r"""The trace's own variation, off the recordings rather than off the trace.
+
+    The appendix said the per-minute rate "swings seventeenfold". The NASA trace is not
+    committed -- only the two replay recordings are -- and nothing in either gives 17:
+    the aligned recording runs 81 to 402 requests a minute over its 28 buckets, a factor
+    of 4.96. So the figure was not derivable from anything in the repository, which for
+    a number justifying "real traffic is not the shape a synthetic workload has" is the
+    whole of its job.
+
+    The aligned recording is the one to read it off, because its buckets line up with
+    the rollup grid; the unaligned grid splits the same bursts differently and reads
+    9.89, which is a property of where the boundaries fall rather than of the traffic.
+    """
+    from collections import defaultdict
+
+    rec = _derived_raw("replay/dualwrite_aligned.json")
+    candidate = rec["rows"][0]["candidate"]
+    per_bucket: dict[object, float] = defaultdict(float)
+    for row in rec["rows"]:
+        if row["candidate"] == candidate and row["instant"] == "inside":
+            per_bucket[row["bucket"]] += row["datadog"]
+    counts = sorted(per_bucket.values())
+    assert len(counts) == 28, f"{len(counts)} buckets, not the 28 of a half hour"
+    low, high = round(counts[0]), round(counts[-1])
+    for build in builds(ROOT / "paper" / "sections" / "moved" / "ing_replay.tex"):
+        said = flat(build)
+        assert f"${low}$ requests" in said and f"${high}$" in said, (
+            f"the replay recording runs {low} to {high} requests a minute and the "
+            "appendix states some other pair")
+    assert 4.5 <= high / low < 5.5, (
+        f"the appendix calls that a factor of five and it is {high / low:.2f}")
+
+
+def test_every_baseline_figure_is_the_one_the_run_produced(reg):
+    r"""The 28 `oo.*` keys and Table~\ref{tab:baseline}, against the cached run.
+
+    Nothing in the suite opened `data/processed/openobserve.json`. Replacing it with
+    `{}` left every test passing, which is the whole of \S7.4 -- the comparison against
+    the other translator -- resting on a file no guard read. Two figures were moved in
+    that state with the suite green: the drop total, and `oo.invented_window` from
+    1,844 to 3,844, which doubles the independent confirmation the paper calls its own
+    thesis arriving from outside it.
+
+    The script needs node and a vendored chunk to recompute, so this cannot re-derive
+    the figures the way `heldout_eval` can. It does not need to: the script caches the
+    `figures` dict verbatim, so the check is the same one the `ho.*` and `cv.*` keys
+    get -- key by key, orphans included -- plus the relations the script computes
+    between them, plus the table it writes.
+    """
+    want = _cache_figures("openobserve.json")
+    assert len(want) == 28, f"the cache holds {len(want)} figures, not 28"
+    drifted = [f"  {k}: registry {reg.get(k, '(absent)')} vs run {v}"
+               for k, v in sorted(want.items()) if reg.get(k) != v]
+    assert not drifted, (
+        "the registry no longer says what the baseline run says:\n" + "\n".join(drifted))
+    orphans = sorted(k for k in reg if k.startswith("oo.") and k not in want)
+    assert not orphans, f"registry keys under `oo.` the run does not produce: {orphans}"
+
+    # The relations the script asserts by construction, re-asserted here so a
+    # hand-edited cache has to be internally consistent as well as consistent with the
+    # registry.
+    assert want["oo.invalid"] == want["oo.emits"] - want["oo.parses"]
+    # The per-modifier drops sum to the total. `oo.dropped_modifier` is NOT one of
+    # them -- it is the count of occurrences carrying at least one dropped modifier,
+    # computed separately, and an occurrence can carry more than one -- so summing
+    # every `oo.dropped_*` key gives 1,095 against a total of 570.
+    per_modifier = {k: v for k, v in want.items()
+                    if k.startswith("oo.dropped_") and k != "oo.dropped_modifier"}
+    assert len(per_modifier) >= 3, f"only {len(per_modifier)} per-modifier drop keys"
+    assert want["oo.drops_total"] == sum(per_modifier.values()), (
+        f"{want['oo.drops_total']} against {sorted(per_modifier.items())}")
+    assert want["oo.dropped_modifier"] <= want["oo.drops_total"], (
+        "more occurrences carry a dropped modifier than there are drops")
+    assert want["oo.invalid_matchall"] <= want["oo.invalid"]
+    assert want["oo.passthrough"] >= want["oo.invalid_matchall"], (
+        "every match-all occurrence is also a pass-through, so the pass-through count "
+        "cannot be the smaller of the two")
+
+    # And the table, rebuilt the way the script builds it.
+    n = want["oo.corpus"]
+
+    def row(label, a, b):
+        return (f"{label} & {a:,} & {100 * a / n:.1f}\\% & {b:,} & "
+                f"{100 * b / n:.1f}\\% \\\\")
+
+    printed = table(ROOT / "paper" / "tables" / "baseline.tex")
+    for label, a, b in (
+            ("emits an expression", want["oo.ours_emits"], want["oo.emits"]),
+            ("\\quad of which parses as PromQL", want["oo.ours_parses"],
+             want["oo.parses"]),
+            ("\\quad of which does not",
+             want["oo.ours_emits"] - want["oo.ours_parses"], want["oo.invalid"]),
+            ("refuses with a named code", want["oo.ours_refuses"], 0)):
+        assert row(label, a, b) in printed, (
+            f"baseline.tex does not carry the row the cache gives for {label!r}:\n"
+            f"  want: {row(label, a, b)}")
+
+
+def test_every_type_inference_figure_is_the_one_the_join_produced(reg):
+    r"""\S8's correctness caveat, against the join that measured it.
+
+    This is the paper's headline qualification on \kappa -- quoted in the abstract,
+    \S1, \S5, \S7, \S8, \S9 and three appendix blocks -- and the registry held it
+    with nothing tying it to the cache. `SHARES` relates `type_wrong_pct` to
+    `type_wrong_occurrences / type_decidable_occurrences` and `PARTITIONS` relates the
+    gauge and counter counts to their total, but EVERY SIDE OF BOTH RELATIONS IS A
+    REGISTRY KEY, so moving the numerator and the shares together satisfied them. A
+    reviewer moved 491 to 391 with the shares to match, across the registry and
+    eighteen prose sites, and the suite stayed green.
+
+    `test_differential_cache.py` does pin the cache, but against literals written into
+    that file, so cache and registry could disagree with each other and both pass.
+    This is the bridge between them.
+    """
+    cache = _derived_raw("datadog/type_declared.json")
+    occ = cache["occurrences"]
+    want = {
+        "nb03.type_decidable_occurrences": cache["decidable_occurrences"],
+        "nb03.type_decidable_pct": cache["decidable_share_of_translated_pct"],
+        "nb03.type_wrong_occurrences": cache["wrong_occurrences"],
+        "nb03.type_wrong_pct": cache["wrong_share_of_decidable_pct"],
+        "nb03.type_rate_occurrences": occ["rate"],
+        "nb03.type_undeclared_occurrences": occ["undeclared"],
+        "nb03.type_wrong_counter_occurrences": occ["wrong-counter"],
+        "nb03.type_wrong_gauge_occurrences": occ["wrong-gauge"],
+    }
+    drifted = [f"  {k}: registry {reg.get(k, '(absent)')} vs cache {v}"
+               for k, v in sorted(want.items()) if reg.get(k) != v]
+    assert not drifted, (
+        "the registry no longer says what the type join says:\n" + "\n".join(drifted))
+    # The two the cache implies rather than states.
+    assert occ["wrong-gauge"] + occ["wrong-counter"] == cache["wrong_occurrences"]
+    assert reg["nb03.type_wrong_pct_of_corpus"] == round(
+        100 * cache["wrong_occurrences"] / reg["nb03.corpus_occurrences"], 1)
+    orphans = sorted(k for k in reg if k.startswith("nb03.type_") and k not in want
+                     and k != "nb03.type_wrong_pct_of_corpus")
+    assert not orphans, f"`nb03.type_*` keys the join does not produce: {orphans}"
+
+
+def test_every_rollup_span_figure_is_the_one_the_join_produced(reg):
+    r"""The 12 `rs.*` keys against `rollup_spans.json`, not three of them.
+
+    `test_the_declared_and_undeclared_spans_exhaust_rollup_default` pinned three. The
+    other nine sat in the cache unread, including
+    `rs.span_declared_pct_of_rollup_default`, which the abstract states: moving it from
+    6.0 to 16.0 across the abstract and four sections left the suite green. `SHARES`
+    has no `rs.*` entry at all.
+    """
+    want = _cache_figures("rollup_spans.json")
+    assert len(want) == 12, f"the cache holds {len(want)} figures, not 12"
+    drifted = [f"  {k}: registry {reg.get(k, '(absent)')} vs run {v}"
+               for k, v in sorted(want.items()) if reg.get(k) != v]
+    assert not drifted, (
+        "the registry no longer says what the span join says:\n" + "\n".join(drifted))
+    orphans = sorted(k for k in reg if k.startswith("rs.") and k not in want)
+    assert not orphans, f"registry keys under `rs.` the run does not produce: {orphans}"
+
+
 def test_the_cross_validated_greedy_is_the_staircase_of_notebook_00(reg):
     """The split experiment must refit the paper's instrument, not a near neighbour.
 
@@ -561,7 +857,11 @@ def test_the_one_tie_in_the_whole_corpus_order_is_broken_the_defensible_way(reg)
         wide = min(sorted(source.items()),
                    key=lambda kv: (-kv[1], -residual[kv[0]], kv[0]))[0]
         if len(tied) > 1:
-            ties.append((len(by_name), tied, residual[name], residual[wide]))
+            # The residual count of EACH tied feature, not of the two rules' picks. It
+            # recorded `residual[name], residual[wide]`, and the assertion below had
+            # already forced those two features to be the same one, so the margin
+            # check reduced to `x == x` and tested nothing.
+            ties.append((len(by_name), tied, {f: residual[f] for f in tied}))
         by_name.append(name)
         by_residual.append(wide)
         for m in missing:
@@ -570,14 +870,18 @@ def test_the_one_tie_in_the_whole_corpus_order_is_broken_the_defensible_way(reg)
     assert len(ties) == 1, (
         f"the whole-corpus order has {len(ties)} ties, not one: "
         f"{[(i, t) for i, t, *_ in ties]} --- the prose says there is exactly one")
-    at, tied, got_res, wide_res = ties[0]
+    at, tied, residuals = ties[0]
     assert len(tied) == 2 and at == 4, f"the tie moved: {at}, {tied}"
     assert by_name[at] == by_residual[at], (
         f"at the one tie, breaking on the name takes {by_name[at]} and breaking on "
         f"remaining coverage takes {by_residual[at]}; the prose claims they agree")
-    assert got_res > 10 * wide_res or got_res == wide_res, (
-        "the prose says the two rules agree by a wide margin, and the margin is "
-        f"{got_res} uncovered occurrences against {wide_res}")
+    # The margin between the two TIED features, which is what the prose calls wide.
+    taken = residuals[by_name[at]]
+    passed_over = min(v for f, v in residuals.items() if f != by_name[at])
+    assert taken > 10 * passed_over, (
+        f"the prose says the two rules agree by a wide margin: {by_name[at]} is still "
+        f"needed by {taken} uncovered occurrences against {passed_over} for the "
+        f"feature passed over, a factor of {taken / max(passed_over, 1):.1f}")
 
     # And the order this produces is the one the registry's ceilings were read off.
     curve = hs.staircase(sets, by_name)
@@ -627,19 +931,26 @@ def test_the_staircase_survives_being_scored_on_dashboards_it_was_not_built_from
     The figures are taken from the exact means and not from the two curves after
     rounding, and the gap is pooled over five seeds at 5,000 replicates each.
 
-    For three drafts this procedure was not reproducible, so none of the spreads below
-    meant what they said. `greedy` broke ties by taking the first feature out of a
-    `Counter` whose insertion order came from iterating a `set` of dashboard names,
-    and CPython salts string hashing per process: the shipped seed gave three
-    different answers in three interpreters and none matched the committed cache. The
-    0.23-point seed range the previous draft stored AS A TRIPWIRE AGAINST SEED
-    ARTEFACTS was mostly that salt; with ties broken on the feature name the five
-    per-seed means span 0.08. `test_every_seeded_path_is_deterministic_across_
-    processes` is the guard that would have caught it, and it fails on the old
-    tie-break.
+    For three drafts this procedure was not reproducible. `greedy` broke ties by taking
+    the first feature out of `completes`, whose insertion order is the order of the
+    list handed in; `staircase_cv` built that list out of a SET of dashboard names, so
+    the order followed CPython's per-process hash salt and the shipped seed gave three
+    different answers in three interpreters. Ties break on the feature name now and
+    the names are sorted. `scripts/heldout_split.py::staircase_cv` has the mechanism at
+    length, including what it is not: the whole-corpus order was never salt-dependent.
+
+    THE SEED RANGE DID NOT MOVE BECAUSE OF THAT. The previous draft stored 0.23 as a
+    tripwire against seed artefacts and the commit that fixed the tie-break claimed the
+    salt was most of it. Measured: at the old budget of 200 replicates per seed, with
+    the tie-break fixed, the five means span 0.278 -- wider than the 0.23. The range
+    falls to 0.08 because the budget went to 5,000 per seed, which is the assertion
+    below, where the observed range is checked against what the replicate spread
+    predicts for five draws rather than treated as an uncertainty on anything.
 
     The gap is now carried to two places, because one is not a resolution this has:
-    1.06 with a Monte-Carlo error of 0.02 contains both 1.0 and 1.1. The two printed
+    1.06 with a Monte-Carlo error of 0.02 straddles the 1.05 boundary, so it rounds
+    to 1.0 or to 1.1 depending on the draw -- the interval itself contains neither,
+    which an earlier version of this sentence had it doing. The two printed
     percentages are one place each, so subtracting them cannot reproduce it, which is
     why this trio is not in the registry's reconciliation list.
     """
@@ -665,7 +976,8 @@ def test_the_staircase_survives_being_scored_on_dashboards_it_was_not_built_from
     assert reg["cv.dd_stair_gap_16_mc_se"] == round(
         s["gap_at_replicate_sd"] / s["reps"] ** 0.5, 2)
     assert reg["cv.dd_stair_gap_16_replicate_sd"] == round(s["gap_at_replicate_sd"], 1)
-    # Each seed's own mean is 200 replicates, so its error is sqrt(5) times the pooled
+    # Each seed's own mean is `reps / len(seeds)` replicates -- 5,000, not the 200 a
+    # stale version of this comment named -- so its error is sqrt(5) times the pooled
     # one and the range of five draws should sit inside a few of those. Wider than that
     # and the seeds are not interchangeable, which is the thing this pooling assumes.
     per_seed_se = s["gap_at_replicate_sd"] / (s["reps"] / len(s["seeds"])) ** 0.5
@@ -944,7 +1256,8 @@ def test_every_printed_trio_either_reconciles_or_is_accounted_for(reg):
     NO COUNT APPEARS IN THIS DOCSTRING, deliberately. It said "six such trios and three
     of them do not reconcile" while the code enumerated five relations of which three
     failed, and then went on saying it while the code enumerated eleven of which four
-    failed --- through two commits, one of whose messages claimed this docstring had
+    failed (five, measured against that commit's own registry) --- through two
+    commits, one of whose messages claimed this docstring had
     been rewritten to state the property instead of a count. A count here is a second
     place to keep the same fact, and this file has lost that argument twice.
     """
@@ -1815,17 +2128,26 @@ def test_every_seeded_path_is_deterministic_across_processes():
     three rounds have shown matters more: a seeded script with no determinism check is
     a script whose reproducibility is an assertion in a docstring.
 
-    TWO SALTS WERE NOT ENOUGH. The subprocess probe below ran at PYTHONHASHSEED 0 and
-    524287, and reverting `greedy` to `most_common` did not move either of them: the
-    whole-corpus order has one tie, and whether a salt flips it is luck. A perturbation
-    battery caught that the guard did not fire on the defect it was written for.
+    THE SALT NEVER REACHED `greedy` DIRECTLY, and an earlier version of this docstring
+    said it did. `completes[next(iter(m))]` is fed from SINGLE-element sets, so its
+    insertion order is the order of the input list, not a set's iteration order. The
+    whole-corpus order is built from `sorted(names)` and is therefore identical at
+    every salt even under `most_common` -- measured at five. What was salt-dependent
+    was the cross-validation, where `train = [f for n in train_names ...]` took its
+    list order from a SET of dashboard names. So the channel needed both halves: an
+    insertion-order tie-break, and a list order coming from a set.
 
-    So the property is asserted directly first, in this process and without salts.
-    `greedy`'s answer must not depend on the order of its input list, because that
-    order is what a set's iteration gives it and the hash salt is what sets that. Under
-    `most_common` half of twelve shuffles move the order; under a tie-break on the
-    feature name none of them can. The cross-process probe stays as the check on the
-    paths as a whole, now over four salts rather than two.
+    That is why there are two legs here, and they catch different things.
+
+    The in-process leg is the property itself: `greedy`'s answer must not depend on the
+    order of its input list. Under `most_common` six of twelve shuffles move it; under
+    a tie-break on the feature name none can. This is the leg that fails on the
+    tie-break revert, and it needs no salt because the shuffle stands in for one.
+
+    The cross-process leg is the channel: the same paths at four string-hash salts,
+    end to end. It fires only when both halves are reverted, because either one alone
+    leaves the result deterministic -- which is the honest account of what it buys. It
+    ran under `-I` for a commit and so set no salt at all; see the comment below.
     """
     sys.path.insert(0, str(ROOT / "scripts"))
     import importlib.util
@@ -1858,18 +2180,27 @@ def test_every_seeded_path_is_deterministic_across_processes():
         "print('cv    ', round(s['gap_at'], 9), round(s['train_at'], 9))\n"
         "print('series', S._seed(('qlport.requests', (('env', 'prod'),))))\n"
     )
-    out = []
-    for salt in ("0", "524287", "1", "99991"):
+    # `-s`, NOT `-I`. `-I` implies `-E`, which makes the interpreter ignore every
+    # PYTHON* variable -- including the PYTHONHASHSEED set on the next line. This probe
+    # ran under `-I` for a commit, so it never set a salt at all: each subprocess took
+    # a fresh random one, and `PYTHONHASHSEED=0` did not even reproduce itself. It was
+    # inert as a salt test while its docstring claimed four salts. `-s` keeps the
+    # isolation that mattered here (no user site-packages) and leaves the variable
+    # alone; `python -s -c "print(hash('abcdef'))"` repeats at a repeated salt.
+    salts = ("0", "524287", "1", "99991")
+    out = {}
+    for salt in salts:
         env = {**os.environ, "PYTHONHASHSEED": salt}
-        run = subprocess.run([sys.executable, "-I", "-c", probe], cwd=ROOT,
+        run = subprocess.run([sys.executable, "-s", "-c", probe], cwd=ROOT,
                              env=env, capture_output=True, text=True)
         assert run.returncode == 0, f"PYTHONHASHSEED={salt}:\n{run.stderr[-2000:]}"
-        out.append(run.stdout)
-    assert out[0] == out[1], (
-        "a seeded path gives different answers in two processes, so nothing it "
-        f"produces is reproducible:\n--- salt 0 ---\n{out[0]}--- salt 524287 ---\n"
-        f"{out[1]}"
-    )
+        out[salt] = run.stdout
+    # EVERY salt against every other. This compared `out[0] == out[1]` and computed the
+    # other two for nothing, which is the second way the same four-salt claim was false.
+    assert len(set(out.values())) == 1, (
+        "a seeded path gives different answers at different string-hash salts, so "
+        "nothing it produces is reproducible:\n"
+        + "\n".join(f"--- salt {s} ---\n{out[s]}" for s in salts))
 
 
 def test_the_glob_outcome_table_is_a_recount_of_the_matcher_cache():

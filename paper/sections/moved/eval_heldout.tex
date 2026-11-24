@@ -44,23 +44,32 @@ quotient of counts, and so the one with a Monte-Carlo error: the gap averages $1
 points over $25{,}000$ replicates pooled from five seeds, with an error of $0.02$ on that
 mean and a spread of $0.08$ across the five seeds' own means.
 
-For three drafts it was none of those things, because the procedure was not reproducible.
-The greedy order breaks ties between features that complete the same number of queries,
-and it broke them by taking the first such feature out of a counter whose insertion order
-came from a set of dashboard names. Python salts string hashing per process, so the same
-seed gave a different order in a different interpreter --- three runs of the shipped seed
-gave three answers, none of them the one in the cache. Ties now break on the feature name,
-which is a property of the data rather than of the interpreter, and the figure is
-reproducible across processes; a test runs the seeded paths twice under different hash
-salts and requires one answer. The $0.23$-point seed spread that the previous draft
-reported as a tripwire against seed artefacts was mostly this: with ties broken
-deterministically the five means span $0.08$.
+For three drafts it was none of those things, because this procedure was not
+reproducible. The greedy order breaks ties between features that complete the same number
+of queries, and it broke them by taking whichever of them came first in the list it was
+given. That list was built by iterating a set of dashboard names, and Python salts string
+hashing per process, so the same seed gave a different order in a different interpreter:
+three runs of the shipped seed gave three answers. Ties now break on the feature name and
+the names are sorted before they are read, which removes both halves of that channel; a
+test requires the seeded paths to give one answer across four hash salts, and separately
+requires the order to be independent of the order of its input.
+
+It is worth being exact about what this did \emph{not} reach. The whole-corpus order
+of \S\ref{sec:staircase} is built from a sorted list, and it is identical at every salt
+even under the old tie-break --- so the staircase there was always reproducible, and what
+moved it was the change of rule rather than the repair of a defect. Nor was the salt
+behind the $0.23$-point seed spread the previous draft reported as a tripwire against
+seed artefacts: at that draft's budget of $200$ replicates a seed, with the tie-break
+fixed, the five means span $0.28$, which is wider. The spread is $0.08$ here because the
+budget is twenty-five times larger, and a range over five draws of a quantity whose own
+error is $0.04$ is about what that predicts. The tripwire was reading noise either way.
 
 What a reader planning one migration needs is not that mean anyway. Its Monte-Carlo error
 is $0.02$ points and the replicate-to-replicate standard deviation behind it is $2.6$ ---
-a hundred and thirty times larger, and the figure that describes what one half-split would
-show. In $34\%$ of single half-splits there is no gap to pay: the order scores at least as
-well on the half it was not chosen from as on the half it was.
+larger by the square root of the replicate count, which is what the ratio of a spread to
+the error on its own mean always is --- and that is the figure describing what one
+half-split would show. In $34\%$ of single half-splits there is no gap to pay: the order
+scores at least as well on the half it was not chosen from as on the half it was.
 \S\ref{sec:discussion} calls the staircase the practical result of this paper, and what
 survives being scored elsewhere is its shape --- the order travels --- rather than any
 particular toll for travelling in it.
@@ -262,11 +271,16 @@ channels twice: the PromQL grammar, the Datadog grammar and $\kappa$. On the two
 grammars the margin the corpus bought survives being read somewhere else --- $0.8$
 points on the PromQL side and $5.6$ on the Datadog one, with delete-one-dashboard
 jackknife standard errors of $0.3$ and $1.7$ --- and on both, how much of that margin the
-corpus kept for itself is no larger than the spread it inherits from the two. Each of
-those margins rests on about as few dashboards as $\kappa$ does: the effective number
-behind the held-out one is $2.0$ and behind the in-sample one $19.3$. The $2.0$ is the
-same to one decimal as the one reported for $\kappa$ above and is a different statistic
-on different data --- these are the margin jackknife's per-dashboard deviations, those
+corpus kept for itself is no larger than the spread it inherits from the two. Both
+margins rest on few dashboards, and the Datadog pair is where that bites hardest: the
+effective number behind the held-out margin is $2.0$ and behind the in-sample one
+$19.3$, against $2.0$ and $9.6$ for $\kappa$ on the same two sides. So the held-out
+margin is as concentrated as $\kappa$ is and the in-sample one is twice as spread, which
+is the opposite of what an earlier version of this sentence said when it offered the
+pair as showing both margins rest on as few dashboards as $\kappa$. The PromQL
+margins are less concentrated again, at $3.4$ held out and $4.2$ in sample. The
+Datadog held-out $2.0$ is the same to one decimal as the one reported for $\kappa$
+above and is a different statistic on different data --- these are the margin jackknife's per-dashboard deviations, those
 were $\kappa$'s residuals --- so the agreement is a coincidence of rounding and not an
 identity. On $\kappa$ there is no such margin to carry over; what
 there is, is two readings a tenth of a point apart where the dashboard-clustered

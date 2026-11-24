@@ -14,8 +14,11 @@ measurement that says so is the one the whole apparatus was built to produce. Of
 $8{,}770$ Datadog query occurrences, $96.6\%$ translate. Of the rest, $3.3\%$ carry a
 gap code naming a construct this translator has not implemented and $0.1\%$ do not parse
 at all. \S\ref{sec:gaps}'s column for what PromQL genuinely cannot express holds nothing
-this paper can show belongs there, where it held $8.1\%$ when this paper started. The
-residue is $14$ occurrences --- five APM and LLM-observability metric names --- refused
+this paper can show belongs there, where at its largest it held $648$ distinct
+occurrences, $7.4$ points of $\kappa$. The
+residue is $14$ occurrences --- five metric names, ten occurrences of them APM and
+LLM-observability and four an integration metric the repository declares no type
+for --- refused
 because \texttt{p}$NN$ over a \emph{distribution} metric reads a sketch, where the
 vendor's repository declares no type for the metric and so cannot say whether it is one
 (\S\ref{sec:gaps}). For the other $20$ occurrences of that refusal the hypothesis
@@ -83,6 +86,7 @@ the paper was looking rather than of what it was hoping to find --- but it is th
 datum of that kind, and one is not many.
 
 \subsection{The cost is real, and it is that a query does not say what it means}
+\label{sec:cost}
 
 The gap catalogue is the wrong place to look for the design artefact. The caveats are
 the right one.
@@ -152,8 +156,8 @@ Charging it once is enough, because it now has a price. The type the query omits
 declared, for $89.5\%$ of translated occurrences, in the repository the dashboards come
 from, and the front end's inference is wrong on $6.5\%$ of those ---
 Remark~\ref{rem:type-measured}. That is $491$ panels a migration would carry across
-believing them exact, against nothing at all in the column this paper once called beyond
-reach, and it is caused by the ingestion mapping rather than by anything either language
+believing them exact, against nothing demonstrated in the column this paper once called
+beyond reach, and it is caused by the ingestion mapping rather than by anything either language
 can or cannot say. The directional barrier of \S\ref{sec:ingestion} was argued as a matter of
 information; this is what it costs in practice, in the direction the paper calls
 cheap.

@@ -38,6 +38,7 @@ import pandas as pd
 from lark import Lark
 
 from qlport import corpus as c
+from qlport import grammar_audit
 from qlport.parse import (LANGS, VERSIONS, get_parser, lalr_conflict_report,
                           lalr_conflicts)
 
@@ -70,9 +71,7 @@ def tabular(spec: str, header: list[str], rows: list[list[str]], path: Path) -> 
     print(f"wrote {path.relative_to(ROOT)} ({len(rows)} rows)")
 
 
-def grammar_text(lang: str, version: str) -> str:
-    name = f"{lang}.lark" if version == "v2" else f"{lang}_{version}.lark"
-    return files("qlport.grammars").joinpath(name).read_text()
+grammar_text = grammar_audit.grammar_text
 
 
 # %% [markdown]
@@ -155,30 +154,7 @@ for q in ("a * on(x) group_left(y) b", "a * on(x) group_left b",
 # not. The two are different claims and both are worth making.
 
 # %%
-DECISIONS = [
-    ("promql", r"keyword terminals carry \textbackslash{}b",
-     "otherwise a keyword is a prefix of an identifier",
-     lambda t: t.replace(
-         r"/(?i:sum|avg|min|max|count_values|count|stddev|stdvar|topk|bottomk|quantile|group)\b/",
-         r"/(?i:sum|avg|min|max|count_values|count|stddev|stdvar|topk|bottomk|quantile|group)/"),
-     "max_over_time(x[5m])"),
-    ("promql", "FUNC needs a following paren",
-     "otherwise every lowercase identifier is a function name",
-     lambda t: t.replace(r"FUNC.2: /[a-z_][a-z0-9_]*(?=\s*\()/",
-                         r"FUNC.2: /[a-z_][a-z0-9_]*/"),
-     'up{job="x"}'),
-    ("datadog", "aggregator looks ahead for the colon",
-     "consuming it would shadow a metric whose name starts with an aggregator",
-     lambda t: t.replace(r"/(sum|avg|min|max|count|p\d{1,3})(?=\s*:)/",
-                         r"/(sum|avg|min|max|count|p\d{1,3})/"),
-     "sum.of.things{*}"),
-    ("datadog", "no separate STAR terminal",
-     "Lark breaks lexer ties on priority before length, so a high-priority STAR splits a"
-     " wildcard tag key",
-     lambda t: t.replace("tag: TAG", "tag: TAG | STAR").replace(
-         "%ignore", 'STAR.5: "*"\n%ignore'),
-     "avg:x{*-zone}"),
-]
+DECISIONS = grammar_audit.DECISIONS  # see that module for why it is not here
 
 _corpus = {}
 for _lang in ("datadog", "promql"):

@@ -17,6 +17,7 @@ The file is derived, so it is gitignored: a fresh checkout has no stamp and the 
 from __future__ import annotations
 
 import hashlib
+import re
 import sys
 from pathlib import Path
 
@@ -36,8 +37,23 @@ def sources() -> list[Path]:
                    *(PAPER / "figures").glob("*.pdf")])
 
 
+# Matplotlib writes a wall-clock `/CreationDate` into every PDF it saves, so two runs
+# of the same notebook over the same data produce byte-different figures. Hashing them
+# raw made this stamp track when a figure was regenerated rather than what it contains:
+# `make notebooks` invalidated the build log even when every plot was identical. The
+# date is the only such field in these files -- verified by stripping it and comparing
+# three regenerated figures byte for byte against the committed ones.
+_PDF_VOLATILE = re.compile(rb"/CreationDate\s*\([^)]*\)")
+
+
+def _stable(f: Path) -> bytes:
+    """A file's bytes with any timestamp a writer embedded in them removed."""
+    data = f.read_bytes()
+    return _PDF_VOLATILE.sub(b"/CreationDate ()", data) if f.suffix == ".pdf" else data
+
+
 def digest() -> tuple[str, int]:
-    """One hash over every source's bytes, and how many there were.
+    """One hash over every source's content, and how many there were.
 
     The count is stored beside the hash because a hash alone cannot distinguish a
     source being deleted from its contents changing, and a deleted section file is
@@ -46,7 +62,7 @@ def digest() -> tuple[str, int]:
     files = sources()
     h = hashlib.sha256()
     for f in files:
-        h.update(f.read_bytes())
+        h.update(_stable(f))
     return h.hexdigest(), len(files)
 
 

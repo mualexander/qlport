@@ -215,9 +215,10 @@ two (Remark~\ref{rem:string-forms}).
 
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/regex_glob_reasons}
-\caption{The constructs behind the $84$ refused occurrences. Each is ruled out as a
-single glob by Corollary~\ref{cor:no-glob}; only the second is also beyond a bounded
-union of them.}
+\caption{The constructs behind the $84$ refused occurrences. The first is ruled out as
+a single glob by Corollary~\ref{cor:no-glob} and the second by
+Corollary~\ref{cor:absent-char}, which is the distinction the text after this table
+draws; only the second is also beyond a bounded union of globs.}
 \label{tab:regex-glob-reasons}
 \end{table}
 \iffull\input{sections/moved/reg_examples_table}\fi
@@ -233,9 +234,11 @@ of them. The first universe has to be read as unbounded and not merely as ``ever
 string'': over any \emph{finite} alphabet $\Sigma$ the union
 $\bigcup_{c\in\Sigma}L(c\texttt{*})$ is $\Sigma^{+}$, which \S\ref{sec:glob-unions}
 constructs two pages earlier, so a sentence contrasting the tag alphabet with ``all
-strings'' would otherwise contradict this section's own arithmetic. What makes the
-$21$ refusals survive either reading is the bound rather than the impossibility: over
-Unicode the union exceeds $B$. The second is the right
+strings'' would otherwise contradict this section's own arithmetic. What keeps those
+$21$ refused whichever way the \emph{first} universe is read --- as truly unbounded
+or as Unicode --- is the bound rather than the impossibility: over Unicode the union
+is finite but exceeds $B$. Under the tag alphabet they are admitted, and that is
+where the $238$ occurrences the two universes differ by come from. The second is the right
 universe, and not as a convenience --- a string that is not a legal tag value cannot
 appear on either side of the equivalence, so admitting it compares two languages on
 words neither will ever be asked about. It is also the universe \S\ref{sec:glob-unions}

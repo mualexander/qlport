@@ -13,7 +13,7 @@ hand, with no way to tell whether a rewrite preserved what the original meant. W
 whether that cost follows from how the query languages are designed, and answer by
 building the translator and measuring it. We infer a grammar for each language --- the
 first we have found published for Datadog's, which is a statement about a search and is
-reported as one, and which the vendor documents only by example --- and both
+reported as one, and which the vendor documents only by example --- and both \emph{grammars}
 admit deterministic one-token-lookahead parsers: Datadog's conflict-free, PromQL's modulo
 one resolution this paper documents and the reference server makes. Soundness is stated relative to an \emph{ingestion mapping},
 because the two systems do not store the same thing: a Prometheus counter is a running
@@ -46,7 +46,9 @@ Coverage and correctness differ by a measured amount that no coverage number can
 because a query that does not fix its own meaning parses and translates like any other.
 
 Nor is this one vendor's doing: $88.6\%$ of Datadog and $82.5\%$ of PromQL query
-occurrences carry a template variable, so what a migration ports is a query schema plus a
+occurrences carry a template variable --- a share that falls to $77.0\%$ on a
+repository of dashboards by other authors, so read as a property of this corpus
+rather than of the tools --- so what a migration ports is a query schema plus a
 resolution layer belonging to the dashboard tool --- which is where the cost sits, and
 where a common query language would not reach.
 

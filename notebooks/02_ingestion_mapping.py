@@ -166,14 +166,26 @@ import glob
 from qlport.harness.prometheus import read_raw, series_from_response
 from qlport.semantics.model import Series
 
-LIVE = sorted(glob.glob(str(ROOT / "data" / "raw" / "anchored" / "*.json")))
 MODELS = {
     "rate(x[Δ])": lambda s, t, D: pq.rate(s.ts, s.vs, t, D),
     "(x - x offset Δ) / Δ": lambda s, t, D: pq.offset_diff_rate(s.ts, s.vs, t, D),
     "increase(x[Δ] anchored) / Δ": lambda s, t, D: pq.increase_anchored(s.ts, s.vs, t, D) / D,
 }
-print(f"{len(LIVE)} cached runs" if LIVE else
-      "no cache: run `python scripts/verify_anchored.py` (needs Docker)")
+
+# Selected by WHAT THE RUN HOLDS, not by the glob. `verify_anchored.py --no-anchor`
+# writes into this directory too, and its candidate set is the unanchored pair rather
+# than the three models above, so a bare `*.json` picked it up and the loop below died
+# on `KeyError: 'rate(x[D])'` -- before every write in this notebook, which took
+# `make notebooks` and therefore `make all` down with it and left three committed
+# tables unreproducible. The crash was in the repository for as long as the fifth run
+# was. A run that carries all three keys belongs here whatever it is called; one that
+# does not is somebody else's experiment.
+_WANT = {k.replace("Δ", "D") for k in MODELS}
+LIVE = [p for p in sorted(glob.glob(str(ROOT / "data" / "raw" / "anchored" / "*.json")))
+        if _WANT <= set(read_raw(p).get("candidates", {}))]
+_SKIPPED = len(sorted(glob.glob(str(ROOT / "data" / "raw" / "anchored" / "*.json")))) - len(LIVE)
+print(f"{len(LIVE)} cached runs, {_SKIPPED} skipped for carrying other candidates"
+      if LIVE else "no cache: run `python scripts/verify_anchored.py` (needs Docker)")
 
 # %%
 rows = []

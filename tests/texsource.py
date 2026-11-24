@@ -70,7 +70,7 @@ from pathlib import Path
 #
 # Reverting this line to the ONE-backslash bug once left the whole suite passing,
 # because the fix was hand-checked in a shell and the hand-check was never committed.
-# Not either bug: the two-backslash direction fails twenty-three tests, loudly, for the
+# Not either bug: the two-backslash direction fails 28 tests, loudly, for the
 # reason the asymmetry above gives, and a commit message here said "either" of a
 # correction whose own docstring explains why only one direction is silent. It is
 # checked now by `test_the_comment_stripper_reads_a_percent_the_way_latex_does`, which
@@ -83,7 +83,20 @@ _PY_COMMENT = re.compile(r"#.*")
 # Any conditional still standing in `rendered`'s output. `\iffull` is the paper's only
 # one today; the others are here because a reader that passes an unknown construct
 # through is a reader of a document nobody has.
-_CONDITIONAL = re.compile(r"\\(if[a-zA-Z]*|else|fi)(?![a-zA-Z])")
+# `unless` is in here because it is a TeX PRIMITIVE and needs no definition: it
+# inverts the conditional that follows it. `\unless\iftrue X \fi` typesets nothing,
+# and this module resolved the `\iftrue` and handed `X` to every guard in BOTH builds
+# -- text in neither PDF, satisfying the pinned-sentence, bound-figure and per-side
+# kappa guards at once. `\unless\iffull` was worse than invisible: it came out exactly
+# backwards, reporting the short build's text as the full build's. That is the
+# `\iffalse`-parking defect this module exists to prevent, one token further up, and
+# the unknown-construct assertion missed it only because the pattern below did.
+#
+# It is REFUSED rather than implemented. The paper uses `\unless` nowhere -- the four
+# matches under paper/ are the English word -- so inverting the test here would be
+# machinery for a construct nothing needs, and the contract of this module is that a
+# construct it does not know must fail rather than be guessed at.
+_CONDITIONAL = re.compile(r"\\(if[a-zA-Z]*|else|fi|unless)(?![a-zA-Z])")
 
 # `\newif\iffull` declares the switch and `\fulltrue`/`\fullfalse` set it. Those are
 # the two build drivers' first lines and they are not conditionals: nothing is
@@ -318,8 +331,8 @@ RAW_READS = {
     # The two places a `.tex` file is read raw on purpose. The staleness check hashes
     # what the build read, and a digest over comment-stripped text would agree across
     # an edit to a comment -- which is a change to the source and so to the build.
-    "digest.update(path.read_bytes())":
-        "every paper source's bytes, for the digest `make paper` records",
+    "h = hashlib.sha256(f.read_bytes()).hexdigest()":
+        "a figure PDF's bytes, to tell two plots apart; not a document",
     "assert stamp.read_text().strip() == want, (":
         "that digest, which is a hex string and not LaTeX",
 }
@@ -424,10 +437,17 @@ def _reader_name(node: ast.AST) -> str | None:
             and node.func.id == "open"):
         return "open"
     if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-            and node.func.id == "getattr" and len(node.args) > 1
-            and isinstance(node.args[1], ast.Constant)
-            and node.args[1].value in _READERS):
-        return str(node.args[1].value)
+            and node.func.id == "getattr" and len(node.args) > 1):
+        attr = node.args[1]
+        if isinstance(attr, ast.Constant):
+            return str(attr.value) if attr.value in _READERS else None
+        # A COMPUTED attribute name. This branch required `ast.Constant`, so
+        # `getattr(path, "read" + "_text")` walked past the audit and a probe guard
+        # reading `body.tex` raw passed with the suite green. The name cannot be known
+        # statically, so it is reported rather than resolved: a dynamic attribute
+        # fetch in a test that also touches a path has to be written as a plain read or
+        # it has to go in a ledger.
+        return "getattr(<computed>)"
     return None
 
 

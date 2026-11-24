@@ -248,6 +248,12 @@ ALLOWED_IN: dict[tuple[str, float], tuple[str, set[str]]] = {
                     "its tie-break still depended on the interpreter's hash salt, "
                     "quoted beside the 0.08 that replaced it",
                     {"eval_heldout.tex"}),
+    ("num", 0.28): ("the seed spread the FIXED tie-break gives at the previous draft's "
+                    "replicate budget, which is what shows the 0.23 was never the hash "
+                    "salt. Reproduce with `staircase_cv(by_dash, 200)` and read "
+                    "`gap_at_seed_range`: a counterfactual configuration, so no "
+                    "committed cache holds it",
+                    {"eval_heldout.tex"}),
     ("pct", 76.2): ("METRIC_TYPE_UNKNOWN before E6", {"tr_gauge.tex"}),
     ("num", 6381): ("the occurrences that share carried", {"tr_gauge.tex"}),
     ("num", 31): ("LABEL_NAME_GLOB's occurrences. The code left the catalogue when "
@@ -1254,7 +1260,31 @@ def _flat_prefix_completions() -> int:
     return sum(int(r[4].replace(",", "")) for r in rows[:step])
 
 
+def _replay_per_minute() -> list[float]:
+    """Requests a minute in the aligned replay recording, across status classes."""
+    from collections import defaultdict
+
+    rec = _cache("replay/dualwrite_aligned.json")
+    candidate = rec["rows"][0]["candidate"]
+    per_bucket: dict[object, float] = defaultdict(float)
+    for row in rec["rows"]:
+        if row["candidate"] == candidate and row["instant"] == "inside":
+            per_bucket[row["bucket"]] += row["datadog"]
+    return sorted(per_bucket.values())
+
+
 DERIVED: tuple[tuple[str, float, str, object], ...] = (
+    ("num", 163, "calls of top() in the corpus, which is the denominator the function "
+                 "mix is over rather than the 139 occurrences beside it",
+     lambda: sum(_reg()[f"nb00.top_rank_{f}_calls"]
+                 for f in ("mean", "last", "max", "sum"))),
+    ("num", 81, "the quietest minute of the replayed trace",
+     lambda: round(_replay_per_minute()[0])),
+    ("num", 402, "and the busiest, which is the factor of five the appendix claims",
+     lambda: round(_replay_per_minute()[-1])),
+    ("num", 0.04, "the Monte-Carlo error of one seed's own staircase mean",
+     lambda: round(_reg()["cv.dd_stair_gap_16_replicate_sd"]
+                   / (_reg()["cv.stair_reps"] / 5) ** 0.5, 2)),
     ("num", 44, "queries the flat prefix of the greedy order completes, summed off "
                 "the table that generates the staircase",
      _flat_prefix_completions),
@@ -1575,7 +1605,15 @@ def test_the_coincidence_list_has_no_dead_entries():
 # still depended on the interpreter's hash salt, which is history and cannot be
 # derived. The ratchet is against drift, not against putting history on the record: a
 # bump needs a reason in this comment, and a reduction needs a derivation.
-UNCHECKED_CEILING = 32
+#
+# It is 33 again, and the one that bought the bump is 0.28: the seed spread the fixed
+# tie-break gives at the PREVIOUS draft's replicate budget. It is what shows that the
+# 0.23 it replaced was never the hash salt, so the paper has to print it to say what
+# the correction is a correction of -- and it is a counterfactual configuration, so no
+# committed cache holds it and nothing can derive it. The same pass put four figures
+# ONTO derivations (the top() call total, the replay's two extremes, and one seed's
+# Monte-Carlo error), which is why the bump is one and not five.
+UNCHECKED_CEILING = 33
 
 
 def test_the_unchecked_figures_do_not_multiply():
@@ -1673,7 +1711,36 @@ def _counts(lang: str, which: str, texts) -> "object":
     return total
 
 
+def _with_variable(lang: str) -> tuple[int, int]:
+    """Occurrences of `lang` carrying a template variable, and how many there are.
+
+    The definition notebook 00 uses, re-run here: `"$" in text`, over that language's
+    occurrences, with the nine LogQL panels excluded from the PromQL side exactly as
+    the notebook excludes them -- 8,111 occurrences become 8,102, and six of the nine
+    carry a variable, which is the whole of the difference between 6,690 and 6,684.
+
+    This exists because the abstract's "Nor is this one vendor's doing" argument rested
+    on these two figures and nothing recounted either. `SHARES` related the Datadog
+    share to the Datadog count, and the PromQL pair had not even that -- but both sides
+    of a `SHARES` relation are registry keys, so moving a count and its share together
+    satisfied it. A reviewer moved the PromQL pair to 4,684 / 57.8% across six files
+    with the suite green.
+    """
+    from qlport import corpus as c
+
+    sub = [q for q in _queries() if q.lang == lang
+           and (lang != "promql" or c.is_promql(q.text))]
+    return sum("$" in q.text for q in sub), len(sub)
+
+
 CORPUS_DERIVED: tuple[tuple[str, float, str, object], ...] = (
+    ("pct", 88.6, "Datadog occurrences carrying a template variable, as a share",
+     lambda: round(100 * _with_variable("datadog")[0]
+                   / _with_variable("datadog")[1], 1)),
+    ("pct", 82.5, "and the PromQL share, which is what the abstract's \"not one "
+                  "vendor's doing\" rests on",
+     lambda: round(100 * _with_variable("promql")[0]
+                   / _with_variable("promql")[1], 1)),
     ("num", 22903, "query strings the extraction yields", lambda: len(_queries())),
     ("num", 22894, "and what remains once the nine LogQL panels leave",
      lambda: len(_queries()) - (sum(1 for q in _queries() if q.lang == "promql")
@@ -1788,6 +1855,25 @@ def test_every_corpus_figure_still_comes_out_of_the_corpus():
         if round(float(got), 4) != round(float(value), 4):
             wrong.append(f"  {value} ({note}) derives as {got}")
     assert not wrong, "\n".join(wrong)
+
+
+def test_the_template_variable_counts_are_the_ones_the_corpus_carries():
+    """The two counts behind the shares, which the prose does not print.
+
+    `CORPUS_DERIVED` is for figures the paper quotes, and it quotes only the
+    percentages. The counts are registry-only, which is exactly the shape that let the
+    PromQL pair move: `SHARES` tied `nb00.promql_with_variable_pct` to
+    `nb00.promql_with_variable` and both are registry keys, so a consistent edit of the
+    pair satisfied it. Recounting the numerator from the committed corpus is what makes
+    the share mean anything.
+    """
+    reg = _reg()
+    for lang in ("datadog", "promql"):
+        count, total = _with_variable(lang)
+        assert reg[f"nb00.{lang}_with_variable"] == count, (
+            f"nb00.{lang}_with_variable is {reg[f'nb00.{lang}_with_variable']} and the "
+            f"corpus carries {count}")
+        assert reg[f"nb00.{lang}_with_variable_pct"] == round(100 * count / total, 1)
 
 
 def test_every_corpus_figure_is_still_quoted():
@@ -1921,12 +2007,25 @@ def test_the_inexpressible_column_carries_its_qualification_everywhere():
     # one of the shapes anyone would reach for. Said plainly because the first version
     # of this docstring claimed the rule was "enforced rather than stated", which was
     # more than a verb list can do.
+    #
+    # IT ALSO KEYS ON THE WORD. Every branch below needs "column" in the sentence, and
+    # the tenth site found was `03b_ingestion`'s "the first two are empty on this
+    # corpus", which names the three categories and not the columns they are. A
+    # sentence that asserts the claim without the noun is outside this pattern, and
+    # widening it to the claim would mean matching "the first two are empty" anywhere.
+    # So: this catches the shapes, and the sweep catches the paper.
     claim = re.compile(
         r"[^.]*\bcolumns?\b[^.]*?\b(?:is|are|stands?|sits?|remains?|stays?)\s+"
         r"(?:empty|bare|vacant)\b[^.]*\.|"
         r"[^.]*\bcolumns?\b[^.]*?\b(?:emptied|emptying|empties|"
         r"holds? none|holds? nothing|contains? nothing|has no entries|have no entries|"
-        r"with nothing in (?:it|them)|nothing left beyond it)\b[^.]*\.",
+        r"with nothing in (?:it|them)|nothing left beyond it)\b[^.]*\.|"
+        # SUBJECT FIRST. Both branches above require "column" before the verb, so
+        # "Nothing remains in the inexpressible column" -- which asserts exactly what
+        # they forbid, with the subject moved to the front -- matched neither. It was
+        # added to the discussion and the whole suite stayed green.
+        r"[^.]*\b(?:nothing|none|no entry|no entries|not one entry)\b[^.]*?"
+        r"\bcolumns?\b[^.]*\.",
         re.I)
     also = re.compile(r"[^.]*\b(?:empty|emptied|bare) columns?\b[^.]*\.", re.I)
     qualified = ("demonstrated", "demonstrate", "near-empty", "undecided",

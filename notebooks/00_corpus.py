@@ -229,8 +229,15 @@ for lang in PARSED:
 
 # %%
 df["features"] = [c.features(l, t) for l, t in zip(df.lang, df.text)]
+# `sorted`, because `c.features` returns a set of strings and iterating it put the
+# rows in whatever order the interpreter's hash salt gave: 68,944 of 86,127 lines moved
+# between two runs, with identical content. No printed figure depends on the order --
+# every reader groups or counts -- but this is the third place in the repository where a
+# set's iteration reached a committed artefact, after `greedy`'s tie-break and
+# `shape_differential`'s seed, and a derived file that is not byte-reproducible cannot
+# be used to show that a rerun agrees with what is committed.
 long = pd.DataFrame([(i, r.lang, r.source, r.kind, f)
-                     for i, r in df.iterrows() for f in r.features],
+                     for i, r in df.iterrows() for f in sorted(r.features)],
                     columns=["query", "lang", "source", "kind", "feature"])
 long.to_csv(PROCESSED / "features.csv", index=False)
 print(f"wrote {(PROCESSED / 'features.csv').relative_to(ROOT)}: {len(long):,} rows")
@@ -326,14 +333,16 @@ def greedy_order(feature_sets: list[frozenset[str]]) -> pd.DataFrame:
         if not residual:
             break
         # Ties by name rather than by insertion order, for the reason
-        # `scripts/heldout_split.py::greedy` gives at length: these Counters are fed by
-        # iterating a set of strings, so `most_common` was choosing on Python's
-        # per-process hash salt. The order this cell computes has one tie in it, at the
-        # fifth pick, and it is load-bearing: broken the other way the staircase's step
+        # `scripts/heldout_split.py::greedy` gives at length. Note what this is NOT:
+        # the order this cell computes was never salt-dependent, because the list it
+        # counts over is built in corpus-file order rather than out of a set, and
+        # `most_common` reproduced it exactly at five different hash salts. What
+        # changed the published curve was the RULE. There is one tie, at the fifth
+        # pick, and it is load-bearing: resolved the other way the staircase's step
         # lands a feature later and the twelve `nb00.ceiling_*` keys from the sixth
         # feature on all read lower. Section 7, section 8, section 9 and the staircase
         # appendix each quote part of that curve, so this cell is not free to pick
-        # either one.
+        # either one, and the choice has to be argued rather than inherited.
         source = completes if completes else residual
         pick = min(sorted(source.items()), key=lambda kv: (-kv[1], kv[0]))[0]
         gained = completes.get(pick, 0)

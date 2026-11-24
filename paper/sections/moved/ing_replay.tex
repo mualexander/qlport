@@ -11,7 +11,8 @@ systems, read back from both.
 
 The stream is real. Counting the requests in a web-server access log into a scrape grid
 gives a counter with the shape that \S\ref{sec:threats} says the synthetic workloads only
-imitate: in the half hour used here the per-minute rate swings seventeenfold without
+imitate: in the half hour used here the per-minute rate runs from $81$ requests to
+$402$, a factor of five, without
 being asked to. We take the busiest half hour of the Kennedy Space Center HTTP logs of
 July~1995~\citep{nasahttp}, count requests at a $15$\,s scrape interval into one counter
 per HTTP status class, and write the cumulative series to Prometheus and its image under
@@ -27,7 +28,9 @@ absolute times are not.
 \begin{table}[htbp]\centering\footnotesize
 \input{tables/replay_dualwrite}
 \caption{The dual-write replay: each candidate against \emph{Datadog}, bucket by bucket,
-on a real request trace. ``Inside'' and ``on the edge'' are the two evaluation instants
+on a real request trace. \emph{Max $d$} is over the inside instant; on the edge the
+aligned rows disagree by construction and the convention rather than the arithmetic
+is what they measure. ``Inside'' and ``on the edge'' are the two evaluation instants
 of Remark~\ref{rem:closure}. $84$ comparisons per row.}
 \label{tab:replay}
 \end{table}

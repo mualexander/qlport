@@ -63,12 +63,14 @@ answer we would now put first. Of the translations we emit, $97.0\%$ depend on a
 interval the source query leaves to the dashboard's time range --- and PromQL, which has
 a slot for it, sees $55.6\%$ of range selectors filled with a dashboard variable anyway,
 so the contrast between the two languages is one of degree. A metric's type is a second
-thing no query states, and \S\ref{sec:dashboard-layer} is careful that it is not a
+thing no query states, and \S\ref{sec:cost} is careful that it is not a
 second instance of the same property: what makes it bite is $\phi_\rho$ branching on
 it, which is \S\ref{sec:ingestion} appearing twice rather than a second fact about
 either language. Neither is a defect of one vendor: $88.6\%$ of
 Datadog query occurrences and $82.5\%$ of PromQL ones carry at least one template
-variable, so in both languages the object a migration ports is a schema plus a
+variable --- $77.0\%$ on the held-out repository, which is the one figure in this
+paper its own holdout moved, so the level is this corpus's and the fact that both
+languages carry it is not --- so in both languages the object a migration ports is a schema plus a
 resolution layer that belongs to the dashboard tool. The type assumption is the one that
 is checkable, because the repository the dashboards come from declares each metric's
 type, and where it can be checked our inference is wrong for $6.5\%$ --- $491$

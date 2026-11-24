@@ -69,7 +69,12 @@ def code(s: object, width: int | None = None) -> str:
     s = " ".join(str(s).split())
     if width and len(s) > width:
         s = s[: width - 1] + "…"
-    return r"\texttt{" + tex(s).replace("…", r"\dots{}") + "}"
+    # `--` is a ligature in the typewriter font this document loads, so the glob `5--`
+    # typeset as `5–`: a two-character string the glob language does not contain, in
+    # the one table whose job is to print the exact members of a union. `{}` between
+    # the hyphens breaks the ligature and prints nothing itself.
+    body = tex(s).replace("…", r"\dots{}").replace("--", "-{}-")
+    return r"\texttt{" + body + "}"
 
 
 def pct(x: float) -> str:

@@ -9,10 +9,17 @@ what breaks. A row that still parsed would mean the decision was dead weight; no
 The witnesses are minimal queries written for the table rather than corpus queries, which
 an earlier version of this paragraph claimed they were; what the corpus supplies is the
 count beside each one, of distinct corpus queries the real grammar parses and the naive
-form does not. Every decision is load-bearing against the corpus as well as against its
-witness, and the Datadog colon lookahead is the row where the two differ in kind: no
-corpus query names a metric beginning with an aggregator word, and what the corpus
-exhibits instead is a \emph{function} whose name does, \texttt{count\_not\_null(...)}.
+form does not. Three of the four decisions are load-bearing against the corpus as well as against
+their witnesses. The fourth is not: the STAR terminal costs no corpus query at all,
+because the construct that exercised its witness --- the keyless scope
+\texttt{avg:x\{*-zone\}} --- is one \S\ref{sec:gaps} shows this paper's own normaliser
+manufactured, so the decision is load-bearing against a string no dashboard wrote. An
+earlier version of this paragraph asserted the universal and then named the colon
+lookahead as the row where witness and corpus differ in kind; that row costs five
+queries, and the row that differs is the one the sentence did not name. The colon
+lookahead is still worth its own remark, because no corpus query names a metric
+beginning with an aggregator word and what the corpus exhibits instead is a
+\emph{function} whose name does, \texttt{count\_not\_null(...)}.
 
 \begin{table}[htbp]\centering\scriptsize
 \input{tables/grammar_decisions}

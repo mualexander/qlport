@@ -163,8 +163,9 @@ everywhere the column is mentioned: $14$ of them are refused on a hypothesis thi
 tests for the declared metrics and cannot test for theirs, so they are undecided rather
 than retracted.
 
-Six rows left those two columns, and the order matters because the last three are not
-findings about Datadog at all.
+Five rows left those two columns outright and a sixth all but $14$ occurrences of
+one, and the order matters because the last three are not findings about Datadog
+at all.
 
 \texttt{SCOPE\_DISJUNCTION} went first, when \S\ref{sec:disjunction} showed a union of
 selectors says what a disjunctive scope says; what refuses it is the syntax-directed
@@ -209,14 +210,20 @@ provably fails.
 
 The other $14$ name metrics the repository never declares, and an earlier version of
 this paragraph wrote ``none of the $34$ is one'', which reads the declared set as a
-census of the language. It is not one. Those $14$ are five names, all from the APM and
-LLM-observability families rather than from an integration:
+census of the language. It is not one. Those $14$ are five names:
 \texttt{ml\_obs.span.duration} and \texttt{data\_streams.payload\_size} at four
 occurrences each, \texttt{airbyte.metrics\_reporter.overall\_job\_runtime\ldots} at
 four, and \texttt{trace.langchain.request} and \texttt{trace.openai.request} at one
-each. A latency percentile over spans is exactly the quantity a sketch is for, so these
-are the occurrences where the corollary's hypothesis is most likely to hold, and nothing
-in the corpus or in this paper's experiments settles whether it does. They are reported
+each. Ten of the fourteen are APM and LLM-observability names, and a latency percentile
+over spans is exactly the quantity a sketch is for, so those are the occurrences where
+the corollary's hypothesis is most likely to hold. The other four are the Airbyte
+metric, and an earlier version of this paragraph called all five names APM or
+LLM-observability rather than integration metrics, which that one is not:
+\texttt{integrations-core} ships an Airbyte integration and simply declares no type for
+this metric of it, so what puts those four here is the gap in the declarations and not
+the kind of quantity. A job runtime is not a span latency, and the inference above does
+not reach them. Nothing in the corpus or in this paper's experiments settles whether the
+hypothesis holds for any of the fourteen. They are reported
 as undecided for the same reason \S\ref{sec:conclusion} reports the $736$ occurrences
 whose type the repository does not declare: the instrument reaches the declared set and
 the population is larger than the declared set.
@@ -381,7 +388,11 @@ uncompared column, which is the only status any shape has changed across three r
 
 Three shapes of the $333$ are not compared: two carry a rollup interval the run's
 half-hour of synthetic points cannot hold and one returned no data on either side, and all three were in the first run
-too. A fourth was uncompared in the second run, and resolving it is why there is a third.
+too. One more was uncompared in the second run --- which reported $329$ of $329$
+over $332$ shapes, so three of its own were uncompared and this was one of them ---
+and resolving it is why there is a third. An earlier version of this sentence called
+it a fourth, which the second run's printed pair does not allow and whose cache this
+paper no longer holds.
 It came back \emph{unmatched} --- both systems returned data and no bucket
 could be paired, because Datadog had grouped by \texttt{host} alone where the emitted
 PromQL grouped by all four keys the query names. That was not a translation defect: it
@@ -487,8 +498,9 @@ this paper's PromQL grammar (\S\ref{sec:grammars}), which predates both translat
 output and is tuned to neither --- and which Prometheus~3.15.0's own parser now agrees
 with on every one of the $14{,}555$ distinct expressions the two translators emit between
 them, in both directions (Remark~\ref{rem:baseline}). Our two rows sum to $99.9\%$ rather
-than $100\%$: the $8$ occurrences \S\ref{sec:grammars}'s Datadog grammar does not parse
-reach neither translator's input.}
+than $100\%$: the $8$ occurrences \S\ref{sec:grammars}'s Datadog grammar does not
+parse never reach \emph{our} translator's input, while their emitter sees them, which
+is why their column is over the full $8{,}653$ and ours is eight short of it.}
 \label{tab:baseline}
 \end{table}
 
@@ -497,8 +509,10 @@ coverage number would suggest.
 Their translator refuses nothing: it emits an expression for every one of the $8{,}653$
 occurrences, against our $96.7\%$. But $457$ of those --- $5.3\%$ --- are not PromQL.
 $235$ carry Datadog's match-all scope \texttt{\{*\}} into a language where \texttt{*} is
-multiplication, $111$ are the Datadog text passed through unchanged, and $111$ fail for
-other reasons. Every expression we emit parses, under this paper's grammar and under
+multiplication and $111$ fail for other reasons; $346$ are the Datadog text passed
+through unchanged, which is not a third category --- every match-all occurrence is
+also a pass-through, so the two groups that partition the $457$ are the match-all
+ones and the $111$ that are neither. Every expression we emit parses, under this paper's grammar and under
 Prometheus's: the two instruments refuse the same $386$ expressions and accept the same
 rest, so the column is not an artefact of measuring PromQL with our own ruler. So on the
 one measure both tools can be
@@ -601,7 +615,8 @@ translator frozen --- and reports what they show. The short form: the feature vo
 and the implementation order are functions of the corpus, so they can be refitted on part
 of it and scored on the rest, and both broadly generalise: the vocabulary saturates
 after a tenth of the dashboards, missing one aggregator on the disjoint repository, and
-the build order loses $1.2$ points out of sample on average. The grammar
+the build order loses about a point out of sample on average --- a mean of $1.06$,
+against a replicate standard deviation of $2.6$ (\apref{app:eval}). The grammar
 is not refittable by any script, so it was frozen and read on dashboards nobody here had
 seen. On $497$ community dashboards the corpus never listed --- the $12{,}522$ distinct
 strings there whose instantiated form the corpus does not hold --- v2 parses $99.6\%$
@@ -690,7 +705,7 @@ and for those the emitter's $60$\,s is the interval Datadog would have used for 
 them and the wrong one for $332$, or $66.9\%$. The modal declared span is one hour,
 $205$ occurrences, where Datadog rolls up at $20$\,s and the emitted \texttt{[60s]}
 answers a question three times as wide; the declared spans run from one minute, where
-$60$\,s is $60$ times too wide, to one week, where it is a fifty-ninth of the interval
+$60$\,s is $60$ times too wide, to one week, where it is a sixtieth of the interval
 Datadog uses. Every span the corpus declares is one E18 measured, so none of this rests
 on interpolation.
 

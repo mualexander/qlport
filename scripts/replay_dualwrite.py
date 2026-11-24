@@ -9,7 +9,7 @@ against a model of Datadog -- the gap §9 names as the one that would change the
 of everything else.
 
 It also answers §8's other threat. The agreement figures of Table 2 come from synthetic
-workloads whose shape was chosen; this replays an hour of a real web server instead,
+workloads whose shape was chosen; this replays half an hour of a real web server instead,
 where the per-minute request count swings seventeen-fold without being asked to.
 
 Source: the NASA Kennedy Space Center HTTP logs of July 1995 (Internet Traffic Archive),

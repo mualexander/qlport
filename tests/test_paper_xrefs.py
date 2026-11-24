@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from texsource import anywhere, builds, source
+from texsource import anywhere, builds, rendered, source
 
 ROOT = Path(__file__).resolve().parent.parent
 PAPER = ROOT / "paper"
@@ -337,19 +337,29 @@ def test_the_proof_convention_matches_the_statements():
 
     sections = PAPER / "sections"
     files = sorted(sections.glob("*.tex")) + sorted((sections / "moved").glob("*.tex"))
-    labels, proofs = {}, set()
-    for path in files:
-        text = anywhere(path)
-        for m in re.finditer(
-                r"\\begin\{(theorem|lemma|proposition|corollary)\}"
-                r"(?:\[[^\]]*\])?\s*\\label\{([^}]+)\}", text, re.S):
-            labels[m.group(2)] = m.group(1)
-        for m in re.finditer(r"\\begin\{proof\}\[[^\]]*?\\ref\{([^}]+)\}", text, re.S):
-            proofs.add(m.group(1))
 
-    assert len(labels) == 20, sorted(labels)
-    unproved = {k for k in labels if k not in proofs}
-    assert unproved == {"prop:decidable", "cor:raw", "cor:quantile", "cor:rate",
-                        "prop:disjunction"}, sorted(unproved)
+    # PER BUILD, not over their union. This read `anywhere(path)`, so a proof present
+    # in one build satisfied the count for both: wrapping a proof in `\inlineonly{}`
+    # left `main.pdf` printing the lemma with no proof at all while this test went on
+    # asserting "20 numbered results ... 15 are [proved]" in that very build. The claim
+    # is about what a reader sees, so it has to be checked in each document a reader
+    # can get -- the same correction `PHRASES` needed two rounds ago.
+    for build, full in (("main", False), ("main_full", True)):
+        labels, proofs = {}, set()
+        for path in files:
+            text = rendered(path, full)
+            for m in re.finditer(
+                    r"\\begin\{(theorem|lemma|proposition|corollary)\}"
+                    r"(?:\[[^\]]*\])?\s*\\label\{([^}]+)\}", text, re.S):
+                labels[m.group(2)] = m.group(1)
+            for m in re.finditer(
+                    r"\\begin\{proof\}\[[^\]]*?\\ref\{([^}]+)\}", text, re.S):
+                proofs.add(m.group(1))
+
+        assert len(labels) == 20, f"{build}.pdf: {sorted(labels)}"
+        unproved = {k for k in labels if k not in proofs}
+        assert unproved == {"prop:decidable", "cor:raw", "cor:quantile", "cor:rate",
+                            "prop:disjunction"}, f"{build}.pdf: {sorted(unproved)}"
+
     for body in builds(PAPER / "sections" / "03_framework.tex"):
         assert "$20$ numbered results" in body and "$15$ are" in body

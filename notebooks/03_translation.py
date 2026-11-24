@@ -173,7 +173,7 @@ print(f"all {sum(len(r) for r in tr.parts):,} emitted expressions parse as PromQ
 total_n, total_d = tr.n.sum(), len(tr)
 order = ["translated", "bottom", "unparsed"]
 label = {"translated": r"translated ($\kappa$)", "bottom": r"$\bot$ (gap catalogue)",
-         "unparsed": "unparsed by the §4 grammar"}
+         "unparsed": "unparsed by the §5 grammar"}
 rows = [[label[o], f"{int(tr[tr.outcome == o].n.sum()):,}",
          pct(tr[tr.outcome == o].n.sum() / total_n), f"{len(tr[tr.outcome == o]):,}",
          pct(len(tr[tr.outcome == o]) / total_d)] for o in order]

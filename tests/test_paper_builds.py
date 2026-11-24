@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import json
 import os
 import re
 import subprocess
@@ -44,19 +45,120 @@ _HOOK = re.compile(r"\\iffull\\input\{sections/moved/([A-Za-z0-9_]+)\}\\fi")
 _INPUT = re.compile(r"\\input\{sections/([A-Za-z0-9_/]+)\}")
 
 
-def _sources() -> list[Path]:
-    """Every file a build reads: the `.tex` and the generated figures.
+# Anything under paper/ that a build WRITES rather than reads. Everything else is an
+# input and has to be inside the digest; the figures were outside it for a commit, so
+# regenerating a plot left the stamp agreeing with a log that predated it.
+_BUILD_OUTPUT = {".log", ".aux", ".out", ".toc", ".sha256", ".bbl", ".blg", ".fls",
+                 ".fdb_latexmk", ".synctex.gz"}
 
-    The figures were outside this for a commit, so regenerating one left the stamp
-    agreeing with a log that predated it -- a build product of the paper changing with
-    nothing downstream objecting, which is the defect the digest exists to close one
-    file type short. `scripts/stamp_sources.py` keeps the same list and both sides
-    recompute it, so a divergence between them fails loudly rather than silently.
+
+# What each plot has to be about, by the axis text matplotlib writes into it. The
+# corpus sizes are checked against the registry rather than spelled here.
+_PLOT_MARKS = {
+    "cumulative_coverage": ("queries fully covered", "features implemented"),
+    "feature_frequency": ("SCOPE_VAR", "GROUP_BY"),
+    "heldout_vocabulary": ("vocabulary refitted on a sample",
+                           "the staircase, scored both ways", "dashboards read"),
+    "rate_error_vs_window": ("rollup interval", "poisson", "bursty"),
+}
+
+
+def test_each_plot_is_the_plot_its_caption_says_it_is():
+    """The figures are build inputs and nothing read them.
+
+    `cp paper/figures/cumulative_coverage.pdf paper/figures/heldout_vocabulary.pdf`
+    left the suite green with the held-out vocabulary figure printing the coverage
+    staircase. The digest notices that a figure CHANGED, which is what it was added
+    for, but says nothing about which plot is which -- re-stamp and the swap is clean.
+
+    Two checks. Pairwise distinctness needs no tools and catches the swap outright. The
+    axis text catches the subtler version, a figure regenerated from the wrong data,
+    and ties the two corpus sizes the plots print to the registry that states them.
     """
-    return sorted(
-        [*PAPER.glob("*.tex"), *SECTIONS.rglob("*.tex"),
-         *(PAPER / "tables").glob("*.tex"), *(PAPER / "figures").glob("*.pdf")]
-    )
+    import hashlib
+    import shutil
+    import subprocess
+
+    figures = sorted((PAPER / "figures").glob("*.pdf"))
+    assert {f.stem for f in figures} == set(_PLOT_MARKS), (
+        f"the figures are {sorted(f.stem for f in figures)} and this guard knows "
+        f"{sorted(_PLOT_MARKS)}; teach it the new one or stop shipping it")
+
+    seen: dict[str, str] = {}
+    for f in figures:
+        h = hashlib.sha256(f.read_bytes()).hexdigest()
+        assert h not in seen, f"{f.name} is byte-identical to {seen[h]}"
+        seen[h] = f.name
+
+    if not shutil.which("pdftotext"):  # pragma: no cover - tool-dependent
+        return
+    reg = json.loads((PAPER / "quoted_figures.json").read_text())
+    dd_size = f"n = {reg['nb03.corpus_occurrences']:,}"
+    promql_sizes = set()
+    for f in figures:
+        got = subprocess.run(["pdftotext", str(f), "-"], capture_output=True,
+                             text=True, check=True).stdout
+        flat_text = " ".join(got.split())
+        for mark in _PLOT_MARKS[f.stem]:
+            assert mark in flat_text, (
+                f"{f.name} does not carry {mark!r}, so it is not the plot the caption "
+                f"describes")
+        if f.stem in ("cumulative_coverage", "feature_frequency"):
+            assert dd_size in flat_text, (
+                f"{f.name} does not print the Datadog corpus size the registry "
+                f"states: wanted {dd_size!r}")
+            # The PromQL size is not a registry key -- it reaches the paper through a
+            # table and sits in the coincidence list -- so the two plots are held to
+            # each other instead of to a key that does not exist.
+            promql_sizes |= {m.group(1) for m in
+                             re.finditer(r"n = ([\d,]+)", flat_text)} - {dd_size[4:]}
+    assert len(promql_sizes) == 1, (
+        f"the two plots disagree on the PromQL corpus size: {sorted(promql_sizes)}")
+
+
+def test_the_digest_covers_every_file_a_build_could_read():
+    """No input under paper/ may sit outside the stamp.
+
+    `_sources` used to live here, duplicating `scripts/stamp_sources.py`'s list, and its
+    docstring said "both sides recompute it, so a divergence between them fails loudly
+    rather than silently". Nothing compared the two lists; the claim was false for as
+    long as it was written. There is one list now, in the script, and this is the check
+    the docstring was describing: enumerate paper/ from the filesystem and require that
+    everything the build reads is in it.
+
+    The figures are the reason. They were outside the digest for a commit, which let a
+    regenerated plot coexist with a log that predated it. A `.csv` or `.bib` added as an
+    input later would be the same defect again, and would fail here first.
+    """
+    listed = set(_stamper().sources())
+    # main.pdf/main_full.pdf are what the build writes. quoted_figures.json is neither:
+    # pdflatex never opens it, because the prose carries its figures as literal
+    # numerals and the registry is what the SUITE compares them against. A change to it
+    # must not invalidate a build log, and a change to the paper must not be excused by
+    # it -- which is why it is named here rather than quietly matched by a suffix rule.
+    outputs = {PAPER / "main.pdf", PAPER / "main_full.pdf",
+               PAPER / "quoted_figures.json"}
+    missing = sorted(
+        p.relative_to(ROOT) for p in PAPER.rglob("*")
+        if p.is_file() and p not in listed and p not in outputs
+        and p.suffix not in _BUILD_OUTPUT and not p.name.startswith("."))
+    assert not missing, (
+        "files under paper/ that are neither build outputs nor inside the digest:\n  "
+        + "\n  ".join(str(m) for m in missing))
+    assert any(p.suffix == ".pdf" for p in listed), "the figures left the digest again"
+    assert len(listed) > 100, f"the digest covers only {len(listed)} files"
+
+
+def _stamper():
+    """`scripts/stamp_sources.py`, imported so the suite and `make paper` share one
+    definition of what "the sources, by content" means."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_stamp_sources", ROOT / "scripts" / "stamp_sources.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def _log(name: str) -> str:
@@ -75,19 +177,25 @@ def _log(name: str) -> str:
     """
     log = PAPER / f"{name}.log"
     assert log.exists(), f"{log.relative_to(ROOT)} is missing -- run `make paper`"
-    newest = max(p.stat().st_mtime for p in _sources())
-    assert log.stat().st_mtime >= newest, (
-        f"{log.relative_to(ROOT)} is older than a paper source -- run `make paper`"
-    )
+    # NO MTIME COMPARISON. There was one, and it is the check `touch paper/main.log`
+    # defeated -- the reason this function reads a digest at all. Keeping it beside the
+    # digest bought no detection the digest does not already give, and cost false
+    # failures: re-running a notebook rewrites `paper/tables/*.tex` with identical
+    # content and a new mtime, so a reproduction run that proves the tables are
+    # unchanged reported a stale build. The digest answers the question the mtime was
+    # standing in for, and answers it about content.
     stamp = PAPER / ".sources.sha256"
     assert stamp.exists(), (
         f"{stamp.relative_to(ROOT)} is missing -- run `make paper`, which records by "
         f"content what the build read"
     )
-    digest = hashlib.sha256()
-    for path in _sources():
-        digest.update(path.read_bytes())
-    want = f"{digest.hexdigest()} {len(_sources())}"
+    # Through the script, not a second copy of its arithmetic. This recomputed the
+    # hash itself over `path.read_bytes()`, which agreed with the script only as long
+    # as the script hashed raw bytes too; the moment the script started stripping
+    # matplotlib's embedded `/CreationDate` the two would have disagreed on every
+    # figure, and the failure would have read as a stale build. A check that
+    # reimplements the thing it checks has two places to keep right.
+    want = "{} {}".format(*_stamper().digest())
     assert stamp.read_text().strip() == want, (
         f"{stamp.relative_to(ROOT)} does not match the sources here, so this log is "
         f"from a different paper -- run `make paper`"
@@ -217,7 +325,7 @@ def test_the_comment_stripper_reads_a_percent_the_way_latex_does():
     Reverting `COMMENT` to the one-backslash bug left the whole suite passing, through
     all fifty-one call sites, because the fix was checked by hand in a shell and the
     hand-check was never committed. Not to either bug: the two-backslash direction
-    fails twenty-three tests, which is the asymmetry above and which a commit message
+    fails 28 tests, which is the asymmetry above and which a commit message
     here got wrong in the flattering direction. This is that hand-check. The cases are written out
     here rather than imported, because a table of them in `texsource` would be a
     ledger the audit reads and would be satisfied by construction.

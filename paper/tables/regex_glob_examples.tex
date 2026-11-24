@@ -7,7 +7,7 @@ PromQL regex & Datadog scope value & Occurrences \\
 \texttt{.*pod.*} & \texttt{*pod*} & 24 \\
 \texttt{.+} & \texttt{-*, .*, /*, 0*, 1*, 2*, 3*, 4*, 5\dots{}} & 133 \\
 \texttt{LIST|GET} & \texttt{GET, LIST} & 41 \\
-\texttt{5..} & \texttt{5--, 5-., 5-/, 5-0, 5-1, 5-2, 5-3\dots{}} & 40 \\
+\texttt{5..} & \texttt{5-{}-, 5-., 5-/, 5-0, 5-1, 5-2, 5-3\dots{}} & 40 \\
 \texttt{(/dev/)?(mmcblk.p.+|nvme.+|rbd.+|\dots{}} & $\bot$ More branches than the bound $B$ admits & 49 \\
 \texttt{mmcblk.p.+|nvme.+|rbd.+|sd.+|vd.+\dots{}} & $\bot$ More branches than the bound $B$ admits & 22 \\
 \texttt{[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0\dots{}} & $\bot$ No bounded alphabet under a star & 5 \\
