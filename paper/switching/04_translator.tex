@@ -1,0 +1,96 @@
+% ---------------------------------------------------------------------------
+% The corpus, the two grammars and the translator, compressed to what the measurement
+% needs. The instantiation paragraph is load-bearing in this version rather than
+% incidental: it is the first place the paper's result shows up, as a parse rate.
+% Tables are the complete paper's.
+% ---------------------------------------------------------------------------
+
+\section{The Corpus, the Grammars, and the Translator}
+\label{s2:sec:translator}
+
+\subsection{The corpus}
+\label{s2:sec:corpus}
+
+Three sources, each pinned to a commit or a retrieval date, chosen to put a vendor's own
+queries and a community's queries on the same footing. $41$ compiled
+\texttt{kube-prometheus} dashboards supply PromQL written and maintained by the Kubernetes
+monitoring projects themselves, pinned to its rendered form~\citep{kubeprom,kubemixin};
+the $199$ most-downloaded Grafana community dashboards supply PromQL written by everyone
+else~\citep{grafanadash}; and the $283$ integration dashboards of Datadog's
+\texttt{integrations-core} supply Datadog queries written by Datadog, which matters
+because no reference grammar for that language is published and vendor-authored queries
+are the closest thing to a specification by example. Extraction yields $22{,}903$ query
+strings; nine turn out to be LogQL --- Loki panels in dashboards registered under a
+Prometheus datasource --- and are dropped rather than counted as PromQL the grammar fails
+on, leaving $22{,}894$ in three populations: $8{,}770$ Datadog metric queries, $8{,}102$
+PromQL expressions and $6{,}022$ Datadog formula expressions, the last held aside.
+Everything below is over the whole of it, with nothing sampled and nothing
+hand-classified.
+
+\paragraph{Dashboard queries are not queries.}
+A panel ships \texttt{\$pod}, \texttt{\$\_\_rate\_interval} or \texttt{\$host} where a
+value belongs, so the first measurement this paper made was of its own instrument failing:
+$11.8\%$ of distinct Datadog and $71.2\%$ of distinct PromQL queries parse as shipped,
+against $99.9\%$ and $99.1\%$ once instantiated.
+\texttt{corpus.normalise} performs the substitution a dashboard performs --- a PromQL range
+variable becomes a duration, a Datadog scope variable becomes \texttt{*}, a variable
+anywhere else outside a string literal becomes an identifier, and a variable \emph{inside}
+one is left alone, because \texttt{\{pod=\~{}"\$pod"\}} already parses --- and every
+measurement in this paper is made on the instantiated form.
+
+That is a methodological note and also the paper's finding arriving nine sections early.
+The object a dashboard migration translates is a query \emph{schema}, and a translator that
+takes query strings is solving a different problem from the one its users have. The
+substitution above is a stand-in for a dashboard's own resolution, performed by us because
+the dashboards are not running; \S\ref{s2:sec:unsaid} is what happens when the same
+observation is made about values no substitution can supply.
+
+\subsection{The grammars exist, and they are deterministic}
+
+Neither vendor publishes a grammar. We infer one for each language, and the Datadog
+grammar is, as far as we have found, the first published for it --- which is a statement
+about a search and is reported as one. Both grammars admit deterministic one-token-lookahead
+parsers, at the sizes Table~\ref{s2:tab:grammars} reports. Datadog's is conflict-free.
+PromQL's carries two shift/reduce conflicts on a left parenthesis, both resolved the way
+the reference server resolves them; the complete paper documents the resolution and shows
+it is the one the published implementation makes, and declines to claim that no LALR(1)
+grammar for PromQL exists. That matters here only because it licenses what follows: a
+unique parse tree per query is what makes a syntax-directed translation well defined at
+all, and a table-driven parse is what makes a corpus of this size processable rather than
+sampleable.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/grammar_stats}
+\caption{The two inferred grammars, at the two revisions this work produced for each.
+Conflicts are LALR(1) conflicts reported by the generator; Datadog's grammar has none at
+either revision, and PromQL's two are the shift/reduce pair on a left parenthesis that the
+reference server resolves the same way.}
+\label{s2:tab:grammars}
+\end{table}
+
+\noindent
+Those instantiated rates are the size of a fit rather than a result, and
+\S\ref{s2:sec:threats} reads them as one: grammar v2 is v1 plus every production the corpus
+showed was missing, so the climb from $92.9\%$ to $99.9\%$ on the Datadog side is what
+reading the corpus bought. The raw rate, on the other hand, is not a property of either
+grammar at all. A Datadog string parses as shipped exactly when it carries no template
+variable, with two exceptions in the whole held-out set, so $11.8\%$ is the
+template-variable share counted the other way round.
+
+\subsection{The translator}
+
+$T$ factors as $\pi_1\circ E\circ L$ through an intermediate representation, as
+Definition~\ref{s2:def:translator} sets out. The lowering reads a Datadog query into the
+IR; the emission writes PromQL and returns, beside the expression, the set of caveats
+recording what it had to assume. Every refusal is a $\bot$ with a gap code. The IR is the
+only object in this work whose denotation is written out, and the exactness results of the
+complete paper are proved over $E(L(q))$ rather than over $T(q)$, because they need the
+caveat set that $E$ returns alongside the expression.
+
+One of the complete paper's results is worth naming, because \S\ref{s2:sec:coverage} rests
+on it rather than on inspection: a kernel soundness theorem covering $95.7\%$ of the
+corpus, with six hypotheses and two side conditions, three of which the emitter did not
+record when the theorem was first stated and now returns as codes. An unrecorded
+precondition is free in every number a paper reports, which is exactly why they accumulate,
+and each of those three turned into a row of \S\ref{s2:sec:unsaid}'s table without moving
+$\kappa$ by a single occurrence.

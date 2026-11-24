@@ -36,13 +36,16 @@ ROOT = Path(__file__).resolve().parent.parent
 # appendix and the full build keeps inline. They are the same prose either way, so
 # every check here has to see them.
 SECTIONS = sorted((ROOT / "paper" / "sections").rglob("*.tex"))
-# The twenty-page build's own prose. It is NOT folded into SECTIONS: `_section_path`
-# requires exactly one file per name and `02_background.tex` exists in both trees, so
-# folding it in would make every binding ambiguous. It is swept by the three checks
-# that ask about the paper rather than about one named file -- the figure census, the
-# inexpressible-column rule and the math-mode rule -- because a figure quoted in a
-# second document is a figure this suite has to account for just the same.
-SHORT = sorted((ROOT / "paper" / "short").rglob("*.tex"))
+# The two twenty-page builds' own prose: `paper/short/` on the inexpressibility spine
+# and `paper/switching/` on the empirical one. NOT folded into SECTIONS:
+# `_section_path` requires exactly one file per name and `02_background.tex` now exists
+# in all three trees, so folding them in would make every binding ambiguous. They are
+# swept by the three checks that ask about the paper rather than about one named file
+# -- the figure census, the inexpressible-column rule and the math-mode rule --
+# because a figure quoted in a second document is a figure this suite has to account
+# for just the same.
+SHORT = sorted([*(ROOT / "paper" / "short").rglob("*.tex"),
+                *(ROOT / "paper" / "switching").rglob("*.tex")])
 
 
 def _section_path(name: str) -> Path:
@@ -226,10 +229,15 @@ ALLOWED: dict[tuple[str, float], str] = {
 # Three entries here were in that state and have been removed. Where the figure is
 # load-bearing, PHRASES below is the answer, because a phrase names the sentence and
 # not just the number.
+# `05_coverage.tex` is `paper/switching/`, the empirical twenty-page build's coverage
+# section, and it appears in three scopes below because it tells the eight-corrections
+# story the complete paper's §7 and §9 tell. A scope is a set of basenames and this suite
+# resolves a prose figure by basename, so a file outside paper/sections belongs here
+# exactly when it states the superseded figure for the same reason the listed ones do.
 ALLOWED_IN: dict[tuple[str, float], tuple[str, set[str]]] = {
     ("num", 348): ("refusals under the commutation argument",
                    {"01_introduction.tex", "05_translation.tex", "07_evaluation.tex",
-                    "08_discussion.tex"}),
+                    "08_discussion.tex", "05_coverage.tex"}),
     ("num", 124): ("disjunctive scopes before prop:disjunction. It was also, until "
                    "E17's counterfactual was measured, the figure this file recorded "
                    "for what the empty-string reading of a glob star is worth; that "
@@ -237,7 +245,7 @@ ALLOWED_IN: dict[tuple[str, float], tuple[str, set[str]]] = {
                    "the prose no longer says 124",
                    {"01_introduction.tex", "06_regular.tex", "07_evaluation.tex",
                     "08_discussion.tex", "eval_rows_fill_glob.tex",
-                    "reg_star_empty.tex"}),
+                    "reg_star_empty.tex", "05_coverage.tex"}),
     ("pct", 94.2): ("kappa before the disjunction rule",
                     {"07_evaluation.tex", "eval_rows_fill_glob.tex"}),
     ("pct", 95.6): ("kappa after it and before the counter-average fix",
@@ -271,7 +279,7 @@ ALLOWED_IN: dict[tuple[str, float], tuple[str, set[str]]] = {
                   {"01_introduction.tex", "07_evaluation.tex", "08_discussion.tex",
                    "eval_baseline.tex", "eval_beyond_reach.tex",
                    "eval_differential_fixes.tex", "eval_rows_fill_glob.tex",
-                   "reg_trial_probes.tex"}),
+                   "reg_trial_probes.tex", "05_coverage.tex"}),
     ("num", 87): ("the implementation-order figure contrasted with the kernel's "
                   "reach", {"07_evaluation.tex", "tr_two_figures.tex"}),
     ("pct", 87): ("the scope-only template share it was once confused with",

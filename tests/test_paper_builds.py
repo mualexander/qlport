@@ -40,10 +40,11 @@ PAPER = ROOT / "paper"
 SECTIONS = PAPER / "sections"
 MOVED = SECTIONS / "moved"
 WRAPPERS = {"app_proofs", "app_experiments", "app_eval"}
-# `main_short` is the twenty-page version on the inexpressibility spine: a different
-# document rather than a third rendering of this one, so it is held to the same build
+# The two twenty-page versions: `main_short` on the inexpressibility spine and
+# `main_switching` on the empirical switching-cost one. Each is a different document
+# rather than a further rendering of this one, so each is held to the same build
 # hygiene as the other two and excluded from the page-length comparison below.
-BUILDS = ("main", "main_full", "main_short")
+BUILDS = ("main", "main_full", "main_short", "main_switching")
 
 _HOOK = re.compile(r"\\iffull\\input\{sections/moved/([A-Za-z0-9_]+)\}\\fi")
 _INPUT = re.compile(r"\\input\{sections/([A-Za-z0-9_/]+)\}")
@@ -211,7 +212,7 @@ def test_the_digest_covers_every_file_a_build_could_read():
     # must not invalidate a build log, and a change to the paper must not be excused by
     # it -- which is why it is named here rather than quietly matched by a suffix rule.
     outputs = {PAPER / "main.pdf", PAPER / "main_full.pdf",
-               PAPER / "main_short.pdf",
+               PAPER / "main_short.pdf", PAPER / "main_switching.pdf",
                PAPER / "quoted_figures.json"}
     missing = sorted(
         p.relative_to(ROOT) for p in PAPER.rglob("*")
@@ -310,6 +311,30 @@ def test_the_heading_levels_do_not_skip(build):
     assert "bookmark levels is greater than one" not in _log(build)
 
 
+def _reaches_a_deferred_block(top: Path) -> bool:
+    """Whether a build can reach `sections/moved/` by following its own `\\input`s.
+
+    `\\input{x}` is relative to paper/, so a reference resolves against PAPER with `.tex`
+    appended; a reference naming no existing file is skipped rather than raising, since
+    this walker is only asked a yes-or-no question about reachability. It returns on the
+    first hit, so a hook inside `\\iffull` counts -- which is correct here, because the
+    question is whether the log should have opened any block at all and `main.tex` and
+    `main_full.tex` differ only in where those blocks land.
+    """
+    seen, queue = set(), [top]
+    while queue:
+        path = queue.pop()
+        if path in seen or not path.is_file():
+            continue
+        seen.add(path)
+        text = source(path)
+        if "sections/moved/" in text:
+            return True
+        for ref in re.findall(r"\\input\{([^}]*)\}", text):
+            queue.append(PAPER / (ref if ref.endswith(".tex") else ref + ".tex"))
+    return False
+
+
 def test_no_block_is_typeset_twice():
     """What the page-count test below is a proxy for, asserted directly.
 
@@ -322,9 +347,17 @@ def test_no_block_is_typeset_twice():
     """
     import collections
 
+    # Whether each build's SOURCE reaches a deferred block at all, so that "none in the
+    # log" is a defect for the builds that input some and the expected reading for the one
+    # that inputs none. `main_switching` states the reverse direction's results and proves
+    # none of them, so it pulls in no block from sections/moved/; asserting a non-empty
+    # list for every build made adding that build fail here, on a build with nothing to
+    # duplicate.
     for build in BUILDS:
         opened = re.findall(r"sections/moved/([a-z0-9_]+)\.tex", _log(build))
-        assert opened, f"no moved blocks in {build}.log"
+        reachable = _reaches_a_deferred_block(PAPER / f"{build}.tex")
+        assert opened or not reachable, (
+            f"{build}.tex reaches a deferred block and {build}.log opened none")
         twice = {k: v for k, v in collections.Counter(opened).items() if v > 1}
         assert not twice, f"{build}.pdf typesets these more than once: {twice}"
 
@@ -341,8 +374,8 @@ def test_the_two_builds_are_the_same_length():
         found = re.findall(r"\((\d+) pages", _log(build))
         assert found, f"no page count in {build}.log"
         pages[build] = int(found[-1])
-    # Only these two. `main_short` holds a subset of this prose by design, so a length
-    # comparison against it would be asserting the opposite of what it is for.
+    # Only these two. Each twenty-page build holds a subset of this prose by design, so a
+    # length comparison against either would be asserting the opposite of what it is for.
     a, b = pages["main"], pages["main_full"]
     assert abs(a - b) <= 3, (
         f"main.pdf is {a} pages and main_full.pdf is {b}; the same prose in both means a "

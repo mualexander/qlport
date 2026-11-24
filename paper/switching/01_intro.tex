@@ -1,0 +1,122 @@
+% ---------------------------------------------------------------------------
+% The switching-cost version's introduction. Poses the proposal's question, says what
+% the measurement did to it, and promises what the eight sections after it deliver ---
+% in the order the work actually produced them, which puts coverage before the finding
+% that supersedes it. Numbers are quoted from the complete paper and carry the same
+% registry keys.
+% ---------------------------------------------------------------------------
+
+\section{Introduction}
+\label{s2:sec:intro}
+
+An observability bill is one of the few software costs that can grow faster than the
+system it measures, and the published cases are startling: one company's monitoring
+invoice reached \$65M a year, run up, by the account its own engineers give, because
+nobody was watching infrastructure spend~\citep{orosz2023}. The obvious response is to
+move to something cheaper, and for metrics the cheap option is well established ---
+Prometheus is free, widely deployed, and its query language is a de facto standard. Teams
+nonetheless stay, and when they explain why, the reason is rarely the data. It is the
+dashboards.
+
+A mature observability estate is thousands of saved queries: panels, alerting rules,
+service-level objectives, runbook links. Moving vendors means rewriting all of them in
+another language, by hand, without a way to tell whether a rewrite preserved what the
+original meant. That is a switching cost, and the question worth asking is where it comes
+from. If it is incidental --- different keywords, different punctuation --- a translator
+removes it and the lock-in was never real. If it follows from how the two languages are
+\emph{designed}, no amount of engineering removes it, and the query language is a retention
+mechanism whether or not anyone intended it as one.
+
+The question is tractable because query languages are formal languages. Rich treats them
+as such (§48.1), and the book's classification --- regular, context-free, decidable --- is
+the frame this paper works in~\citep{rich2008}. If the two languages are context-free they
+have grammars; if their grammars are unambiguous each query has one parse tree; and where a
+construct of one has no meaning-preserving counterpart in the other, the obstruction can be
+exhibited as a theorem instead of reported as a limitation.
+
+\paragraph{What was proposed, and what the measurement did to it.}
+This work was proposed as a single question --- is the lock-in a syntactic accident or a
+semantic necessity? --- with a plan attached: formalise both languages as
+$(\text{grammar},\text{semantics})$ pairs, define what it means for a translation between
+them to be sound, build a syntax-directed transpiler through a shared intermediate
+representation, and measure on real dashboards how much of each language actually
+translates. That plan was carried out as written, and three things happened to it.
+
+The first is a correction the proposal could not have anticipated, and it changed the
+definition of the central term. Soundness cannot be an equation between two queries
+evaluated on one database, because the two systems do not receive the same database: a
+Prometheus counter is a running total and a Datadog counter a sequence of per-interval
+deltas. Soundness here is therefore stated relative to an \emph{ingestion mapping}
+$\phi$, and every theorem names the class of databases it holds on
+(\S\ref{s2:sec:framework}).
+
+The second is that the expected answer did not arrive. The proposal took for granted that
+some constructs would turn out to be semantically inexpressible, and the paper reserved a
+column for them. In the forward direction that column emptied of everything we can
+demonstrate, bar $14$ occurrences left undecided, and most of what emptied it were
+corrections to our own earlier claims rather than to the vendor's behaviour
+(\S\ref{s2:sec:coverage}). The measurement the plan called for was made, and it answers
+the question in the negative: on this corpus, in this direction, the switching cost is
+work somebody has not done.
+
+The third is that the plan's instruments found something they were not built to find, and
+it is the finding this paper is named for. Measuring how much of each language translates
+required recording, for every translation, the context the query did not supply. Those
+records were kept as qualifications on the coverage number, one per code, and read
+together they are a result: a dashboard query does not determine its own meaning. That is
+why this paper reports coverage first and the finding second, which is the order the work
+produced them in and the reverse of their importance.
+
+\paragraph{What we found.}
+Going from Datadog metric queries to PromQL, $96.6\%$ of query occurrences translate. The
+shortfall is five named gap codes --- $3.3\%$ carrying a code for a construct this
+translator has not implemented, $0.1\%$ that does not parse --- so the ceiling is $99.9\%$
+once the first is written, or $99.7\%$ if the $14$ occurrences this paper cannot decide
+turn out to be beyond reach after all. Those figures are measured on the corpus the grammar
+and the implementation order were fitted to, which \S\ref{s2:sec:threats} states as the
+threat it is; frozen and run on a disjoint repository of dashboards by other authors, the
+translator reaches $96.7\%$ of $3{,}065$ occurrences.
+
+Translating is not the same as translating correctly, and the distance between the two is
+measurable here. Every expression we emit assumes a metric type the query does not state,
+and against the vendor's own declarations that inference is wrong for $6.5\%$ of the cases
+it can settle --- $491$ occurrences, against a column of demonstrated inexpressibility
+holding nothing. The rollup interval is the second and larger case: a Datadog query has no
+slot for it, so the interval arrives from the dashboard's time range, and $97.0\%$ of our
+translations are of queries that leave it there. PromQL does have the slot and $55.6\%$ of
+this corpus's range selectors fill it with a dashboard variable anyway, so the contrast
+between the two languages is one of degree and what they share is that the value comes from
+a layer outside either of them. Together with the template-variable shares --- $88.6\%$ of
+Datadog and $82.5\%$ of PromQL occurrences --- that makes the object a migration ports a
+query \emph{schema} plus a resolution layer belonging to the dashboard tool, which is where
+the switching cost we measured sits and where neither $\kappa$ nor a gap catalogue can see
+it. \S\ref{s2:sec:unsaid} is that case in full.
+
+Coming back is a different matter, and it is where language design does bite. A Datadog
+tag filter is a glob and a PromQL tag filter is a regular expression, and globs are a
+proper subclass in a way that admits proof rather than measurement.
+\S\ref{s2:sec:reverse} states the results and the decision procedure behind them, with the
+proofs left to the complete paper. Put beside the forward direction they give an asymmetry:
+leaving costs work, returning costs expressiveness.
+
+\paragraph{Scope.}
+We study \emph{forward portability}: once a team dual-writes or switches, a translated
+query must mean the same thing as the original on the data each system receives from then
+on. Migrating stored history is out of scope, and we measure the query layer only --- a
+real migration also re-instruments services, re-models cardinality and cost, re-establishes
+retention and rebuilds alerting, none of which is measured here. The main direction is
+Datadog metric queries into PromQL, because that is the direction teams actually take.
+LogQL and Splunk SPL were named in the proposal as stretch targets and remain stretch
+targets; no grammar or translator for either appears here.
+
+\paragraph{What this version carries.}
+This is the short version of a longer paper, organised around the measurement rather than
+around the theorems. \S\ref{s2:sec:background} places the question among the five
+literatures it belongs to; \S\ref{s2:sec:framework} fixes the framework;
+\S\ref{s2:sec:translator} reports the corpus, the grammars and the translator;
+\S\ref{s2:sec:coverage} is the coverage measurement and the gap catalogue;
+\S\ref{s2:sec:unsaid} is the paper's result; \S\ref{s2:sec:reverse} states the reverse
+direction; and \S\ref{s2:sec:threats} and \S\ref{s2:sec:conclusion} carry the threats and
+the answer to the proposal's question. The proofs, the ingestion mapping in full, the
+grammar conflict analysis, the differential rig and the live-account experiments are in the
+complete paper and cited here by name rather than reproduced.

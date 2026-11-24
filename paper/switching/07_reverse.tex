@@ -1,0 +1,92 @@
+% ---------------------------------------------------------------------------
+% The reverse direction in one page: this version's division of labour is the opposite
+% of main_short.tex's, which carries these results with their proofs in full. Stated
+% here because the asymmetry is what makes the forward direction's cheapness a finding
+% rather than a reassurance, and because the decision procedure is the one place in
+% this version where the course's machinery does the work.
+% ---------------------------------------------------------------------------
+
+\section{The Other Direction, Stated}
+\label{s2:sec:reverse}
+
+Everything above is one direction. The reverse direction is where language design does
+bite, and it bites in a form that admits proof rather than measurement, so this section
+states the results and leaves the proofs to the complete paper.
+
+Both languages filter on tag values and both do it with a pattern language, but not the
+same one. Datadog's is a \emph{glob}: a string $g=s_0*s_1*\cdots*s_n$ over
+$\Sigma\cup\{*\}$ with literal segments $s_i$, denoting
+$L(g)=\{\,s_0w_1s_1\cdots w_ns_n : w_i\in\Sigma^{*}\,\}$. Datadog documents prefix, suffix
+and substring wildcards and no other construct~\citep{ddfilter} --- no single-character
+wildcard, no alternation inside a value, no character class, and no escape making a literal
+\texttt{*} --- which is the premise of every negative result here, and which was read from
+the documentation until we put all three constructs to a real account, whose query parser
+rejected all three. PromQL's is a regular expression, and replacing every \texttt{*} with
+\texttt{.*} and escaping everything else gives one denoting the same language under
+PromQL's whole-value anchoring, which is why no gap code in Table~\ref{s2:tab:gaps}
+mentions globs on tag values. The reverse direction is the interesting one, and one
+structural fact decides most of it: for a glob with no star $L(g)$ is a single word, and
+for a glob with at least one star $L(g)$ contains a word of every length
+$\ell\ge\sum_i|s_i|$ --- so a glob language is a singleton or it is unbounded in length.
+
+\begin{corollary}[What globs cannot say]\label{s2:cor:no-glob}
+Assume $|\Sigma|\ge 2$. No glob denotes a finite language with two or more words --- in
+particular none denotes $\Sigma$, so there is no single-character wildcard, and none
+denotes an alternation of distinct literals. No glob denotes $\Sigma^{+}$, the non-empty
+values. For $\emptyset\neq A\subsetneq\Sigma$, no glob denotes $A^{+}$, so a star cannot be
+restricted to part of the alphabet. And if $L$ is \emph{infinite} and some $\sigma\in\Sigma$
+occurs in no word of $L$, then $L$ is not a union of finitely many glob languages.
+\end{corollary}
+
+\noindent
+The first two parts follow from the dichotomy alone; the third needs what a star admits,
+which is every character of $\Sigma$. The last is the only result here that holds against
+an \emph{arbitrary} union, with no bound on how many branches a translator may spend, and
+it is what separates ten of the refusals below from the rest. ``Infinite'' there is a
+hypothesis and not a flourish: a finite language omits characters and is a union of globs,
+one per word.
+
+\begin{proposition}[Glob-expressibility is decidable]\label{s2:prop:decidable}
+Let $r$ be a regular expression with $L(r)\neq\emptyset$, read over one fixed non-empty
+$\Sigma$. It is decidable whether some glob $g$ has $L(g)=L(r)$, and a witness is produced
+when one exists.
+\end{proposition}
+
+\noindent
+One observation about shortest words settles it. If $L(r)=L(g)$ for $g=s_0*\cdots*s_n$,
+taking every $w_i=\varepsilon$ gives $s_0s_1\cdots s_n\in L(g)$, and every other word of
+$L(g)$ is strictly longer --- so that word is the shortest of $L(g)$ \emph{and the only
+word of that length}. Build a DFA for $r$ by Rich's regular-expression-to-FSM construction
+(Thm 6.1) and the subset construction (Thm 5.3), and find its shortest accepted word $w$,
+with the number of accepting paths of that length, by breadth-first search. If there is no
+unique shortest word, no glob exists; otherwise $g$ is $w$ with stars inserted at some
+subset of its $|w|+1$ gaps --- at most $2^{|w|+1}$ candidates, each settled by deciding
+equivalence of two regular languages (Rich Thm 9.5). The search is finite and exhaustive,
+so it answers either way.
+
+\paragraph{What the corpus contains, and the asymmetry.}
+Of the $1{,}041$ concrete matcher occurrences in the PromQL half of the corpus --- the
+eighth of the $8{,}587$ whose pattern is not a template variable --- a Datadog scope
+reaches $91.9\%$, but two thirds of that only as a union of globs, running to $41$ branches
+for the commonest case and $206$ at the widest. Of the $84$ refusals, $74$ rest on the
+first three parts of Corollary~\ref{s2:cor:no-glob} together with a branch bound we choose
+and state, and $10$ on its last part, which needs no bound at all. The procedure of
+Proposition~\ref{s2:prop:decidable}, run over all $184$ distinct concrete patterns as a
+cross-check, agrees with the syntax-directed proposer on every one.
+
+Put the two directions beside each other. Forward, every candidate for inexpressibility was
+removed by writing the code or by exhibiting the expression, bar $14$ occurrences left
+undecided; backward, the residue divides into refusals resting on a bound we chose and
+refusals resting on a theorem. The two halves are not symmetric in kind, and that is the
+point: ``work remains'' is a statement about this translator, and
+Remark~\ref{s2:rem:refusal} says such a statement is weak evidence about a language, while
+``no glob denotes this language'' is a statement about globs that no amount of engineering
+changes. So the lock-in is real and not where the question assumed it would be --- not that
+a proprietary language says things an open one cannot, but that the proprietary filter
+language is weaker, so the migration is one-way. Leaving costs work; returning costs
+expressiveness, which is the testable form of the structural point
+\S\ref{s2:sec:background} takes from the switching-cost literature: the terms of return
+differ from the terms of entry. Two things limit how far that carries. The reverse direction
+has no translator behind it, so its numbers describe what a converter could achieve rather
+than what one does; and the ten unconditional refusals are ten, so a different corpus could
+contain none while the theorems stood.

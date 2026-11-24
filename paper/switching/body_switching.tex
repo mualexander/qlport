@@ -1,0 +1,56 @@
+\title{\textbf{A Dashboard Query Does Not Say What It Means:}\\
+\Large Switching Costs in Observability Query Translation}
+\author{Marshall Uy Alexander\\ \small CS 681 Applications of Computability --- Research Paper}
+\date{\small \today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}\noindent
+Teams stay with a proprietary observability vendor less because of their data than
+because of their dashboards: thousands of saved queries that a migration must rewrite by
+hand, with no way to tell whether a rewrite preserved what the original meant. We asked
+whether that cost is a syntactic accident or a semantic necessity, and built the
+apparatus to find out --- a grammar for each language, an intermediate representation with
+a denotation, soundness stated relative to an ingestion mapping because the two systems do
+not store the same thing, and a translator whose every refusal carries a named code.
+
+Run over the $8{,}770$ Datadog metric queries of a corpus of $22{,}894$ extracted from
+published dashboard and alerting documents, that translator reaches $96.6\%$ of
+occurrences, and the column we had reserved for constructs beyond PromQL's reach emptied
+of everything we can demonstrate, bar $14$ occurrences left undecided. On that evidence
+the answer to the question as posed is negative: leaving is engineering.
+
+The finding this paper is named for is the one that apparatus was not built to see. A
+dashboard query does not determine its own meaning. $97.0\%$ of the translations we emit
+are of queries that leave the rollup interval to the dashboard's time range, and where a
+widget pins that range the obvious default is wrong for $332$ of $496$ occurrences --- two
+times in three, and three times too wide at the modal span. All of them assume a metric
+type no query in either language states, and against the vendor's own declarations that
+inference is wrong for $6.5\%$ of the cases it can settle: $491$ panels a migration would
+carry across believing them exact. Nor is this one vendor's doing --- $88.6\%$ of Datadog
+and $82.5\%$ of PromQL query occurrences carry a template variable, and $55.6\%$ of PromQL
+range selectors take their window from a dashboard variable rather than a duration. An
+independent vendor's translator, run over the same corpus, supplies a $[5m]$ window to
+$21.3\%$ of occurrences under the note ``adjust interval as needed'': the same finding,
+reached by somebody not looking for it.
+
+Every instrument here is blind to that. A query that does not fix its own meaning parses,
+translates, and is counted as covered, so neither the grammars nor the gap catalogue nor
+$\kappa$ can see it. The object a migration ports is a query schema plus a resolution
+layer belonging to the dashboard tool, which is where the switching cost we measured
+actually sits --- and where a common query language would not reach.
+\end{abstract}
+
+\input{switching/01_intro}
+\input{switching/02_background}
+\input{switching/03_framework}
+\input{switching/04_translator}
+\input{switching/05_coverage}
+\input{switching/06_unsaid}
+\input{switching/07_reverse}
+\input{switching/08_threats}
+\input{switching/09_conclusion}
+
+\small
+\input{references}

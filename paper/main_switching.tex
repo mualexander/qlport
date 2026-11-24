@@ -1,0 +1,15 @@
+% The twenty-page version on the empirical switching-cost spine. `main.tex` and
+% `main_full.tex` are the complete paper; `main_short.tex` is the twenty-page version on
+% the inexpressibility spine. This one leads on the measurement instead: what a dashboard
+% estate costs to port, and the finding that the query text does not determine what a
+% query means. The reverse direction's theorems are stated here and proved in the
+% complete paper, which is the opposite division of labour from `main_short.tex`.
+%
+% `\fullfalse` because the apparatus macros read it, but this build has no appendices:
+% nothing here calls `\apref` or `\apin`, which would otherwise reference a label no
+% short build defines.
+\documentclass[11pt]{article}
+\newif\iffull\fullfalse
+\input{macros}
+\input{switching/body_switching}
+\end{document}

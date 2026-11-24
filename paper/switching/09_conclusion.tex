@@ -1,0 +1,55 @@
+% ---------------------------------------------------------------------------
+% Answers the proposal's question in the terms the proposal asked it, then says what
+% supersedes the question. The order is deliberate: the proposal's answer first,
+% because the proposal asked it, and the finding second, because it is larger.
+% ---------------------------------------------------------------------------
+
+\section{Conclusion}
+\label{s2:sec:conclusion}
+
+The question this work was proposed to answer was whether observability lock-in is a
+syntactic accident or a semantic necessity. It has an answer, and then it has a successor.
+
+The answer is that it depends on the direction. Leaving a proprietary vendor for an open
+one is a syntactic accident: we built the translator the proposal described --- two inferred
+grammars, both admitting deterministic one-token-lookahead parsers, a syntax-directed
+lowering into an intermediate representation, an emission into PromQL, soundness stated
+relative to an ingestion mapping because the two systems do not store the same thing ---
+and it translates $96.6\%$ of the $8{,}770$ Datadog metric query occurrences in our corpus,
+with a ceiling of $99.9\%$ and a shortfall that is five named constructs rather than a
+residue. The column we had reserved for things PromQL cannot express emptied of everything
+we can demonstrate, $14$ occurrences aside, and most of what emptied it were corrections to
+our own claims. Coming back is a semantic necessity and the necessity is provable: of the
+$84$ refusals in that direction, $74$ rest on a theorem about single globs together with a
+branch bound we state and $10$ on a theorem about globs outright, and no implementation
+effort removes those ten. Leaving costs work; returning costs expressiveness.
+
+The successor question is the one this paper is named for, and it is larger because it bears
+on the direction people actually travel. A dashboard query does not determine its own
+meaning. $97.0\%$ of our translations depend on a rollup interval the source query leaves
+to the dashboard's time range; where a widget pins that range the obvious default is wrong
+two times in three, and for the $7{,}721$ occurrences where nothing pins it there is no
+value anywhere to recover. All $8{,}475$ translations assume a metric type no query in
+either language states, and against the vendor's own declarations that assumption is wrong
+for $491$ panels a migration would carry across believing them exact. $88.6\%$ of Datadog
+and $82.5\%$ of PromQL occurrences carry a template variable, and $87.9\%$ of PromQL tag
+matchers have a variable where their pattern should be --- so for most of the corpus the
+reverse direction is not hard but statically undefined. A competitor's translator, which
+never saw this corpus, supplies an interval to $21.3\%$ of occurrences and says so in
+prose.
+
+What a migration ports is therefore a query schema plus a resolution layer --- time range,
+variable bindings, metric metadata --- that belongs to the dashboard tool and appears in
+neither language's grammar. The switching cost we set out to measure is mostly there, and
+it is invisible to every instrument built to measure it: a query that does not fix its own
+meaning parses like any other, translates like any other, and is counted as covered like
+any other. That is why it took the whole apparatus to find, and why a reader who takes
+$96.6\%$ as the practical difficulty of leaving will have taken the wrong number.
+
+Two things follow and are not pursued here. The measurement that matters next is not of
+query languages at all but of the resolution layer above them, which belongs to neither
+vendor and which a common query language would not reach. And the experiment that would
+settle this paper's own conclusion is the one it cannot perform: a differential run on
+private dashboards in which the metric type and the rollup interval are deliberately wrong,
+measuring what a migration loses when it supplies the context badly rather than not at
+all.

@@ -55,7 +55,12 @@ data: install
 # Two builds from one source: main.tex defers its apparatus to appendices, main_full.tex the
 # complete version with every appendix inline. The prose exists once and only its
 # placement differs, so the two cannot disagree.
-PAPERS := main main_full main_short
+#
+# The other two are twenty-page versions, and they are different documents rather than
+# further renderings of this one: main_short.tex carries the inexpressibility spine and
+# main_switching.tex the empirical one. Both are built here so that no numeral in either
+# escapes the digest or the figure census.
+PAPERS := main main_full main_short main_switching
 
 paper:
 	@command -v pdflatex >/dev/null || { echo "pdflatex not found: sudo apt install texlive-latex-extra texlive-fonts-recommended"; exit 1; }

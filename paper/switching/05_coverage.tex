@@ -1,0 +1,115 @@
+% ---------------------------------------------------------------------------
+% RQ3 and the catalogue, which is what this version leads on. The qualification on the
+% inexpressible column travels with every mention of it, as §7 of the complete paper
+% requires; the sentences here are written so the qualification sits inside the clause
+% making the claim rather than in the sentence after it.
+% ---------------------------------------------------------------------------
+
+\section{Coverage}
+\label{s2:sec:coverage}
+
+The measure is coverage $\kappa$ of Definition~\ref{s2:def:kappa}, by occurrence rather
+than by distinct string, because a widget repeated across forty dashboards is forty panels
+a migration has to rebuild by hand if it fails. Queries the grammar cannot parse stay in
+the denominator, so $\kappa$ is not reported against the part of the corpus that happened
+to cooperate.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/translation_coverage}
+\caption{Translation outcomes over the $8{,}770$ Datadog metric query occurrences. Every
+$\bot$ carries a gap code and appears in Table~\ref{s2:tab:gaps}; the unparsed row is kept
+in the denominator so that $\kappa$ is a statement about the corpus rather than about the
+parsable part of it.}
+\label{s2:tab:coverage}
+\end{table}
+
+\noindent
+$\kappa = 96.6\%$ of occurrences and $96.5\%$ of distinct queries. The two agreeing to
+within a tenth of a point is worth a sentence, because there was no reason they should: the
+queries the translator refuses are neither more nor less repeated across dashboards than
+the ones it handles, so there is no cheap win hiding in the popular queries and no
+consolation that the failures are all one-offs. Every emitted expression parses under the
+PromQL grammar of \S\ref{s2:sec:translator}, checked as an assertion rather than reported
+as a rate, since the only acceptable number of syntactically invalid outputs is zero.
+
+\subsection{The gap catalogue}
+\label{s2:sec:gaps}
+
+Table~\ref{s2:tab:gaps} is the other half of the answer: not ``what fraction fails'' but
+``which constructs, and why''. Every row is reached by a query a real dashboard ships, and
+every $\bot$ carries one code.
+
+\begin{table}[htbp]\centering\scriptsize
+\input{tables/gap_catalogue}
+\caption{The complete gap catalogue for the forward direction. Five codes account for
+every refusal. Shares are of all $8{,}770$ Datadog query occurrences in the corpus.}
+\label{s2:tab:gaps}
+\end{table}
+
+The division the catalogue was built for is between what the target cannot \emph{hold},
+what it cannot \emph{say}, and what we have not \emph{built}. It is still the right division
+and the answer it returns is not the one this paper spent most of its life reporting: on
+this corpus, in this direction, the first two kinds hold nothing shown to be beyond reach.
+All $287$ refused occurrences are unwritten code, with one qualification that carries
+everywhere the column is mentioned --- $14$ are refused on a hypothesis this paper can test
+for the metrics the vendor declares and cannot test for theirs, so they are undecided rather
+than retracted.
+
+\paragraph{Eight corrections, all in one direction.}
+Keeping the three kinds apart is what made each departure from the inexpressible column a
+finding rather than a revision, and it is also what makes the record embarrassing. Eight
+times a refusal or a classification put something in that column that did not belong
+there: $348$ occurrences refused on a commutation argument the real evaluation order never
+raises; all $124$ disjunctive scopes called a language gap when $120$ were a single regex
+matcher away and the four remaining were sayable too; \texttt{.weighted()} called
+inexpressible for $70$ occurrences when the modifier computes nothing at all; $36$
+zero-fills called inexpressible on the strength of one candidate expression, when a real
+server supplies the value per series for another; $31$ occurrences of a wildcard over tag
+\emph{keys} filed as beyond the reach of any engineering, when no Datadog query ever asked
+for one and the string was manufactured by this paper's own normaliser truncating a
+template variable at its first hyphen; $34$ percentile queries refused under a corollary
+whose hypothesis provably fails for $20$ of them and is untested for the other $14$; and
+$5$ scopes refused for a distinction Prometheus's data model defines away, which is
+precisely what makes dropping the term exact rather than lossy.
+
+Together those are $648$ distinct occurrences and $7.4$ points of $\kappa$ --- a running
+total across the whole life of the work rather than a figure that stood at any one moment,
+and one that still includes the $14$ this paper cannot decide either way. Every one of the
+eight erred in the direction that would have made the thesis look better, and the last four
+are the least reassuring: the first four surfaced while something else was being measured,
+which is luck, and these four came from going looking.
+
+There is a ninth correction and it runs the other way. The formula layer the evaluation
+holds aside was held aside partly on the claim that nothing in it computes what a query
+cannot, and $30$ occurrences over $19$ distinct strings do: proprietary detectors,
+exponentially weighted means, a smoothing window the service rather than the query
+chooses, and calendar offsets PromQL's fixed-duration \texttt{offset} cannot express. So
+what this section reports is a result about the metric query language and not about
+everything a Datadog widget can be made to compute. Eight corrections ran towards the
+thesis and the ninth runs away from it, which is weak evidence that the eight were a
+property of where the paper was looking rather than of what it was hoping to find --- but
+it is the first datum of that kind, and one is not many.
+
+\paragraph{What the ceiling is, and what it costs.}
+\texttt{UNSUPPORTED\_FUNCTION} is almost all of what remains, led by \texttt{top(...)} at
+$139$ occurrences. That one is expressible: PromQL denotes Datadog's ranking with an
+\texttt{@}-pinned \texttt{topk}, read off a real server, and the vendor's own
+\texttt{top()} was then measured to behave as its documentation says. Nine more of its
+$208$ are a negated match-all, \texttt{\{*,!*\}}, where a live account selects the same
+series as for \texttt{\{!*\}}, so the translation is to drop the term. The ceiling is
+therefore $99.9\%$ once the unwritten code is written, or $99.7\%$ on the reading that the
+$14$ percentile occurrences this paper cannot decide turn out not to be writable.
+
+Reaching it is not proportional work, which the complete paper measures as a staircase
+rather than a curve: coverage is conjunctive over the features a query uses while
+popularity is marginal, so five of Datadog's $28$ features reach $1.6\%$ of the corpus and
+half of them reach $88.7\%$. For anyone reading Table~\ref{s2:tab:gaps} as a work plan, the
+order matters more than the list.
+
+That ceiling also carries a condition it usually travels without, and the condition is this
+paper's result arriving as a term in its own coverage number. $139$ of the $287$ refusals
+are \texttt{top(...)}, whose PromQL form needs the dashboard's time range twice over ---
+once as a window and once as an \texttt{@} anchor --- and the query states neither. That the
+range is load-bearing rather than cosmetic is itself measured: narrowing the window moves
+which series Datadog's own \texttt{top()} returns. So the ceiling is reachable only by a
+translator that is told what the query does not say.

@@ -1,0 +1,121 @@
+% ---------------------------------------------------------------------------
+% Related work for the switching-cost version, at two pages. The weighting differs from
+% the inexpressibility version's: the attribute-grammar thread and the standardisation
+% effort are load-bearing here, because this paper's result is that the translation needs
+% attributes the query text does not carry, and the expressiveness literature is
+% compressed to what §7 still needs.
+% ---------------------------------------------------------------------------
+
+\section{Background and Related Work}
+\label{s2:sec:background}
+
+Five traditions bear on the question of \S\ref{s2:sec:intro} and none of them answers it.
+
+\paragraph{Query languages as formal languages, and where the attributes come from.}
+Rich's treatment of query languages as formal languages is the licence for the approach,
+and the regular/context-free/decidable classification is the book's frame rather than that
+section's~\citep{rich2008}. An unambiguous grammar gives each query exactly one parse tree,
+which is the precondition for a translation being well defined; an LALR(1) one makes the
+parse linear and the parser a table, so a corpus can be processed in bulk rather than
+sampled~\citep{aho2006}; and the translation itself has a classical form, a syntax-directed
+transduction associating an output with each production and composing them over the parse
+tree~\citep{lewis1968}.
+
+One tradition in that list does more work here than the rest, and it is the one this
+paper's result is about. Where a node's output depends on information held elsewhere,
+Knuth's attribute grammars are the standard account~\citep{knuth1968}: an attribute is
+computed and passed, and the grammar says where from. The translation this paper builds
+needs two attributes --- the rollup interval and the metric's type --- that appear in no
+production of either grammar and in no part of the query text, so there is nowhere in the
+parse tree they could be inherited from. That is not a defect in the formalism but the
+precise statement of \S\ref{s2:sec:unsaid}'s finding: the attributes exist, the translation
+needs them, and the document that supplies them is the dashboard rather than the query.
+
+\paragraph{The two languages.}
+PromQL is documented and its reference parser is open source, so a grammar can be checked
+against an implementation rather than inferred~\citep{promql}. It is a vector-valued
+expression language in which selectors denote sets of series, range selectors denote
+windows, functions reduce windows and aggregation operators reduce across series, with
+counters stored as running totals and reset handling inside the range functions. Datadog's
+metric query language is not documented as a grammar; what is published is a reference
+manual with examples, enough to infer the syntax and not to verify it. The important
+difference is not syntactic: Datadog stores a counter as per-interval deltas, and a query
+is evaluated first by time and then by space~\citep{datadog,ddnested} --- a rollup reduces
+each series alone and a space aggregator combines the results. Neither the rollup interval
+nor the metric's type is part of the query text in either language, which is where this
+paper ends up.
+
+\paragraph{What a translation guarantees, and what the existing tools report.}
+SQL dialect translation is the closest established practice: Apache Calcite parses SQL into
+a relational algebra, optimises, and generates dialect-specific SQL on the way
+out~\citep{begoli2018}, and SQLGlot does the same across more than twenty
+dialects~\citep{sqlglot}. Both are engineering successes and neither offers a statement of
+what a translation preserves --- their criterion is that the output parses and behaves as
+users expect, and where a construct has no counterpart the usual outcome is a best-effort
+rewrite that leaves no record of the approximation. That is a reasonable engineering choice
+and a poor measurement instrument, which is why \S\ref{s2:sec:framework} requires a
+translator to be total with every failure a named $\bot$.
+
+Converters for this language pair exist, and we have found no published result among them
+--- a negative about a literature, which is the weakest kind of claim this paper makes and
+is stated as a search rather than as a fact. Chronosphere describes the closest thing to
+this paper's method, a Datadog grammar written from scratch with queries parsed to an AST
+and emitted through the open-source Prometheus grammar, and reports getting ``about
+$90\%$'' of the way~\citep{marcopoli2024}; what the percentage is a percentage of, and what
+a converted query is meant to preserve, are not stated. OpenObserve's dashboard migrator
+marks each object migrated, needing review, or skipped~\citep{openobserve} --- a coarse
+form of the typed failure \S\ref{s2:sec:framework} requires, reported without counts, and
+the tool \S\ref{s2:sec:baseline} runs over this corpus. A third is closer to this paper
+than either: a public repository with no accompanying publication, which translates Datadog
+dashboards and monitors into PromQL and reports reaching $92.4\%$ of $14{,}172$ distinct
+queries and monitors~\citep{dd2dash0} --- its own figures, read from a cached copy of its
+README because the repository is a feature branch. It arrives independently at three of
+this paper's devices: each rule carries one of four claims, each translated item carries a
+ledger of the assumptions its claim rests on, and anything without a rule is refused by
+the name of the construct rather than approximated. That convergence is the useful part of
+finding it --- these are not this paper's inventions but what the problem forces on anyone
+unwilling to round a translation up. What none of them publishes is a grammar for the
+Datadog side, or a measurement of what is impossible as against unbuilt, or a count of the
+context its output depends on and does not have.
+
+\paragraph{The standard of proof, and the form of a negative.}
+Compiler verification supplies the first: McCarthy and Painter proved a compiler for
+arithmetic expressions correct by relating source and target
+denotations~\citep{mccarthy1967}, and CompCert carries the idea through a realistic C
+compiler with machine-checked proofs~\citep{leroy2009}. That is the shape of this paper's
+soundness theorems though not their rigour, and it differs in one way that is not
+incidental: a verified compiler may assume source and target run on the same input, and
+here they do not. Database theory supplies the adjacent decision problem, equivalence of
+conjunctive queries being decidable by the homomorphism
+characterisation~\citep{chandra1977,abiteboul1995}; it does not transfer, since the
+quantities here are numeric aggregates over time windows and exactness has to be stated up
+to floating point, so the borrowing is the habit rather than the result. ``PromQL cannot say
+this'' has a literature too~\citep{felleisen1991,mitchell1993}, from which this paper takes
+the \emph{distinction} rather than the criterion: \S\ref{s2:sec:reverse}'s results are
+blunter, containment facts about two classes of regular languages where the target has no
+term with the denotation at all. They are the only claims here that hold regardless of how
+much engineering is applied, which is exactly why the rest of the paper is careful not to
+borrow their authority.
+
+\paragraph{Observability, standardisation, and switching costs.}
+The closest observability work compares implementations of \emph{one} language rather than
+translating between two. Volz's compliance testing found that vendors advertising PromQL
+support disagree with Prometheus on a generated conformance suite~\citep{volz2020} --- this
+paper's problem in miniature, and the source of its practice of verifying a candidate
+against a real server rather than a model. Standardisation approaches it from the other
+end: OpenTelemetry has largely settled the \emph{data} question~\citep{otel}, leaving
+queries as the remaining lock-in surface, and the CNCF's Observability TAG has an active
+effort towards a common query language~\citep{sharma2025}. That effort needs exactly the
+evidence this paper produces, and \S\ref{s2:sec:unsaid} has an uncomfortable thing to tell
+it: agreeing on syntax and semantics for metric queries would leave most of the cost
+measured here untouched, because what the corpus is missing is not in the query.
+
+Switching costs themselves are well developed in industrial organisation. Farrell and
+Klemperer survey lock-in and its competitive effects~\citep{farrell2007}, and Shapiro and
+Varian give the lock-in cycle its standard informal treatment for information
+goods~\citep{shapiro1999}. Two of their structural points land here: that what retains a
+customer is not that leaving is impossible but that the terms of return differ from the
+terms of entry, which \S\ref{s2:sec:reverse} is the test of; and that a switching cost need
+not sit in the thing being switched but can sit in a complementary asset nobody priced,
+which is what a resolution layer belonging to the dashboard tool turns out to be. The
+concrete case that motivates the question is on the public record~\citep{orosz2023}.

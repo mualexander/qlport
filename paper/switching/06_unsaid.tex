@@ -1,0 +1,240 @@
+% ---------------------------------------------------------------------------
+% The paper's result: RQ4, the caveat table, and the three independent measurements
+% that say the same thing. Numbers are the complete paper's §7 and §8; nothing new is
+% computed here. The two pillars are kept apart deliberately --- one is a property of
+% the source language, the other of the ingestion mapping --- because running them
+% together was the error an earlier draft made and it cost the argument a pillar.
+% ---------------------------------------------------------------------------
+
+\section{What a Dashboard Query Does Not Say}
+\label{s2:sec:unsaid}
+
+The gap catalogue is the wrong place to look for the design artefact. The caveats are the
+right one. Every translation this paper calls exact is exact relative to stated
+preconditions, and Table~\ref{s2:tab:caveats} counts how often each is in play. These are
+not hedges added after the fact: each is a diagnostic the emitter attaches to the expression
+it returns, in the second component of $E$.
+
+\begin{table}[htbp]\centering\footnotesize
+\input{tables/translation_caveats}
+\caption{Preconditions carried by the $8{,}475$ translated expressions. A translation may
+carry more than one. Shares are of the translated set rather than of the corpus.}
+\label{s2:tab:caveats}
+\end{table}
+
+\subsection{A slot the source language does not have}
+\label{s2:sec:rollup}
+
+\texttt{ROLLUP\_DEFAULT} covers the $97.0\%$ of translations whose source query never
+stated a rollup interval. Datadog's grammar offers \texttt{.rollup($\mathit{op}$,
+$\Delta$)} and most queries do not use it, so the interval comes from the dashboard's time
+range and no care by the query's author puts it in the text. This is the single largest
+qualification on $\kappa$, and it is a property of the source language rather than of the
+translator: a Datadog query is not self-contained, so a translated query cannot be either.
+
+PromQL does have the slot --- a range selector is part of the expression --- and that is
+the contrast this paper used to draw categorically. It should not be, and the corpus says
+so. Of the $3{,}610$ PromQL occurrences carrying a range selector at all, $2{,}006$ ---
+$55.6\%$ --- fill it with a dashboard template variable rather than a duration,
+overwhelmingly \texttt{\$\_\_rate\_interval} or \texttt{\$\_\_interval}: those panels take
+their window from the dashboard's time range too, by a different mechanism and with the
+same consequence for anyone translating them. So the comparison is $97.0\%$ against
+$55.6\%$ --- a real difference, and one of degree. The categorical version was available to
+be checked against this corpus from the beginning and was not, which makes it the one claim
+in this paper that went longest without the control it needed.
+
+The exposure runs one way. A dashboard that must ship generically has a weaker reason to
+pin a rollup than a hand-tuned production one, so $97.0\%$ is better read as an upper
+estimate of what a customer estate would show --- and the conclusion survives the discount,
+because the load-bearing half is the $55.6\%$, measured over two independent PromQL
+sources, which makes the difference one of degree however the Datadog share moves.
+
+\paragraph{What the default costs.}
+An exposure is not an error rate, and for some of these occurrences the error rate can be
+computed. Joining each translated occurrence to its widget's declared time span, and that
+span to a measurement of Datadog's own interval lookup at all ten spans the corpus's
+widgets declare, gives this. Of the $8{,}217$ occurrences carrying
+\texttt{ROLLUP\_DEFAULT}, $496$ --- $6.0\%$ --- sit in a widget that pins its own span. For
+those the emitter's $60$\,s is the interval Datadog would have used for $164$ of them and
+the wrong one for $332$, or $66.9\%$. The modal declared span is one hour, $205$
+occurrences, where Datadog rolls up at $20$\,s and the emitted \texttt{[60s]} answers a
+question three times as wide; the declared spans run from one minute, where $60$\,s is
+$60$ times too wide, to one week, where it is a sixtieth of the interval Datadog uses.
+Every span the corpus declares is one that measurement covered, so none of this rests on
+interpolation.
+
+The other $7{,}721$ cannot be decided, and the distinction matters more than the ratio
+does. A widget that pins nothing takes its span from the dashboard's time selector, which
+is a viewer's choice at view time and appears nowhere in the JSON --- so for those the
+default is \emph{unverified} rather than wrong. Carrying the measured share across all
+$8{,}217$ would give about $5{,}500$, which is an extrapolation and an upper estimate, since
+an author who pins a span is doing something deliberate and the widgets that declare are if
+anything enriched for disagreement.
+
+What this does not do is move $\kappa$. The $60$\,s is a placeholder for computing
+coverage, every occurrence that carries it is counted as translated either way, and the
+kernel soundness theorem's hypothesis on the bucket is stated in terms of the width of the
+bucket Datadog reports rather than in terms of $60$\,s --- so a translator that reads the
+span off the dashboard discharges the hypothesis and emits a different constant, without
+changing which queries translate. The figure is the size of the correction a real
+per-dashboard translator makes, and it is invisible in every coverage number this paper
+prints.
+
+\subsection{A type neither language can state}
+\label{s2:sec:type}
+
+\texttt{METRIC\_TYPE\_UNKNOWN} marks $100\%$ of the translated set, and calling that a
+second instance of self-containment double-counts a fact this paper has already banked.
+Neither language declares a metric's type in the query text: Definition~\ref{s2:def:model}
+puts the kind on the series, and choosing \texttt{rate} over \texttt{avg\_over\_time}
+records what a PromQL author believed exactly as \texttt{.as\_count()} records what a
+Datadog author believed. What makes the type load-bearing \emph{here} is that $\phi_\rho$
+branches on it: Datadog stores deltas for a \texttt{COUNT} and samples for a
+\texttt{GAUGE}, so one query text reads two different stored quantities where Prometheus
+stores samples either way. That is the ingestion mapping showing up a second time, not a
+second property of the language, and the ledger should not charge it twice.
+
+Charging it once is enough, because it has a price. The type the query omits is declared,
+for $89.5\%$ of translated occurrences, in the repository the dashboards come from, and the
+front end's inference is wrong on $6.5\%$ of those. That is $491$ panels a migration would
+carry across believing them exact. The $887$ it does not settle divide into $736$ naming
+metrics the repository never declares, $134$ rate metrics it declares and this translator
+reads as counters, and $17$ belonging to three metric names two integrations declare
+incompatibly.
+
+What the repository declares is what an integration \emph{submits}, so a disagreement says
+the inference is wrong and not that it must be --- a dashboard can query a metric the
+integration does not ship --- which makes the declaration a sharper instrument than the
+query text it replaces rather than a proof. $\kappa$ is a coverage measure and never was a
+correctness measure, and this is the first number in the paper that says how far apart the
+two are.
+
+One piece of syntax looks like the query supplying its own metadata and is not, and
+noticing that widened the caveat rather than narrowing it. \texttt{.as\_count()} and
+\texttt{.as\_rate()} are documented for \texttt{COUNT} metrics, and we read their presence
+as settling the type the dashboard omits, which exempted a quarter of the corpus. Datadog
+does not enforce the documentation: on a \texttt{GAUGE} it accepts both modifiers and
+ignores them. So the exemption was an artefact of reading a manual instead of an account,
+and every translated occurrence now carries the caveat. The language did not become less
+self-contained when this was noticed; it never was, and the appearance that a quarter of it
+was came from the one piece of syntax resembling a type declaration.
+
+\paragraph{The rest of the table, and one conclusion.}
+Four codes remain. \texttt{ROLLUP\_ALIGNMENT} is universal because Datadog's buckets are
+epoch-aligned while a PromQL range window follows the evaluation step, so the two systems
+agree bucket for bucket on the aligned grid and not off it. \texttt{COUNTER\_RESET} and
+\texttt{PHI\_SERIES\_START} each mark the same $23.7\%$ --- the translations using the
+cumulative-difference form --- for two conditions that coincide in this corpus without
+being the same condition. And \texttt{TAG\_PRESENCE\_EMPTY} marks the $1.4\%$ whose
+selector asks a tag merely to be present, where the three tag states Datadog distinguishes
+collapse to two in Prometheus's data model: the same barrier that refuses
+\texttt{SCOPE\_EMPTY\_VALUE} outright in Table~\ref{s2:tab:gaps}, appearing here as a
+condition on the target database rather than as a refusal. The conclusion is the one an
+earlier draft of this section had backwards. That draft said $116$ occurrences carried
+\texttt{ROLLUP\_ALIGNMENT} alone and so rested on nothing but the evaluation grid; with
+\texttt{METRIC\_TYPE\_UNKNOWN} recorded the true figure is \emph{none}, since every one of
+those $116$ is an \texttt{avg} rollup, and once the modifiers' evidential value is
+withdrawn as well, no translation in this corpus is exact on the strength of anything the
+query itself contains. That is a stronger claim than the one it replaces, and it was
+invisible only because a precondition was.
+
+\paragraph{Two defaults, and why the counts mislead.}
+The type default is wrong for $491$ of the occurrences it can settle and the interval
+default for $332$, which look alike --- but the denominators differ by an order of
+magnitude. So the default this paper had been quoting is almost always right on a population
+that is almost always decidable, and the one it had not computed is wrong two times in three
+on a population that is almost never decidable. That is the sharper statement of the
+division: the ingestion pillar produces the errors a translator can find and the language
+pillar the ones it cannot, since a widget that pins no span has no span to read and nothing
+in the query, the response or the repository supplies it. It is not a claim that either
+pillar produces more of them.
+
+\subsection{Three more measurements, arrived at from elsewhere}
+
+Three further figures point the same way, and none of the three was collected for this
+purpose.
+
+The first is the template-variable share. $88.6\%$ of Datadog query occurrences and
+$82.5\%$ of PromQL ones carry at least one template variable; on the held-out Datadog
+repository the share is $77.0\%$, so read the level as this corpus's and what generalises
+as the fact that both languages carry the dependency. The parse rates of
+\S\ref{s2:sec:translator} are the same fact counted as an instrument failure.
+
+The second looks least like the others and is the sharpest. Of $8{,}587$ PromQL regex
+matchers in the corpus, $87.9\%$ have a template variable as their pattern. For those the
+reverse direction is not hard but \emph{statically undefined}: there is no pattern to
+convert until somebody looks at the dashboard. The theorems of \S\ref{s2:sec:reverse} are
+about the other eighth.
+
+The third arrives from a competitor, and it is worth a subsection of its own.
+
+\subsection{A baseline, and the same finding from outside}
+\label{s2:sec:baseline}
+
+$\kappa$ has nothing to be compared against in the literature, but it does have something
+to be compared against in practice. OpenObserve ships a dashboard migrator whose
+Datadog-to-PromQL translation runs in the browser, so it can be driven over this corpus
+directly; holding aside the $117$ occurrences whose source is several comma-separated
+metrics, where our emitter returns a list and theirs one string, leaves $8{,}653$. Their
+translator refuses nothing, emitting an expression for every one of them against our
+$96.7\%$ --- but $457$, or $5.3\%$, are not PromQL, judged by this paper's grammar, which
+predates both translators' output and which Prometheus~3.15.0's own parser agrees with on
+every one of the $14{,}555$ distinct expressions the two emit between them. So on the one
+measure both tools can be held to without first agreeing on semantics, coverage by
+\emph{valid} output, the figures are $94.7\%$ against $96.7\%$: the translator that refuses
+more emits more. The comparison is in-sample on one side and out-of-sample on the other, in
+the direction that favours this paper, and \S\ref{s2:sec:threats} says so.
+
+Two of their figures are this section's finding arriving from outside it. $1{,}844$
+occurrences --- $21.3\%$ --- are given a \texttt{[5m]} window no query states, under the
+note ``adjust interval as needed''; and $525$ occurrences have a Datadog modifier silently
+dropped, $570$ drops in all, of which $316$ are \texttt{.rollup}, $184$ \texttt{.fill} and
+$70$ \texttt{.weighted}. Dropping a \texttt{.rollup} does not approximate the query, it
+answers a different one. The interval is not in the query, so a translator must be told it,
+record that it guessed, or guess quietly: theirs guesses and mentions it in prose, ours
+records \texttt{ROLLUP\_DEFAULT} and counts it. Somebody who was not looking for this
+finding ran into it anyway.
+
+One of their three dropped modifiers is dropped correctly --- \texttt{.weighted()} computes
+nothing, which this paper established only after calling it inexpressible for $70$
+occurrences --- so there their silent drop is right and our earlier refusal was wrong. And
+what happens to the queries we refuse is the sharper result: all $275$ of them receive an
+expression, across every one of the five gap codes. None of it is concealed, since the
+output carries a note, but a note is not a code: $68.6\%$ of occurrences carry only the
+cosmetic observation that dots became underscores, so the $31.3\%$ that say something
+substantive arrive in the same channel as the noise and cannot be counted without being
+read.
+
+\subsection{The lock-in surface is the dashboard layer}
+\label{s2:sec:dashboard-layer}
+
+What all of it says is that the object a migration ports is not a query. It is a query
+schema plus a resolution layer --- time range, variable bindings, metric metadata --- that
+belongs to the dashboard tool and has no counterpart in either language's grammar. In the
+terms of \S\ref{s2:sec:background}, the translation needs two attributes and the parse tree
+has no production to inherit them from. That relocates the switching cost rather than
+dissolving it, and it relocates it somewhere neither $\kappa$ nor a gap catalogue can see,
+because a schema parses and translates exactly like a query and is counted as covered.
+
+Two consequences follow and neither is a hedge. For a migration, the work is not where
+$\kappa$ points: the $287$ refused occurrences are $262$ distinct strings to rewrite by
+hand, while $8{,}217$ translated occurrences need an interval supplied from outside the
+query and all $8{,}475$ need a metric type supplied the same way --- and for $496$ of those
+intervals the dashboard holds a value to read while for the other $7{,}721$ it does not, so
+for most of the estate there is no value anywhere to recover, only a decision to make.
+Recovering context is the task; translating the query text is nearly solved.
+
+For the standardisation effort of \citet{sharma2025}, a common query language leaves this
+untouched: agreeing on syntax and semantics for metric queries would not make this corpus
+portable, because what the corpus is missing is not in the query. That is the one
+recommendation this paper is in a position to make to that work, and it is uncomfortable.
+
+\paragraph{One limit, on this and on anyone else's version of it.}
+The resolution layer named here is not an abstraction the two query languages share. It is
+two products' designs --- Grafana's templating and Datadog's own time selector --- read off
+the dashboards this corpus happens to contain, so a portability claim about dashboards is
+partly a claim about Grafana. The direction of the finding survives that, since both
+products leave the time range and the variable bindings outside the query text and the
+metric's type is outside both \emph{languages} whatever tool draws the panel. What does not
+survive it is any claim about a third tool, which may place the same three things somewhere
+else.

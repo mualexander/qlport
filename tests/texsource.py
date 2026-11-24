@@ -296,6 +296,11 @@ SOURCE_READS = {
         "where the appendix macros are written, which is build-independent",
     "test_every_apref_target_exists":
         "the appendix heads and the pointers to them, declarations both",
+    "_reaches_a_deferred_block":
+        "the input graph, walked to ask whether a build reaches sections/moved/ at all "
+        "-- a question about which files a top-level file pulls in, and the one that "
+        "separates a build with no deferred block to duplicate from one whose log lost "
+        "the blocks it has",
     "_scan": "labels and the references to them, which no build renames",
     "_count": "the same, counted",
     "test_every_source_file_the_paper_names_exists":

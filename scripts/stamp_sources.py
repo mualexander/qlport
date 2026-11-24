@@ -34,6 +34,7 @@ def sources() -> list[Path]:
     """
     return sorted([*PAPER.glob("*.tex"), *(PAPER / "sections").rglob("*.tex"),
                    *(PAPER / "short").rglob("*.tex"),
+                   *(PAPER / "switching").rglob("*.tex"),
                    *(PAPER / "tables").glob("*.tex"),
                    *(PAPER / "figures").glob("*.pdf")])
 

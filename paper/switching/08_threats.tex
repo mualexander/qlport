@@ -1,0 +1,95 @@
+% ---------------------------------------------------------------------------
+% Threats to the measurements this version leads on. The last one is the sharpest and
+% is specific to this spine: the differential rig holds true exactly the conditions
+% §6 argues are the switching cost, so the agreement it reports is silent about them.
+% ---------------------------------------------------------------------------
+
+\section{Threats to Validity}
+\label{s2:sec:threats}
+
+\paragraph{The corpus is published dashboards, and its Datadog half has one source.}
+Vendor and community dashboards may be tidier and more heavily templated than in-house
+ones. The template-variable share --- $88.6\%$ of Datadog and $82.5\%$ of PromQL
+occurrences --- is the figure most likely to be inflated this way, and the $97.0\%$ rollup
+dependence is exposed for the same reason: a dashboard that must ship generically has a
+weaker reason to pin an interval. $\kappa$ is less exposed, since the gaps it reports are
+structural constructs rather than stylistic ones. Worse, all $8{,}770$ Datadog occurrences
+come from \texttt{integrations-core} --- one organisation's queries in one house style,
+with nothing to pair against the PromQL side's two independent sources, because no
+comparable public body of customer-written Datadog dashboards exists.
+The paragraph below holds out the community- and partner-maintained sibling repository,
+whose house style is measurably different ($77.0\%$ against $88.6\%$), which confirms the
+template share as source-specific in the direction this paragraph fears. What neither
+repository is, is evidence about what customers write, and that bears on the $491$ most
+sharply: the declarations the type inference is checked against come from the same
+repository as the queries, so the disagreement is measured between two artefacts by the
+same authors. That is a strong signal about an inference which ought to agree with them and
+does not, and no evidence at all about how often it fails on the $736$ occurrences naming
+metrics this repository never mentions. A corpus of private dashboards would be the better
+test and was not obtainable for this work; that is a statement about our access, not about
+whether such a corpus could exist.
+
+\paragraph{The grammar and the implementation order were fitted to this corpus.}
+Grammar v2 is v1 plus every production the corpus showed was missing, the translator's
+feature set is the $25$ features appearing in some query it translates, and
+the implementation order behind \S\ref{s2:sec:coverage}'s ceiling is a greedy
+maximum-coverage order computed over this corpus. So $\kappa=96.6\%$ is a resubstitution estimate, and the honest reading of it is
+``what this corpus asks for, once someone has read it'' rather than ``what a dashboard
+estate should expect''. The one decimal place is a property of the arithmetic, not a claim
+to that precision out of sample. It bears on \S\ref{s2:sec:baseline} hardest and in the
+direction that favours this paper: OpenObserve's translator never saw this corpus, while
+this paper's grammar was extended until it parsed it.
+
+Three channels can be read twice and were, which bounds the worry rather than removing it.
+On $497$ community dashboards the corpus never listed, grammar v2 parses $99.6\%$ of the
+$12{,}522$ distinct strings whose instantiated form the corpus does not hold, against
+$99.0\%$ in sample; on $2{,}572$ distinct queries from \texttt{integrations-extras} it
+parses $99.9\%$, its in-sample rate; and $\kappa$ itself, frozen and run on $3{,}065$
+held-out occurrences, is $96.7\%$ against $96.6\%$ here, where the dashboard-clustered
+standard error on the held-out figure is $1.1$ points and rests on an effective two
+dashboards' worth of independent variation. Neither parse-rate fall is larger than the
+spread it inherits from the two margins behind it. What all three support is that nothing
+large is hiding on that side, which is weaker than the rates agreeing and is the claim the
+data carries. Nothing is read twice on the other channels: the differential run, the
+dual-write replay and the trial probes all run against one account's data and have no
+holdout at all.
+
+\paragraph{The differential rig holds true what this paper says the cost is.}
+The complete paper runs every distinct translated query shape against a real Datadog
+account and a local Prometheus, and all $330$ of the $333$ shapes it could compare agree on
+every one of $22{,}692$ bucket comparisons. As a check on $\kappa$ that is worth less than
+it looks. Given the kernel soundness theorem, agreement is what the theorem
+\emph{predicts}; the run's value is the four translator defects it found on the way there,
+against six systematic failures from the same rig, every one of them the harness rather
+than the systems. More to the point: the rig satisfies all six of the theorem's hypotheses
+by construction, the metric type among them, which it submits under the kind the translator
+\emph{inferred} from the query text. The conditions \S\ref{s2:sec:unsaid} argues are the
+real switching cost are exactly the ones the rig holds true, so the run is silent on what
+happens when they fail. That is still the right design --- a run in which the hypotheses
+were already false would measure the hypotheses rather than the arithmetic --- but it means
+no experiment here tests the thing this paper concludes.
+
+\paragraph{Everything here is about the query layer, on one ingestion path, in one
+direction.}
+What we measure is the cost of rewriting saved queries. A real migration also
+re-instruments services, re-models metric cardinality and cost, re-establishes retention
+and rebuilds alerting, none of which is measured here or follows from anything that is, so
+the claim that the dashboard layer is where the cost concentrates is a claim \emph{within}
+the query problem rather than a ranking of it against the rest of a migration --- and the
+cost of retraining the people who read the dashboards may well dominate both. $\phi_\rho$
+models the agent's cumulative-to-delta conversion, while OTLP ingestion applies the same
+rule but maps metric temporality, type and datapoint attributes by its own
+table~\citep{ddotlp}, so which series exist and what kind each one is are properties of a
+configured pipeline rather than of ``Datadog'': a migration on a different path inherits the
+framework but not the constants. And $\kappa$ is measured on Datadog metrics into PromQL
+only; nothing here extends to logs or traces.
+
+\paragraph{The comparison between the catalogue's columns is not a ratio.}
+Weighting by occurrence is the right measure for a migration and the wrong one for a
+language comparison, though both are in Table~\ref{s2:tab:coverage} and agree to within a
+tenth of a point here. More seriously, comparing what the catalogue's first two columns
+hold against the $3.3\%$ of \S\ref{s2:sec:gaps} sets a property of the languages beside a
+property of one translator's state on one afternoon: the second falls as work is done and
+has already fallen twice during this paper, and the first has moved eight times and holds
+$0.2\%$ of the corpus undecided even now. Read as an argument that the main direction's
+cost is engineering, that comparison is sound; read as a precise ratio, it is not.
