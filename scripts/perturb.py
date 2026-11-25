@@ -117,7 +117,13 @@ def run(mods: list[str], extra: list[str] | None = None) -> set[str]:
     tripwire = {"test_no_label_is_defined_twice", "test_no_reference_is_undefined",
                 "test_no_overfull_boxes", "test_the_heading_levels_do_not_skip",
                 "test_no_block_is_typeset_twice", "test_the_two_builds_are_the_same_length",
-                "test_the_build_converged"}
+                "test_the_build_converged",
+                # Same class as the two above it, and it was missed when it was written:
+                # `_log` refuses a log that does not match the sources, so every guard
+                # that reads one fails on any `.tex` perturbation. The control for the
+                # sentence-scoped survival check reported FALSE RED against this and
+                # nothing else, which is the digest and not a spill.
+                "test_neither_twenty_page_version_runs_past_twenty_pages"}
     return {f for f in fired if f.split("[")[0] not in tripwire}
 
 
