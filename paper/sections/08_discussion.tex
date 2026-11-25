@@ -1,5 +1,5 @@
 % ---------------------------------------------------------------------------
-% What the measurements mean for the thesis. Numbers are quoted from §6 and §7;
+% What the measurements mean for the conjecture. Numbers are quoted from §6 and §7;
 % nothing new is computed here.
 % ---------------------------------------------------------------------------
 
@@ -28,7 +28,7 @@ provably fails. So the column is empty of anything demonstrated and holds $0.2\%
 corpus undecided, which is a weaker claim than ``empty'' and the one the evidence
 carries.
 
-That is not the result the thesis predicted, and it is worth stating in the strongest
+That is not the result the conjecture predicted, and it is worth stating in the strongest
 form the data supports: going from Datadog to PromQL, the switching cost is
 \emph{engineering} --- with the qualification, measured below, that part of that
 engineering is not implementing language constructs at all but supplying metadata the
@@ -69,7 +69,7 @@ zero-fills called inexpressible because the one candidate the argument tried doe
 work, when another does (Remark~\ref{rem:fill}); and the three constructs above, at
 $31$, $34$ and $5$. The fourth is a residue of the second, so together they are $648$
 distinct occurrences, $7.4$ points of $\kappa$, every one an error in the direction that
-would have made the thesis look better. None was a fact about the languages. The column
+would have made the conjecture look better. None was a fact about the languages. The column
 holds nothing demonstrated now, which is a stronger claim than any of the figures it
 used to hold and a weaker one than ``empty'' --- and the right way to read it is with
 the running total beside it, because the inexpressible
@@ -83,8 +83,8 @@ exponentially weighted means, a smoothing window the service rather than the que
 chooses, and calendar offsets PromQL's fixed-duration \texttt{offset} cannot express
 (\apref{app:eval}). The near-empty column is therefore a result about the metric query
 language, which is what this paper set out to measure, and not about everything a
-Datadog widget can be made to compute. Eight corrections ran towards the thesis and the
-ninth runs away from it, which is weak evidence that the eight were a property of where
+Datadog widget can be made to compute. Eight corrections ran towards the conjecture and
+the ninth runs away from it, which is weak evidence that the eight were a property of where
 the paper was looking rather than of what it was hoping to find --- but it is the first
 datum of that kind, and one is not many.
 
@@ -254,7 +254,7 @@ and the variable bindings outside the query text, and the metric's type is outsi
 \emph{languages} whatever tool draws the panel. What does not survive it is any claim
 about a third tool, which may place the same three things somewhere else.
 
-\subsection{The thesis survives in the other direction}
+\subsection{The conjecture holds in the other direction}
 
 \S\ref{sec:regular} is where language design does bite, and it bites in a form that
 admits proof rather than measurement. A Datadog tag filter is a glob, and a glob's

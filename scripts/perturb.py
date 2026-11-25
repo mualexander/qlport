@@ -342,6 +342,79 @@ CASES: list[tuple[str, callable, list[str], str]] = [
                         "    read = getattr(ROOT / 'paper' / 'body.tex', 'read' + '_text')\n"
                         "    assert read()\n"),
      [BLD], "test_every_guard_reads_the_document_the_paper_publishes"),
+    # The word that named three propositions. Each paper is checked separately, so a
+    # case per paper: the long one, the switching one, and the short one, which argues
+    # no conjecture and so must not use either word.
+    ("the thesis back in the discussion",
+     lambda: sub("paper/sections/08_discussion.tex",
+                 "That is not the result the conjecture predicted",
+                 "That is not the result the thesis predicted"),
+     [BLD], "test_no_claim_in_any_paper_is_called_a_thesis"),
+    ("the thesis back in the switching paper",
+     lambda: sub("paper/switching/05_coverage.tex",
+                 "would have made the conjecture look better",
+                 "would have made the thesis look better"),
+     [BLD], "test_no_claim_in_any_paper_is_called_a_thesis"),
+    ("the short paper given a thesis",
+     lambda: sub("paper/short/04_forward.tex",
+                 "which is what makes\n\\S\\ref{s:sec:regular} the interesting half.",
+                 "which is what makes\n\\S\\ref{s:sec:regular} the interesting half and "
+                 "the thesis of this version."),
+     [BLD], "test_no_claim_in_any_paper_is_called_a_thesis"),
+    ("the conjecture named a second time",
+     lambda: sub("paper/sections/08_discussion.tex",
+                 "in observability is a language-design\nartefact.",
+                 "in observability is the \\emph{language-design conjecture}."),
+     [BLD], "test_the_conjecture_is_named_once_and_in_the_introduction"),
+    ("the naming moved out of the introduction",
+     lambda: (sub("paper/sections/01_introduction.tex",
+                  "the \\emph{language-design conjecture}",
+                  "the language-design conjecture"),
+              sub("paper/sections/02_background.tex",
+                  "Four traditions bear on the question of",
+                  "The \\emph{language-design conjecture} is what this literature "
+                  "leaves untested. Four traditions bear on the question of")),
+     [BLD], "test_the_conjecture_is_named_once_and_in_the_introduction"),
+    ("the conjecture used and never named",
+     lambda: sub("paper/sections/01_introduction.tex",
+                 "the \\emph{language-design conjecture}",
+                 "the language-design conjecture"),
+     [BLD], "test_the_conjecture_is_named_once_and_in_the_introduction"),
+    ("the short paper arguing a conjecture",
+     lambda: sub("paper/short/04_forward.tex",
+                 "it found no obstruction.",
+                 "it found no obstruction, which is the conjecture failing."),
+     [BLD], "test_the_conjecture_is_named_once_and_in_the_introduction"),
+    ("the introduction giving one half of the answer",
+     lambda: sub("paper/sections/01_introduction.tex",
+                 "its answer is directional --- it\nfails in the direction teams travel "
+                 "and holds, as theorems rather than as measurements,\nin the direction "
+                 "they do not.",
+                 "its answer is negative."),
+     [BLD], "test_the_conjecture_gets_both_halves_of_its_answer"),
+    ("the conjecture surviving again",
+     lambda: sub("paper/sections/08_discussion.tex",
+                 "\\subsection{The conjecture holds in the other direction}",
+                 "\\subsection{The conjecture survives in the other direction}"),
+     [BLD], "test_the_conjecture_gets_both_halves_of_its_answer"),
+    ("the negative answer softened out of its heading",
+     lambda: sub("paper/sections/08_discussion.tex",
+                 "\\subsection{The question as posed has a negative answer}",
+                 "\\subsection{What the question as posed answers}"),
+     [BLD], "test_the_conjecture_gets_both_halves_of_its_answer"),
+    ("the baseline arriving at the paper's own claim again",
+     lambda: sub("paper/sections/07_evaluation.tex",
+                 "Two of the figures are \\S\\ref{sec:dashboard-layer}'s finding "
+                 "arriving from outside\nthis paper.",
+                 "Two of the figures are this paper's own claim arriving from outside "
+                 "it."),
+     [BLD], "test_the_baseline_figures_arrive_at_the_finding_and_not_at_the_conjecture"),
+    ("the conjecture argued in the evaluation",
+     lambda: sub("paper/sections/07_evaluation.tex",
+                 "How the comparison was run, and what it is not\nevidence of,",
+                 "So the conjecture fails here too. How the comparison was run, and "
+                 "what it is not\nevidence of,"),
+     [BLD], "test_the_baseline_figures_arrive_at_the_finding_and_not_at_the_conjecture"),
 ]
 
 CONTROLS: list[tuple[str, callable, list[str]]] = [
@@ -355,6 +428,17 @@ CONTROLS: list[tuple[str, callable, list[str]]] = [
                  "The shape is the finding.",
                  "The shape is the finding, and $99.9\\%$ is where it ends."),
      [FIG, TAB]),
+    # The false positive the sentence-scoped check was written for. A window of 120
+    # characters failed on the paragraph that ends six characters before \S8.4's
+    # heading, so a neighbouring sentence saying that something does not survive must
+    # not read as the conjecture surviving.
+    ("a neighbouring sentence saying something does not survive",
+     lambda: sub("paper/sections/08_discussion.tex",
+                 "about a third tool, which may place the same three things somewhere "
+                 "else.",
+                 "about a third tool, which may place the same three things somewhere "
+                 "else. Nothing above survives that qualification unchanged."),
+     [BLD]),
 ]
 
 if DRY_RUN:

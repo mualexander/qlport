@@ -548,13 +548,13 @@ only the cosmetic observation that dots became underscores, so the $31.3\%$ that
 something substantive arrive in the same channel as the noise and cannot be counted
 without being read.
 
-Two of the figures are this paper's own thesis arriving from outside it. $525$
+Two of the figures are \S\ref{sec:dashboard-layer}'s finding arriving from outside
+this paper. $525$
 occurrences have a Datadog modifier silently dropped ($570$ drops in all: $316$
 \texttt{.rollup}, $184$ \texttt{.fill}, $70$ \texttt{.weighted}), and dropping a
 \texttt{.rollup} does not approximate the query, it answers a different one. And
 $1{,}844$ occurrences --- $21.3\%$ --- are given a \texttt{[5m]} window no query states,
-under the note ``adjust interval as needed''. That is
-\S\ref{sec:dashboard-layer}'s finding reached independently by somebody who was not
+under the note ``adjust interval as needed''. That is somebody reaching it who was not
 looking for it: the interval is not in the query, so a translator must be told it, record
 that it guessed, or guess quietly. Theirs guesses and mentions it in prose; ours records
 \texttt{ROLLUP\_DEFAULT} and counts it. How the comparison was run, and what it is not

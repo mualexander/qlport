@@ -927,8 +927,8 @@ def test_the_cached_translator_is_the_artefact_the_manifest_records():
     The dash0 twin is guarded -- `dash0_claims.figures()` raises on a digest or
     byte-count mismatch and the date is pinned -- so this closes an asymmetry the
     paper's own sentence asserts away. §7.4 is the comparison against the other
-    translator, which the paper calls its thesis arriving from outside it; the
-    artefact it is a measurement of should be the artefact on disk.
+    translator, where two of the figures arrive at §8.2's finding from outside this
+    paper; the artefact they are a measurement of should be the artefact on disk.
     """
     import hashlib
 
@@ -1053,8 +1053,8 @@ def test_every_baseline_figure_is_the_one_the_run_produced(reg):
     `{}` left every test passing, which is the whole of \S7.4 -- the comparison against
     the other translator -- resting on a file no guard read. Two figures were moved in
     that state with the suite green: the drop total, and `oo.invented_window` from
-    1,844 to 3,844, which doubles the independent confirmation the paper calls its own
-    thesis arriving from outside it.
+    1,844 to 3,844, which doubles the one piece of outside confirmation the paper has
+    for the finding it leads on.
 
     The script needs node and a vendored chunk to recompute, so this cannot re-derive
     the figures the way `heldout_eval` can. It does not need to: the script caches the

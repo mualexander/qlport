@@ -147,7 +147,7 @@ def test_every_perturbation_in_the_battery_still_applies():
           "in the suite)\n" + done.stderr[-800:])
     assert "0 stale" in done.stdout, done.stdout
     cases = int(done.stdout.split()[0])
-    assert cases >= 43, f"the battery has shrunk to {cases} cases"
+    assert cases >= 55, f"the battery has shrunk to {cases} cases"
 
 
 def test_no_macro_body_carries_a_figure():
@@ -381,6 +381,180 @@ def test_the_two_builds_are_the_same_length():
         f"main.pdf is {a} pages and main_full.pdf is {b}; the same prose in both means a "
         "gap this wide is something missing, or an apparatus block that moved build"
     )
+
+
+# The limit the two twenty-page versions are cut to. Not an exact pin: shortening either
+# is always allowed, and only the spill is a defect.
+TWENTY = 20
+
+
+@pytest.mark.parametrize("build", ("main_short", "main_switching"))
+def test_neither_twenty_page_version_runs_past_twenty_pages(build):
+    """The length is the whole point of these two, and nothing here measured it.
+
+    `main_switching` sat at exactly twenty. Six words added to its introduction --- one
+    clause naming a term --- pushed the last two bibliography entries onto a
+    twenty-first page, and the only test that reads a page count compares `main` with
+    `main_full` and excludes these two by design. So the suite reported a clean build of
+    a version that no longer fits what it is cut to fit.
+
+    Like every check that reads a log, this one is about the last `make paper` and not
+    about the sources: `_log` refuses a log that does not match them. That is why the
+    perturbation battery has no case for it --- a case that edits a `.tex` would trip
+    the digest instead, which reads as a stale build rather than as a spill.
+    """
+    found = re.findall(r"\((\d+) pages", _log(build))
+    assert found, f"no page count in {build}.log"
+    pages = int(found[-1])
+    assert pages <= TWENTY, (
+        f"{build}.pdf is {pages} pages and is cut to {TWENTY}; the overflow is the last "
+        f"{pages - TWENTY} page(s), which is where the bibliography goes first"
+    )
+
+
+# --- the claims, by name --------------------------------------------------------
+
+# The two twenty-page papers against the long one: `paper/sections/` is what `main` and
+# `main_full` read, and `paper/short/` and `paper/switching/` are the other two
+# documents. A claim about what *a paper* says has to be asked of each of them
+# separately, because they are three arguments and not three renderings.
+PAPERS = {
+    "the long paper": (SECTIONS, SECTIONS / "01_introduction.tex"),
+    "the switching paper": (PAPER / "switching", PAPER / "switching" / "01_intro.tex"),
+    "the short paper": (PAPER / "short", None),
+}
+
+# `\emph{language-design conjecture}` is the naming, and it is the only place either
+# paper may introduce the term.
+_NAMING = r"\emph{language-design conjecture}"
+
+
+def _said(directory: Path) -> dict[str, str]:
+    """Every file of one paper, as both builds print it, flattened for phrase matching."""
+    out = {}
+    for path in sorted(directory.rglob("*.tex")):
+        rel = path.relative_to(PAPER).as_posix()
+        for i, text in enumerate(builds(path)):
+            out[f"{rel}[{i}]"] = flat(text)
+    return out
+
+
+@pytest.mark.parametrize("paper", sorted(PAPERS))
+def test_no_claim_in_any_paper_is_called_a_thesis(paper):
+    r"""One word, two propositions, and they are each other's negation.
+
+    "The thesis" named the language-design conjecture --- that what makes a migration
+    expensive is a consequence of how the two languages are designed --- in eight
+    places, among them every sentence confessing that a correction had run "towards the
+    thesis" or "would have made the thesis look better", where the conjecture is what
+    the error flattered. It named the opposite in two: `\subsection{The thesis survives
+    in the other direction}` and an introduction that opened "The thesis survives, but
+    not in the form it was posed". And in \S7.4 it named a third thing, the finding the
+    paper now leads on and reports *instead* of the conjecture --- two baseline figures
+    were "this paper's own thesis arriving from outside it", which is the dashboard
+    layer and not the conjecture at all. So a reader met a claim that had been refuted,
+    a claim that had been upheld and the claim that replaced both, under one word, with
+    the refutation and the survival two subsections apart.
+
+    Nothing recomputes prose, so the word is forbidden instead. The conjecture is named
+    once per paper and its answer is directional, which the two guards below hold it to;
+    the finding is called the finding. `thesis` here is the word, not the suffix:
+    `hypothesis`, `parenthesis` and `synthesises` all end in it and all stay.
+    """
+    directory, _ = PAPERS[paper]
+    bad = sorted({where for where, said in _said(directory).items()
+                  if re.search(r"\bthes[ei]s\b", said)})
+    assert not bad, (
+        f"{paper} calls a claim a thesis in {', '.join(bad)} -- the word named the "
+        f"conjecture, its negation and the finding that replaced both; say which")
+
+
+@pytest.mark.parametrize("paper", sorted(PAPERS))
+def test_the_conjecture_is_named_once_and_in_the_introduction(paper):
+    """A term defined twice is two terms, and one defined late is used before it exists.
+
+    The short paper is on the inexpressibility spine and argues no conjecture, so it
+    names none and must not use the word either -- which is the case that makes this a
+    three-way check rather than two assertions about the two papers that do.
+    """
+    directory, intro = PAPERS[paper]
+    said = _said(directory)
+    namings = {where: s.count(_NAMING) for where, s in said.items() if _NAMING in s}
+    users = sorted({where for where, s in said.items() if "conjecture" in s})
+
+    if intro is None:
+        assert not users, (
+            f"{paper} argues no conjecture and should not use the word: {users}")
+        return
+
+    assert sum(namings.values()) == 2, (  # once per build, and both builds print it
+        f"{paper} names the conjecture {sum(namings.values())} times across its two "
+        f"builds, not once in each: {namings}")
+    where = {w.split("[")[0] for w in namings}
+    assert where == {intro.relative_to(PAPER).as_posix()}, (
+        f"{paper} names the conjecture in {where}, not in its introduction, so every "
+        f"earlier use of the term is of a term the reader has not been given")
+    assert users, f"{paper} names the conjecture and then never uses it"
+
+
+def test_the_conjecture_gets_both_halves_of_its_answer():
+    r"""Directional, stated as such, and in the two places that disagree.
+
+    The equivocation was possible because the two answers live four subsections apart:
+    \S8.1 is headed "The question as posed has a negative answer" and \S8.4 upholds the
+    same conjecture for the reverse direction. Either heading alone reads as the whole
+    verdict, which is what "The thesis survives" did. So the introduction must carry
+    both halves in one sentence, and both headings must stand.
+
+    And the conjecture may not "survive": that verb is what let a claim refuted in the
+    direction teams travel read as one that came through. It holds in one direction and
+    fails in the other, which is two verbs because it is two answers.
+    """
+    intro = flat(builds(SECTIONS / "01_introduction.tex")[0])
+    assert ("its answer is directional --- it fails in the direction teams travel and "
+            "holds, as theorems rather than as measurements, in the direction they do "
+            "not") in intro, (
+        "the introduction no longer gives both halves of the conjecture's answer in one "
+        "sentence, which is where a reader meets it before either section argues it")
+
+    discussion = flat(builds(SECTIONS / "08_discussion.tex")[0])
+    for heading in ("The question as posed has a negative answer",
+                    "The conjecture holds in the other direction"):
+        assert heading in discussion, f"\\S8 no longer carries the heading {heading!r}"
+
+    # By the sentence, not by a window of characters. A window of 120 failed on the
+    # paragraph above that heading, which ends "What does not survive it is any claim
+    # about a third tool" -- six characters away, a different verb about a different
+    # thing. A heading is its own sentence here because it is its own claim: the
+    # equivocation this guards was a heading reading as the whole verdict.
+    for name, said in _said(SECTIONS).items():
+        flattened = re.sub(r"\\(?:sub)*section\{([^}]*)\}", r" \1. ", said)
+        for sentence in re.split(r"(?<=[.!?]) ", flattened):
+            if "conjecture" in sentence:
+                assert not re.search(r"\bsurviv", sentence), (
+                    f"{name} has the conjecture surviving: {sentence!r} -- it holds in "
+                    f"one direction and fails in the other, and one verb for both is "
+                    f"the ambiguity this pair of guards exists to keep out")
+
+
+def test_the_baseline_figures_arrive_at_the_finding_and_not_at_the_conjecture():
+    r"""\S7.4's independent arrival is the dashboard layer, which is the whole point.
+
+    The other translator invents a `[5m]` window and drops `.rollup` modifiers, so what
+    it confirms from outside this paper is that a query does not say what it means --- the
+    finding \S8.2 argues and the conjecture's refutation makes room for. Calling that
+    arrival the paper's "thesis" pointed it at the claim \S8.1 gives a negative answer
+    to, so the one piece of outside corroboration the paper has read as corroborating
+    the thing the paper withdrew.
+    """
+    for i, said in enumerate(flat(t) for t in builds(SECTIONS / "07_evaluation.tex")):
+        assert ("Two of the figures are \\S\\ref{sec:dashboard-layer}'s finding "
+                "arriving from outside this paper.") in said, (
+            f"build {i} of \\S7 no longer names what the baseline's two figures arrive "
+            f"at; it has to be the finding and not the conjecture")
+        assert "conjecture" not in said, (
+            f"build {i} of \\S7 mentions the conjecture: the section reports "
+            f"measurements, and \\S8 is where either half of its answer is argued")
 
 
 # --- the guards' own reading ----------------------------------------------------
