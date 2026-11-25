@@ -718,10 +718,18 @@ def test_the_nesting_scorer_counts_what_it_says_it_counts():
     # Brackets that are not qualifications: a code span's, and a table's.
     assert _depth(_prose(r"It emits \texttt{top(5, avg:m\{*\}, mean, desc)} here."))[0] == 0
     assert _prose(r"\begin{tabular}{ll}a & b\\\end{tabular}").strip() == "BLOCK"
-    # A caption is not part of the sentence after it.
-    assert len(_sentences(_prose(
-        r"\begin{remark}[A caption, which qualifies]\label{r:x} "
-        r"The remark's own first sentence runs on for a while here."))) == 1
+    # An environment boundary ends a sentence. The first version of this asserted that
+    # a caption plus the sentence after it is one sentence, which is true whether or
+    # not the boundary is there, so the battery reported MISSED against a guard that
+    # was asserting nothing. What matters is the text BEFORE the block: without the
+    # break it runs into the block's first sentence and the two score as one.
+    glued = _prose(r"The span the widget carries is absent here, which the "
+                   r"dashboard's own time selector supplies "
+                   r"\begin{remark}[Why it is]\label{r:x} "
+                   r"It is a viewer's choice, which is recorded nowhere, "
+                   r"because nothing writes it down.")
+    assert len(_sentences(glued)) == 2, glued
+    assert max(_depth(s)[0] for s in _sentences(glued)) == 2, glued
 
 
 @pytest.mark.parametrize("paper", sorted(PAPERS))
