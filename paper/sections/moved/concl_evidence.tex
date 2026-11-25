@@ -39,11 +39,12 @@ until it asked), the automatic rollup interval as a function of the query range,
 default time aggregator of a bare query on a counter, whether a glob's \texttt{*} matches
 the empty string, where \texttt{.as\_rate()} sits relative to the rollup and to the space
 aggregation, what \texttt{.weighted()} computes, what \texttt{top(...)} ranks by and over
-which window, the reset policy --- read first from
-the agent's source and then put to a running agent, which agreed with the reading ---
+which window, the reset policy,
 whether a tag-value filter has any wildcard but \texttt{*}, that same rollup interval at
-every span the corpus's widgets declare rather than at five of them, and --- last, and
-the most recently collected of them --- how long a scope the query API will accept.
+every span the corpus's widgets declare rather than at five of them, and how long a
+scope the query API will accept. Two of those carry a note. The reset policy was read
+first from the agent's source and then put to a running agent, which agreed with the
+reading; the scope length was the last of the eleven to be collected.
 The rollup interval appears in that list twice, as a function of the query range and
 again at every span the corpus declares, which is one fact measured under two
 conditions rather than two facts. Seven of the eleven measurements confirmed what

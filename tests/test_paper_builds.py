@@ -147,7 +147,7 @@ def test_every_perturbation_in_the_battery_still_applies():
           "in the suite)\n" + done.stderr[-800:])
     assert "0 stale" in done.stdout, done.stdout
     cases = int(done.stdout.split()[0])
-    assert cases >= 55, f"the battery has shrunk to {cases} cases"
+    assert cases >= 64, f"the battery has shrunk to {cases} cases"
 
 
 def test_no_macro_body_carries_a_figure():
@@ -556,6 +556,219 @@ def test_the_baseline_figures_arrive_at_the_finding_and_not_at_the_conjecture():
             f"build {i} of \\S7 mentions the conjecture: the section reports "
             f"measurements, and \\S8 is where either half of its answer is argued")
 
+
+# --- how deep the qualifications nest -------------------------------------------
+
+# The most qualifications any one sentence may hold open at once, and how many sentences
+# are allowed to sit at that number. The ratchet is the same device as
+# `UNCHECKED_CEILING` in `test_paper_figures.py`: the bound may fall and may not climb.
+NESTING_CEILING = 3
+AT_CEILING = 29
+
+# A clause that qualifies what came before it. Opened by a comma and a connective, so
+# `, which` counts and the `which` of "the span which the widget pins" does not.
+_CLAUSE = re.compile(
+    r", (?:which|where|whose|when|while|since|because|although|though|unless|except|"
+    r"rather than|and not|so that)\b")
+
+# Environments whose contents are not prose. A table's `(` and a `cases` block's commas
+# are not qualifications, and counting them put four tables and two proofs at the top of
+# the first ranking this was built from.
+_NOT_PROSE = (r"align\*?|equation\*?|cases|tabular|center|enumerate|itemize|array"
+              r"|gather\*?")
+
+
+def _braced(text: str, macro: str, repl: str) -> str:
+    r"""`\macro{...}` replaced wholesale, counting braces so a nested one survives.
+
+    A regex cannot do this: `\texttt{\{*-location\}}` has braces inside it, and
+    `[^}]*` stops at the first one, leaving a stray `\}}` that reads as prose.
+    """
+    out, i, tag = [], 0, "\\" + macro + "{"
+    while i < len(text):
+        j = text.find(tag, i)
+        if j < 0:
+            out.append(text[i:])
+            break
+        out.append(text[i:j])
+        out.append(repl)
+        k, depth = j + len(tag), 1
+        while k < len(text) and depth:
+            depth += (text[k] == "{") - (text[k] == "}")
+            k += 1
+        i = k
+    return "".join(out)
+
+
+def _prose(text: str) -> str:
+    """One build's file reduced to its prose, with every non-prose span one token."""
+    t = flat(text)
+    t = re.sub(r"\\\[.*?\\\]", " EQN ", t)
+    t = re.sub(r"\\begin\{(" + _NOT_PROSE + r")\}.*?\\end\{\1\}", " BLOCK ", t, flags=re.S)
+    # Code spans first: a bracket inside one is syntax. `\texttt{top(...)}` is a name.
+    for macro in ("texttt", "verb", "mathit", "mathrm", "mathsf"):
+        t = _braced(t, macro, "CODE")
+    t = re.sub(r"\$[^$]*\$", "N", t)
+    for macro in ("emph", "textbf", "textit"):
+        t = _braced(t, macro, "X")
+    t = re.sub(r"\\(?:sub)*section\{[^}]*\}|\\paragraph\{[^}]*\}", " ", t)
+    t = re.sub(r"\\(?:S|ref|label|apref|apin|cite[a-z]*)\{?[^ }]*\}?", "REF", t)
+    # An environment boundary ends a sentence. Without this `\begin{remark}[caption]`
+    # glues the caption to the block's first sentence and the pair scores as one.
+    t = re.sub(r"\\(?:begin|end)\{[A-Za-z*]+\}(?:\[[^\]]*\])?", ". ", t)
+    # So does an `\input`, argument and all. The generic strip below takes the macro
+    # name and leaves the path, which glued the sentence before each deferred block's
+    # hook to the sentence after it: three sentences scored at the ceiling in the
+    # complete build and nowhere else, and all three were this.
+    t = re.sub(r"\\input\{[^}]*\}", ". ", t)
+    t = re.sub(r"\\[A-Za-z]+\*?", " ", t)
+    t = t.replace("\\{", "").replace("\\}", "")
+    return re.sub(r"\s+", " ", t)
+
+
+def _sentences(text: str) -> list[str]:
+    """Split on a full stop that a sentence follows. A colon is not a full stop."""
+    return [s for s in re.split(r"(?<=[.!?]) (?=[A-Z\"`(])", text)
+            if len(s.split()) >= 10 and "BLOCK" not in s and "EQN" not in s]
+
+
+def _depth(s: str) -> tuple[int, int]:
+    r"""How many qualifications stand open at the deepest point of one sentence.
+
+    An aside opens on `(` or the first `---` of a pair and closes on its partner; an
+    aside with no partner is open to the full stop, which is the case this was written
+    for -- \S5's caveat list had one, and the colon and all seven codes after it read
+    as sitting inside it. A subordinate clause opens on `, which` and its kin and is
+    counted open until its aside closes or a semicolon ends the item, because an
+    unclosed qualification is one the reader is still carrying.
+    """
+    opens: list[str] = []
+    clauses = [0]
+    best = at = 0
+    i = 0
+    while i < len(s):
+        if _CLAUSE.match(s, i):
+            clauses[-1] += 1
+        if s[i] == ";":
+            # The item ends here, and with it every clause opened inside it. Without
+            # this a seven-item list reads as seven qualifications held at once, which
+            # is a long sentence and not a nested one.
+            clauses[-1] = 0
+        if s[i] == "(":
+            opens.append("(")
+            clauses.append(0)
+        elif s[i] == ")" and opens and opens[-1] == "(":
+            opens.pop()
+            clauses.pop()
+        elif s.startswith("---", i):
+            if opens and opens[-1] == "-":
+                opens.pop()
+                clauses.pop()
+            else:
+                opens.append("-")
+                clauses.append(0)
+            i += 2
+        if len(opens) + sum(clauses) > best:
+            best, at = len(opens) + sum(clauses), i
+        i += 1
+    return best, at
+
+
+def _scored(directory: Path) -> list[tuple[int, str, str, int]]:
+    """Every prose sentence of one paper, in both builds, with its depth.
+
+    The build index comes back with each row because the two builds hold the same
+    prose: counting over the union of their sentences double-counts every sentence
+    carrying an `\apref`, which prints "below" in one and "Appendix~N" in the other.
+    """
+    out = []
+    for path in sorted(directory.rglob("*.tex")):
+        rel = path.relative_to(PAPER).as_posix()
+        for i, text in enumerate(builds(path)):
+            for s in _sentences(_prose(text)):
+                out.append((_depth(s)[0], rel, s, i))
+    return out
+
+
+def test_the_nesting_scorer_counts_what_it_says_it_counts():
+    r"""The instrument, before the two guards that read it.
+
+    A prose measurement nobody checks is worse than none: it reports a number that
+    reads as a property of the paper and is a property of the regex. Each case below
+    is one decision the scorer makes, and four of them were wrong in the first version
+    -- it counted a table's brackets, `\texttt{top(...)}`'s, a caption glued to the
+    sentence after it, and every item of a semicolon list at once.
+    """
+    cases = [
+        ("A query does not say what it means at all.", 0),
+        ("The interval is absent, which the dashboard supplies.", 1),
+        ("The interval is absent, which the dashboard supplies, because it is a view.", 2),
+        ("It is absent --- the dashboard supplies it --- and nothing else does.", 1),
+        ("It is absent --- the dashboard supplies it, which is a view --- and so on.", 2),
+        ("It is absent (the dashboard supplies it, which is a view) and so on.", 2),
+        # An aside with no partner stays open: the list after the colon is inside it.
+        ("It is absent --- the dashboard supplies it, which is a view: one, two.", 2),
+        # A semicolon ends the item, so the clauses do not accumulate down a list.
+        ("One, which is a; two, which is b; three, which is c.", 1),
+    ]
+    for text, want in cases:
+        got, _ = _depth(text)
+        assert got == want, f"{text!r} scored {got}, not {want}"
+
+    # Brackets that are not qualifications: a code span's, and a table's.
+    assert _depth(_prose(r"It emits \texttt{top(5, avg:m\{*\}, mean, desc)} here."))[0] == 0
+    assert _prose(r"\begin{tabular}{ll}a & b\\\end{tabular}").strip() == "BLOCK"
+    # A caption is not part of the sentence after it.
+    assert len(_sentences(_prose(
+        r"\begin{remark}[A caption, which qualifies]\label{r:x} "
+        r"The remark's own first sentence runs on for a while here."))) == 1
+
+
+@pytest.mark.parametrize("paper", sorted(PAPERS))
+def test_no_sentence_holds_more_than_three_qualifications_open(paper):
+    r"""The finding this file's ceiling exists for, which nothing had ever measured.
+
+    Four commit messages carried "some sentences carry three or four nested
+    qualifications" as an open defect and none of them said which sentences, so the
+    claim could not be acted on or closed. Measured, the distribution was 1310 / 812 /
+    214 / 37 / 4 / 1 by depth: the tail the finding names is the five sentences at four
+    and above, not the 214 at two, and an aside containing a relative clause is
+    ordinary prose rather than a defect.
+
+    All five are split now, each keeping every qualification it carried. The worst was
+    \S5's: `Seven codes arise, over six conditions ---` opened an aside that never
+    closed, so the colon and all seven codes read as inside it, and a reader held it
+    for a hundred and twenty words.
+    """
+    directory, _ = PAPERS[paper]
+    over = sorted(((d, where, s) for d, where, s, _ in _scored(directory)
+                   if d > NESTING_CEILING), reverse=True)
+    assert not over, "\n".join(
+        f"{where} holds {d} qualifications open at once:\n  {s[:300]}"
+        for d, where, s in over[:4])
+
+
+def test_the_sentences_at_the_nesting_ceiling_do_not_multiply():
+    """A ratchet, because the ceiling alone licenses every sentence up to it.
+
+    Three open qualifications is the most the paper now asks of a reader, and 29
+    sentences ask it. Nothing stops that becoming 229 one sentence at a time, which is
+    how the tail this closed was built in the first place: no single edit added a
+    sentence anybody would have called unreadable.
+    """
+    rows = [r for paper in PAPERS for r in _scored(PAPERS[paper][0])]
+    # Per build, not over the union of the two: the same sentence appears in both, and
+    # with one word different wherever it carries an `\apref`, so a union counts those
+    # twice and the ledger would drift up by itself.
+    per_build = [sum(1 for d, _, _, i in rows if d == NESTING_CEILING and i == b)
+                 for b in (0, 1)]
+    worst = max(per_build)
+    assert worst <= AT_CEILING, (
+        f"{worst} sentences hold {NESTING_CEILING} qualifications open, up from "
+        f"{AT_CEILING}; split one before adding another")
+    assert worst >= AT_CEILING - 4, (
+        f"{worst} sentences are at the ceiling, well under the {AT_CEILING} this "
+        f"ledger claims -- lower it, so the ratchet keeps biting")
 
 # --- the guards' own reading ----------------------------------------------------
 

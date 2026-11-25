@@ -3,7 +3,7 @@
 how it left is worth more than the fact that it did: it was wrong about Datadog, not
 about PromQL. A wildcard in a tag \emph{key} rather than a value, as in
 \texttt{\{*-location\}}, asks for a match over label \emph{names}, which a PromQL
-selector cannot do, because label names are not queryable there ---
+selector cannot do: label names are not queryable there.
 Remark~\ref{rem:label-name} puts that to a real server, including the quoted-name
 syntax 3.x added, which looks like somewhere a pattern could go and is not. That
 finding stands. The premise does not: no Datadog query in this corpus ever wrote

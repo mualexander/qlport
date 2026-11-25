@@ -118,6 +118,12 @@ def run(mods: list[str], extra: list[str] | None = None) -> set[str]:
                 "test_no_overfull_boxes", "test_the_heading_levels_do_not_skip",
                 "test_no_block_is_typeset_twice", "test_the_two_builds_are_the_same_length",
                 "test_the_build_converged",
+                # Self-reference, not a finding: this test spawns a nested `--dry-run`
+                # that re-applies every case to a tree where one case is ALREADY
+                # applied, so that case's own anchor is legitimately gone and it reports
+                # STALE. Every `.tex` case has carried it as noise; a control running
+                # this module reads it as a false red, which is how it was found.
+                "test_every_perturbation_in_the_battery_still_applies",
                 # Same class as the two above it, and it was missed when it was written:
                 # `_log` refuses a log that does not match the sources, so every guard
                 # that reads one fails on any `.tex` perturbation. The control for the
@@ -421,6 +427,77 @@ CASES: list[tuple[str, callable, list[str], str]] = [
                  "So the conjecture fails here too. How the comparison was run, and "
                  "what it is not\nevidence of,"),
      [BLD], "test_the_baseline_figures_arrive_at_the_finding_and_not_at_the_conjecture"),
+    # The nesting the ceiling closed, put back one sentence at a time. The first is the
+    # worst the paper had: an aside that never closed, with a colon and seven codes
+    # inside it.
+    ("the caveat list back inside an unclosed aside",
+     lambda: sub("paper/sections/05_translation.tex",
+                 "Seven codes arise over six conditions: the fourth condition has a code"
+                 " for\neach of the two forms it chooses between, which is why "
+                 "Theorem~\\ref{thm:kernel} has six\nhypotheses and the emitter seven "
+                 "codes. They are",
+                 "Seven codes arise, over six conditions --- the fourth has a code for "
+                 "each of\nthe two forms it chooses between, which is why "
+                 "Theorem~\\ref{thm:kernel} has six\nhypotheses and the emitter seven "
+                 "codes:"),
+     [BLD], "test_no_sentence_holds_more_than_three_qualifications_open"),
+    ("the label-name row's four-deep chain restored",
+     lambda: sub("paper/sections/moved/eval_rows_fill_glob.tex",
+                 "selector cannot do: label names are not queryable there.\n"
+                 "Remark~\\ref{rem:label-name} puts",
+                 "selector cannot do, because label names are not queryable there ---\n"
+                 "Remark~\\ref{rem:label-name} puts"),
+     [BLD], "test_no_sentence_holds_more_than_three_qualifications_open"),
+    ("the conflict cause back behind an aside",
+     lambda: sub("paper/sections/04_grammars.tex",
+                 "from our layering: making\nthe label list mandatory removes it "
+                 "entirely, which is how we identify the cause. That\nchange also "
+                 "rejects",
+                 "from our layering --- making\nthe label list mandatory removes it "
+                 "entirely, which is how we identify the cause, and\nalso rejects"),
+     [BLD], "test_no_sentence_holds_more_than_three_qualifications_open"),
+    ("the unverified default back inside its aside",
+     lambda: sub("paper/sections/07_evaluation.tex",
+                 "appears nowhere in the JSON. For those the default is therefore\n"
+                 "\\emph{unverified} rather than wrong, which is what this paragraph "
+                 "claimed.",
+                 "appears nowhere in the JSON --- so for those the default is\n"
+                 "\\emph{unverified}, which is what this paragraph claimed, rather than "
+                 "wrong."),
+     [BLD], "test_no_sentence_holds_more_than_three_qualifications_open"),
+    # Each paper is scored separately, so the switching one needs its own case.
+    ("a four-deep sentence added to the switching paper",
+     lambda: append("paper/switching/05_coverage.tex",
+                    "\nThe ceiling is ours --- a figure about this translator, which we "
+                    "wrote, and not\nabout the language, which nobody has measured, "
+                    "because no reverse translator exists\n--- so the number carries "
+                    "that much and no more.\n"),
+     [BLD], "test_no_sentence_holds_more_than_three_qualifications_open"),
+    ("one more sentence at the nesting ceiling",
+     lambda: append("paper/sections/04_grammars.tex",
+                    "\nThe table is ours --- a fact about this grammar, which we "
+                    "fitted, because no\npublished grammar exists --- and the number "
+                    "carries that much.\n"),
+     [BLD], "test_the_sentences_at_the_nesting_ceiling_do_not_multiply"),
+    # The instrument. A prose measurement nobody checks reports on its own regex.
+    ("the scorer stops closing an item at a semicolon",
+     lambda: sub("tests/test_paper_builds.py",
+                 '        if s[i] == ";":', '        if s[i] == "\\0":'),
+     [BLD], "test_the_nesting_scorer_counts_what_it_says_it_counts"),
+    ("the scorer counts a code span's brackets",
+     lambda: sub("tests/test_paper_builds.py",
+                 '    for macro in ("texttt", "verb", "mathit", "mathrm", "mathsf"):\n'
+                 '        t = _braced(t, macro, "CODE")',
+                 '    for macro in ("verb", "mathit", "mathrm", "mathsf"):\n'
+                 '        t = _braced(t, macro, "CODE")'),
+     [BLD], "test_the_nesting_scorer_counts_what_it_says_it_counts"),
+    ("the scorer glues a caption to the sentence after it",
+     lambda: sub("tests/test_paper_builds.py",
+                 '    t = re.sub(r"\\\\(?:begin|end)\\{[A-Za-z*]+\\}'
+                 '(?:\\[[^\\]]*\\])?", ". ", t)',
+                 '    t = re.sub(r"\\\\(?:begin|end)\\{[A-Za-z*]+\\}'
+                 '(?:\\[[^\\]]*\\])?", " ", t)'),
+     [BLD], "test_the_nesting_scorer_counts_what_it_says_it_counts"),
 ]
 
 CONTROLS: list[tuple[str, callable, list[str]]] = [
@@ -444,6 +521,16 @@ CONTROLS: list[tuple[str, callable, list[str]]] = [
                  "else.",
                  "about a third tool, which may place the same three things somewhere "
                  "else. Nothing above survives that qualification unchanged."),
+     [BLD]),
+    # A qualification added where the sentence has room: one aside and one clause is
+    # depth two, which is 405 of the paper's sentences and not a defect.
+    ("a qualification added to a sentence with room for it",
+     lambda: sub("paper/sections/04_grammars.tex",
+                 "The resolution is to shift, reading the parenthesis as the label "
+                 "list, and it is the\nresolution Prometheus~3.15.0 itself makes",
+                 "The resolution is to shift --- reading the parenthesis as the label "
+                 "list, which is\nwhat the generator does --- and it is the\n"
+                 "resolution Prometheus~3.15.0 itself makes"),
      [BLD]),
 ]
 

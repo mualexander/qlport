@@ -186,12 +186,12 @@ the same alternation under \texttt{!\textasciitilde{}} instead of
 \texttt{=\textasciitilde{}}.
 \end{proposition}
 
-What the proposition rests on is where the anchors go --- Prometheus anchors an
-alternation over the whole value, which is read off a real server rather than asserted
-(\texttt{scripts\slash verify\_matchers.py}) --- and how much of the corpus the
-single-key case reaches, which turns on Datadog's \texttt{or} binding more loosely than
-its comma --- put to the account rather than read off the manual
-(Remark~\ref{rem:precedence}) --- and on a presence branch subsuming every value
+The proposition rests on three things. The first is where the anchors go: Prometheus
+anchors an alternation over the whole value, which is read off a real server rather than
+asserted (\texttt{scripts\slash verify\_matchers.py}). The second is how much of the
+corpus the single-key case reaches. That turns on Datadog's \texttt{or} binding more
+loosely than its comma, which was put to the account rather than read off the manual
+(Remark~\ref{rem:precedence}). The third is a presence branch subsuming every value
 (\apref{app:proofs}).
 
 \iffull\input{sections/moved/tr_disjunction_detail}\fi
@@ -221,9 +221,9 @@ observed itself needing and which the IR does not record as satisfied.
 The caveats are not a disclaimer. They are the hypotheses of
 Theorem~\ref{thm:kernel} below, collected by the only component in a position to know
 which ones a given query incurred, and \S\ref{sec:caveats} reports how often each is
-incurred. Seven codes arise, over six conditions --- the fourth has a code for each of
-the two forms it chooses between, which is why Theorem~\ref{thm:kernel} has six
-hypotheses and the emitter seven codes:
+incurred. Seven codes arise over six conditions: the fourth condition has a code for
+each of the two forms it chooses between, which is why Theorem~\ref{thm:kernel} has six
+hypotheses and the emitter seven codes. They are
 \texttt{ROLLUP\_ALIGNMENT} on every rollup, since Datadog's buckets are epoch-aligned,
 left-closed and named by their start (Remark~\ref{rem:closure}) while a PromQL window is
 right-closed and follows the evaluation step;

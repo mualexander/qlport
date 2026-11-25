@@ -114,9 +114,10 @@ the two states reached after \texttt{group\_left} and after \texttt{group\_right
 have a single cause: the vector-matching modifiers take an \emph{optional} parenthesised
 label list, so after either of them an opening parenthesis may begin that list or may
 begin a parenthesised right operand, and one token of lookahead cannot tell which. The
-conflict therefore comes from the optionality rather than from our layering --- making
-the label list mandatory removes it entirely, which is how we identify the cause, and
-also rejects \texttt{group\_left b}, which the language allows (\apref{app:proofs}).
+conflict therefore comes from the optionality rather than from our layering: making
+the label list mandatory removes it entirely, which is how we identify the cause. That
+change also rejects \texttt{group\_left b}, which the language allows
+(\apref{app:proofs}).
 
 The resolution is to shift, reading the parenthesis as the label list, and it is the
 resolution Prometheus~3.15.0 itself makes on the same expression. What this shows is
