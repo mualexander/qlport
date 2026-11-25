@@ -10,7 +10,10 @@ span, which looked like $21$ broken shapes. Reading a group's value off the quer
 scope rather than the response's tag set took the glob the query asked for instead of
 the value it matched, which looked like $32$ shapes whose groups did not line up. Tag
 keys containing dots were submitted in PromQL's normalised spelling while the Datadog
-query still asked for the dotted one, so Datadog grouped by a tag that was not there. A
+query still asked for the dotted one, so Datadog grouped by a tag that was not there ---
+and the fix for it was a regex over the query text, which was blind to hyphens, so the
+same fault survived in the one shape of \S\ref{sec:differential} that the second run
+reported \texttt{unmatched}; it is off the parse tree now. A
 scope term requiring a tag to be non-empty was satisfied by leaving the tag off, which
 Prometheus reads as empty, so that side selected nothing. And a rate limit from the API
 was recorded as a shape that could not be compared. In every case a parameter was read

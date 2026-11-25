@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from texsource import builds, table
+from texsource import builds, flat, table
 
 from qlport.diagnostics import Bottom
 from qlport.emit.promql import emit_detail
@@ -164,6 +164,163 @@ def test_the_rows_are_still_one_per_shape(run):
             shapes.append(shape(lowered[0]))
     assert len(shapes) == 330, len(shapes)
     assert len(set(shapes)) == 330, f"{len(shapes) - len(set(shapes))} collisions"
+
+
+# --- the three runs, and the one figure nothing could fail on -------------------------
+# §7.6 compares three runs and the working tree holds one. For the other two the prose
+# was the only record, so nothing could fail on them -- and a sentence about the second
+# run went wrong in the way that state invites: it divided the FIRST run's shape count
+# into the second's compared count, got three uncompared where the second run printed
+# four, and settled the discrepancy by asserting that run's cache no longer existed. It
+# exists, in the commit that replaced it. `scripts/differential_run_history.py` recovers
+# all three from the commits that cached them, names the shapes each could not reach by
+# re-deriving the shape list at that commit, and writes the result here.
+
+HISTORY = CACHE.parent / "run_history.json"
+
+WORD = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six"}
+
+
+@pytest.fixture(scope="module")
+def history() -> dict:
+    if not HISTORY.exists():                     # pragma: no cover - cache is committed
+        pytest.skip(f"{HISTORY} missing; run scripts/differential_run_history.py")
+    return json.loads(HISTORY.read_text())
+
+
+def test_the_run_history_ends_at_the_run_the_working_tree_holds(history, run):
+    """The history's newest record and the live cache have to be the same run.
+
+    Without this the history is a museum: a fourth run could land in
+    `differential.json`, every figure above could move with it, and these records would
+    go on describing a sequence the paper no longer reports as current.
+    """
+    runs = history["runs"]
+    assert [r["ordinal"] for r in runs] == ["first", "second", "third"]
+    newest = runs[-1]
+    assert newest["run_tag"] == run["provenance"]["run"]
+    assert newest["shapes"] == len(run["rows"]) == run["provenance"]["shapes"]
+    assert newest["compared"] == run["shapes_compared"] == newest["agreed"]
+    assert newest["occurrences_compared"] == run["occurrences_compared"]
+    assert newest["bucket_comparisons"] == sum(
+        int(r["buckets"]) for r in run["rows"] if r["status"] == "compared")
+    assert len(newest["uncompared"]) == len(run["rows"]) - run["shapes_compared"]
+
+
+def test_the_two_runs_the_paper_quotes_are_what_their_caches_say(history):
+    """The first two runs' figures, from the cache to the registry to the sentence.
+
+    The pair that was confusable is the whole point: the first two runs printed the same
+    compared count over the same bucket count, because the second reached every shape the
+    first did and the one shape it added came back `unmatched`. That is why reading a
+    shape count off one of them and a compared count off the other produced an arithmetic
+    that looked sound. So the identity is asserted, and so is the shape count that
+    distinguishes them -- which the census licensed from `rs.span_declared_wrong`, an
+    unrelated rollup-span figure of the same value, until `dr.first_shapes` existed.
+    """
+    first, second, third = history["runs"]
+    reg = json.loads(REGISTRY.read_text())
+
+    assert first["compared"] == second["compared"] == first["agreed"] == second["agreed"]
+    assert first["bucket_comparisons"] == second["bucket_comparisons"]
+    assert first["shapes"] + 1 == second["shapes"] == third["shapes"]
+    assert reg["dr.first_shapes"] == first["shapes"]
+    assert reg["dr.first_compared"] == first["compared"]
+    assert reg["dr.shared_buckets"] == first["bucket_comparisons"]
+    # The bound tightened between them, and §7.6 states the factor in words rather than
+    # printing either deviation. It said "an order of magnitude" until this test asked:
+    # the two bounds are 1.4e-13 and 2.1e-14, which is a decade by exponent and a factor
+    # of 6.6 in fact, and the second is what the sentence now says.
+    ratio = first["max_deviation"] / second["max_deviation"]
+    assert ratio >= 6
+
+    for prose in builds(PROSE):
+        said = flat(prose)
+        assert f"over ${first['shapes']}$ shapes" in said, first["shapes"]
+        assert f"${first['compared']}$ of ${first['compared']}$" in said
+        assert f"the same ${first['bucket_comparisons']:,}$".replace(",", "{,}") in said
+        assert f"a bound {WORD[int(ratio)]} times tighter" in said, ratio
+
+
+def test_the_second_run_could_not_compare_four_and_the_fourth_is_named(history):
+    """The sentence that was wrong, checked against the run that printed it.
+
+    Three claims, each of which the broken version got wrong or could not have known:
+    that the second run's uncompared count is one more than the first's, that the extra
+    one is the shape `corpus._TMPL` returned to the corpus rather than one of the first
+    run's three, and that the commit the prose names for that cache is the commit this
+    history read it from.
+    """
+    first, second, third = history["runs"]
+
+    assert len(second["uncompared"]) == len(first["uncompared"]) + 1 == 4
+    added = second["shapes_added_since_previous"]
+    assert len(added) == 1 and not second["shapes_removed_since_previous"]
+    extra = [u for u in second["uncompared"] if u["query"] == added[0]]
+    assert len(extra) == 1 and extra[0]["status"] == "unmatched", second["uncompared"]
+    # The other three are the first run's, unchanged.
+    assert ({u["query"] for u in second["uncompared"]} - set(added)
+            == {u["query"] for u in first["uncompared"]})
+
+    for prose in builds(PROSE):
+        said = flat(prose)
+        assert f"could not compare {WORD[len(second['uncompared'])]}" in said
+        assert second["commit"] in said, second["commit"]
+
+
+def test_the_uncompared_shapes_are_the_same_three_in_the_outer_two_runs(history):
+    """`all three were in the first run too` -- by query, because the indices moved.
+
+    The no-data row is index 299 in the first run and 300 in the other two, because the
+    shape `corpus._TMPL` returned sorts above it. Counting by index would make that look
+    like a different shape and by count would make any three look like these three, so
+    the comparison is on the query each row stood for, which is why the history re-derives
+    the shape list at each commit instead of recording the indices it found.
+    """
+    first, second, third = history["runs"]
+    assert {u["query"] for u in first["uncompared"]} == {
+        u["query"] for u in third["uncompared"]}
+    assert [u["index"] for u in first["uncompared"]] != [
+        u["index"] for u in third["uncompared"]]
+    assert {u["status"] for u in third["uncompared"]} == {
+        "window-too-short", "no-data"}
+
+    for prose in builds(PROSE):
+        said = flat(prose)
+        assert (f"{WORD[len(third['uncompared'])].capitalize()} shapes of the "
+                f"${third['shapes']}$ are not compared") in said
+        assert "the same three queries the first run could not compare" in said
+
+
+def test_one_shape_changed_status_in_the_whole_history(history, run):
+    """§7.6's strongest claim about the sequence, and the one with the most ways to fail.
+
+    Three runs on three independent sets of synthetic series: if the agreement were an
+    artefact of the series rather than of the translation, a shape would have moved.
+    None did except the one the harness fix was for, and it moved out of the uncompared
+    column rather than into it.
+
+    The claim is about statuses, so a shape being *added* is not one -- which is what
+    separates the second run from the first. Both halves are asserted here, because the
+    sentence is only true if the addition is not counted and only honest if the addition
+    is stated, and §7.6 states it one paragraph earlier.
+    """
+    runs = history["runs"]
+    changes = [c for r in runs for c in r["status_changes_since_previous"]]
+    assert len(changes) == 1, changes
+    (change,) = changes
+    assert change["from"] == "unmatched" and change["to"] == "compared"
+    assert change["query"] == runs[1]["shapes_added_since_previous"][0]
+    assert all(not r["shapes_removed_since_previous"] for r in runs)
+    assert sum(len(r["shapes_added_since_previous"]) for r in runs) == 1
+
+    # And what it compares to, now that it compares: the row §7.6 quotes.
+    index = next(u["index"] for u in runs[1]["uncompared"]
+                 if u["query"] == change["query"])
+    row = next(r for r in run["rows"] if r["index"] == index)
+    assert row["status"] == "compared" and row["max_d"] == 0.0
+    for prose in builds(PROSE):
+        assert f"${int(row['buckets'])}$ buckets, every one of them" in flat(prose)
 
 
 # --- the declared-metric-type join --------------------------------------------------

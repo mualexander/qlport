@@ -1,0 +1,134 @@
+{
+ "figures": {
+  "dr.first_compared": 329,
+  "dr.first_shapes": 332,
+  "dr.shared_buckets": 22608
+ },
+ "runs": [
+  {
+   "agreed": 329,
+   "bit_identical": 136,
+   "bucket_comparisons": 22608,
+   "collected_at": "2026-11-18T02:27:27+00:00",
+   "commit": "3f995e3",
+   "compared": 329,
+   "max_deviation": 1.374270216595123e-13,
+   "occurrences_compared": 8334,
+   "ordinal": "first",
+   "run_tag": "r1794966000",
+   "series": 885,
+   "shapes": 332,
+   "shapes_added_since_previous": [],
+   "shapes_removed_since_previous": [],
+   "status_changes_since_previous": [],
+   "uncompared": [
+    {
+     "detail": "interval 1800s over a 1800s window",
+     "index": 163,
+     "query": "avg:airbyte.metrics_reporter.num_unusually_long_syncs{*}.rollup(max, 1800)",
+     "status": "window-too-short"
+    },
+    {
+     "detail": "interval 3600s over a 1800s window",
+     "index": 192,
+     "query": "sum:airbyte.worker.job.failed_by_release_stage{*}.as_count().rollup(sum, 3600)",
+     "status": "window-too-short"
+    },
+    {
+     "detail": "datadog series=0 promql series=0",
+     "index": 299,
+     "query": "sum:envoy.cluster.upstream_rq_xx.count{envoy_response_code_class:5,envoy_response_code_class:4*,*,*}.as_count()",
+     "status": "no-data"
+    }
+   ]
+  },
+  {
+   "agreed": 329,
+   "bit_identical": 136,
+   "bucket_comparisons": 22608,
+   "collected_at": "2026-11-19T02:40:00+00:00",
+   "commit": "580f802",
+   "compared": 329,
+   "max_deviation": 2.0850484910155078e-14,
+   "occurrences_compared": 8364,
+   "ordinal": "second",
+   "run_tag": "r1795053300",
+   "series": 888,
+   "shapes": 333,
+   "shapes_added_since_previous": [
+    "avg:velero.backup.duration.seconds.sum{*,*,*,*} by {cluster-location,cluster-name,cluster-uid,host}.as_count()"
+   ],
+   "shapes_removed_since_previous": [],
+   "status_changes_since_previous": [],
+   "uncompared": [
+    {
+     "detail": "interval 1800s over a 1800s window",
+     "index": 163,
+     "query": "avg:airbyte.metrics_reporter.num_unusually_long_syncs{*}.rollup(max, 1800)",
+     "status": "window-too-short"
+    },
+    {
+     "detail": "interval 3600s over a 1800s window",
+     "index": 192,
+     "query": "sum:airbyte.worker.job.failed_by_release_stage{*}.as_count().rollup(sum, 3600)",
+     "status": "window-too-short"
+    },
+    {
+     "detail": "dd groups=[(('host', 'g2'),), (('host', 'g0'),)] pq groups=[(('cluster_location', 'g0'), ('cluster_name', 'g0'), ('cluster_uid', 'g0'), ('host', 'g0')), (('cluster_location', 'g1'), ('cluster_name', 'g1'), ('cluster_uid', 'g1'), ('host', 'g1'))]",
+     "index": 262,
+     "query": "avg:velero.backup.duration.seconds.sum{*,*,*,*} by {cluster-location,cluster-name,cluster-uid,host}.as_count()",
+     "status": "unmatched"
+    },
+    {
+     "detail": "datadog series=0 promql series=0",
+     "index": 300,
+     "query": "sum:envoy.cluster.upstream_rq_xx.count{envoy_response_code_class:5,envoy_response_code_class:4*,*,*}.as_count()",
+     "status": "no-data"
+    }
+   ]
+  },
+  {
+   "agreed": 330,
+   "bit_identical": 137,
+   "bucket_comparisons": 22692,
+   "collected_at": "2026-11-20T03:34:16+00:00",
+   "commit": "9089766",
+   "compared": 330,
+   "max_deviation": 3.5060887730706864e-14,
+   "occurrences_compared": 8365,
+   "ordinal": "third",
+   "run_tag": "r1795143000",
+   "series": 888,
+   "shapes": 333,
+   "shapes_added_since_previous": [],
+   "shapes_removed_since_previous": [],
+   "status_changes_since_previous": [
+    {
+     "from": "unmatched",
+     "query": "avg:velero.backup.duration.seconds.sum{*,*,*,*} by {cluster-location,cluster-name,cluster-uid,host}.as_count()",
+     "to": "compared"
+    }
+   ],
+   "uncompared": [
+    {
+     "detail": "interval 1800s over a 1800s window",
+     "index": 163,
+     "query": "avg:airbyte.metrics_reporter.num_unusually_long_syncs{*}.rollup(max, 1800)",
+     "status": "window-too-short"
+    },
+    {
+     "detail": "interval 3600s over a 1800s window",
+     "index": 192,
+     "query": "sum:airbyte.worker.job.failed_by_release_stage{*}.as_count().rollup(sum, 3600)",
+     "status": "window-too-short"
+    },
+    {
+     "detail": "datadog series=0 promql series=0",
+     "index": 300,
+     "query": "sum:envoy.cluster.upstream_rq_xx.count{envoy_response_code_class:5,envoy_response_code_class:4*,*,*}.as_count()",
+     "status": "no-data"
+    }
+   ]
+  }
+ ]
+}

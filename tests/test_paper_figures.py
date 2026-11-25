@@ -211,8 +211,6 @@ ALLOWED: dict[tuple[str, float], str] = {
     ("num", 221): "unregistered (nb 01): PromQL queries the first six features "
                   "complete",
     ("pct", 2.7): "and what that is as a share of the PromQL corpus",
-    ("num", 22608): "historical: the second run's bucket comparisons, quoted beside "
-                    "the third run's 22,692 to say the agreement did not move",
 }
 
 
@@ -1579,6 +1577,7 @@ def test_every_derivable_figure_is_still_quoted():
 SUPERSEDED: tuple[tuple[float, str, str], ...] = (
     (0.23, "cv.dd_stair_gap_16_seed_range", "eval_heldout.tex"),
     (22608, "nb05.bucket_comparisons", "07_evaluation.tex"),
+    (332, "nb05.shapes", "07_evaluation.tex"),
     (325, "nb05.shapes", "eval_differential_fixes.tex"),
     (335, "nb05.shapes", "eval_differential_fixes.tex"),
     (332, "nb05.shapes", "eval_differential_fixes.tex"),
@@ -1648,7 +1647,7 @@ TABLE_COINCIDENCE: frozenset[tuple[str, float]] = frozenset({
     # It was never a replicate count; corpus_sources carries the real one.
     ("num", 200),
     ("num", 91), ("num", 95), ("num", 100), ("num", 160), ("num", 208), ("num", 262),
-    ("num", 266), ("num", 300), ("num", 329), ("num", 330), ("num", 1680),
+    ("num", 266), ("num", 300), ("num", 330), ("num", 1680),
     ("num", 1766), ("num", 7546), ("num", 8102), ("num", 8365),
     # 80: the proverb's 80% of the queries, and one of the four thresholds the shape
     # distribution is summarised at -- the measured figures there are the shape counts
@@ -1731,7 +1730,14 @@ def test_the_coincidence_list_has_no_dead_entries():
 # committed cache holds it and nothing can derive it. The same pass put four figures
 # ONTO derivations (the top() call total, the replay's two extremes, and one seed's
 # Monte-Carlo error), which is why the bump is one and not five.
-UNCHECKED_CEILING = 33
+#
+# It is 32. The one that left is 22,608, the bucket count the first two differential runs
+# share, and it left because `data/raw/shapes/run_history.json` now holds all three runs
+# recovered from the commits that cached them. It was the clearest case this file has had
+# for the comment above it: an allowlisted historical figure licenses its value for ever
+# and says nothing about the sentence around it, and the sentence around that one had
+# been wrong for three commits while every test here passed.
+UNCHECKED_CEILING = 32
 
 
 def test_the_unchecked_figures_do_not_multiply():

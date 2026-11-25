@@ -380,24 +380,26 @@ arithmetic, on idealised series, under every condition the translation could hav
 wrong about.
 
 This is the third run of the experiment, and that matters more than the agreement does.
-The first was made on the corpus before \texttt{corpus.\_TMPL} was fixed, and
-\S\ref{sec:threats} concedes that a rig which has been wrong three times in the
-agreement-flattering direction reports $329$ of $329$ in the version that passes. The
-second was on a corrected corpus with a fresh set of synthetic series, and returned the
-same $329$ of $329$ over the same $22{,}608$ buckets with a bound an order of magnitude
-tighter. This one draws a third independent set of series and carries the grouping-key
-fix described below, and returns $330$ of $330$ over $22{,}692$ buckets. Independent
-replication was the thing \S\ref{sec:threats} asked for and did not have; there are now
-two, and neither changed a verdict. The second of them moved one shape out of the
-uncompared column, which is the only status any shape has changed across three runs.
+The first was made on the corpus before \texttt{corpus.\_TMPL} was fixed, over $332$
+shapes, and it is the run Remark~\ref{rem:differential-fixes} is about: three of its
+preconditions had been wrong in the agreement-flattering direction, and $329$ of $329$
+is what a rig with that history reports in the version with all three fixed. The second
+was on a corrected corpus with a fresh set of synthetic series. That fix had returned
+one shape to the experiment, so the second run was over $333$ --- and the returned shape
+was the one shape it could not compare, so it reported the same $329$ of $329$ over the
+same $22{,}608$ buckets, with a bound six times tighter. This one draws a third
+independent set of series and carries the grouping-key fix described below, and returns
+$330$ of $330$ over $22{,}692$ buckets. Independent replication is what a rig with three
+preconditions wrong in one direction needs and what the first run did not have; there
+are now two, and neither changed a verdict. The second of them moved that shape out of
+the uncompared column, which is the only status any shape has changed in the three
+runs.
 
 Three shapes of the $333$ are not compared: two carry a rollup interval the run's
-half-hour of synthetic points cannot hold and one returned no data on either side, and all three were in the first run
-too. One more was uncompared in the second run --- which reported $329$ of $329$
-over $332$ shapes, so three of its own were uncompared and this was one of them ---
-and resolving it is why there is a third. An earlier version of this sentence called
-it a fourth, which the second run's printed pair does not allow and whose cache this
-paper no longer holds.
+half-hour of synthetic points cannot hold and one returned no data on either side, and
+they are the same three queries the first run could not compare. The second run could
+not compare four. The fourth is the shape \texttt{corpus.\_TMPL} had just returned to
+the corpus, and resolving it is why there is a third run.
 It came back \emph{unmatched} --- both systems returned data and no bucket
 could be paired, because Datadog had grouped by \texttt{host} alone where the emitted
 PromQL grouped by all four keys the query names. That was not a translation defect: it
@@ -409,6 +411,17 @@ bit-identical. It is no longer the one shape in the corpus whose translation has
 been checked against either system, and the $8{,}365$ above includes it. The prediction
 that it would compare was made before the run and is the only thing here that could have
 come out otherwise.
+
+An earlier version of the paragraph above said four and a later one \emph{corrected} it
+to three, and the correction was the error: it divided the first run's shape count into
+the second run's compared count, which are figures of different runs, and then explained
+away the discrepancy that produced by asserting the second run's cache was lost. The
+cache is \texttt{580f802}'s and it says four. The failure is a property of the ledger
+rather than of the arithmetic --- a historical figure is the one kind nothing in this
+paper can fail on, because the value is already a record and no test recomputes it --- so
+the three runs are now a cache naming the commit behind each
+(\texttt{data\slash raw\slash shapes\slash run\_history.json}), and the shapes a run
+could not reach are named in it rather than counted in prose.
 
 \iffull\input{sections/moved/eval_differential_fixes}\fi
 
