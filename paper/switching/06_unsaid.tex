@@ -45,9 +45,9 @@ in this paper that went longest without the control it needed.
 
 The exposure runs one way. A dashboard that must ship generically has a weaker reason to
 pin a rollup than a hand-tuned production one, so $97.0\%$ is better read as an upper
-estimate of what a customer estate would show --- and the conclusion survives the discount,
-because the load-bearing half is the $55.6\%$, measured over two independent PromQL
-sources, which makes the difference one of degree however the Datadog share moves.
+estimate of what a customer estate would show --- and the conclusion survives the
+discount, because the load-bearing $55.6\%$ was measured over two independent PromQL
+sources.
 
 \paragraph{What the default costs.}
 An exposure is not an error rate, and for some of these occurrences the error rate can be
@@ -58,10 +58,11 @@ widgets declare, gives this. Of the $8{,}217$ occurrences carrying
 those the emitter's $60$\,s is the interval Datadog would have used for $164$ of them and
 the wrong one for $332$, or $66.9\%$. The modal declared span is one hour, $205$
 occurrences, where Datadog rolls up at $20$\,s and the emitted \texttt{[60s]} answers a
-question three times as wide; the declared spans run from one minute, where $60$\,s is
-$60$ times too wide, to one week, where it is a sixtieth of the interval Datadog uses.
-Every span the corpus declares is one that measurement covered, so none of this rests on
-interpolation.
+question three times as wide; the eight spans those widgets declare run from one minute,
+where $60$\,s is $60$ times too wide, to one week, where it is a sixtieth of the interval
+Datadog uses. The corpus declares two spans no metric query occurrence sits under, and at
+the widest of them, a month, the emitted constant is a $240$th of Datadog's interval. All
+ten were measured, so none of this rests on interpolation.
 
 The other $7{,}721$ cannot be decided, and the distinction matters more than the ratio
 does. A widget that pins nothing takes its span from the dashboard's time selector, which

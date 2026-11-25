@@ -316,6 +316,113 @@ def test_only_four_hours_takes_the_emitted_interval():
     assert right == spans["figures"]["rs.span_declared_right"]
 
 
+# The join reaches a span only if some metric query sits under a widget that pins it,
+# so its range is narrower than the corpus's declarations and nothing said so. 7.6 gave
+# "the declared spans run from one minute ... to one week" as if it were ranging over
+# all ten values the corpus declares, when it ranges over the eight the join reaches --
+# and the value it dropped at the top is the one where the emitted constant is furthest
+# wrong and the one row of E18's lookup with no observed spacing behind it. The numbers
+# in that paragraph were all correct; the range was a claim about a different
+# population from the one it appeared to be about.
+SPAN_WORD = {2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven",
+             8: "eight", 9: "nine", 10: "ten"}
+
+
+def test_the_spans_the_join_never_reaches_are_the_two_the_prose_names(reg):
+    r"""The eight-of-ten gap, re-derived, and the two values it consists of.
+
+    `rollup_spans.json` records the gap and this checks it against the corpus rather
+    than against itself. The claim the paragraph makes about the two missing values is
+    the strong one -- that the widgets pinning them hold no Datadog metric query
+    occurrence *at all*, so they drop out of the join by having nothing to join rather
+    than by failing the caveat test -- and that is checked here by intersecting the
+    widget census with every occurrence's span, not with the `ROLLUP_DEFAULT` subset.
+
+    The interiority claim is the part an adversary would get wrong, and I did: thirty
+    minutes reads like a tail and is not one. Its span sits between fifteen minutes and
+    one hour and its interval between theirs, so it is inside the stated range on both
+    axes and widens nothing. Only one month is beyond it, which is why the paragraph
+    distinguishes the two instead of calling both omissions tails.
+    """
+    import importlib.util
+
+    sys.path.insert(0, str(ROOT / "scripts"))
+    spec = importlib.util.spec_from_file_location(
+        "_rsj", ROOT / "scripts" / "rollup_span_join.py")
+    rsj = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rsj)
+
+    spans = _spans()
+    lookup = spans["lookup"]
+    # What each span's query range actually was, off E18's own cache rather than off a
+    # second table of durations that could disagree with it.
+    width = {name: row["range_seconds"] for name, row in json.loads(
+        (ROOT / "data" / "raw" / "datadog" / "e18.json").read_text())[
+            "responses"].items()}
+
+    widgets = rsj.widgets_with_spans()
+    occupied = {span for _, span in rsj.occurrences_with_spans() if span}
+    joined = set(spans["by_span"])
+
+    assert set(widgets) == set(lookup), (
+        "E18 measured a different set of spans from the one the corpus declares")
+    assert len(widgets) == spans["declared_span_values"] == len(lookup)
+    assert len(joined) == spans["joined_span_values"]
+    assert joined <= occupied, sorted(joined - occupied)
+
+    unjoined = sorted(set(widgets) - occupied, key=lambda s: width[s])
+    assert unjoined == spans["unjoined_spans"], unjoined
+    assert sum(widgets[s] for s in unjoined) == spans["unjoined_span_widgets"]
+    assert len(joined) + len(unjoined) == len(widgets), (
+        "a declared span is neither reached by the join nor one of the two it misses")
+
+    inner, outer = unjoined[0], unjoined[-1]
+    lo_w, hi_w = min(width[s] for s in joined), max(width[s] for s in joined)
+    lo_i, hi_i = min(lookup[s] for s in joined), max(lookup[s] for s in joined)
+    assert lo_w < width[inner] < hi_w and lo_i < lookup[inner] < hi_i, (
+        f"{inner} is no longer inside the stated range, so the paragraph's "
+        f"\"falls inside the range on both axes\" is wrong")
+    assert width[outer] > hi_w and lookup[outer] > hi_i, (
+        f"{outer} is no longer beyond the stated range")
+
+    divisor = round(lookup[outer] / 60)
+    assert divisor == reg["rs.widest_declared_span_divisor"] == spans["figures"][
+        "rs.widest_declared_span_divisor"]
+    assert divisor > max(max(60 / lookup[s], lookup[s] / 60) for s in joined), (
+        "the omitted span no longer carries a larger factor than the range's ends, "
+        "which is the whole reason the paragraph names it")
+    # The one cell of the table with no observation behind it is the one this divisor
+    # comes from, which is what makes the omission worth a paragraph rather than a
+    # correction.
+    observed = json.loads((ROOT / "data" / "raw" / "datadog" / "e18.json").read_text())[
+        "interpretation"]["observed_by_range"]
+    assert observed[outer] is None, (
+        f"E18 observed a spacing at {outer}; the prose says it could not")
+    assert all(observed[s] is not None for s in joined), sorted(
+        s for s in joined if observed[s] is None)
+
+    eight, ten = SPAN_WORD[len(joined)], SPAN_WORD[len(widgets)]
+    pinned = SPAN_WORD[spans["unjoined_span_widgets"]]
+    interior = SPAN_WORD[int(spans["unjoined_span_factors"][inner])]
+    for text in builds(ROOT / "paper" / "sections" / "07_evaluation.tex"):
+        said = flat(text)
+        assert f"{eight} of the {ten} spans the corpus declares" in said
+        assert f"the {pinned} widgets that pin them" in said
+        assert f"{interior} times too wide" in said
+        assert f"a ${divisor}$th of" in said
+    # The twenty-page version states the same correction in place rather than as a
+    # paragraph, because it is page-limited and the complete paper is where the join's
+    # population is argued. It still has to name the same four numbers.
+    for text in builds(ROOT / "paper" / "switching" / "06_unsaid.tex"):
+        said = flat(text)
+        assert f"the {eight} spans those widgets declare" in said
+        assert f"declares {SPAN_WORD[len(unjoined)]} spans no metric query" in said
+        assert f"All {ten} were measured" in said
+        assert f"a ${divisor}$th of" in said
+    for text in builds(ROOT / "paper" / "sections" / "moved" / "ing_rollup_spans.tex"):
+        assert f"a ${divisor}$th of the reported interval" in flat(text)
+
+
 def test_the_extrapolation_is_labelled_and_is_an_upper_estimate(reg):
     """It is the measured share carried across, and the prose must not call it measured."""
     s = _spans()["figures"]
@@ -1046,16 +1153,21 @@ def test_every_type_inference_figure_is_the_one_the_join_produced(reg):
 
 
 def test_every_rollup_span_figure_is_the_one_the_join_produced(reg):
-    r"""The 12 `rs.*` keys against `rollup_spans.json`, not three of them.
+    r"""The 13 `rs.*` keys against `rollup_spans.json`, not three of them.
 
     `test_the_declared_and_undeclared_spans_exhaust_rollup_default` pinned three. The
     other nine sat in the cache unread, including
     `rs.span_declared_pct_of_rollup_default`, which the abstract states: moving it from
     6.0 to 16.0 across the abstract and four sections left the suite green. `SHARES`
     has no `rs.*` entry at all.
+
+    Twelve until `rs.widest_declared_span_divisor` joined them, which is the one figure
+    here that is not about the join's own population: it is the factor at the widest
+    span the corpus declares and the join never reaches, and the paragraph quoting it
+    needs it precisely because that span is outside everything else these keys measure.
     """
     want = _cache_figures("rollup_spans.json")
-    assert len(want) == 12, f"the cache holds {len(want)} figures, not 12"
+    assert len(want) == 13, f"the cache holds {len(want)} figures, not 13"
     drifted = [f"  {k}: registry {reg.get(k, '(absent)')} vs run {v}"
                for k, v in sorted(want.items()) if reg.get(k) != v]
     assert not drifted, (

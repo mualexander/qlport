@@ -49,6 +49,40 @@ def _span_of(defn: dict) -> str | None:
     return str(span) if span else None
 
 
+def _definitions():
+    """Every widget definition in the corpus's Datadog dashboards, in traversal order.
+
+    Both walks below need it: one counts the query occurrences under each declared
+    span, the other counts the widgets that declare one at all. They have to see the
+    same definitions or the gap between them is an artefact of two traversals.
+    """
+    for path in sorted(SOURCES.rglob("assets/dashboards/*.json")):
+        try:
+            doc = json.loads(path.read_text())
+        except Exception:
+            continue
+        yield from c._dd_definitions(doc)
+
+
+def widgets_with_spans() -> Counter[str]:
+    """Every widget that pins its own span, counted by the span it pins.
+
+    The occurrence join can only reach a span that some metric query sits under, and
+    the corpus declares two values no metric query sits under at all. Counting widgets
+    as well as occurrences is what makes that gap visible: without it the join's eight
+    spans read as the corpus's ten. One of the two it misses is interior and widens
+    nothing; the other is the widest span declared anywhere, where the emitted constant
+    is furthest from the interval Datadog reports and where E18 observed no spacing to
+    check that interval against.
+    """
+    out: Counter[str] = Counter()
+    for defn in _definitions():
+        span = _span_of(defn)
+        if span:
+            out[span] += 1
+    return out
+
+
 def occurrences_with_spans() -> list[tuple[str, str | None]]:
     """Every Datadog metric query occurrence, paired with its widget's declared span.
 
@@ -57,27 +91,22 @@ def occurrences_with_spans() -> list[tuple[str, str | None]]:
     within a dashboard.
     """
     out: list[tuple[str, str | None]] = []
-    for path in sorted(SOURCES.rglob("assets/dashboards/*.json")):
-        try:
-            doc = json.loads(path.read_text())
-        except Exception:
-            continue
-        for defn in c._dd_definitions(doc):
-            span = _span_of(defn)
-            for req in c._dd_requests(defn):
-                q = req.get("q")
-                if isinstance(q, str) and q.strip():
-                    out.append((q.strip(), span))
-                subs = list(req.get("queries") or [])
-                single = req.get("query")
-                if isinstance(single, dict):
-                    subs.append(single)
-                for sub in subs:
-                    if not isinstance(sub, dict) or sub.get("data_source") != "metrics":
-                        continue
-                    text = sub.get("query")
-                    if isinstance(text, str) and text.strip():
-                        out.append((text.strip(), span))
+    for defn in _definitions():
+        span = _span_of(defn)
+        for req in c._dd_requests(defn):
+            q = req.get("q")
+            if isinstance(q, str) and q.strip():
+                out.append((q.strip(), span))
+            subs = list(req.get("queries") or [])
+            single = req.get("query")
+            if isinstance(single, dict):
+                subs.append(single)
+            for sub in subs:
+                if not isinstance(sub, dict) or sub.get("data_source") != "metrics":
+                    continue
+                text = sub.get("query")
+                if isinstance(text, str) and text.strip():
+                    out.append((text.strip(), span))
     return out
 
 
@@ -121,6 +150,25 @@ def main() -> int:
                for s in sorted(by_span)}
     modal_span, modal_n = by_span.most_common(1)[0]
 
+    # What the occurrence join cannot see. A span reaches the join only if some metric
+    # query sits under a widget that pins it, and two of the ten values the corpus
+    # declares are pinned by widgets holding no metric query occurrence at all -- so
+    # they are absent from `by_span` by having nothing to join rather than by failing
+    # the caveat test, and the range the paragraph in 7.6 quotes is eight values wide
+    # and not ten. Only one of the two is outside that range: thirty minutes sits
+    # between spans the join reaches and widens nothing, while at a month Datadog
+    # reports an interval the emitted 60 s is a 240th of, a larger factor than anything
+    # the join's range contains and the one row of E18's lookup with no observed
+    # spacing behind it.
+    #
+    # Ordered by the interval rather than by the span, which `rem:rollup-spans` records
+    # as monotone in the range, so the two orders agree on the endpoint this needs; the
+    # ties among the short spans are immaterial because nothing below reads the middle.
+    widgets = widgets_with_spans()
+    by_interval = sorted(widgets, key=lambda s: lookup[s])
+    unjoined = [s for s in by_interval if s not in by_span]
+    widest = by_interval[-1]
+
     fig = {
         "rs.rollup_default_occurrences": len(
             [1 for t, _ in occ if c.normalise("datadog", t) in rollup_default]),
@@ -135,6 +183,11 @@ def main() -> int:
         "rs.modal_declared_span_occurrences": modal_n,
         "rs.modal_declared_span_factor": factors[modal_span],
         "rs.span_unknown_to_e18": unknown_span,
+        # The emitted 60 s against the interval Datadog reports at the widest span the
+        # corpus declares, as a divisor: 60 s is a 240th of it. Quoted in 7.6 because
+        # it is the largest error the lookup implies and it sits outside the range that
+        # paragraph used to give as "the declared spans".
+        "rs.widest_declared_span_divisor": round(lookup[widest] / EMITTED),
         # What the measured share would mean applied to every ROLLUP_DEFAULT
         # occurrence. Reported as an extrapolation and not a measurement, and the
         # selection runs one way: an author who pins a span is doing something
@@ -149,6 +202,16 @@ def main() -> int:
         "figures": fig,
         "by_span": {s: {"occurrences": n, "interval_seconds": lookup.get(s),
                         "factor": factors[s]} for s, n in by_span.most_common()},
+        # The widget-level census, which the occurrence join is a subset of. Kept
+        # outside `figures` because the paragraph spells these in words; the test that
+        # reads them reads them from here.
+        "by_widget_span": {s: widgets[s] for s in by_interval},
+        "declared_span_values": len(widgets),
+        "joined_span_values": len(by_span),
+        "unjoined_spans": unjoined,
+        "unjoined_span_widgets": sum(widgets[s] for s in unjoined),
+        "unjoined_span_factors": {s: round(EMITTED / lookup[s], 3) for s in unjoined},
+        "widest_declared_span": widest,
         "modal_declared_span": modal_span,
         "lookup": lookup,
         "note": "spans are widget-declared live_span values; occurrences whose widget "
@@ -168,6 +231,12 @@ def main() -> int:
     print(f"  modal declared span:    {modal_span} "
           f"({modal_n:,} occurrences, off by {factors[modal_span]}x)")
     print(f"  span unknown to E18:    {unknown_span:,}")
+    print(f"  declared span values:   {len(widgets)} "
+          f"({len(by_span)} reached by the join; "
+          f"{', '.join(unjoined)} pinned by "
+          f"{sum(widgets[s] for s in unjoined)} widgets with no occurrence)")
+    print(f"  widest declared span:   {widest}, interval {lookup[widest]}s, "
+          f"emitted 60 s is a {round(lookup[widest] / EMITTED)}th of it")
     for s, n in by_span.most_common():
         print(f"     {s:>5}  {n:6,}  interval {lookup.get(s)}  factor {factors[s]}")
     return 0

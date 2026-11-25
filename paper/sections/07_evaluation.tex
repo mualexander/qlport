@@ -710,10 +710,22 @@ to E18's lookup gives this. Of the $8{,}217$ occurrences carrying
 and for those the emitter's $60$\,s is the interval Datadog would have used for $164$ of
 them and the wrong one for $332$, or $66.9\%$. The modal declared span is one hour,
 $205$ occurrences, where Datadog rolls up at $20$\,s and the emitted \texttt{[60s]}
-answers a question three times as wide; the declared spans run from one minute, where
-$60$\,s is $60$ times too wide, to one week, where it is a sixtieth of the interval
-Datadog uses. Every span the corpus declares is one E18 measured, so none of this rests
-on interpolation.
+answers a question three times as wide; the spans those widgets declare run from one
+minute, where $60$\,s is $60$ times too wide, to one week, where it is a sixtieth of the
+interval Datadog uses. Every span the corpus declares is one E18 measured, so none of
+this rests on interpolation.
+
+That range is eight of the ten spans the corpus declares. The two outside it are missing
+from the join rather than excluded from it --- the five widgets that pin them hold no
+Datadog metric query occurrence at all, so there is nothing in them to join and no count
+above moves either way --- and only one of the two would widen it. Thirty minutes falls
+inside the range on both axes, at six times too wide. One month does not: Datadog reports
+an interval there that the emitted $60$\,s is a $240$th of, a larger factor than either
+end of the range above. It is also the one row of E18's lookup with no observation behind
+it, because a month-wide window over an hour-long series holds a single bucket, so
+Remark~\ref{rem:rollup-spans} prints the interval that run reported and dashes the
+spacing it could not measure. The largest error this lookup implies is the one cell of it
+nothing checked.
 
 The other $7{,}721$ cannot be decided, and the distinction matters. A widget that pins
 nothing takes its span from the dashboard's time selector, which is a viewer's choice at

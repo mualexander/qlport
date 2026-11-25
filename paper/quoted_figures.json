@@ -369,5 +369,6 @@
  "rs.span_declared_wrong": 332,
  "rs.span_declared_wrong_pct": 66.9,
  "rs.span_undeclared_occurrences": 7721,
- "rs.span_unknown_to_e18": 0
+ "rs.span_unknown_to_e18": 0,
+ "rs.widest_declared_span_divisor": 240
 }
