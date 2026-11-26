@@ -39,16 +39,16 @@ notebooks: install
 # rather than failing at the first container. Order matters: both read
 # data/processed/translations.csv, which notebook 03 writes, so `notebooks` comes first.
 #
-# Four of the five gate their registry write behind --write-registry, and the recipe
-# below passes it to none of them: the registry is committed with these values in it, and
-# a reproduction run should agree with what is committed rather than quietly rewrite it.
+# All five gate their registry write behind --write-registry, and the recipe below passes
+# it to none of them: the registry is committed with these values in it, and a
+# reproduction run should agree with what is committed rather than quietly rewrite it.
 # Pass the flag by hand when a figure is meant to move.
 #
-# rollup_span_join.py is the exception, and this comment claimed for rounds that there
-# was none. It has no such flag -- no argument parsing at all -- so it merges its 13
-# `rs.` keys into paper/quoted_figures.json on every run, a reproduction run included,
-# where a drifted figure would overwrite the committed one instead of surfacing as a
-# disagreement.
+# Four of them always did. rollup_span_join.py did not -- it had no flag and no argument
+# parsing at all, so it merged its 13 `rs.` keys into paper/quoted_figures.json on every
+# run, a reproduction run included, where a drifted figure would have overwritten the
+# committed one instead of surfacing as a disagreement. This comment claimed for rounds
+# that no script did that.
 #
 # dash0_claims.py writes nothing under data/processed: it re-checks the cached README
 # against its sha256 and re-reads the two figures section 2 attributes to that converter,

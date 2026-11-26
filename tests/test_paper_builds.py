@@ -147,7 +147,7 @@ def test_every_perturbation_in_the_battery_still_applies():
           "in the suite)\n" + done.stderr[-800:])
     assert "0 stale" in done.stdout, done.stdout
     cases = int(done.stdout.split()[0])
-    assert cases >= 70, f"the battery has shrunk to {cases} cases"
+    assert cases >= 71, f"the battery has shrunk to {cases} cases"
 
 
 def test_no_macro_body_carries_a_figure():
@@ -1404,17 +1404,17 @@ def test_the_data_scripts_write_the_registry_the_way_the_makefile_says():
     The comment above `DATA_SCRIPTS` said "None is passed --write-registry", which is
     the reproduction story the whole registry rests on: the committed figures are the
     record, and a rerun should disagree with them rather than overwrite them.
-    `rollup_span_join.py` takes no arguments at all and merges its 13 `rs.` keys into
-    `paper/quoted_figures.json` on every run, so `make data` has always rewritten the
-    registry and a drifted span figure would have been written over the committed one.
-    The same comment said `dash0_claims.py` "writes nothing at all", which is its
-    registry merge; said "these three" of five scripts; and counted the tests that fail
-    without the derived inputs at five and four, where removing the two files fails
-    fourteen.
+    `rollup_span_join.py` took no arguments at all and merged its 13 `rs.` keys into
+    `paper/quoted_figures.json` on every run, so `make data` rewrote the registry every
+    time and a drifted span figure would have been written over the committed one. The
+    same comment said `dash0_claims.py` "writes nothing at all", which is its registry
+    merge; said "these three" of five scripts; and counted the tests that fail without
+    the derived inputs at five and four, where removing the two files fails fourteen.
 
-    This does not fix the script -- gating that write changes what `make data` does to
-    a committed file, which is its own decision. It makes the comment true and keeps it
-    true, which is the part that was free.
+    The script is gated now, so the sentence that was false is true of all five and the
+    assertion below is that none of them writes ungated. The history stays in the
+    Makefile and here, because "all five gate it" is only worth reading beside the fact
+    that one of them did not and nothing noticed for rounds.
     """
     scripts = _data_scripts()
     said = _data_script_comment()
@@ -1427,17 +1427,16 @@ def test_the_data_scripts_write_the_registry_the_way_the_makefile_says():
     ungated = sorted(n for n, g in gated.items() if g is False)
     behind = sorted(n for n, g in gated.items() if g is True)
 
-    assert ungated == ["rollup_span_join.py"], (
-        f"the comment says rollup_span_join.py is the one script that writes the "
-        f"registry ungated; the scripts say {ungated or 'none does'}")
-    assert len(behind) == 4, (
-        f"{len(behind)} scripts gate the write behind the flag, not the four the "
+    assert not ungated, (
+        f"the comment says all five gate the registry write; these do not: {ungated}")
+    assert len(behind) == 5, (
+        f"{len(behind)} scripts gate the write behind the flag, not the five the "
         f"comment claims: {behind}")
 
     # The comment's own words, against those counts.
     assert "these five produce the rest" in said
-    assert "Four of the five gate their registry write behind --write-registry" in said
-    assert "rollup_span_join.py is the exception" in said
+    assert "All five gate their registry write behind --write-registry" in said
+    assert "Four of them always did. rollup_span_join.py did not" in said
     assert "no argument parsing at all" in said
 
     # `make data` passes the flag to nobody, which is the other half of the claim.
@@ -1450,7 +1449,7 @@ def test_the_data_scripts_write_the_registry_the_way_the_makefile_says():
 
     # The key count the comment gives for the ungated script.
     keys = {k for k in _registry() if k.startswith("rs.")}
-    assert f"merges its {len(keys)} `rs.` keys" in said, (
+    assert f"merged its {len(keys)} `rs.` keys" in said, (
         f"the registry holds {len(keys)} `rs.` keys and the comment says otherwise")
     join = (ROOT / "scripts" / "rollup_span_join.py").read_text()
     assert len(re.findall(r'"rs\.[a-z_0-9]+":', join)) == len(keys), (

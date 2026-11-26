@@ -19,6 +19,8 @@ measured subset stands on its own, and the extrapolation is labelled as one.
 
 The walk mirrors `corpus.datadog_dashboard_queries` and asserts it recovers the same
 occurrence count, so a drift in either is a failure here rather than a silent re-weighting.
+
+Usage: .venv/bin/python scripts/rollup_span_join.py [--write-registry]
 """
 from __future__ import annotations
 
@@ -219,10 +221,6 @@ def main() -> int:
                 "JSON",
     }, indent=1, sort_keys=True) + "\n")
 
-    reg = json.loads(REGISTRY.read_text())
-    reg.update(fig)
-    REGISTRY.write_text(json.dumps(reg, indent=1, sort_keys=True) + "\n")
-
     print(f"ROLLUP_DEFAULT occurrences: {fig['rs.rollup_default_occurrences']:,}")
     print(f"  widget declares a span: {declared_total:,} "
           f"({fig['rs.span_declared_pct_of_rollup_default']}%)")
@@ -239,6 +237,12 @@ def main() -> int:
           f"emitted 60 s is a {round(lookup[widest] / EMITTED)}th of it")
     for s, n in by_span.most_common():
         print(f"     {s:>5}  {n:6,}  interval {lookup.get(s)}  factor {factors[s]}")
+
+    if "--write-registry" in sys.argv:
+        reg = json.loads(REGISTRY.read_text())
+        reg.update(fig)
+        REGISTRY.write_text(json.dumps(reg, indent=1, sort_keys=True) + "\n")
+        print(f"\nmerged {len(fig)} keys into {REGISTRY.relative_to(ROOT)}")
     return 0
 
 

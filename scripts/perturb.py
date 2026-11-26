@@ -502,17 +502,29 @@ CASES: list[tuple[str, callable, list[str], str]] = [
     ("the comment back to three data scripts",
      lambda: sub("Makefile", "these five produce the rest", "these three produce the rest"),
      [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
-    # The forward case: someone gates the write and leaves the comment behind.
-    ("the ungated write gated, the comment not updated",
+    # The write this script went ungated for rounds, ungated again.
+    ("the join's registry write back outside its flag",
      lambda: sub("scripts/rollup_span_join.py",
-                 '    reg = json.loads(REGISTRY.read_text())\n'
-                 '    reg.update(fig)\n'
-                 '    REGISTRY.write_text(json.dumps(reg, indent=1, sort_keys=True) + "\\n")',
                  '    if "--write-registry" in sys.argv:\n'
                  '        reg = json.loads(REGISTRY.read_text())\n'
                  '        reg.update(fig)\n'
-                 '        REGISTRY.write_text(\n'
-                 '            json.dumps(reg, indent=1, sort_keys=True) + "\\n")'),
+                 '        REGISTRY.write_text(json.dumps(reg, indent=1, sort_keys=True)'
+                 ' + "\\n")\n'
+                 '        print(f"\\nmerged {len(fig)} keys into '
+                 '{REGISTRY.relative_to(ROOT)}")',
+                 '    reg = json.loads(REGISTRY.read_text())\n'
+                 '    reg.update(fig)\n'
+                 '    REGISTRY.write_text(json.dumps(reg, indent=1, sort_keys=True)'
+                 ' + "\\n")'),
+     [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
+    # The history the comment keeps: "all five gate it" is worth reading only beside
+    # the fact that one of them did not and nothing noticed.
+    ("the comment dropping which script was the exception",
+     lambda: sub("Makefile",
+                 "# Four of them always did. rollup_span_join.py did not -- it had no "
+                 "flag and no argument\n# parsing at all, so it merged",
+                 "# All of them always did -- no flag and no argument\n"
+                 "# parsing at all, so it merged"),
      [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
     # An `if` that no longer tests the flag: the case a grep for the flag would miss,
     # since the usage line still names it.
@@ -529,8 +541,8 @@ CASES: list[tuple[str, callable, list[str], str]] = [
                  '\t  $(PY) "$$s" --write-registry >/dev/null || '
                  '{ echo "$$s FAILED"; exit 1; }; \\'),
      [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
-    ("the key count the comment gives for the ungated script",
-     lambda: sub("Makefile", "merges its 13\n# `rs.` keys", "merges its 11\n# `rs.` keys"),
+    ("the key count the comment gives for the join",
+     lambda: sub("Makefile", "merged its 13 `rs.` keys", "merged its 11 `rs.` keys"),
      [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
     ("a sixth script added to DATA_SCRIPTS",
      lambda: sub("Makefile",
