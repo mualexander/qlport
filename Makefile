@@ -27,20 +27,35 @@ notebooks: install
 
 # Scripts that write what the tests read. data/processed/ is gitignored because it is
 # derived, so a fresh checkout has none of it: the notebooks produce most of it from the
-# corpus and these three produce the rest. Until they have run, five tests over the
-# promtool comparison and four over the rollup join have no input to read, which is a
-# failing suite on a clean clone and was so for three days before anyone noticed.
+# corpus and these five produce the rest. Until they have run, the tests over the
+# promtool comparison and the rollup-span join have no input to read, which is a failing
+# suite on a clean clone and was so for three days before anyone noticed.
+# test_the_derived_inputs_the_suite_reads_are_present is the one failure that says so.
+# This comment used to count those tests -- five and four -- and removing the two files
+# fails fourteen, which is what a number nothing checks does.
 #
 # Deliberately not a dependency of `test`. promtool_parse.py needs docker and node, and a
 # machine with neither should still be able to run the suite against data it already has
 # rather than failing at the first container. Order matters: both read
 # data/processed/translations.csv, which notebook 03 writes, so `notebooks` comes first.
 #
-# None is passed --write-registry. The registry is committed with these values in it, and
-# a reproduction run should agree with what is committed rather than quietly rewrite it;
-# pass the flag by hand when a figure is meant to move. dash0_claims.py writes nothing at
-# all -- it re-checks the cached README against its sha256 and re-reads the two figures
-# section 2 attributes to that converter.
+# Four of the five gate their registry write behind --write-registry, and the recipe
+# below passes it to none of them: the registry is committed with these values in it, and
+# a reproduction run should agree with what is committed rather than quietly rewrite it.
+# Pass the flag by hand when a figure is meant to move.
+#
+# rollup_span_join.py is the exception, and this comment claimed for rounds that there
+# was none. It has no such flag -- no argument parsing at all -- so it merges its 13
+# `rs.` keys into paper/quoted_figures.json on every run, a reproduction run included,
+# where a drifted figure would overwrite the committed one instead of surfacing as a
+# disagreement.
+#
+# dash0_claims.py writes nothing under data/processed: it re-checks the cached README
+# against its sha256 and re-reads the two figures section 2 attributes to that converter,
+# and merges them into the registry only when the flag is passed.
+#
+# Every claim in the three paragraphs above is a claim about code, and nothing read it
+# until test_the_data_scripts_write_the_registry_the_way_the_makefile_says did.
 DATA_SCRIPTS := scripts/rollup_span_join.py scripts/promtool_parse.py \
                 scripts/dash0_claims.py scripts/heldout_split.py \
                 scripts/heldout_eval.py

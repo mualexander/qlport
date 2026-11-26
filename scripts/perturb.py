@@ -498,6 +498,45 @@ CASES: list[tuple[str, callable, list[str], str]] = [
                  '    t = re.sub(r"\\\\(?:begin|end)\\{[A-Za-z*]+\\}'
                  '(?:\\[[^\\]]*\\])?", " ", t)'),
      [BLD], "test_the_nesting_scorer_counts_what_it_says_it_counts"),
+    # The Makefile's claims about the data scripts, which nothing read for rounds.
+    ("the comment back to three data scripts",
+     lambda: sub("Makefile", "these five produce the rest", "these three produce the rest"),
+     [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
+    # The forward case: someone gates the write and leaves the comment behind.
+    ("the ungated write gated, the comment not updated",
+     lambda: sub("scripts/rollup_span_join.py",
+                 '    reg = json.loads(REGISTRY.read_text())\n'
+                 '    reg.update(fig)\n'
+                 '    REGISTRY.write_text(json.dumps(reg, indent=1, sort_keys=True) + "\\n")',
+                 '    if "--write-registry" in sys.argv:\n'
+                 '        reg = json.loads(REGISTRY.read_text())\n'
+                 '        reg.update(fig)\n'
+                 '        REGISTRY.write_text(\n'
+                 '            json.dumps(reg, indent=1, sort_keys=True) + "\\n")'),
+     [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
+    # An `if` that no longer tests the flag: the case a grep for the flag would miss,
+    # since the usage line still names it.
+    ("a second script writing the registry ungated",
+     lambda: sub("scripts/dash0_claims.py",
+                 '    if "--write-registry" in sys.argv:\n'
+                 '        reg = json.loads(REGISTRY.read_text())',
+                 '    if True:\n'
+                 '        reg = json.loads(REGISTRY.read_text())'),
+     [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
+    ("the data recipe passing --write-registry",
+     lambda: sub("Makefile",
+                 '\t  $(PY) "$$s" >/dev/null || { echo "$$s FAILED"; exit 1; }; \\',
+                 '\t  $(PY) "$$s" --write-registry >/dev/null || '
+                 '{ echo "$$s FAILED"; exit 1; }; \\'),
+     [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
+    ("the key count the comment gives for the ungated script",
+     lambda: sub("Makefile", "merges its 13\n# `rs.` keys", "merges its 11\n# `rs.` keys"),
+     [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
+    ("a sixth script added to DATA_SCRIPTS",
+     lambda: sub("Makefile",
+                 "                scripts/heldout_eval.py",
+                 "                scripts/heldout_eval.py scripts/perturb.py"),
+     [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
 ]
 
 CONTROLS: list[tuple[str, callable, list[str]]] = [
@@ -531,6 +570,12 @@ CONTROLS: list[tuple[str, callable, list[str]]] = [
                  "The resolution is to shift --- reading the parenthesis as the label "
                  "list, which is\nwhat the generator does --- and it is the\n"
                  "resolution Prometheus~3.15.0 itself makes"),
+     [BLD]),
+    # A Makefile comment reworded where it makes no claim about code.
+    ("an unrelated Makefile comment reworded",
+     lambda: sub("Makefile",
+                 "# Two builds from one source:",
+                 "# Two builds out of one source:"),
      [BLD]),
 ]
 

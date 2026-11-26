@@ -352,7 +352,11 @@ RAW_READS = {
     'assert path.read_bytes() == before, "re-extraction changed the corpus"':
         "and the comparison itself",
     "tree = ast.parse(path.read_text())":
-        "a test module, read as a syntax tree for the audit of dead helpers",
+        "a Python module, read as a syntax tree: a test module for the audit of dead "
+        "helpers, and a data script for whether its registry write is gated",
+    "return MAKEFILE.read_text()":
+        "the Makefile, where % is a variable and not a comment, for the claims its "
+        "comment above DATA_SCRIPTS makes about those scripts",
     # The two places a `.tex` file is read raw on purpose. The staleness check hashes
     # what the build read, and a digest over comment-stripped text would agree across
     # an edit to a comment -- which is a change to the source and so to the build.

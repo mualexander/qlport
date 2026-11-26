@@ -147,7 +147,7 @@ def test_every_perturbation_in_the_battery_still_applies():
           "in the suite)\n" + done.stderr[-800:])
     assert "0 stale" in done.stdout, done.stdout
     cases = int(done.stdout.split()[0])
-    assert cases >= 64, f"the battery has shrunk to {cases} cases"
+    assert cases >= 70, f"the battery has shrunk to {cases} cases"
 
 
 def test_no_macro_body_carries_a_figure():
@@ -1322,6 +1322,147 @@ def test_the_derived_inputs_the_suite_reads_are_present():
           "derived, and neither is a dependency of `make test`). Every other failure "
           "about a missing file or a missing key is this one."
     )
+
+
+MAKEFILE = ROOT / "Makefile"
+
+
+def _makefile() -> str:
+    """The Makefile, raw. It is not LaTeX, so `%` in it is a variable and not a comment.
+
+    One read site rather than three, because `RAW_READS` is keyed on the line that does
+    the reading and three copies of the same line are one entry with three places to
+    drift from it.
+    """
+    return MAKEFILE.read_text()
+
+
+def _data_scripts() -> list[Path]:
+    """`DATA_SCRIPTS` as the Makefile defines it, continuations and all."""
+    text = _makefile()
+    start = text.index("DATA_SCRIPTS :=")
+    body, i = "", start
+    while i < len(text):
+        line = text[i:text.index("\n", i)]
+        body += line.rstrip("\\")
+        i = text.index("\n", i) + 1
+        if not line.rstrip().endswith("\\"):
+            break
+    return [ROOT / tok for tok in body.split()[2:]]
+
+
+def _registry_write_is_gated(path: Path) -> bool | None:
+    r"""Whether this script's registry write sits behind `--write-registry`.
+
+    `None` when it does not write the registry at all. Read off the syntax tree and
+    not by grep: a script that merely mentions the flag in its usage line would pass a
+    substring test while writing unconditionally, which is the exact shape of the
+    defect this is about.
+    """
+    tree = ast.parse(path.read_text())
+    writes = [
+        node.lineno for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute) and node.func.attr == "write_text"
+        and isinstance(node.func.value, ast.Name) and node.func.value.id == "REGISTRY"
+    ]
+    if not writes:
+        return None
+    gated: set[int] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.If):
+            continue
+        test = ast.unparse(node.test)
+        if "write_registry" not in test and "--write-registry" not in test:
+            continue
+        for stmt in node.body:
+            for inner in ast.walk(stmt):
+                gated.add(getattr(inner, "lineno", -1))
+    return all(w in gated for w in writes)
+
+
+def _data_script_comment() -> str:
+    """The comment block above `DATA_SCRIPTS`, flattened, which is what makes the claims.
+
+    Flattened because a claim is a sentence and a Makefile comment wraps at 88
+    columns: every phrase this file looks for spans a line break somewhere, and the
+    first version of the key-count check failed on one.
+    """
+    text = _makefile()
+    head = text[:text.index("DATA_SCRIPTS :=")].rstrip("\n").split("\n")
+    out = []
+    for line in reversed(head):
+        if not line.startswith("#"):
+            break
+        out.append(line.lstrip("#").strip())
+    return re.sub(r"\s+", " ", " ".join(reversed(out)))
+
+
+def test_the_data_scripts_write_the_registry_the_way_the_makefile_says():
+    r"""Four claims about code, in a comment nothing had ever read.
+
+    The comment above `DATA_SCRIPTS` said "None is passed --write-registry", which is
+    the reproduction story the whole registry rests on: the committed figures are the
+    record, and a rerun should disagree with them rather than overwrite them.
+    `rollup_span_join.py` takes no arguments at all and merges its 13 `rs.` keys into
+    `paper/quoted_figures.json` on every run, so `make data` has always rewritten the
+    registry and a drifted span figure would have been written over the committed one.
+    The same comment said `dash0_claims.py` "writes nothing at all", which is its
+    registry merge; said "these three" of five scripts; and counted the tests that fail
+    without the derived inputs at five and four, where removing the two files fails
+    fourteen.
+
+    This does not fix the script -- gating that write changes what `make data` does to
+    a committed file, which is its own decision. It makes the comment true and keeps it
+    true, which is the part that was free.
+    """
+    scripts = _data_scripts()
+    said = _data_script_comment()
+
+    assert len(scripts) == 5, f"DATA_SCRIPTS now names {len(scripts)}, not five"
+    for path in scripts:
+        assert path.exists(), f"DATA_SCRIPTS names {path.name}, which is not there"
+
+    gated = {p.name: _registry_write_is_gated(p) for p in scripts}
+    ungated = sorted(n for n, g in gated.items() if g is False)
+    behind = sorted(n for n, g in gated.items() if g is True)
+
+    assert ungated == ["rollup_span_join.py"], (
+        f"the comment says rollup_span_join.py is the one script that writes the "
+        f"registry ungated; the scripts say {ungated or 'none does'}")
+    assert len(behind) == 4, (
+        f"{len(behind)} scripts gate the write behind the flag, not the four the "
+        f"comment claims: {behind}")
+
+    # The comment's own words, against those counts.
+    assert "these five produce the rest" in said
+    assert "Four of the five gate their registry write behind --write-registry" in said
+    assert "rollup_span_join.py is the exception" in said
+    assert "no argument parsing at all" in said
+
+    # `make data` passes the flag to nobody, which is the other half of the claim.
+    recipe = _makefile()
+    recipe = recipe[recipe.index("\ndata: install"):]
+    recipe = recipe[:recipe.index("\n\n")]
+    assert "--write-registry" not in recipe, (
+        "the `data` recipe passes --write-registry, so a reproduction run rewrites "
+        "every figure rather than disagreeing with it")
+
+    # The key count the comment gives for the ungated script.
+    keys = {k for k in _registry() if k.startswith("rs.")}
+    assert f"merges its {len(keys)} `rs.` keys" in said, (
+        f"the registry holds {len(keys)} `rs.` keys and the comment says otherwise")
+    join = (ROOT / "scripts" / "rollup_span_join.py").read_text()
+    assert len(re.findall(r'"rs\.[a-z_0-9]+":', join)) == len(keys), (
+        "the join writes a different number of `rs.` keys than the registry holds")
+
+    # And the one claim about a script that writes no derived file.
+    dash0 = ast.parse((ROOT / "scripts" / "dash0_claims.py").read_text())
+    processed = [n for n in ast.walk(dash0) if isinstance(n, ast.Constant)
+                 and isinstance(n.value, str) and "processed" in n.value]
+    assert not processed, (
+        f"dash0_claims.py names data/processed, which the comment says it does not "
+        f"write: {[n.value for n in processed]}")
 
 
 def test_the_build_variant_macros_are_the_ones_rendered_expands():
