@@ -147,7 +147,7 @@ def test_every_perturbation_in_the_battery_still_applies():
           "in the suite)\n" + done.stderr[-800:])
     assert "0 stale" in done.stdout, done.stdout
     cases = int(done.stdout.split()[0])
-    assert cases >= 71, f"the battery has shrunk to {cases} cases"
+    assert cases >= 77, f"the battery has shrunk to {cases} cases"
 
 
 def test_no_macro_body_carries_a_figure():
@@ -1257,8 +1257,7 @@ def test_no_module_defines_a_private_helper_nothing_calls():
     until the caller arrives, which is the right order for a check and its use.
     """
     dead = []
-    for path in sorted((ROOT / "tests").glob("*.py")):
-        tree = ast.parse(path.read_text())
+    for path, tree in _suite_trees():
         defined = {n.name: n.lineno for n in ast.walk(tree)
                    if isinstance(n, ast.FunctionDef) and n.name.startswith("_")
                    and not n.name.startswith("__")}
@@ -1289,39 +1288,241 @@ def test_no_module_defines_a_private_helper_nothing_calls():
     assert not dead, "\n".join(dead) + "\n  (call it, or delete it)"
 
 
-def test_the_derived_inputs_the_suite_reads_are_present():
-    """Named here so a fresh clone gets one legible failure instead of thirty-seven.
+# The two commands that make what a clean clone does not have. `make data` needs the
+# notebooks first, because three of its scripts read what notebook 03 writes.
+_MAKE = "make notebooks && make data"
+_FETCH = ".venv/bin/python scripts/fetch_corpus.py"
 
-    `data/processed/` and the corpus sources are gitignored because they are derived,
-    and `make data` is deliberately not a dependency of `make test` -- a machine
-    without docker should still be able to run the suite against data it already has.
-    The cost is that a clean checkout fails thirty-seven tests on missing input, each
-    with a `FileNotFoundError` or a `KeyError` that looks exactly like a real failure.
-    A reviewer cloning this repository cannot tell them apart.
+# Every path under `data/` the suite reads that git does not carry, and which command
+# produces it. Written out so the failure below can print it, and held to the suite's
+# own reads in both directions by
+# `test_the_derived_input_list_is_what_the_suite_reads`.
+#
+# `features.csv` is NOT here. It was, under a docstring saying these are the inputs
+# "the suite reads", and nothing read it: truncating it to five lines left the suite
+# green. Notebook 00 writes it and §7's feature census is derived inside that
+# notebook, so it is a published artefact rather than a suite input. Nor is
+# `data/corpus/queries.jsonl`, which was here: it is committed, so no clone is without
+# it, and the command printed for it would have been the wrong one anyway.
+DERIVED_INPUTS: tuple[tuple[Path, str], ...] = (
+    (ROOT / "data" / "processed" / "translations.csv", _MAKE),
+    (ROOT / "data" / "processed" / "regex_glob.csv", _MAKE),
+    (ROOT / "data" / "processed" / "promtool.json", _MAKE),
+    (ROOT / "data" / "processed" / "openobserve.json", _MAKE),
+    (ROOT / "data" / "processed" / "rollup_spans.json", _MAKE),
+    (ROOT / "data" / "processed" / "heldout_cv.json", _MAKE),
+    (ROOT / "data" / "processed" / "heldout_eval.json", _MAKE),
+    (ROOT / "data" / "corpus" / "sources", _FETCH),
+)
+
+
+def test_the_derived_inputs_the_suite_reads_are_present():
+    """Named here so a fresh clone gets one legible failure instead of dozens.
+
+    `data/processed/` and the downloaded corpus trees are gitignored because they are
+    derived, and neither command above is a dependency of `make test` -- a machine
+    without docker or node should still be able to run the suite against data it
+    already has. The cost is that a clean checkout fails dozens of tests on missing
+    input, each with a `FileNotFoundError` or a `KeyError` that looks exactly like a
+    real failure. A reviewer cloning this repository cannot tell them apart.
 
     This does not fix that. It gives it a name and the command, so the one failure
     anybody reads first says what to run.
+
+    Which it did for four of the eight paths and not the other four. `promtool.json`,
+    `openobserve.json` and `regex_glob.csv` are read by the suite and were not listed:
+    deleting those three fails 13 tests and left this one green, which is this test
+    reporting that a clean clone is fine while 13 failures say otherwise. So was
+    `data/corpus/sources/`, worth another 9. The list was hand-written and nothing
+    compared it to the reads, which is the same defect as the Makefile comment above
+    `DATA_SCRIPTS` and was found the same way.
     """
-    # `features.csv` is NOT here. It was, under a docstring saying these are the
-    # inputs "the suite reads", and nothing read it: truncating it to five lines left
-    # the suite green. Notebook 00 writes it and §7's feature census is derived inside
-    # that notebook, so it is a published artefact rather than a suite input, and
-    # listing it here claimed a dependency that does not exist.
-    needed = [
-        ROOT / "data" / "processed" / "translations.csv",
-        ROOT / "data" / "processed" / "heldout_eval.json",
-        ROOT / "data" / "processed" / "heldout_cv.json",
-        ROOT / "data" / "processed" / "rollup_spans.json",
-        ROOT / "data" / "corpus" / "queries.jsonl",
-    ]
-    missing = [str(p.relative_to(ROOT)) for p in needed if not p.exists()]
+    missing = [(path, cmd) for path, cmd in DERIVED_INPUTS if not path.exists()]
+    lines = []
+    for cmd in dict.fromkeys(cmd for _, cmd in DERIVED_INPUTS):
+        gone = [str(p.relative_to(ROOT)) for p, c in missing if c == cmd]
+        if gone:
+            lines += [f"  {g}" for g in gone] + [f"    -> run `{cmd}`"]
     assert not missing, (
-        "the suite reads derived inputs this checkout does not have:\n  "
-        + "\n  ".join(missing)
-        + "\n  run `make notebooks && make data` (both are gitignored because they are "
-          "derived, and neither is a dependency of `make test`). Every other failure "
-          "about a missing file or a missing key is this one."
+        "the suite reads inputs this checkout does not have:\n"
+        + "\n".join(lines)
+        + "\n  Neither command is a dependency of `make test`, deliberately: see the "
+          "comment above DATA_SCRIPTS. Every other failure about a missing file or a "
+          "missing key is this one."
     )
+
+
+def _suite_trees() -> list[tuple[Path, ast.Module]]:
+    """Every module under `tests/`, parsed: one read site for the audits over the
+    suite's own source.
+
+    One site for the reason `_makefile` has one. `RAW_READS` is keyed on the line that
+    does the reading, so two copies of that line are one ledger entry with two places
+    to drift from it.
+    """
+    out = []
+    for path in sorted((ROOT / "tests").glob("*.py")):
+        out.append((path, ast.parse(path.read_text())))
+    return out
+
+
+_DATA_PATH = re.compile(r"data/[\w.-]+(?:/[\w.-]+)*")
+
+
+def _path_chain(node: ast.AST) -> list[str] | None:
+    """`x / "a" / "b"` as `["a", "b"]`; None unless every step is a string literal."""
+    parts: list[str] = []
+    while isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+        if not (isinstance(node.right, ast.Constant)
+                and isinstance(node.right.value, str)):
+            return None
+        parts.append(node.right.value)
+        node = node.left
+    return list(reversed(parts)) if parts else None
+
+
+def _name_taking_readers() -> dict[str, tuple[str, ...]]:
+    """Suite helpers that take a filename and join it under `data/` themselves.
+
+    The scan below reads the filename off the join, which works wherever the join is
+    written out. For these the filename is at the call site instead, so that is where
+    it has to look. A helper that only passes its argument on to one of them --
+    `_cache_figures` does -- has the same shape one step removed, which is why this
+    runs to a fixpoint rather than naming the three helpers there are: a list of names
+    would narrow the scan the first time a fourth was written, and a narrowed scan
+    fails the way the hand-written list it replaces failed, by finding nothing missing
+    and saying so.
+    """
+    trees = _suite_trees()
+    found: dict[str, tuple[str, ...]] = {}
+    for _, tree in trees:
+        for fn in ast.walk(tree):
+            if not isinstance(fn, ast.FunctionDef):
+                continue
+            for node in ast.walk(fn):
+                if (isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div)
+                        and not isinstance(node.right, ast.Constant)):
+                    chain = _path_chain(node.left)
+                    if chain and chain[0] == "data":
+                        found[fn.name] = tuple(chain)
+    while True:
+        grown = False
+        for _, tree in trees:
+            for fn in ast.walk(tree):
+                if not isinstance(fn, ast.FunctionDef) or fn.name in found:
+                    continue
+                for node in ast.walk(fn):
+                    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                            and node.func.id in found and node.args
+                            and not isinstance(node.args[0], ast.Constant)):
+                        found[fn.name] = found[node.func.id]
+                        grown = True
+                        break
+        if not grown:
+            return found
+
+
+def _data_paths_the_suite_names() -> set[tuple[str, ...]]:
+    """Every path under `data/` the suite's own source names, however it spells it.
+
+    Three spellings, because the suite uses three: a `ROOT / "data" / ...` join, a
+    plain `"data/corpus/queries.jsonl"` string, and a filename handed to one of the
+    helpers above. `DERIVED_INPUTS` is excluded by node, not by file -- the table is
+    the thing being checked, and a scan that counted it would be satisfied by whatever
+    the table happened to say, which is how `features.csv` sat in the list for rounds
+    while nothing read it.
+    """
+    readers = _name_taking_readers()
+    found: set[tuple[str, ...]] = set()
+    for _, tree in _suite_trees():
+        skip: set[int] = set()
+        for node in ast.walk(tree):
+            target = None
+            if isinstance(node, ast.Assign) and len(node.targets) == 1:
+                target = node.targets[0]
+            elif isinstance(node, ast.AnnAssign):
+                target = node.target
+            if isinstance(target, ast.Name) and target.id == "DERIVED_INPUTS":
+                skip |= {id(n) for n in ast.walk(node)}
+        for node in ast.walk(tree):
+            if id(node) in skip:
+                continue
+            chain = _path_chain(node) if isinstance(node, ast.BinOp) else None
+            if chain and chain[0] == "data":
+                found.add(tuple(chain))
+            elif (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                    and node.func.id in readers and node.args
+                    and isinstance(node.args[0], ast.Constant)
+                    and isinstance(node.args[0].value, str)):
+                found.add(readers[node.func.id]
+                          + tuple(node.args[0].value.split("/")))
+            elif (isinstance(node, ast.Constant) and isinstance(node.value, str)
+                    and _DATA_PATH.fullmatch(node.value)):
+                found.add(tuple(node.value.split("/")))
+    return found
+
+
+def _git_carries(parts: tuple[str, ...]) -> bool:
+    """Whether git has anything at this path, so a clone would arrive with it."""
+    out = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files", "--", "/".join(parts)],
+        check=True, capture_output=True, text=True).stdout
+    return bool(out.strip())
+
+
+def _remedy_source(cmd: str) -> str:
+    """The source of everything the printed command runs, as one string."""
+    assert cmd in (_MAKE, _FETCH), f"no source list for the remedy `{cmd}`"
+    if cmd == _MAKE:
+        paths = sorted((ROOT / "notebooks").glob("*.py")) + _data_scripts()
+    else:
+        paths = [ROOT / "scripts" / "fetch_corpus.py"]
+    return "\n".join(p.read_text() for p in paths if p.suffix == ".py")
+
+
+def test_the_derived_input_list_is_what_the_suite_reads():
+    """`DERIVED_INPUTS` against the suite's own source, in both directions.
+
+    The list it replaced named four of the eight paths a clean clone lacks and one it
+    does not -- a committed file, which cannot be missing -- and nothing had ever
+    compared it to a read. Half its entries were therefore the whole of its value,
+    and the other half of its job was being done by thirteen failures it did not
+    explain, six of them a bare `FileNotFoundError` with no remedy in it at all.
+
+    Both directions, because each catches a different drift. Read-and-not-listed is
+    the failure above going quiet; listed-and-not-read is `features.csv`, which sat
+    here claiming a dependency the suite did not have. A path git carries is excluded
+    rather than required: `data/corpus/queries.jsonl` is read everywhere and arrives
+    with the clone, so demanding it would only mean printing `make data` at somebody
+    who had deleted a committed file.
+    """
+    named = _data_paths_the_suite_names()
+    assert len(named) > 40, (
+        f"the scan found {len(named)} paths under `data/`; the suite names dozens of "
+        f"them, so this is the scan broken rather than the suite changed")
+
+    required = {p for p in named if not _git_carries(p)}
+    required = {p for p in required
+                if not any(p[:i] in required for i in range(1, len(p)))}
+    listed = {tuple(path.relative_to(ROOT).parts) for path, _ in DERIVED_INPUTS}
+    assert required == listed, (
+        "DERIVED_INPUTS is not what the suite reads:\n"
+        f"  read and not listed: {sorted('/'.join(p) for p in required - listed)}\n"
+        f"  listed and not read: {sorted('/'.join(p) for p in listed - required)}")
+
+    # And each remedy must at least know the files it is printed for. This cannot tell
+    # a writer from a reader -- `translations.csv` is named by three of the scripts it
+    # runs and written by a notebook -- but it catches a file nothing it runs mentions,
+    # which is what `openobserve.json` was while its own script sat outside
+    # `DATA_SCRIPTS`: the list could have named the file and still printed a command
+    # that would not produce it.
+    unmade = []
+    for path, cmd in DERIVED_INPUTS:
+        if path.name not in _remedy_source(cmd):
+            unmade.append(f"  {path.relative_to(ROOT)} <- `{cmd}` names no such file")
+    assert not unmade, (
+        "a remedy is printed for a file nothing it runs mentions:\n"
+        + "\n".join(unmade))
 
 
 MAKEFILE = ROOT / "Makefile"
@@ -1419,7 +1620,7 @@ def test_the_data_scripts_write_the_registry_the_way_the_makefile_says():
     scripts = _data_scripts()
     said = _data_script_comment()
 
-    assert len(scripts) == 5, f"DATA_SCRIPTS now names {len(scripts)}, not five"
+    assert len(scripts) == 6, f"DATA_SCRIPTS now names {len(scripts)}, not six"
     for path in scripts:
         assert path.exists(), f"DATA_SCRIPTS names {path.name}, which is not there"
 
@@ -1428,16 +1629,31 @@ def test_the_data_scripts_write_the_registry_the_way_the_makefile_says():
     behind = sorted(n for n, g in gated.items() if g is True)
 
     assert not ungated, (
-        f"the comment says all five gate the registry write; these do not: {ungated}")
-    assert len(behind) == 5, (
-        f"{len(behind)} scripts gate the write behind the flag, not the five the "
+        f"the comment says all six gate the registry write; these do not: {ungated}")
+    assert len(behind) == 6, (
+        f"{len(behind)} scripts gate the write behind the flag, not the six the "
         f"comment claims: {behind}")
 
     # The comment's own words, against those counts.
-    assert "these five produce the rest" in said
-    assert "All five gate their registry write behind --write-registry" in said
-    assert "Four of them always did. rollup_span_join.py did not" in said
+    assert "these six write the other five" in said
+    assert "All six gate their registry write behind --write-registry" in said
+    assert "Five of them always did. rollup_span_join.py did not" in said
     assert "no argument parsing at all" in said
+
+    # The split the first sentence claims: seven derived files the suite reads, two of
+    # them from the notebooks and five from these scripts. The sixth script writes
+    # nothing under `data/processed`, which is the `dash0_claims.py` claim below.
+    processed = [p for p, cmd in DERIVED_INPUTS
+                 if p.parent.name == "processed" and cmd is _MAKE]
+    assert len(processed) == 7, (
+        f"the suite reads {len(processed)} files under data/processed and the comment "
+        f"says seven")
+    assert "the notebooks write two of the seven files" in said
+    writers = [p for p in scripts
+               if p.suffix == ".py" and "processed" in p.read_text()]
+    assert len(writers) == 5, (
+        f"{len(writers)} of the six scripts name data/processed, not the five the "
+        f"comment claims: {[p.name for p in writers]}")
 
     # `make data` passes the flag to nobody, which is the other half of the claim.
     recipe = _makefile()

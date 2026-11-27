@@ -10,6 +10,12 @@ anyone but its author; a reviewer said so, which is why it is here.
 
     python scripts/perturb.py [backup-dir]            # the whole battery, ~20 min
     python scripts/perturb.py --dry-run               # only: do the anchors resolve
+    python scripts/perturb.py --only=registry         # the cases whose name matches
+
+`--only` is for the round that touches a handful of guards: running those cases and
+the controls beside them is the check, and twenty minutes for the other sixty is not.
+It narrows the run and not the dry run, which has to resolve every anchor or the
+staleness it reports would depend on which cases were asked for.
 
 The dry run is what `tests/test_paper_builds.py` calls. A case whose anchor has gone
 stale applies nothing and reports MISSED, which reads as a hole in the suite rather
@@ -32,6 +38,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PY = str(ROOT / ".venv" / "bin" / "python")
 _args = [a for a in sys.argv[1:] if not a.startswith("--")]
 DRY_RUN = "--dry-run" in sys.argv
+ONLY = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--only=")), None)
 BAK = Path(_args[0]) if _args else Path(tempfile.mkdtemp(prefix="perturb-"))
 BAK.mkdir(parents=True, exist_ok=True)
 
@@ -500,7 +507,8 @@ CASES: list[tuple[str, callable, list[str], str]] = [
      [BLD], "test_the_nesting_scorer_counts_what_it_says_it_counts"),
     # The Makefile's claims about the data scripts, which nothing read for rounds.
     ("the comment back to three data scripts",
-     lambda: sub("Makefile", "these five produce the rest", "these three produce the rest"),
+     lambda: sub("Makefile", "these six write the other five",
+                 "these three write the other five"),
      [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
     # The write this script went ungated for rounds, ungated again.
     ("the join's registry write back outside its flag",
@@ -521,7 +529,7 @@ CASES: list[tuple[str, callable, list[str], str]] = [
     # the fact that one of them did not and nothing noticed.
     ("the comment dropping which script was the exception",
      lambda: sub("Makefile",
-                 "# Four of them always did. rollup_span_join.py did not -- it had no "
+                 "# Five of them always did. rollup_span_join.py did not -- it had no "
                  "flag and no argument\n# parsing at all, so it merged",
                  "# All of them always did -- no flag and no argument\n"
                  "# parsing at all, so it merged"),
@@ -544,14 +552,67 @@ CASES: list[tuple[str, callable, list[str], str]] = [
     ("the key count the comment gives for the join",
      lambda: sub("Makefile", "merged its 13 `rs.` keys", "merged its 11 `rs.` keys"),
      [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
-    ("a sixth script added to DATA_SCRIPTS",
+    ("a seventh script added to DATA_SCRIPTS",
      lambda: sub("Makefile",
-                 "                scripts/heldout_eval.py",
-                 "                scripts/heldout_eval.py scripts/perturb.py"),
+                 "                scripts/heldout_split.py scripts/heldout_eval.py",
+                 "                scripts/heldout_split.py scripts/heldout_eval.py \\\n"
+                 "                scripts/perturb.py"),
      [BLD], "test_the_data_scripts_write_the_registry_the_way_the_makefile_says"),
+    # The list of derived inputs, which named four of the eight paths a clean clone
+    # lacks while nothing compared it to a read.
+    ("a derived input the suite reads dropped from the list",
+     lambda: sub("tests/test_paper_builds.py",
+                 '    (ROOT / "data" / "processed" / "promtool.json", _MAKE),\n', ""),
+     [BLD], "test_the_derived_input_list_is_what_the_suite_reads"),
+    ("a committed file back in the list of derived inputs",
+     lambda: sub("tests/test_paper_builds.py",
+                 '    (ROOT / "data" / "corpus" / "sources", _FETCH),',
+                 '    (ROOT / "data" / "corpus" / "sources", _FETCH),\n'
+                 '    (ROOT / "data" / "corpus" / "queries.jsonl", _FETCH),'),
+     [BLD], "test_the_derived_input_list_is_what_the_suite_reads"),
+    # A scan that stops seeing the suite's reads passes the equality by finding
+    # nothing on either side, which is the floor's whole job.
+    ("the scan for data paths blinded",
+     lambda: sub("tests/test_paper_builds.py",
+                 '    parts: list[str] = []\n'
+                 '    while isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):',
+                 '    parts: list[str] = []\n'
+                 '    if True:\n        return None\n'
+                 '    while isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):'),
+     [BLD], "test_the_derived_input_list_is_what_the_suite_reads"),
+    # The state this round found: the file listed, read, and produced by nothing the
+    # printed command runs.
+    ("the script behind a listed input dropped from the recipe",
+     lambda: sub("Makefile", "scripts/openobserve_baseline.py ", ""),
+     [BLD], "test_the_derived_input_list_is_what_the_suite_reads"),
+    # A derived path written as one string rather than joined a segment at a time.
+    # The suite spells it both ways, so a scan that reads only the joins would miss
+    # this one; nothing in the tree exercised that branch until this case did.
+    ("a derived path read as a single string",
+     lambda: append("tests/test_paper_tables.py",
+                    '\n\ndef test_probe_reads_a_string_path():\n'
+                    '    assert (ROOT / "data/processed/probe_string.csv").exists()\n'),
+     [BLD], "test_the_derived_input_list_is_what_the_suite_reads"),
+    # A filename reaching `_derived` through one more hop than the scan was written
+    # for. If the fixpoint stops at the first hop this file is invisible and the
+    # equality holds, which is the silent narrowing the scan exists to refuse.
+    ("a cache read through a second-hand helper",
+     lambda: append("tests/test_paper_tables.py",
+                    '\n\ndef _probe_cache(name: str) -> dict:\n'
+                    '    return _derived(name)["figures"]\n\n\n'
+                    'def test_probe_reads_a_cache():\n'
+                    '    assert _probe_cache("probe_cache.json")\n'),
+     [BLD], "test_the_derived_input_list_is_what_the_suite_reads"),
 ]
 
 CONTROLS: list[tuple[str, callable, list[str]]] = [
+    ("the derived inputs listed in another order",
+     lambda: sub("tests/test_paper_builds.py",
+                 '    (ROOT / "data" / "processed" / "translations.csv", _MAKE),\n'
+                 '    (ROOT / "data" / "processed" / "regex_glob.csv", _MAKE),',
+                 '    (ROOT / "data" / "processed" / "regex_glob.csv", _MAKE),\n'
+                 '    (ROOT / "data" / "processed" / "translations.csv", _MAKE),'),
+     [BLD]),
     ("a sentence reworded where no phrase pins it",
      lambda: sub("paper/sections/04_grammars.tex",
                  "Inventing a production for an undocumented construct would be worse",
@@ -609,6 +670,8 @@ print(f"{'perturbation':58s} {'verdict':8s} fired")
 print("-" * 100)
 bad = 0
 for name, apply, mods, expect in CASES:
+    if ONLY and ONLY not in name:
+        continue
     restore()
     apply()
     fired = run(mods)
@@ -621,6 +684,8 @@ for name, apply, mods, expect in CASES:
 restore()
 print()
 for name, apply, mods in CONTROLS:
+    if ONLY and ONLY not in name:
+        continue
     restore()
     apply()
     fired = run(mods)

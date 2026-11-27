@@ -26,25 +26,35 @@ notebooks: install
 	done
 
 # Scripts that write what the tests read. data/processed/ is gitignored because it is
-# derived, so a fresh checkout has none of it: the notebooks produce most of it from the
-# corpus and these five produce the rest. Until they have run, the tests over the
-# promtool comparison and the rollup-span join have no input to read, which is a failing
-# suite on a clean clone and was so for three days before anyone noticed.
+# derived, so a fresh checkout has none of it: the notebooks write two of the seven files
+# the suite reads and these six write the other five. Until they have run, the tests over
+# the promtool comparison and the rollup-span join have no input to read, which is a
+# failing suite on a clean clone and was so for three days before anyone noticed.
 # test_the_derived_inputs_the_suite_reads_are_present is the one failure that says so.
 # This comment used to count those tests -- five and four -- and removing the two files
 # fails fourteen, which is what a number nothing checks does.
 #
-# Deliberately not a dependency of `test`. promtool_parse.py needs docker and node, and a
-# machine with neither should still be able to run the suite against data it already has
-# rather than failing at the first container. Order matters: both read
-# data/processed/translations.csv, which notebook 03 writes, so `notebooks` comes first.
+# openobserve_baseline.py is in the list now and was not until this commit. It was
+# written on 18 November, three days before this recipe; the suite began reading
+# data/processed/openobserve.json on the 23rd, and neither the recipe nor the list of
+# derived inputs was told. So `make data` printed "data/processed is current" over a
+# directory missing a file the tests open, and the one failure meant to explain a clean
+# clone neither fired for that file nor, once it named it, printed a command that would
+# have made it. test_the_derived_input_list_is_what_the_suite_reads reads the list
+# against the suite's own reads, in both directions, which is what nothing did.
 #
-# All five gate their registry write behind --write-registry, and the recipe below passes
+# Deliberately not a dependency of `test`. promtool_parse.py needs docker and node,
+# openobserve_baseline.py needs node, and a machine with neither should still be able to
+# run the suite against data it already has rather than failing at the first container.
+# Order matters: three of them read data/processed/translations.csv, which notebook 03
+# writes, so `notebooks` comes first.
+#
+# All six gate their registry write behind --write-registry, and the recipe below passes
 # it to none of them: the registry is committed with these values in it, and a
 # reproduction run should agree with what is committed rather than quietly rewrite it.
 # Pass the flag by hand when a figure is meant to move.
 #
-# Four of them always did. rollup_span_join.py did not -- it had no flag and no argument
+# Five of them always did. rollup_span_join.py did not -- it had no flag and no argument
 # parsing at all, so it merged its 13 `rs.` keys into paper/quoted_figures.json on every
 # run, a reproduction run included, where a drifted figure would have overwritten the
 # committed one instead of surfacing as a disagreement. This comment claimed for rounds
@@ -54,11 +64,13 @@ notebooks: install
 # against its sha256 and re-reads the two figures section 2 attributes to that converter,
 # and merges them into the registry only when the flag is passed.
 #
-# Every claim in the three paragraphs above is a claim about code, and nothing read it
-# until test_the_data_scripts_write_the_registry_the_way_the_makefile_says did.
+# Every claim in this comment is a claim about code, and nothing read any of them until
+# test_the_data_scripts_write_the_registry_the_way_the_makefile_says did. A count of
+# paragraphs stood here, which is the same kind of number as the two this comment
+# already records getting wrong.
 DATA_SCRIPTS := scripts/rollup_span_join.py scripts/promtool_parse.py \
-                scripts/dash0_claims.py scripts/heldout_split.py \
-                scripts/heldout_eval.py
+                scripts/openobserve_baseline.py scripts/dash0_claims.py \
+                scripts/heldout_split.py scripts/heldout_eval.py
 
 data: install
 	@for s in $(DATA_SCRIPTS); do \

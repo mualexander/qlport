@@ -352,8 +352,10 @@ RAW_READS = {
     'assert path.read_bytes() == before, "re-extraction changed the corpus"':
         "and the comparison itself",
     "tree = ast.parse(path.read_text())":
-        "a Python module, read as a syntax tree: a test module for the audit of dead "
-        "helpers, and a data script for whether its registry write is gated",
+        "a data script, read as a syntax tree, for whether its registry write is gated",
+    "out.append((path, ast.parse(path.read_text())))":
+        "every module in the suite, read as a syntax tree, for the two audits over the "
+        "suite's own source: dead helpers, and which derived inputs it reads",
     "return MAKEFILE.read_text()":
         "the Makefile, where % is a variable and not a comment, for the claims its "
         "comment above DATA_SCRIPTS makes about those scripts",
