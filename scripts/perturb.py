@@ -86,6 +86,15 @@ def jset(rel: str, path: list, value) -> None:
     p.write_text(json.dumps(d, indent=1, sort_keys=True) + "\n")
 
 
+def jedit(rel: str, change) -> None:
+    """A cache edited by a function, for what `jset` cannot reach: dropping an element
+    of a list, or a change computed from what is already in the file."""
+    p = backup(rel)
+    d = json.loads(p.read_text())
+    change(d)
+    p.write_text(json.dumps(d, indent=1, sort_keys=True) + "\n")
+
+
 def copy_over(dst_rel: str, src_rel: str) -> None:
     p = backup(dst_rel)
     p.write_bytes((ROOT / src_rel).read_bytes())
@@ -505,6 +514,56 @@ CASES: list[tuple[str, callable, list[str], str]] = [
                  '    t = re.sub(r"\\\\(?:begin|end)\\{[A-Za-z*]+\\}'
                  '(?:\\[[^\\]]*\\])?", " ", t)'),
      [BLD], "test_the_nesting_scorer_counts_what_it_says_it_counts"),
+    # The three families of notebook figures that nothing read. The two source-side
+    # cases here were green against the whole suite before the guards were written,
+    # which is the measurement the commit rests on.
+    ("a ranking case dropped from the cache",
+     lambda: jedit("data/raw/topk/ranking.json", lambda d: d["cases"].pop()),
+     [TAB], "test_every_top_k_figure_is_the_one_the_two_probes_recorded"),
+    ("a ranking case probed at a size the grid does not have",
+     lambda: jset("data/raw/topk/ranking.json", ["cases", 0, "n"], 4),
+     [TAB], "test_every_top_k_figure_is_the_one_the_two_probes_recorded"),
+    ("one vendor selection recorded as not matching the model",
+     lambda: jset("data/raw/datadog/top.json", ["cases", 0, "matches_model"], False),
+     [TAB], "test_every_top_k_figure_is_the_one_the_two_probes_recorded"),
+    # The summary a script wrote about its own run, against a recount of the run.
+    ("the vendor summary no longer a recount of its own cases",
+     lambda: jset("data/raw/datadog/top.json", ["agreement", "matching_model"], 21),
+     [TAB], "test_every_top_k_figure_is_the_one_the_two_probes_recorded"),
+    ("a workload count the registry no longer agrees with",
+     lambda: jset("paper/quoted_figures.json", ["nb03.top_workload_series"], 6),
+     [TAB], "test_every_top_k_figure_is_the_one_the_two_probes_recorded"),
+    ("a workload series shorter than the bucket count",
+     lambda: jset("data/raw/datadog/top.json",
+                  ["provenance", "series", "a"], [100.0, 100.0]),
+     [TAB], "test_every_top_k_figure_is_the_one_the_two_probes_recorded"),
+    # The modifier count, and the claim that every form carrying it is on `sum:`.
+    ("one weighted form no longer on sum:",
+     lambda: jset("paper/quoted_figures.json",
+                  ["nb03.weighted_on_sum_distinct"], 51),
+     [TAB], "test_the_weighted_figures_count_the_modifier_and_not_the_substring"),
+    ("the weighted count back to the substring match",
+     lambda: (jset("paper/quoted_figures.json", ["nb03.weighted_distinct"], 56),
+              jset("paper/quoted_figures.json",
+                   ["nb03.weighted_on_sum_distinct"], 56)),
+     [TAB], "test_the_weighted_figures_count_the_modifier_and_not_the_substring"),
+    # Occurrences moved between the biggest and the smallest shape. The total is
+    # unchanged, so the two totals the guard pins still hold and three of the four
+    # milestones move: this is the case the whole suite passed before.
+    ("occurrences moved between shapes, leaving the total alone",
+     lambda: (jset("data/raw/shapes/differential.json",
+                   ["rows", 0, "occurrences"], 303),
+              jset("data/raw/shapes/differential.json",
+                   ["rows", 332, "occurrences"], 901)),
+     [TAB], "test_the_coverage_milestones_are_the_shape_population_they_claim"),
+    ("a coverage milestone moved by one shape",
+     lambda: jset("paper/quoted_figures.json", ["nb03.shapes_for_90pct"], 49),
+     [TAB], "test_the_coverage_milestones_are_the_shape_population_they_claim"),
+    # The notebook computes a 99% milestone and writes four of the five. A fifth key
+    # with no target behind it is the shape that invites.
+    ("a fifth coverage milestone with no target behind it",
+     lambda: jset("paper/quoted_figures.json", ["nb03.shapes_for_99pct"], 200),
+     [TAB], "test_the_coverage_milestones_are_the_shape_population_they_claim"),
     # The Makefile's claims about the data scripts, which nothing read for rounds.
     ("the comment back to three data scripts",
      lambda: sub("Makefile", "these six write the other five",
@@ -613,6 +672,12 @@ CONTROLS: list[tuple[str, callable, list[str]]] = [
                  '    (ROOT / "data" / "processed" / "regex_glob.csv", _MAKE),\n'
                  '    (ROOT / "data" / "processed" / "translations.csv", _MAKE),'),
      [BLD]),
+    # A diagnostic field of the differential cache that no figure is read off. The
+    # milestone guard reads one field of each row and has to leave the rest alone.
+    ("a per-shape deviation changed in the differential cache",
+     lambda: jset("data/raw/shapes/differential.json",
+                  ["rows", 0, "median_d"], 0.5),
+     [TAB]),
     ("a sentence reworded where no phrase pins it",
      lambda: sub("paper/sections/04_grammars.tex",
                  "Inventing a production for an undocumented construct would be worse",

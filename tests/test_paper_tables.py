@@ -1176,6 +1176,231 @@ def test_every_rollup_span_figure_is_the_one_the_join_produced(reg):
     assert not orphans, f"registry keys under `rs.` the run does not produce: {orphans}"
 
 
+# --- the notebook's own figures, which nothing had read -------------------------------
+# Fourteen `nb03.*` keys in three families sat in the registry with nothing behind
+# them. A registry key is a licence in this suite: a numeral in the prose passes the
+# census because some key holds that magnitude and kind, and nothing asks where the
+# key's value came from. So these were checked in one direction only -- the paper says
+# what the registry says -- and the registry said whatever notebook 03 wrote the last
+# time it ran. The notebook's own asserts are not a guard: `make notebooks` is not a
+# dependency of `make test`, so a figure whose source has since moved fails nothing.
+#
+# Which was measured rather than assumed, by moving the sources and not the figures:
+# three of them at once, against the whole suite, which failed one test. Dropping one
+# of the twenty ranking cases from `topk/ranking.json` failed nothing, so the registry
+# went on saying twenty and the prose went on saying "All $20$ cases agree". Moving 900
+# occurrences between two shapes in `shapes/differential.json` failed nothing either,
+# and it moves three of the four coverage milestones: 6, 23 and 50 become 7, 24 and 51.
+# Recording one vendor selection as not matching the model was the one that fired, and
+# it fired at the cache (`test_the_vendor_ranks_over_the_whole_queried_range`) rather
+# than at the figure -- `nb03.top_vendor_matching` still said 22 against a cache that
+# said 21, and nothing compared them.
+#
+# The coincidences are what made that dangerous rather than untidy. Inside these
+# fourteen keys 20 is both `top_promql_cases` and `top_workload_buckets`, 22 is two
+# more, 5 another two, and 52 is `weighted_distinct` and `weighted_on_sum_distinct` --
+# so a wrong value in either of a pair was licensed by the other, and the census, keyed
+# on a magnitude and a kind rather than on a name, cannot tell them apart. The three
+# guards here are keyed on the name.
+
+def test_every_top_k_figure_is_the_one_the_two_probes_recorded(reg):
+    r"""The seven `nb03.top_*` keys against the caches the notebook read them off.
+
+    `tests/test_harness.py` checks `topk/ranking.json` closely and
+    `tests/test_harness_datadog.py` checks `datadog/top.json`, so what was missing was
+    never the caches. It was the step from a cache to the registry, which no test took.
+
+    Remark~\ref{rem:top} does not quote these as counts so much as rest on their being
+    equal -- "All $20$ cases agree", "All $22$ selections are the ones the documented
+    rule predicts" -- so the equalities are asserted and not just the pair of counts.
+    Two counts that drifted apart by one would otherwise still be two counts.
+
+    The vendor counts are recounted from the cases rather than read off the
+    `agreement` block, which is what the notebook reads: a summary a script wrote about
+    its own run is the thing a recount is for. The two are then compared, so the
+    summary is checked here as well.
+    """
+    tk = _derived_raw("topk/ranking.json")
+    tv = _derived_raw("datadog/top.json")
+    want = {
+        "nb03.top_promql_cases": len(tk["cases"]),
+        "nb03.top_promql_matching": sum(1 for c in tk["cases"] if c["matches_model"]),
+        "nb03.top_rank_functions_probed": len({c["by"] for c in tk["cases"]}),
+        "nb03.top_vendor_cases": len(tv["cases"]),
+        "nb03.top_vendor_matching": sum(1 for c in tv["cases"] if c["matches_model"]),
+        "nb03.top_workload_series": len(tv["provenance"]["series"]),
+        "nb03.top_workload_buckets": int(tv["provenance"]["n_points"]),
+    }
+    drifted = [f"  {k}: registry {reg.get(k, '(absent)')} vs cache {v}"
+               for k, v in sorted(want.items()) if reg.get(k) != v]
+    assert not drifted, (
+        "the registry no longer says what the two probes recorded:\n"
+        + "\n".join(drifted))
+    orphans = sorted(k for k in reg
+                     if k.startswith("nb03.top_") and k not in want)
+    assert not orphans, (
+        f"registry keys under `nb03.top_` neither cache produces: {orphans}")
+
+    assert tv["agreement"] == {"cases": want["nb03.top_vendor_cases"],
+                               "matching_model": want["nb03.top_vendor_matching"]}, (
+        f"top.json's own summary {tv['agreement']} is not a recount of its "
+        f"{len(tv['cases'])} cases")
+
+    # "All of them", which is the claim, rather than two numbers that happen to match.
+    assert want["nb03.top_promql_cases"] == want["nb03.top_promql_matching"], (
+        "the remark says all the PromQL cases agree and the cache says otherwise")
+    assert want["nb03.top_vendor_cases"] == want["nb03.top_vendor_matching"], (
+        "the remark says all the vendor selections agree and the cache says otherwise")
+
+    # And the shape of the PromQL probe: five ranking functions at two sizes in both
+    # directions, which is where the twenty comes from. A case added or dropped
+    # without the grid staying full would pass the count above.
+    grid = (len({c["by"] for c in tk["cases"]}) * len({c["n"] for c in tk["cases"]})
+            * len({c["direction"] for c in tk["cases"]}))
+    assert want["nb03.top_promql_cases"] == grid, (
+        f"{len(tk['cases'])} cases over a grid of {grid}, so the probe is not the full "
+        f"crossing the remark describes")
+
+    # The workload is five series of twenty buckets, and both keys are about the same
+    # five series: a `series` map whose members disagreed on length would make
+    # `top_workload_buckets` a figure about nothing in particular.
+    lengths = {len(v) for v in tv["provenance"]["series"].values()}
+    assert lengths == {want["nb03.top_workload_buckets"]}, (
+        f"the workload's series run to {sorted(lengths)} points, not all to "
+        f"{want['nb03.top_workload_buckets']}")
+
+
+def test_the_weighted_figures_count_the_modifier_and_not_the_substring(reg):
+    r"""The three `nb03.weighted_*` keys, recounted from the committed corpus.
+
+    Remark~\ref{rem:weighted} exists because this figure was wrong: $70$ occurrences
+    were called a language gap on a count taken by matching the substring
+    \texttt{weighted}, which also catches queries whose metric *name* contains it and
+    which carry no modifier at all. The count is taken off the modifier now, and the
+    remark's substantive claim is that all $52$ distinct forms carrying it attach it to
+    \texttt{sum:} -- so `weighted_distinct` and `weighted_on_sum_distinct` hold the
+    same number, which is why neither could be checked by its magnitude.
+
+    The population is the one notebook 03 counts over: the Datadog side of the corpus,
+    normalised, counted by distinct normalised form. Recomputed here rather than
+    cached, because the corpus is committed and this is four lines of it.
+
+    The substring count is recomputed as well, because the remark does not only give
+    the corrected figure: it accounts for the difference, as four corpus forms whose
+    metric name contains the word and carry no modifier, two of them \texttt{avg:},
+    which is exactly the concession the old figure made. Those are claims about the
+    corpus that the prose makes and nothing checked, and they are the part of this
+    remark a reader would have to take on trust.
+    """
+    from qlport import corpus as c
+
+    occurrences: Counter = Counter()
+    for q in c.read_queries(ROOT / "data" / "corpus" / "queries.jsonl"):
+        if q.lang == "datadog":
+            occurrences[c.normalise("datadog", q.text)] += 1
+    modifier = re.compile(r"\.weighted\s*\(\s*\)")
+    carrying = {t: n for t, n in occurrences.items() if modifier.search(t)}
+    want = {
+        "nb03.weighted_distinct": len(carrying),
+        "nb03.weighted_occurrences": sum(carrying.values()),
+        "nb03.weighted_on_sum_distinct": sum(1 for t in carrying
+                                             if t.startswith("sum:")),
+    }
+    drifted = [f"  {k}: registry {reg.get(k, '(absent)')} vs corpus {v}"
+               for k, v in sorted(want.items()) if reg.get(k) != v]
+    assert not drifted, (
+        "the registry no longer says what the corpus says about `.weighted()`:\n"
+        + "\n".join(drifted))
+    orphans = sorted(k for k in reg
+                     if k.startswith("nb03.weighted_") and k not in want)
+    assert not orphans, (
+        f"registry keys under `nb03.weighted_` the corpus does not settle: {orphans}")
+
+    assert want["nb03.weighted_distinct"] == want["nb03.weighted_on_sum_distinct"], (
+        "the remark says every form carrying the modifier is on `sum:`; the corpus "
+        f"has {want['nb03.weighted_distinct']} forms and "
+        f"{want['nb03.weighted_on_sum_distinct']} of them on `sum:`")
+
+    # The count the remark says the figure used to be, and the four queries that are
+    # the difference between the two ways of counting.
+    substring = {t for t in occurrences if "weighted" in t}
+    assert len(substring) > len(carrying), (
+        "matching the substring reaches no further than matching the modifier, so the "
+        "correction this remark is about has nothing to correct")
+    bare = sorted(substring - set(carrying))
+    assert len(bare) == 4, (
+        f"{len(bare)} corpus forms contain `weighted` without the modifier, not the "
+        f"four the remark accounts for: {bare}")
+    assert sum(1 for t in bare if t.startswith("avg:")) == 2, (
+        f"the remark says two of those four are `avg:`, which was the whole of the "
+        f"concession the old figure made: {bare}")
+
+
+# The four coverage milestones, from the population the differential ran over. The
+# notebook builds that population by parsing, lowering and emitting every translated
+# Datadog form; `scripts/shape_differential.py` builds it the same way and the cache it
+# wrote is committed with one row per shape and that shape's occurrence count. So the
+# milestones are a cumulative sum over a committed file rather than a re-derivation,
+# and they are tied to the population \S\ref{sec:differential} reports rather than to a
+# second one of the same name.
+_MILESTONES = {
+    "nb03.shapes_for_half": 0.5,
+    "nb03.shapes_for_80pct": 0.8,
+    "nb03.shapes_for_90pct": 0.9,
+    "nb03.shapes_for_95pct": 0.95,
+}
+
+
+def test_the_coverage_milestones_are_the_shape_population_they_claim(reg):
+    r"""The four `nb03.shapes_for_*` keys, recounted from the differential cache.
+
+    Sorted descending and summed, which is what the notebook's `most_common()` does,
+    so ties inside a count cannot move an answer: the cumulative total at a given rank
+    does not depend on which of two equal shapes is ranked first.
+
+    The population is pinned to the registry on both of its totals before the
+    milestones are read off it. Without that this would check four numbers against a
+    file that might be about something else -- and the milestones are exactly the
+    figures that move when the population does, which is how a cache swapped for a
+    neighbouring one would otherwise pass here.
+    """
+    rows = _derived_raw("shapes/differential.json")["rows"]
+    occurrences = sorted((int(r["occurrences"]) for r in rows), reverse=True)
+    total = sum(occurrences)
+
+    assert len(rows) == reg["nb05.shapes"], (
+        f"the cache holds {len(rows)} shapes and the registry says "
+        f"{reg['nb05.shapes']}")
+    assert total == reg["nb03.shaped_occurrences"], (
+        f"the cache's shapes cover {total} occurrences and the registry says "
+        f"{reg['nb03.shaped_occurrences']}")
+
+    reached, cumulative = {}, 0
+    for rank, n in enumerate(occurrences, 1):
+        cumulative += n
+        for key, target in _MILESTONES.items():
+            if key not in reached and cumulative / total >= target - 1e-9:
+                reached[key] = rank
+    assert set(reached) == set(_MILESTONES), (
+        f"the cache never reaches {sorted(set(_MILESTONES) - set(reached))}")
+
+    drifted = [f"  {k}: registry {reg.get(k, '(absent)')} vs cache {v}"
+               for k, v in sorted(reached.items()) if reg.get(k) != v]
+    assert not drifted, (
+        "the registry no longer says how many shapes the coverage needs:\n"
+        + "\n".join(drifted))
+    orphans = sorted(k for k in reg
+                     if k.startswith("nb03.shapes_for_") and k not in _MILESTONES)
+    assert not orphans, (
+        f"registry keys under `nb03.shapes_for_` with no target behind them: {orphans}")
+
+    # What is NOT asserted here: that a wider target needs at least as many shapes as
+    # a narrower one. A cumulative sum is monotone, so the loop above cannot produce
+    # anything else, and an assertion that no data and no edit to this table can make
+    # fail is worse than none -- the battery caught one of those last round, which is
+    # why this one was checked before it was written rather than after.
+
+
 def test_the_cross_validated_greedy_is_the_staircase_of_notebook_00(reg):
     """The split experiment must refit the paper's instrument, not a near neighbour.
 
