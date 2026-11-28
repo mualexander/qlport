@@ -715,6 +715,21 @@ CASES: list[tuple[str, callable, list[str], str]] = [
      lambda: sub("paper/sections/moved/reg_trial_probes.tex",
                  "& $28.0$ & $28.0$", "& $35.0$ & $35.0$"),
      [EXP], "test_the_rate_and_count_rollups_are_the_submitted_points_reduced"),
+    # The note as it stood for four rounds: the arithmetic for a window that aligns
+    # with the rollup, over a run whose window does not.
+    ("the rollup note back to five times the submitted value",
+     lambda: jset("data/raw/datadog/e15.json", ["interpretation", "note"],
+                  "compare rate-avg against the submitted value and rate-sum against "
+                  "5 times it; the count series is the control"),
+     [EXP], "test_the_rate_and_count_rollups_are_the_submitted_points_reduced"),
+    ("a reinterpretation that does not say what was reinterpreted",
+     lambda: jset("data/raw/datadog/e15.json", ["provenance", "reinterpreted"],
+                  "note recomputed from the cached responses"),
+     [EXP], "test_every_reinterpreted_cache_says_what_was_reinterpreted"),
+    ("a reinterpreted cache dropped from the ledger",
+     lambda: sub("tests/test_experiment_controls.py",
+                 '    "e15.json": "the rollup boundary",\n', ''),
+     [EXP], "test_every_reinterpreted_cache_says_what_was_reinterpreted"),
     ("one declared series of the binop workload changed",
      lambda: jset("data/raw/datadog/e8.json",
                   ["provenance", "series", "b:g=x,h=p"], 4.0),

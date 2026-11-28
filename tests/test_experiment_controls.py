@@ -483,6 +483,34 @@ def _raw_seconds(raw: dict) -> set[int]:
             for t, v in (s.get("pointlist") or []) if v is not None}
 
 
+# The caches whose interpretive fields were rewritten after the run, and the phrase each
+# one's provenance has to name. No vendor data is ever touched: these are the fields the
+# scripts derived, recomputed from the responses already in the file once the derivation
+# itself was found wrong. E5's entry predates this ledger and was the precedent for
+# E15's. Held as an equality in both directions, because the key is documentation for a
+# reader and documentation nothing reads is how E15's note came to be wrong.
+REINTERPRETED = {
+    "e5.json": "scope parsing",
+    "e15.json": "the rollup boundary",
+}
+
+
+def test_every_reinterpreted_cache_says_what_was_reinterpreted():
+    carrying = {}
+    for path in sorted((RAW / "datadog").glob("*.json")):
+        said = json.loads(path.read_text()).get("provenance", {}).get("reinterpreted")
+        if said is not None:
+            carrying[path.name] = said
+    assert set(carrying) == set(REINTERPRETED), {
+        "carries the key but is not listed": sorted(set(carrying) - set(REINTERPRETED)),
+        "listed but no longer carries it": sorted(set(REINTERPRETED) - set(carrying)),
+    }
+    for name, phrase in REINTERPRETED.items():
+        assert phrase in carrying[name], (
+            f"{name} records a reinterpretation that does not mention {phrase!r}: "
+            f"{carrying[name]!r}")
+
+
 # Which response in each cache is the control: the one asked with no scope under test,
 # whose job is to show the points were stored at all. `scope_empty_tag` keeps its
 # probes under another name and calls that one `all`.
@@ -679,10 +707,15 @@ def test_the_rate_and_count_rollups_are_the_submitted_points_reduced():
     The $28$ is the interesting one, because it is the number a reader would take for a
     rescaling. Five points at interval $60$ fall four-and-one across a $300$-second
     rollup boundary, so the sum of the fuller bucket is four times the submitted value
-    and the other bucket is one times it. That is asserted here as the split, not as
-    the literal $28$: the cache's own note still says to compare the sum against five
-    times the submitted value, which is what the arithmetic would be if the boundary
-    fell elsewhere, and the remark is the thing that gets this right.
+    and the other bucket is one times it. That is asserted here as the split rather than
+    as the literal $28$, because the split is the thing that explains it.
+
+    The cache's note used to say to compare the sum against five times the submitted
+    value, which is the arithmetic for a window that aligns with the rollup --
+    `trial_checks._grid` snaps t_star to the interval and not to the rollup's width, so
+    this one did not. It was wrong about its own data for as long as nothing read it.
+    The note is now built by `_e15_note` out of the split, and this test holds it to
+    the same function, so the sentence cannot drift from the numbers it is about.
     """
     tc = _script("trial_checks")
     d = json.loads((RAW / "datadog" / "e15.json").read_text())
@@ -705,16 +738,26 @@ def test_the_rate_and_count_rollups_are_the_submitted_points_reduced():
         "the submitted series are not at the interval the provenance declares")
     points = series[0]["points"]
 
-    # The rollup's buckets are absolute multiples of its width, not offsets from the
-    # first point, which is what makes the split four-and-one rather than five-and-none.
-    rollup = 300
+    # The rollup's width comes off the query that was asked, not from a constant here,
+    # and its buckets are absolute multiples of that width rather than offsets from the
+    # first point -- which is what makes the split four-and-one rather than five-and-none.
+    asked = re.search(r"\.rollup\(\w+, (\d+)\)", d["responses"]["rate-sum"]["query"])
+    assert asked, "the rate-sum query no longer carries a rollup width"
+    rollup = int(asked.group(1))
+    assert rollup == d["interpretation"]["points"] * d["provenance"]["interval"], (
+        f"the rollup is {rollup}s, not the window the five points were meant to fill")
     bucket = Counter(int(pt["timestamp"]) // rollup for pt in points)
-    split = sorted(bucket.values(), reverse=True)
+    split = tc._rollup_split([(pt["timestamp"], pt["value"]) for pt in points], rollup)
+    assert split == sorted(bucket.values(), reverse=True)
     assert len(split) == 2 and sum(split) == len(points), (
         f"the five points no longer straddle one rollup boundary: {dict(bucket)}")
     assert {b * rollup for b in bucket} == {
         int(t) for t in tc._defined(d["responses"]["rate-sum"]["raw"])}, (
         "the response's buckets are not the ones the submitted points fall in")
+    assert d["interpretation"]["note"] == tc._e15_note(split), (
+        "the note is not the one the split produces\n"
+        f"  cached: {d['interpretation']['note']}\n"
+        f"  split {split} gives: {tc._e15_note(split)}")
     for metric in ("rate", "count"):
         assert d["values"][f"{metric}-avg"] == pytest.approx([value, value]), (
             f"{metric}-avg is no longer the submitted value in both buckets")

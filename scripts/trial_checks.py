@@ -30,6 +30,7 @@ import math
 import statistics
 import sys
 import time
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -731,6 +732,27 @@ def e14(creds: Credentials, *, dry: bool) -> dict:
     }
 
 
+def _rollup_split(points: list[tuple[float, float]], rollup: int) -> list[int]:
+    """How many of the submitted points fall in each of the rollup's buckets.
+
+    The buckets are absolute multiples of the rollup's width, not offsets from the
+    first point, and `_grid` snaps t_star to DELTA rather than to the width -- so five
+    points at DELTA apart under a 5*DELTA rollup straddle a boundary unless the two
+    happen to align. The factor a `sum` rollup returns is therefore this split and not
+    the number of points, which is what E15's note said for as long as nothing read it.
+    """
+    counts = Counter(int(t) // rollup for t, _v in points)
+    return sorted(counts.values(), reverse=True)
+
+
+def _e15_note(split: list[int]) -> str:
+    """What to compare each rollup against, given how the points actually fell."""
+    return ("compare rate-avg against the submitted value and rate-sum against "
+            f"{' and '.join(str(n) for n in split)} times it -- the points fall "
+            f"{'+'.join(str(n) for n in split)} across the rollup's buckets, which are "
+            "absolute multiples of its width; the count series is the control")
+
+
 def e15(creds: Credentials, *, dry: bool) -> dict:
     """Is a Datadog RATE metric mapped by the identity, as Definition 7 says?
 
@@ -743,10 +765,12 @@ def e15(creds: Credentials, *, dry: bool) -> dict:
 
     One RATE series, interval 60, five points of a known constant, and two rollups: a
     `sum` and an `avg` over a window containing all five. If storage is the identity,
-    `avg` returns the submitted value and `sum` returns five times it. If the intake
-    rescales by the interval, both are off by a factor of 60 in a direction this tells
-    us. A COUNT series carrying the same numbers is submitted alongside as the control,
-    because the question is what RATE does *differently*.
+    `avg` returns the submitted value and `sum` returns it times the number of points
+    in each rollup bucket -- five only if the window aligns with the rollup, which
+    `_grid` does not arrange and `_rollup_split` is what works out instead. If the
+    intake rescales by the interval, both are off by a factor of 60 in a direction this
+    tells us. A COUNT series carrying the same numbers is submitted alongside as the
+    control, because the question is what RATE does *differently*.
     """
     t_star = _grid(_now() - SETTLE) - 300
     run = f"r{int(t_star)}"
@@ -792,8 +816,7 @@ def e15(creds: Credentials, *, dry: bool) -> dict:
                       for k, v in raws.items()},
         "values": values,
         "interpretation": {
-            "note": ("compare rate-avg against the submitted value and rate-sum against "
-                     f"{n} times it; the count series is the control"),
+            "note": _e15_note(_rollup_split(points, span)),
             "submitted_value": value, "points": n,
         },
     }

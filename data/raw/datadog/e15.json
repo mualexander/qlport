@@ -8,7 +8,7 @@
   }
  ],
  "interpretation": {
-  "note": "compare rate-avg against the submitted value and rate-sum against 5 times it; the count series is the control",
+  "note": "compare rate-avg against the submitted value and rate-sum against 4 and 1 times it -- the points fall 4+1 across the rollup's buckets, which are absolute multiples of its width; the count series is the control",
   "points": 5,
   "submitted_value": 7.0
  },
@@ -22,6 +22,7 @@
   "interval": 60,
   "metric_type": 1,
   "points": 5,
+  "reinterpreted": "note recomputed from the cached responses after the rollup boundary was read: the five points fall 4+1 across the rollup's buckets, so a sum rollup returns four times the submitted value and the note's five was the arithmetic for a window that happened to align",
   "run": "r1795037160",
   "site": "datadoghq.com",
   "submitted_value": 7.0,
