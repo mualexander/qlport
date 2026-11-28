@@ -147,7 +147,7 @@ def test_every_perturbation_in_the_battery_still_applies():
           "in the suite)\n" + done.stderr[-800:])
     assert "0 stale" in done.stdout, done.stdout
     cases = int(done.stdout.split()[0])
-    assert cases >= 88, f"the battery has shrunk to {cases} cases"
+    assert cases >= 109, f"the battery has shrunk to {cases} cases"
 
 
 def test_no_macro_body_carries_a_figure():

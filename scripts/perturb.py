@@ -11,9 +11,12 @@ anyone but its author; a reviewer said so, which is why it is here.
     python scripts/perturb.py [backup-dir]            # the whole battery, ~20 min
     python scripts/perturb.py --dry-run               # only: do the anchors resolve
     python scripts/perturb.py --only=registry         # the cases whose name matches
+    python scripts/perturb.py --only=echo,rollup      # or any of several
 
 `--only` is for the round that touches a handful of guards: running those cases and
-the controls beside them is the check, and twenty minutes for the other sixty is not.
+the controls beside them is the check, and half an hour for the other ninety is not.
+It takes several substrings, comma-separated, because a round's cases are named for
+the defects they plant and those names have no word in common.
 It narrows the run and not the dry run, which has to resolve every anchor or the
 staleness it reports would depend on which cases were asked for.
 
@@ -38,7 +41,8 @@ ROOT = Path(__file__).resolve().parent.parent
 PY = str(ROOT / ".venv" / "bin" / "python")
 _args = [a for a in sys.argv[1:] if not a.startswith("--")]
 DRY_RUN = "--dry-run" in sys.argv
-ONLY = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--only=")), None)
+ONLY = next((a.split("=", 1)[1].split(",") for a in sys.argv[1:]
+             if a.startswith("--only=")), None)
 BAK = Path(_args[0]) if _args else Path(tempfile.mkdtemp(prefix="perturb-"))
 BAK.mkdir(parents=True, exist_ok=True)
 
@@ -662,6 +666,122 @@ CASES: list[tuple[str, callable, list[str], str]] = [
                     'def test_probe_reads_a_cache():\n'
                     '    assert _probe_cache("probe_cache.json")\n'),
      [BLD], "test_the_derived_input_list_is_what_the_suite_reads"),
+
+    # --- the eleven caches whose numbers nothing read -------------------------------
+    # Every case below changes ONE number, which is the drift these guards exist for.
+    # The battery's usual uniform edit would not do here: it adds the same amount to
+    # both sides of an equality and so passes the recounts, which is exactly how E8's
+    # hole survived the measurement that found the other ten.
+    ("a glob's selection no longer its own response's",
+     lambda: jset("data/raw/datadog/e5.json",
+                  ["selected", "probe:web-,run:r1794849840,probe:web-*"], 2.0),
+     [EXP], "test_every_glob_probe_recounts_its_selection_from_its_own_response"),
+    ("a stored point the control never returned",
+     lambda: jset("data/raw/datadog/e12.json",
+                  ["stored", "probe:web-a,run:r1795036080"], 2.0),
+     [EXP], "test_every_glob_probe_recounts_its_selection_from_its_own_response"),
+    ("a submitted value the vendor never stored",
+     lambda: jset("data/raw/datadog/e13.json",
+                  ["submitted", 0, "series", 0, "points", 0, "value"], 2.0),
+     [EXP], "test_every_submitted_point_is_one_the_control_read_back"),
+    # The scope the points came back under is the vendor's construction, so the chain
+    # is held on the values and the instants. Moving the first submitted point off the
+    # grid is the edit that would make a cache belong to a different run.
+    ("a submitted point off the run's own instant",
+     lambda: jset("data/raw/datadog/e16.json",
+                  ["submitted", 0, "series", 0, "points", 0, "timestamp"], 1795038240),
+     [EXP], "test_every_submitted_point_is_one_the_control_read_back"),
+    ("a response window that excludes its own points",
+     lambda: jset("data/raw/datadog/e5.json",
+                  ["responses", "control", "raw", "from_date"], 1794849900000),
+     [EXP], "test_every_cached_response_agrees_with_its_own_bookkeeping"),
+    ("a series reporting more points than it carries",
+     lambda: jset("data/raw/datadog/e16.json",
+                  ["responses", "control", "raw", "series", 0, "length"], 2),
+     [EXP], "test_every_cached_response_agrees_with_its_own_bookkeeping"),
+    # E14's verdict is the one thing in these caches that points cannot establish, and
+    # the cache's copy of it was a free-standing boolean.
+    ("the term survival flipped against its own echo",
+     lambda: jset("data/raw/datadog/e14.json",
+                  ["term_survived_the_parse", "negated-alone"], True),
+     [EXP], "test_the_negated_match_all_is_read_off_the_echo_and_not_off_the_points"),
+    ("a rollup value the response does not hold",
+     lambda: jset("data/raw/datadog/e15.json", ["values", "rate-sum", 1], 35.0),
+     [EXP], "test_the_rate_and_count_rollups_are_the_submitted_points_reduced"),
+    # The number a reader would take for a rescaling, printed in the paper's own table.
+    # Four of the five points fall in the fuller rollup bucket; 35 is what the cache's
+    # stale note still says to expect, so this is the drift with a plausible story.
+    ("the rate table printing five times the submitted value",
+     lambda: sub("paper/sections/moved/reg_trial_probes.tex",
+                 "& $28.0$ & $28.0$", "& $35.0$ & $35.0$"),
+     [EXP], "test_the_rate_and_count_rollups_are_the_submitted_points_reduced"),
+    ("one declared series of the binop workload changed",
+     lambda: jset("data/raw/datadog/e8.json",
+                  ["provenance", "series", "b:g=x,h=p"], 4.0),
+     [EXP], "test_the_binop_pairings_are_the_arithmetic_of_the_four_declared_series"),
+    # Both sides of one pairing moved together. The test that compares the two
+    # languages passes -- they still agree -- and only the arithmetic notices.
+    ("both sides of a pairing moved together",
+     lambda: jedit("data/raw/datadog/e8.json", lambda d: (
+         d["cases"]["both_grouped_div"]["datadog"].__setitem__("g=x", [6.0]),
+         d["cases"]["both_grouped_div"]["promql"].__setitem__("g=x", 6.0))),
+     [EXP], "test_the_binop_pairings_are_the_arithmetic_of_the_four_declared_series"),
+    ("a probe's verdict no longer its own selection",
+     lambda: jset("data/raw/datadog/scope_empty_tag.json",
+                  ["probes", "k:*", "matches_prediction"], False),
+     [EXP], "test_the_scope_probes_replay_the_prediction_table_they_were_run_against"),
+    ("a point count the grid does not have",
+     lambda: jset("data/raw/datadog/scope_empty_tag.json",
+                  ["provenance", "n_points"], 11),
+     [EXP], "test_the_scope_probes_replay_the_prediction_table_they_were_run_against"),
+    ("a gap-row summary that outlives its own response",
+     lambda: jset("data/raw/gap_rows/e10_fill.json",
+                  ["candidates", "bare selector", "summary",
+                   '{"__name__": "qlport_fill", "svc": "b"}',
+                   "points_past_lookback"], 5),
+     [EXP], "test_the_gap_row_summaries_replay_the_scripts_own_condensation"),
+    # Where the gap is, is a fact about the exposition the server was loaded with, and
+    # that was a string in the cache that nothing compared with the script.
+    ("the exposition the gap run was loaded with changed",
+     lambda: jedit("data/raw/gap_rows/e10_fill.json", lambda d: d["meta"].__setitem__(
+         "exposition", d["meta"]["exposition"].replace(
+             'qlport_fill{svc="b"} 130 1700001800.000',
+             'qlport_fill{svc="b"} 130 1700001900.000'))),
+     [EXP], "test_the_gap_row_summaries_replay_the_scripts_own_condensation"),
+    ("a label-name attempt recorded as returning series",
+     lambda: jset("data/raw/gap_rows/e11_label_name.json",
+                  ["attempts", "bare pattern in name position", "series_returned"], 1),
+     [EXP], "test_the_gap_row_summaries_replay_the_scripts_own_condensation"),
+    ("a matcher selection with a series its response did not return",
+     lambda: jedit("data/raw/matchers/label_matchers.json",
+                   lambda d: d["matchers"]['k=~".+"']["selected"].append(
+                       {"other": "none"})),
+     [EXP], "test_the_matcher_readings_replay_the_scripts_own_selection"),
+    # The matcher cache's only numbers are the points, and the reading is about which
+    # series come back rather than what they hold -- so the points were free until the
+    # exposition was replayed against them.
+    ("a matcher response point the exposition never wrote",
+     lambda: jset("data/raw/matchers/label_matchers.json",
+                  ["matchers", 'k=~".*"', "response", "data", "result", 0,
+                   "values", 0, 1], "9"),
+     [EXP], "test_the_matcher_readings_replay_the_scripts_own_selection"),
+    ("a corpus regex dropped from the ones RE2 was asked about",
+     lambda: jedit("data/raw/matchers/label_matchers.json",
+                   lambda d: d["corpus_regexes"].pop(".*_bytes")),
+     [EXP], "test_the_matcher_readings_replay_the_scripts_own_selection"),
+    # A cache dropped out of both lists, which is how a replay would quietly stop
+    # covering one without the ceiling moving.
+    ("a replayed cache dropped from both lists",
+     lambda: sub("tests/test_experiment_controls.py",
+                 '    "test_the_rate_and_count_rollups_are_the_submitted_points_'
+                 'reduced": (\n        "datadog/e15.json",),\n',
+                 ''),
+     [EXP], "test_every_experiment_cache_says_which_test_replays_it"),
+    ("a cache naming a replay that does not exist",
+     lambda: sub("tests/test_experiment_controls.py",
+                 '    "test_the_matcher_readings_replay_the_scripts_own_selection": (',
+                 '    "test_the_matcher_readings_replay_them": ('),
+     [EXP], "test_every_experiment_cache_says_which_test_replays_it"),
 ]
 
 CONTROLS: list[tuple[str, callable, list[str]]] = [
@@ -678,6 +798,25 @@ CONTROLS: list[tuple[str, callable, list[str]]] = [
      lambda: jset("data/raw/shapes/differential.json",
                   ["rows", 0, "median_d"], 0.5),
      [TAB]),
+    # Three numbers in the experiment caches that stay unheld on purpose, because
+    # nothing derives them and a guard asserting them would only be asserting that the
+    # file is the file. The rollup width is the vendor's own choice for the window it
+    # was asked over, and `resp_version` is its wire format.
+    ("a vendor-chosen rollup interval in a response",
+     lambda: jset("data/raw/datadog/e5.json",
+                  ["responses", "control", "raw", "series", 0, "interval"], 12),
+     [EXP]),
+    ("a response's protocol version field",
+     lambda: jset("data/raw/datadog/e13.json",
+                  ["responses", "control", "raw", "resp_version"], 3),
+     [EXP]),
+    # `echo_differs` is the script's flag for a reader and explicitly not a verdict --
+    # the echo is not verbatim even when nothing was dropped. E14's guard has to read
+    # the echo itself, so flipping the flag must fire nothing.
+    ("the reader's flag on whether an echo differs",
+     lambda: jset("data/raw/datadog/e14.json",
+                  ["responses", "negated-alone", "echo_differs"], False),
+     [EXP]),
     ("a sentence reworded where no phrase pins it",
      lambda: sub("paper/sections/04_grammars.tex",
                  "Inventing a production for an undocumented construct would be worse",
@@ -735,7 +874,7 @@ print(f"{'perturbation':58s} {'verdict':8s} fired")
 print("-" * 100)
 bad = 0
 for name, apply, mods, expect in CASES:
-    if ONLY and ONLY not in name:
+    if ONLY and not any(o in name for o in ONLY):
         continue
     restore()
     apply()
@@ -749,7 +888,7 @@ for name, apply, mods, expect in CASES:
 restore()
 print()
 for name, apply, mods in CONTROLS:
-    if ONLY and ONLY not in name:
+    if ONLY and not any(o in name for o in ONLY):
         continue
     restore()
     apply()

@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -426,3 +427,659 @@ def test_every_anchored_figure_is_the_one_the_cache_produced():
     assert want["na.first_value"] > 10 * want["na.no_anchor_bucket_sum"], (
         "the first sample's value no longer separates the reading from the failure "
         "where the form takes that sample for a delta")
+
+
+# --- what each cache says about itself, replayed from its own evidence ----------------
+# Eleven caches -- eight Datadog probes, both gap-row runs and the matcher reading --
+# held 1,468 numbers between them, and changing all 1,468 at once failed three tests,
+# all three of them E14's and all three about the same two fields. So ten of the eleven
+# were held by nothing whatever, and the eleventh by three assertions. This was measured
+# rather than reasoned about; four of the caches were also perturbed one at a time
+# against the whole suite, which is where the per-cache verdicts come from.
+#
+# The caches are not unread. The suite reads their verdicts, which are the booleans and
+# set memberships the scripts wrote, and reads them closely. What nothing read was the
+# arithmetic those verdicts are supposed to rest on: a cache could say `stored` where
+# its own response said nothing of the kind, and the response could report a window
+# that excludes the point it carries.
+#
+# The first attempt at that measurement was wrong and is worth recording. It ran, for
+# each cache, only the tests a `sys.addaudithook` trace saw open that file, which is
+# sound in principle: `data/processed` is not rebuilt inside a run, so nothing else can
+# see a `data/raw` edit. It missed E14's three readers anyway, because these caches come
+# through module-scoped fixtures: the file is opened once, the trace attributes the open
+# to whichever test ran first, and the other tests on the same fixture look blind. It
+# reported eleven of eleven green, which is one cache too many.
+#
+# What these tests do not do is re-measure. The trial account has lapsed and these runs
+# cannot be repeated, so there is no second source for any of it; what there is, in each
+# cache, is a chain -- the points the rig submitted, the vendor's acknowledgement, the
+# response it sent, and the summary the script wrote from that response. Each test below
+# walks one of those chains by importing the script's own derivation and running it over
+# the cached response. A drift in either end now has to be a consistent drift in both,
+# which is a re-run rather than an edit.
+#
+# E8 is the one where that is not quite the shape. It caches no response, only the two
+# sides' answers, and a test already compares them -- which is why the uniform
+# perturbation could not catch it: adding 1 to both sides of an equality keeps it. Its
+# numbers are recounted here from the four series the experiment declares, so the
+# arithmetic is held and not just the agreement.
+
+
+def _script(name: str):
+    """A script imported for its own derivation, the way `verify_anchored` already is."""
+    if str(ROOT / "scripts") not in sys.path:
+        sys.path.insert(0, str(ROOT / "scripts"))
+    return __import__(name)
+
+
+def _raw_values(raw: dict) -> list[float]:
+    return [float(v) for s in (raw.get("series") or [])
+            for _t, v in (s.get("pointlist") or []) if v is not None]
+
+
+def _raw_seconds(raw: dict) -> set[int]:
+    return {int(t / 1000) for s in (raw.get("series") or [])
+            for t, v in (s.get("pointlist") or []) if v is not None}
+
+
+# Which response in each cache is the control: the one asked with no scope under test,
+# whose job is to show the points were stored at all. `scope_empty_tag` keeps its
+# probes under another name and calls that one `all`.
+CONTROL_RESPONSE = {
+    "datadog/e5.json": ("responses", "control"),
+    "datadog/e12.json": ("responses", "control"),
+    "datadog/e13.json": ("responses", "control"),
+    "datadog/e14.json": ("responses", "control"),
+    "datadog/e16.json": ("responses", "control"),
+    "datadog/scope_empty_tag.json": ("probes", "all"),
+}
+
+
+def test_every_cached_response_agrees_with_its_own_bookkeeping():
+    """Each response's metadata against its own points, over every Datadog cache.
+
+    The window asked for, the window the vendor echoes, the per-series start and end,
+    and the per-series length are all numbers in these files, and they are the numbers
+    that say which run a response belongs to. None of them was read anywhere: a
+    response could report a length of two over one point, or a window that excludes
+    the point it carries, which is the shape a copied-and-edited cache would have.
+
+    Over every cache rather than the eleven, because the check costs nothing and the
+    E4 cache is the standing argument for breadth here -- it had carried E18's second
+    finding for two weeks before anybody read that far into it.
+    """
+    seen = 0
+    for path in sorted((RAW / "datadog").glob("*.json")):
+        d = json.loads(path.read_text())
+        entries = d.get("responses") or d.get("probes") or {}
+        for name, entry in (entries if isinstance(entries, dict) else {}).items():
+            raw = entry.get("raw") if isinstance(entry, dict) else None
+            if not isinstance(raw, dict):
+                continue
+            seen += 1
+            where = f"{path.name}/{name}"
+            assert entry.get("query"), (
+                f"{where}: the cache does not say what was asked, so the echo below "
+                f"would be compared against nothing")
+            assert raw.get("query") == entry.get("query"), (
+                f"{where}: the response is to {raw.get('query')!r}, not to the "
+                f"{entry.get('query')!r} the cache says was asked")
+            if "from" in entry and "from_date" in raw:
+                assert raw["from_date"] == int(entry["from"]) * 1000 and \
+                    raw["to_date"] == int(entry["to"]) * 1000, (
+                    f"{where}: the echoed window is not the one asked for")
+            for s in raw.get("series") or []:
+                pts = s.get("pointlist") or []
+                assert s.get("length") == len(pts), (
+                    f"{where}: {s.get('scope')} reports length {s.get('length')} over "
+                    f"{len(pts)} points")
+                stamps = [t for t, _v in pts]
+                if stamps and "from_date" in raw:
+                    assert raw["from_date"] <= min(stamps) and \
+                        max(stamps) <= raw["to_date"], (
+                        f"{where}: {s.get('scope')} carries points outside the window")
+                if stamps and "start" in s:
+                    assert s["start"] <= min(stamps) and max(stamps) <= s["end"], (
+                        f"{where}: {s.get('scope')} carries points outside its own "
+                        f"start and end")
+    assert seen >= 35, f"only {seen} responses were examined; the scan found nothing"
+
+
+@pytest.mark.parametrize("cache", sorted(CONTROL_RESPONSE))
+def test_every_submitted_point_is_one_the_control_read_back(cache):
+    """The first link: what the rig put in is what the vendor gave back.
+
+    Every one of these experiments reasons from a series being present, so a cache whose
+    control response is not the submission it claims to be is reasoning about someone
+    else's data. Values as multisets rather than per series, because the scope a series
+    comes back under is the vendor's construction and E16 shows it is not the submitted
+    tag list -- a tag key the query groups by and the series does not carry comes back
+    as `N/A`.
+    """
+    d = json.loads((RAW / cache).read_text())
+    block, key = CONTROL_RESPONSE[cache]
+    raw = d[block][key]["raw"]
+    series = [s for p in d["submitted"] for s in p["series"]]
+    points = [pt for s in series for pt in s["points"]]
+
+    assert len(series) == len(raw.get("series") or []), (
+        f"{cache}: {len(series)} series submitted, "
+        f"{len(raw.get('series') or [])} came back under {key!r}")
+    assert sorted(round(p["value"], 6) for p in points) == \
+        sorted(round(v, 6) for v in _raw_values(raw)), (
+        f"{cache}: the control's values are not the submitted ones")
+    assert {int(p["timestamp"]) for p in points} == _raw_seconds(raw), (
+        f"{cache}: the control's timestamps are not the submitted ones")
+
+    t_star = d["provenance"].get("t_star", d["provenance"].get("t0"))
+    assert min(int(p["timestamp"]) for p in points) == int(t_star), (
+        f"{cache}: the first submitted point is not at t_star")
+    for ack in d.get("acks", []):
+        assert not ack.get("errors"), f"{cache}: the vendor rejected a submission: {ack}"
+
+
+# The summary field each glob experiment wrote, and the response it was written from.
+# `trial_checks._series_by_scope` is the function that wrote them.
+BY_SCOPE = {
+    "datadog/e5.json": {"stored": "control", "selected": "globbed"},
+    "datadog/e12.json": {"stored": "control"},
+    "datadog/e13.json": {"stored": "control", "selected": "asked"},
+    "datadog/e16.json": {"stored": "control"},
+}
+
+
+@pytest.mark.parametrize("cache", sorted(BY_SCOPE))
+def test_every_glob_probe_recounts_its_selection_from_its_own_response(cache):
+    """`stored` and `selected` are the scripts' readings of responses in the same file.
+
+    Nothing compared the two. E5's reading is the whole of rem:star-empty -- that a
+    glob's `*` matches the empty string -- and it is a comparison of which scopes
+    appear in two of these maps, so a map that is not its response's own content is the
+    only thing the remark rests on.
+    """
+    tc = _script("trial_checks")
+    d = json.loads((RAW / cache).read_text())
+    for field, response in BY_SCOPE[cache].items():
+        want = tc._series_by_scope(d["responses"][response]["raw"])
+        assert d[field] == pytest.approx(want), (
+            f"{cache}: `{field}` is not a recount of the {response!r} response\n"
+            f"  cached: {d[field]}\n  response gives: {want}")
+
+    # And the negative half, where there is one: a probe the parser refused has no
+    # selection, and the cache has to say so in both places or it is saying two things.
+    rejected = set(d.get("rejected") or {})
+    if rejected:
+        assert not d.get("selected") and not d.get("selected_points"), (
+            f"{cache}: {sorted(rejected)} were rejected, so nothing was selected, "
+            f"but the cache records a selection")
+        for name, message in (d.get("rejected") or {}).items():
+            assert "unable to parse" in message or "Invalid" in message, (
+                f"{cache}: {name} is recorded as rejected with {message!r}, which is "
+                f"not a parser refusal")
+
+
+def test_the_negated_match_all_is_read_off_the_echo_and_not_off_the_points():
+    r"""E14's three numbers and five verdicts, replayed from the responses.
+
+    rem:negated-all turns on a distinction points cannot make -- a term that matched
+    everything and a term the parser discarded return the same series -- so the verdict
+    is read off the expression each response says Datadog evaluated. That reading is
+    `scope_term_survived`, and nothing checked that the cache's copy of it is what the
+    function returns for the cached response. The terms below are checked against the
+    query each probe actually asked, so this table cannot drift from the run either.
+    """
+    dd = _script("trial_checks")
+    from qlport.harness.datadog import scope_term_survived
+
+    e14 = json.loads((RAW / "datadog" / "e14.json").read_text())
+
+    terms = {
+        "match-all-and-negated": "!*",
+        "negated-alone": "!*",
+        "absent-value": "rig:zzz",
+        "negated-present-value": "!rig:b",
+        "negated-absent-value": "!rig:zzz",
+    }
+    assert set(terms) == set(e14["selected_points"]), (
+        "the probes in this table are not the ones the cache holds")
+
+    for name, term in terms.items():
+        entry = e14["responses"][name]
+        assert term in entry["query"], (
+            f"{name}: the cache asked {entry['query']!r}, which does not carry {term!r}")
+        assert e14["term_survived_the_parse"][name] is \
+            scope_term_survived(term, entry["raw"]), (
+            f"{name}: the recorded survival is not what the echo says")
+        assert e14["selected_points"][name] == len(dd._defined(entry["raw"])), (
+            f"{name}: the recorded point count is not the response's")
+
+    assert e14["stored_points"] == len(dd._defined(e14["responses"]["control"]["raw"])), (
+        "stored_points is not the control response's point count")
+    controls = {"absent-value": False, "negated-present-value": False,
+                "negated-absent-value": True}
+    assert e14["controls"] == {n: (e14["selected_points"][n] > 0) == expect
+                               for n, expect in controls.items()}, (
+        "the controls block is not what the points say")
+    # The contrast the remark needs, stated as the inequality rather than as three
+    # booleans: something had to fail to select, or "selects the series" says nothing.
+    assert e14["selected_points"]["negated-absent-value"] > 0
+    assert e14["selected_points"]["absent-value"] == 0
+    assert e14["selected_points"]["negated-present-value"] == 0
+
+
+def test_the_rate_and_count_rollups_are_the_submitted_points_reduced():
+    r"""rem:rate-identity's four cells, and the boundary effect it explains.
+
+    The remark prints them in a hand-written table -- $7.0$ and $28.0$ twice -- and
+    they are the whole evidence that $\phi_\rho$ is the identity on the $134$
+    occurrences naming a vendor-declared `rate`. Nothing read them off the cache, and
+    nothing read the cache off its responses.
+
+    The $28$ is the interesting one, because it is the number a reader would take for a
+    rescaling. Five points at interval $60$ fall four-and-one across a $300$-second
+    rollup boundary, so the sum of the fuller bucket is four times the submitted value
+    and the other bucket is one times it. That is asserted here as the split, not as
+    the literal $28$: the cache's own note still says to compare the sum against five
+    times the submitted value, which is what the arithmetic would be if the boundary
+    fell elsewhere, and the remark is the thing that gets this right.
+    """
+    tc = _script("trial_checks")
+    d = json.loads((RAW / "datadog" / "e15.json").read_text())
+    want = {name: sorted(tc._defined(r["raw"]).values())
+            for name, r in d["responses"].items()}
+    assert set(d["values"]) == set(want), (
+        f"`values` names {sorted(d['values'])}, the responses {sorted(want)}")
+    for name, got in want.items():
+        assert d["values"][name] == pytest.approx(got), (
+            f"`values[{name}]` is not a recount of its response\n"
+            f"  cached: {d['values'][name]}\n  response gives: {got}")
+
+    value = d["interpretation"]["submitted_value"]
+    series = [s for p in d["submitted"] for s in p["series"]]
+    assert {len(s["points"]) for s in series} == {d["interpretation"]["points"]}, (
+        "the submitted series do not carry the number of points the cache counts")
+    assert {pt["value"] for s in series for pt in s["points"]} == {value}, (
+        "the submitted points are not all the one value the interpretation names")
+    assert {s["interval"] for s in series} == {d["provenance"]["interval"]}, (
+        "the submitted series are not at the interval the provenance declares")
+    points = series[0]["points"]
+
+    # The rollup's buckets are absolute multiples of its width, not offsets from the
+    # first point, which is what makes the split four-and-one rather than five-and-none.
+    rollup = 300
+    bucket = Counter(int(pt["timestamp"]) // rollup for pt in points)
+    split = sorted(bucket.values(), reverse=True)
+    assert len(split) == 2 and sum(split) == len(points), (
+        f"the five points no longer straddle one rollup boundary: {dict(bucket)}")
+    assert {b * rollup for b in bucket} == {
+        int(t) for t in tc._defined(d["responses"]["rate-sum"]["raw"])}, (
+        "the response's buckets are not the ones the submitted points fall in")
+    for metric in ("rate", "count"):
+        assert d["values"][f"{metric}-avg"] == pytest.approx([value, value]), (
+            f"{metric}-avg is no longer the submitted value in both buckets")
+        assert d["values"][f"{metric}-sum"] == pytest.approx(
+            sorted(n * value for n in split)), (
+            f"{metric}-sum is not the submitted value summed over {split} points")
+    assert d["values"]["rate-avg"] == pytest.approx(d["values"]["count-avg"])
+    assert d["values"]["rate-sum"] == pytest.approx(d["values"]["count-sum"])
+
+    # And the table a reader sees. Two rows of two cells, in every build that carries
+    # the remark.
+    seen = 0
+    for text in builds(ROOT / "paper" / "sections" / "moved" / "reg_trial_probes.tex"):
+        for kind in ("avg", "sum"):
+            row = re.search(rf"rollup\({kind}, 300\)\}}((?:\s*&\s*\$[\d.]+\$)+)",
+                            flat(text))
+            assert row, f"the {kind} row of rem:rate-identity's table is not there"
+            cells = [float(c) for c in re.findall(r"\$([\d.]+)\$", row.group(1))]
+            assert len(cells) == 2, f"the {kind} row prints {cells}, not two cells"
+            assert cells == pytest.approx([max(d["values"][f"rate-{kind}"]),
+                                           max(d["values"][f"count-{kind}"])]), (
+                f"the {kind} row prints {cells}, not what the cache holds")
+            seen += 1
+    assert seen >= 2, "no build carries rem:rate-identity, so its table went unchecked"
+
+
+def test_the_binop_pairings_are_the_arithmetic_of_the_four_declared_series():
+    """E8's eight cases recounted from the four series the experiment declares.
+
+    thm:arith's premise is that the emitted PromQL pairs series the way Datadog does,
+    and the existing tests here compare the two sides to each other. That is the claim,
+    but it leaves both sides free together: adding one to every number in this file
+    keeps the equality and was the one perturbation of these eleven caches that stayed
+    green for a reason other than nothing reading it. What pins them is the workload --
+    `a` at 10 and 20, `b` at 2 and 5 -- which is the file's own provenance.
+    """
+    e8 = json.loads((RAW / "datadog" / "e8.json").read_text())
+    series = e8["provenance"]["series"]
+
+    def by(metric: str, keys: tuple[str, ...]) -> dict[str, float]:
+        out: dict[str, float] = {}
+        for name, value in series.items():
+            m, tags = name.split(":", 1)
+            if m != metric:
+                continue
+            labels = dict(t.split("=") for t in tags.split(","))
+            group = ",".join(f"{k}={labels[k]}" for k in keys)
+            out[group] = out.get(group, 0.0) + value
+        return out
+
+    a1, b1 = by("a", ("g",)), by("b", ("g",))
+    a2, b2 = by("a", ("g", "h")), by("b", ("g", "h"))
+    atot, btot = sum(a1.values()), sum(b1.values())
+    shared = a1.keys() & b1.keys()
+    want = {
+        "both_grouped_add": {k: a1[k] + b1[k] for k in shared},
+        "both_grouped_div": {k: a1[k] / b1[k] for k in shared},
+        "lhs_ungrouped": {k: atot / v for k, v in b1.items()},
+        "rhs_ungrouped": {k: v / btot for k, v in a1.items()},
+        "rhs_ungrouped_default_matching": {k: v / btot for k, v in a1.items()},
+        "subset_lhs_finer": {k: v / b1[k.split(",")[0]] for k, v in a2.items()
+                             if k.split(",")[0] in b1},
+        "subset_rhs_finer": {k: a1[k.split(",")[0]] / v for k, v in b2.items()
+                             if k.split(",")[0] in a1},
+    }
+    assert set(want) | {"different_keys"} == set(e8["cases"]), (
+        "the cases in this recount are not the ones the cache holds")
+
+    for case, expect in want.items():
+        got = e8["cases"][case]["datadog"]
+        assert "__error__" not in got, f"{case}: {got}"
+        assert {k: round(v, 6) for k, v in expect.items()} == \
+            pytest.approx({k: v[0] for k, v in got.items() if v}, abs=1e-6), (
+            f"{case}: Datadog's answer is not the arithmetic of the declared series")
+        if e8["cases"][case]["promql"]:
+            assert {k: round(v, 6) for k, v in expect.items()} == \
+                pytest.approx(e8["cases"][case]["promql"], abs=1e-6), (
+                f"{case}: the emitted PromQL's answer is not that arithmetic either")
+
+    # The two numbers the `by` above cannot derive, which the queries themselves carry:
+    # the range the emitted form averages over, and the two groups that make the join
+    # an inner one. A workload where both sides carried the same groups would make
+    # every case above pass and say nothing about pairing.
+    interval = int(e8["provenance"]["interval"])
+    assert all(f"[{interval}s]" in c["promql_query"] for c in e8["cases"].values()), (
+        f"the emitted forms no longer average over the declared interval of {interval}s")
+    assert a1.keys() != b1.keys() and shared, (
+        f"the two operands now carry the same groups ({sorted(a1)}), so no case here "
+        f"separates an inner join from an outer one")
+
+
+def test_the_scope_probes_replay_the_prediction_table_they_were_run_against():
+    """`scope_empty_tag`'s five probes, recounted with the script's own reader.
+
+    This is the cache behind the claim that Datadog's three tag states do not map onto
+    PromQL's two, and the thing it reports is `forms_whose_translation_selects_a_
+    different_set` -- four of five. Every number under it was editable: the selections,
+    the per-probe verdicts, the count of points, and the grid they sit on.
+    """
+    se = _script("scope_empty_tag")
+    d = json.loads((RAW / "datadog" / "scope_empty_tag.json").read_text())
+    p = d["provenance"]
+
+    assert set(d["probes"]) == set(se.PREDICTIONS), (
+        "the cached probes are not the prediction table the script runs")
+    assert p["series"] == se.SERIES, "the cached workload is not the script's"
+    assert (p["step"], p["n_points"]) == (se.STEP, se.N), (
+        "the cached grid is not the script's")
+
+    diverging = []
+    for form, probe in d["probes"].items():
+        predicted, matcher, promql = se.PREDICTIONS[form]
+        got = se.selected(probe["raw"])
+        assert probe["selected"] == got, (
+            f"{form}: the cached selection is not what its own response holds\n"
+            f"  cached: {probe['selected']}\n  response gives: {got}")
+        scope = se.scope_of(form, p["run"])
+        assert probe["query"].endswith(f"{{{scope}}} by {{probe}}"), (
+            f"{form}: the cached query is not the one the script builds")
+        assert probe["datadog_predicted"] == sorted(predicted), f"{form}: prediction"
+        assert probe["promql_matcher"] == matcher, f"{form}: matcher"
+        assert probe["promql_selects"] == sorted(promql), f"{form}: promql selection"
+        assert probe["matches_prediction"] is (got == sorted(predicted)), f"{form}"
+        same = matcher is None or got == sorted(promql)
+        assert probe["same_series_set"] is same, f"{form}: same_series_set"
+        if not same:
+            diverging.append(form)
+        # The points, and that they sit on the grid the provenance declares.
+        for s in probe["raw"]["series"]:
+            seconds = sorted(t / 1000 for t, _v in s["pointlist"])
+            assert len(seconds) == se.N, (
+                f"{form}: {len(seconds)} points, not the {se.N} declared")
+            assert seconds == [p["t0"] + i * se.STEP for i in range(se.N)], (
+                f"{form}: the points are not on the declared grid")
+
+    assert d["forms_whose_translation_selects_a_different_set"] == sorted(diverging), (
+        "the diverging forms are not the ones the probes diverge on")
+    assert d["datadog_matches_prediction"] is all(
+        pr["matches_prediction"] for pr in d["probes"].values())
+    assert len(diverging) == 4, (
+        f"{len(diverging)} of five forms diverge now, not four, which is the number "
+        f"rem:empty-tag reports")
+
+
+def test_the_gap_row_summaries_replay_the_scripts_own_condensation():
+    """E10 and E11, recounted with `verify_gap_rows`' own reader.
+
+    `points_past_lookback` is the measurement: whether an expression supplied a value
+    where the database holds none, asked outside the staleness window so that anything
+    present is the expression's doing. The summaries were editable, the responses were
+    editable, and the exposition the server was loaded with was editable -- and that
+    last one is what decides where the gap is.
+    """
+    vg = _script("verify_gap_rows")
+    fill = json.loads((RAW / "gap_rows" / "e10_fill.json").read_text())
+    names = json.loads((RAW / "gap_rows" / "e11_label_name.json").read_text())
+
+    for cache, d in (("e10_fill", fill), ("e11_label_name", names)):
+        assert d["meta"]["exposition"] == vg.exposition(), (
+            f"{cache}: the recorded exposition is not the one the script writes")
+        for field, value in (("t0", vg.T0), ("step_s", vg.STEP),
+                             ("span_min", vg.SPAN), ("stop_min", vg.STOP)):
+            assert d["meta"][field] == value, f"{cache}: meta.{field}"
+
+    for name, candidate in fill["candidates"].items():
+        assert candidate["summary"] == vg.series_present(candidate["response"]), (
+            f"{name}: the cached summary is not its response condensed")
+    for name, attempt in names["attempts"].items():
+        result = (attempt["response"].get("data") or {}).get("result") or []
+        assert attempt["series_returned"] == len(result), (
+            f"{name}: series_returned is not the response's series count")
+
+    # What the two caches are for. `svc=b` stops at STOP, so a bare selector has nothing
+    # past the lookback and the fill candidates are judged on whether they do -- and the
+    # one that holds a value does so at the value the exposition last gave that series.
+    bare = fill["candidates"]["bare selector"]["summary"]
+    b = next(v for k, v in bare.items() if '"svc": "b"' in k)
+    assert b["points_past_lookback"] == 0, (
+        "the bare selector now reaches past the lookback, so nothing here is a gap")
+    held = fill["candidates"]["last_over_time, held"]["summary"]
+    hb = next(v for k, v in held.items() if '"svc": "b"' in k)
+    assert hb["points_past_lookback"] > 0 and hb["first_value"] == hb["last_value"], (
+        "last_over_time no longer holds a constant past the gap")
+    assert float(hb["first_value"]) == 100 + vg.STOP, (
+        f"the held value is {hb['first_value']}, not the last one the exposition gave "
+        f"svc=b at minute {vg.STOP}")
+    assert all(a["series_returned"] == 0 for n, a in names["attempts"].items()
+               if not n.startswith("control")), (
+        "a pattern in label-name position now returns series, which is the claim")
+    assert all(a["series_returned"] > 0 for n, a in names["attempts"].items()
+               if n.startswith("control")), (
+        "the controls return nothing either, so the refusal above is not about patterns")
+
+    # rem:fill's table is the six candidates and one word each. A candidate counts as
+    # reaching past the lookback if any label set carrying svc=b does -- which is how
+    # the unioned one does it, under a label set the fill invented and not the stopped
+    # series' own. Counted rather than matched row by row, because the table's names
+    # for the candidates are prose and the cache's are expressions.
+    reaching = {name: any(v["points_past_lookback"] > 0
+                          for k, v in c["summary"].items() if '"svc": "b"' in k)
+                for name, c in fill["candidates"].items()}
+    seen = 0
+    for text in builds(ROOT / "paper" / "sections" / "moved" / "eval_gap_rows.tex"):
+        block = re.search(r"past the lookback.*?\\bottomrule", flat(text), re.S)
+        assert block, "rem:fill's table is not there to check"
+        verdicts = re.findall(r"& (absent|present)\b", block.group(0))
+        assert len(verdicts) == len(reaching), (
+            f"rem:fill's table prints {len(verdicts)} candidates, not the "
+            f"{len(reaching)} the cache holds")
+        assert sum(1 for v in verdicts if v == "present") == \
+            sum(1 for ok in reaching.values() if ok), (
+            f"the table calls {sum(1 for v in verdicts if v == 'present')} candidates "
+            f"present; the cache has {sum(1 for ok in reaching.values() if ok)}")
+        seen += 1
+    assert seen >= 2, "no build carries rem:fill, so its table went unchecked"
+
+    # And rem:label-name's table, which is the only place those five readings are
+    # printed. Keyed on the verdict column rather than on the row names, because the
+    # table calls the first attempt something shorter than the cache does; matching on
+    # a name that is nearly the cache's would be the weaker check of the two anyway.
+    refused = [a for a in names["attempts"].values() if a["status_code"] != 200]
+    assert len(refused) == 2 and all(a["error"] for a in refused), (
+        f"{len(refused)} of the five attempts were refused, not the two the table "
+        f"prints as parse errors")
+    seen = 0
+    for text in builds(ROOT / "paper" / "sections" / "moved" / "eval_gap_rows.tex"):
+        printed = re.findall(r"& (parse error|accepted, \$(\d+)\$ series) \\\\",
+                             flat(text))
+        assert len(printed) == len(names["attempts"]), (
+            f"rem:label-name's table prints {len(printed)} readings, not the "
+            f"{len(names['attempts'])} the cache holds")
+        assert sum(1 for verdict, _n in printed if verdict == "parse error") == 2, (
+            "the table no longer prints two parse errors")
+        assert sorted(int(n) for _v, n in printed if n) == \
+            sorted(a["series_returned"] for a in names["attempts"].values()
+                   if a["status_code"] == 200), (
+            "the series counts in the table are not the ones the cache holds")
+        seen += 1
+    assert seen >= 2, "no build carries rem:label-name, so its table went unchecked"
+
+
+def test_the_matcher_readings_replay_the_scripts_own_selection():
+    """`label_matchers`, recounted with `verify_matchers`' own reader.
+
+    Six matchers read off a real Prometheus, and the corpus's own regexes submitted to
+    it to see which RE2 accepts. The selections were editable and so was the series set
+    the server was loaded with, which is what makes a selection mean anything.
+    """
+    vm = _script("verify_matchers")
+    d = json.loads((RAW / "matchers" / "label_matchers.json").read_text())
+
+    assert d["prometheus_version"] in d["image"], (
+        "the recorded version is not the image's")
+    assert d["series"] == vm.SERIES, "the cached workload is not the script's"
+    assert d["collected_unix"] - d["t0"] == 3600, (
+        "the backfill is no longer the hour before the run, which is the window the "
+        "queries ask over")
+
+    # The exposition the server was loaded with, as {labels: {second: value}}. Taken
+    # from the script's own `exposition` rather than rebuilt here, so the values a
+    # response reports are held to the ones the backfill wrote and not to a formula
+    # restated in this file.
+    served: dict[tuple, dict[int, str]] = {}
+    for line in vm.exposition(d["t0"]).splitlines():
+        if line.startswith("#"):
+            continue
+        selector, value, second = line.rsplit(" ", 2)
+        labels = dict(
+            kv.split("=", 1) for kv in
+            selector[selector.index("{") + 1:selector.rindex("}")].split(","))
+        key = tuple(sorted((k, v.strip('"')) for k, v in labels.items()))
+        served.setdefault(key, {})[int(float(second))] = value
+
+    for name, m in d["matchers"].items():
+        assert m["selected"] == vm.selected(m["response"]), (
+            f"{name}: the cached selection is not its own response\n"
+            f"  cached: {m['selected']}\n  response gives: {vm.selected(m['response'])}")
+        assert name in m["expr"], f"{name}: the cached expression does not carry it"
+        for s in m["response"]["data"]["result"]:
+            key = tuple(sorted((k, v) for k, v in s["metric"].items()
+                               if k != "__name__"))
+            assert key in served, f"{name}: {s['metric']} was never served"
+            assert {int(t): v for t, v in s["values"]} == served[key], (
+                f"{name}: the points for {s['metric']} are not the ones the "
+                f"exposition wrote")
+
+    # The reading itself. The sixth series carries no `k` at all, which is the case the
+    # workload exists for: `.*` selects it and `.+` does not, because Prometheus treats
+    # an absent label as the empty string. A workload of five labelled series would
+    # make every assertion above pass and leave that difference unmeasured.
+    def labelled(entries: list[dict]) -> set[tuple]:
+        return {tuple(sorted(e.items())) for e in entries}
+
+    star = labelled(d["matchers"]['k=~".*"']["selected"])
+    plus = labelled(d["matchers"]['k=~".+"']["selected"])
+    assert [dict(e) for e in star - plus] == [{"other": "none"}], (
+        f"`.*` and `.+` now differ by {[dict(e) for e in star - plus]}, not by the "
+        f"one series with no `k`")
+    assert star == labelled(d["series"]), (
+        "`.*` no longer selects every series the server was given")
+
+    # And the corpus side, which is the claim that no corpus regex needs anything RE2
+    # refuses. Recomputed from the committed corpus, so a regex entering the corpus
+    # without a reading here fails rather than passing unnoticed.
+    assert sorted(d["corpus_regexes"]) == vm.corpus_regexes(), (
+        "the cached regexes are not the ones the translator emits over the corpus")
+    refused = sorted(r for r, v in d["corpus_regexes"].items() if not v["accepted"])
+    assert not refused, f"RE2 refused {refused}, which §6 says cannot happen"
+
+
+# Which test above replays each cache's summary from its own evidence, and which caches
+# nothing here replays -- their numbers are held by a dedicated test or by the figure
+# census instead, which is a weaker thing to rest on and the reason the second list is a
+# ratchet. A new experiment has to join one of them, because the test below counts.
+REPLAYED: dict[str, tuple[str, ...]] = {
+    "test_every_glob_probe_recounts_its_selection_from_its_own_response": (
+        "datadog/e5.json", "datadog/e12.json", "datadog/e13.json", "datadog/e16.json"),
+    "test_the_negated_match_all_is_read_off_the_echo_and_not_off_the_points": (
+        "datadog/e14.json",),
+    "test_the_rate_and_count_rollups_are_the_submitted_points_reduced": (
+        "datadog/e15.json",),
+    "test_the_binop_pairings_are_the_arithmetic_of_the_four_declared_series": (
+        "datadog/e8.json",),
+    "test_the_scope_probes_replay_the_prediction_table_they_were_run_against": (
+        "datadog/scope_empty_tag.json",),
+    "test_the_gap_row_summaries_replay_the_scripts_own_condensation": (
+        "gap_rows/e10_fill.json", "gap_rows/e11_label_name.json"),
+    "test_the_matcher_readings_replay_the_scripts_own_selection": (
+        "matchers/label_matchers.json",),
+}
+UNREPLAYED: tuple[str, ...] = (
+    "datadog/e1.json", "datadog/e1_fast.json", "datadog/e2.json", "datadog/e3.json",
+    "datadog/e4.json", "datadog/e7.json", "datadog/e9.json",
+    "datadog/as_rate_order.json",
+    "datadog/e17_scope_length.json", "datadog/e18.json", "datadog/top.json",
+)
+UNREPLAYED_CEILING = 11
+
+
+def test_every_experiment_cache_says_which_test_replays_it():
+    """The ratchet, and that the names in it are real.
+
+    It was 21 of 21 unreplayed before this section. The eleven left are the caches the
+    same measurement found load-bearing already, so the next one to come off this list
+    needs a derivation rather than an entry.
+    """
+    replayed = {c for caches in REPLAYED.values() for c in caches}
+    both = replayed & set(UNREPLAYED)
+    assert not both, f"listed as both replayed and not: {sorted(both)}"
+    missing = set(DISCRIMINATION) - replayed - set(UNREPLAYED)
+    assert not missing, (
+        f"accounted for above but in neither list here: {sorted(missing)}")
+    for test, caches in REPLAYED.items():
+        assert test in globals(), f"{test} is not a test in this file"
+        assert caches, f"{test} is listed as replaying nothing"
+    for cache in replayed | set(UNREPLAYED):
+        assert (RAW / cache).exists(), f"{cache} is listed here but not on disk"
+    # A cache outside `DISCRIMINATION` is here only because this section replays it,
+    # so one of those on the unreplayed list would be an entry saying nothing at all.
+    stray = [c for c in UNREPLAYED if c not in DISCRIMINATION]
+    assert not stray, f"not experiment caches and replayed by nothing: {stray}"
+
+    assert len(UNREPLAYED) <= UNREPLAYED_CEILING, (
+        f"{len(UNREPLAYED)} caches are replayed by nothing here, over a ceiling of "
+        f"{UNREPLAYED_CEILING}:\n" + "\n".join(f"  {c}" for c in UNREPLAYED))
+    assert len(UNREPLAYED) >= UNREPLAYED_CEILING - 1, (
+        f"only {len(UNREPLAYED)} are unreplayed now; lower UNREPLAYED_CEILING to "
+        f"{len(UNREPLAYED)} so the ratchet keeps its grip")
