@@ -89,3 +89,35 @@ def test_kappa_here_is_the_differential_measure_not_the_one_the_paper_reports():
     # §7's κ is translated-over-total and is computed in notebook 03.
     assert kappa(["pass", "pass", "bottom", "untested"]) == pytest.approx(2 / 3)
     assert math.isnan(kappa(["untested"]))
+
+
+def test_a_missing_value_is_incomparable_and_not_a_match():
+    """The NaN guard, which mutation found to be the one thing in this module nothing
+    constrained -- and it is not the equivalent edit it looks like.
+
+    `reldiff` returns NaN when either argument is NaN. Requiring *both* instead agrees
+    with the guard on five of the six NaN pairs, because `max` propagates a NaN and
+    `nan / anything` is NaN. The sixth is `reldiff(0.0, nan)`: `max(0.0, nan)` is
+    `0.0`, the zero-denominator branch fires, and the answer is `0.0` -- distance zero,
+    which reads as *the two systems returned the same thing*. An empty bucket compared
+    against a zero would be recorded as agreement, and the replay comparison of §3.1 is
+    made of exactly that pair.
+
+    It also breaks the lemma `d` is named for: under the weaker guard `reldiff` is no
+    longer symmetric, since the NaN survives `max` in one argument order and not the
+    other.
+    """
+    nan = math.nan
+    assert math.isnan(reldiff(0.0, nan)), "a value against no value is not a match"
+    assert math.isnan(reldiff(nan, 0.0))
+    for other in (0.0, -0.0, 1.0, -3.0, math.inf, nan):
+        assert math.isnan(reldiff(nan, other)), other
+        assert math.isnan(reldiff(other, nan)), other
+
+    # And through `d`, which is where a false agreement would actually be read.
+    assert math.isnan(d({("k", "a"): 0.0}, {("k", "a"): nan}))
+    assert math.isnan(d({("k", "a"): nan}, {("k", "a"): 0.0}))
+    # One incomparable label set is enough: `d` is the worst of them, and NaN is not
+    # ordered, so this is the case `max` cannot be trusted to carry on its own.
+    assert math.isnan(d({("k", "a"): 1.0, ("k", "b"): 0.0},
+                        {("k", "a"): 1.0, ("k", "b"): nan}))

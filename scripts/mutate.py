@@ -265,15 +265,30 @@ def pytest_sessionfinish(session, exitstatus):
         json.dump({str(k): sorted(v) for k, v in HITS.items()}, fh)
 '''
 
-# Lines that run when the module is imported -- the regex compilations, the frozensets,
-# the module-level tables. No test executes them, because the import happens during
-# collection, so the line map says nothing about them and reporting them as unreached
-# would be false: a mutant there is live for every test in the suite. They get the
-# fallback list below instead.
-FALLBACK = ["tests/test_corpus.py", "tests/test_translate.py", "tests/test_regular.py",
-            "tests/test_shapes.py", "tests/test_ir_shape.py",
-            "tests/test_differential_cache.py", "tests/test_paper_tables.py",
-            "tests/test_paper_figures.py", "tests/test_harness.py"]
+def fallback_tests(line_tests: dict[int, list[str]]) -> list[str]:
+    """What to run for a line the line map cannot speak for.
+
+    Lines that execute when the module is imported -- the regex compilations, the
+    frozensets, the module-level tables, the default in a signature -- run during
+    collection, before any test, so the trace attributes them to nothing. Reporting
+    them as unreached would be false: a mutant there is live for every test in the
+    suite. They get every module that executes any line of the target instead, which
+    is the map's own answer to "which tests could this module's behaviour reach".
+
+    Derived rather than listed, twice over. A list written for one target silently
+    mismeasures the next: the first version here was the nine modules that read
+    `corpus.py`, and pointing the battery at `metrics.py` would have judged its
+    import-time mutants against tests that never import it. Matching test sources for
+    the module's name instead is no better -- `test_corpus.py` contains the word
+    "metrics" in a dashboard fixture, so `metrics.py` would have drawn it in.
+
+    The narrow hole, stated rather than papered over: a test that imports a
+    module-level object and uses it without ever entering the module -- `PROMQL_MATCHER`
+    applied directly, say -- executes no line of the target and so is not in this list,
+    although an import-time mutant would reach it. Nothing in `tests/` does that today.
+    """
+    modules = {t.split("::", 1)[0] for tests in line_tests.values() for t in tests}
+    return sorted(modules) or ["tests/"]
 
 
 def import_lines(target: Path, module: str) -> set[int]:
@@ -354,7 +369,7 @@ def shadow(target: Path, tmp: Path) -> Path:
     return tmp / src.name / package.name / target.name
 
 
-# Long enough for the fallback list, which runs nine modules and takes about a hundred
+# Long enough for the fallback list, which for `corpus.py` runs nine modules and about a hundred
 # seconds, and short enough that a mutant which does not terminate costs five minutes
 # rather than the afternoon it cost once. Such a mutant exists in `corpus.py`: the
 # escape decoder advances by `2 + width`, and the `Sub` mutation of that makes the
@@ -428,6 +443,7 @@ def main(argv: list[str] | None = None) -> int:
     module = "qlport." + target.stem
     at_import = import_lines(target, module)
     spans = statement_spans(tree)
+    fallback = fallback_tests(line_tests)
     print(f"{len(at_import)} lines of {target.name} run at import; mutants there get "
           f"the fallback list, not a reachability verdict", flush=True)
 
@@ -450,13 +466,14 @@ def main(argv: list[str] | None = None) -> int:
         stand_in = shadow(target, tmp)
         shadow_path = stand_in.parent.parent
 
+
         # The control, and the one this battery cannot do without. Every mutant is
         # written out by `ast.unparse`, which reformats the whole module and drops its
         # comments, so the module under test is never the file in git even when nothing
         # is mutated. If the reformatting alone broke a test, every mutant below would
         # be "killed" by that and the score would mean nothing.
         stand_in.write_text(_unparse(tree) + "\n")
-        dead, by = kills(FALLBACK, shadow_path)
+        dead, by = kills(fallback, shadow_path)
         if dead:
             print(f"the unmutated module, reformatted by ast.unparse, already fails "
                   f"{by} -- every kill below would be that and not the mutation",
@@ -468,19 +485,21 @@ def main(argv: list[str] | None = None) -> int:
         # out to need. If the shadow is not on the path, every test runs against the
         # real module, nothing can fail, and the report is "no mutant was killed" --
         # which reads as a suite that constrains nothing rather than as a harness that
-        # tests nothing. So poison the shadow with a mutation no suite could miss and
+        # tests nothing. So poison the shadow with a defect no suite could miss and
         # require it to die before judging anything.
-        poisoned = _unparse(tree).replace(
-            "def normalise(lang: str, text: str) -> str:",
-            "def normalise(lang: str, text: str) -> str:\n"
-            "    raise AssertionError('the mutation battery is live')", 1)
-        stand_in.write_text(poisoned + "\n")
-        dead, by = kills(["tests/test_corpus.py"], shadow_path)
+        #
+        # Poisoned at import rather than inside a named function, because a control
+        # that names one is a control for one target: the first version raised from
+        # `corpus.normalise` and had nothing to say about any other module. A module
+        # that cannot be imported fails every test that imports it, whatever it is.
+        stand_in.write_text(
+            "raise AssertionError('the mutation battery is live')\n" + _unparse(tree))
+        dead, by = kills(fallback, shadow_path)
         if not dead:
-            print("the shadowed module is not the one the tests import: a module that "
-                  "raises on every call to `normalise` passed tests/test_corpus.py. "
-                  "Every verdict below would be SURVIVED and none of them would mean "
-                  "anything.", file=sys.stderr)
+            print(f"the shadowed module is not the one the tests import: a copy of "
+                  f"{target.name} that raises on import passed {len(fallback)} test "
+                  f"modules. Every verdict below would be SURVIVED and none of them "
+                  f"would mean anything.", file=sys.stderr)
             return 2
         print(f"control: a module poisoned to raise is caught by {by}", flush=True)
 
@@ -488,7 +507,7 @@ def main(argv: list[str] | None = None) -> int:
             tests = reaching(m.lineno)
             how = f"{len(tests)} tests reach it"
             if not tests and imported(m.lineno):
-                tests, how = FALLBACK, "import-time line, fallback list"
+                tests, how = fallback, "import-time line, fallback list"
             if not tests:
                 unreached.append(m)
                 print(f"[{i:3d}/{len(muts)}] UNREACHED {m}", flush=True)

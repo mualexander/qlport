@@ -31,10 +31,26 @@ def reldiff(a: float, b: float) -> float:
 
 
 def d(r1: Mapping[tuple, float], r2: Mapping[tuple, float]) -> float:
-    """Results are {label-set key: value}. ∞ if the label sets differ, else max reldiff."""
+    """Results are {label-set key: value}. ∞ if the label sets differ, else max reldiff.
+
+    NaN if any label set is incomparable, which is outside §3's definition -- that one
+    is over real-valued results -- but inside this module's, because `reldiff` returns
+    NaN by design and the only caller of it that is not a test can be handed one: an
+    expression that selects nothing at an instant reads back as NaN.
+
+    Taken over the distances as a list rather than left to `max`, which is where this
+    went wrong. `max` keeps whichever operand it saw first when the comparison involves
+    a NaN, because every comparison with one is false -- so `d` returned 0.0 for one
+    incomparable label set among identical ones, and NaN for the same two results in
+    the other dictionary order. Reporting *the results agree* for a comparison one side
+    of which produced no value is the failure §3.1 exists to detect.
+    """
     if set(r1) != set(r2):
         return math.inf
-    return max((reldiff(r1[k], r2[k]) for k in r1), default=0.0)
+    diffs = [reldiff(r1[k], r2[k]) for k in r1]
+    if any(math.isnan(x) for x in diffs):
+        return math.nan
+    return max(diffs, default=0.0)
 
 
 def kappa(outcomes: Iterable[str]) -> float:
