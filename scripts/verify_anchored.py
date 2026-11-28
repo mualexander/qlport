@@ -212,6 +212,22 @@ NO_ANCHOR_CANDIDATES = {
 }
 
 
+def series_for(name: str):
+    """The workload a recorded run was generated from, by the name the run records.
+
+    One function rather than the inline call this used to be in `main`, so that a test
+    can regenerate a committed cache's series from the parameters the rig actually
+    uses. Duplicating `start_value`, `interval`, `duration` and `seed` into the test
+    would have let the two drift apart in the one direction that matters: the cache
+    stays as it is, the test keeps regenerating the old workload and passing, and the
+    rig would now produce something else.
+    """
+    if name == "no anchor":
+        return no_anchor_series()
+    return quantise(scrape(start_value=5000, interval=15, duration=6 * HOUR, seed=681,
+                           **WORKLOADS[name]))
+
+
 def no_anchor_series():
     """A counter whose first sample falls strictly inside the first aligned bucket."""
     from qlport.semantics.model import Series
@@ -319,8 +335,7 @@ def main() -> int:
 
     for name in names:
         print(f"== {name}")
-        s = quantise(scrape(start_value=5000, interval=15, duration=6 * HOUR, seed=681,
-                            **WORKLOADS[name]))
+        s = series_for(name)
         # Place the series in the recent past so it falls inside retention, on a whole
         # hour. The hour matters: it is a multiple of every interval in INTERVALS, so
         # the server's epoch-aligned grid lands on exactly the bucket ends the model
@@ -351,7 +366,7 @@ def main() -> int:
                 shutil.rmtree(workdir, ignore_errors=True)
     if args.no_anchor:
         print("== no anchor")
-        s_na = no_anchor_series()
+        s_na = series_for("no anchor")
         # A whole hour, as above, and for a sharper reason here: 60 divides 3600, so the
         # series-relative bucket [0, 60) is an epoch-aligned bucket of the server's own
         # grid. The first sample sits at t0 + 20, inside it, with nothing before it

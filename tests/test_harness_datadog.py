@@ -1070,7 +1070,10 @@ def test_a_status_about_the_server_is_not_an_answer():
     408 "request header timeout" and a socket timeout are the same non-answer, and the
     only thing that distinguishes them is which side noticed first.
     """
-    assert {408, 429, 502, 503, 504} <= RETRYABLE_STATUS
+    # By equality, not as a subset. The subset form left 425 and 500 unasserted, which
+    # mutation found: dropping either from the policy failed nothing, and both are
+    # exactly the "the server did not answer" case this test is named for.
+    assert RETRYABLE_STATUS == {408, 425, 429, 500, 502, 503, 504}
 
 
 # --- E17: how many literals one scope's IN list may carry ------------------------
@@ -1164,3 +1167,62 @@ def test_a_server_side_status_was_not_recorded_as_a_refusal(e17):
             if status in RETRYABLE_STATUS:
                 assert r[half]["parsed"] is None, r
                 assert r[half]["attempts"] > 1, r
+
+
+def test_the_mid_bucket_probe_must_fall_strictly_inside_a_bucket():
+    """The guard `interpret_closure` opens with, and the mistake it was added for.
+
+    A probe on a bucket boundary belongs to neither bucket under one closure or to both
+    under the other, so reading it as half a bucket away yields a confident and wrong
+    answer -- which the docstring records as having happened once. The guard is in terms
+    of the offset modulo the bucket width, so it has to refuse `t*` itself and every
+    whole multiple of the width, and accept anything strictly between them *including*
+    an offset that lands in a later bucket.
+    """
+    t_star, delta = 1_700_000_000.0, 60.0
+    for off in (0.0, delta, 2 * delta, -delta):
+        with pytest.raises(ValueError, match="strictly inside a bucket") as exc:
+            interpret_closure(t_star, delta, t_star, t_star,
+                              mid_submitted_at=t_star + off)
+        # The message states the offset from t*, which is the number a reader needs to
+        # see why the run was refused.
+        assert f"{off:+g}s from t*" in str(exc.value)
+    # Half a bucket in is the default placement, and a bucket and a half is still
+    # strictly inside one -- the guard is about the boundary, not about which bucket.
+    for off in (delta / 2.0, 1.5 * delta):
+        got = interpret_closure(t_star, delta, t_star, t_star,
+                                mid_submitted_at=t_star + off)
+        assert "conclusive" in got
+
+
+def test_samples_in_two_buckets_are_refused_even_with_none_on_a_boundary():
+    """`interpret_default_aggregator`'s first guard, with only one reason to fire.
+
+    A reading that spans two buckets is a partial bucket compared against a whole
+    prediction, and it can happen with every sample strictly inside its own bucket --
+    which is the case that separates the two halves of the guard. With the halves
+    conjoined instead of disjoined this reading is accepted and an aggregator named
+    from it.
+    """
+    spread = [(T + 31, 1.0), (T + 95, 2.0)]
+    got = interpret_default_aggregator(60, spread, [1.0, 2.0], {E3_BUCKET: 3.0})
+    assert got["conclusive"] is False
+    assert "do not share one 60s bucket" in got["why"]
+    assert "on_edge=[]" in got["why"], "nothing here is on a boundary"
+
+
+def test_a_sample_on_a_bucket_boundary_is_named_in_the_refusal():
+    """And the other half, which cannot change the verdict but does change the report.
+
+    A sample exactly on a boundary belongs to the earlier bucket under one closure and
+    the later one under the other, so it always produces two buckets and the first half
+    of the guard already refuses it. What `on_edge` adds is the diagnosis: it says
+    *why* the buckets disagree, which is the difference between a reading that straddles
+    a boundary and one that genuinely spans two buckets.
+    """
+    assert T % 60 == 0, "the fixture's T is a bucket boundary"
+    on_boundary = [(T, 1.0), (T + 1, 2.0), (T + 2, 3.0), (T + 3, 4.0)]
+    got = interpret_default_aggregator(60, on_boundary, [1.0, 2.0, 3.0, 4.0],
+                                       {E3_BUCKET: 10.0})
+    assert got["conclusive"] is False
+    assert f"on_edge=[{T}]" in got["why"], got["why"]

@@ -164,3 +164,55 @@ def test_a_grouping_key_the_scope_pins_keeps_its_value():
     got = _inst("count:m.x{env:prod} by {env}")
     assert got.ok
     assert {s.labels["env"] for s in got.series} == {"prod"}
+
+
+# --- the three conditions mutation found unconstrained -------------------------------
+
+def test_only_an_empty_equality_negation_forces_the_label_to_be_present():
+    """`{tag!=""}` and `{tag!~""}` are satisfied by opposite things.
+
+    Prometheus reads an absent label as the empty string, so a series with no `tag` at
+    all *fails* `tag!=""` and the instantiation has to supply one. `tag!~""` is a regex
+    negation and absence satisfies it, so supplying a label there would narrow the
+    query for no reason. The condition that separates them is an `and` over the
+    operator and the value, and nothing here told the two apart.
+    """
+    present = instantiate(rolled(sel((ir.Matcher("tag", "!=", ""),))))
+    assert present.ok
+    assert all(s.labels.get("tag") for s in present.series), "absence does not satisfy it"
+
+    absent = instantiate(rolled(sel((ir.Matcher("tag", "!~", ""),))))
+    assert absent.ok
+    assert all("tag" not in s.labels for s in absent.series), "absence satisfies it"
+
+
+def test_a_label_another_matcher_already_fixed_is_left_alone():
+    """The branch that only fires when both matchers name the same label.
+
+    `{tag=~"GET|LIST", tag!=""}` is satisfiable by one series, and only if the
+    non-empty requirement accepts the value the alternation already chose. Overwriting
+    it with the filler would leave a series the first matcher does not select, which is
+    the same class of harness bug the comment above this branch records -- the PromQL
+    side selecting nothing while Datadog returned data.
+    """
+    got = instantiate(rolled(sel((ir.Matcher("tag", "=~", "GET|LIST"),
+                                  ir.Matcher("tag", "!=", "")))))
+    assert got.ok
+    assert {s.labels["tag"] for s in got.series} == {"GET"}, "the filler overwrote it"
+
+
+def test_a_grouping_key_the_scope_pins_yields_one_series():
+    """`free` is empty, so there is nothing to vary and one series is the whole query.
+
+    Grouping by a key an equality matcher already fixes cannot produce more than one
+    group, and building several identical series instead would make the aggregation
+    look exercised while every member carried the same label set.
+    """
+    got = instantiate(rolled(sel((ir.Matcher("k", "=", "v"),)), keys=("k",)))
+    assert got.ok
+    assert [s.labels for s in got.series] == [{"k": "v"}]
+
+    # And the contrast: a grouping key nothing pins varies, so the aggregation combines
+    # more than one series.
+    many = instantiate(rolled(sel((ir.Matcher("k", "=", "v"),)), keys=("other",)))
+    assert len({s.labels["other"] for s in many.series}) > 1

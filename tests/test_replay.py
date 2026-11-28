@@ -13,7 +13,8 @@ import pytest
 from texsource import table
 
 from qlport.harness.replay import (
-    busiest_window, events_to_counter, parse_events, shift_to,
+    busiest_window, events_to_counter, parse_events, per_bucket_totals,
+    shift_to,
 )
 
 LINE = ('199.72.81.55 - - [01/Jul/1995:00:00:01 -0400] '
@@ -295,3 +296,93 @@ def test_the_replay_kept_nothing_but_traffic_patterns(name):
     assert "NASA" in json.loads(text)["provenance"]["source"]
     for leak in ("GET /", "HTTP/1.0", "unicomp", ".net", ".gov"):
         assert leak not in text, leak
+
+
+# --- what the one tested offset could not settle -------------------------------------
+# `scripts/mutate.py` over `harness/replay.py` left most of the UTC-offset arithmetic
+# alive, and the reason is in the fixture rather than in the code: the one line parsed
+# here carries `-0400`, a whole number of hours with no minutes. Under that offset the
+# minute term is zero whatever is done to it, `int("04")` and `int("4")` agree, and the
+# slice can run past the end of the string without changing what it reads. Six mutants
+# survived on one line for want of a half-hour zone.
+
+HALF_HOUR_LINE = ('1.2.3.4 - - [01/Jul/1995:00:00:01 +0530] '
+                  '"GET /history/apollo/ HTTP/1.0" 200 6245')
+
+
+def test_an_offset_with_minutes_in_it_is_applied_whole():
+    """A zone that is not a whole number of hours, east of UTC.
+
+    `+0530` is the only shape that exercises every part of the conversion at once: the
+    sign, the hour field, the minute field, and the two slices that separate them.
+    00:00:01 on 1 July at +0530 is 18:30:01 on 30 June in UTC -- the previous day,
+    which is also the only case here where the date moves backwards.
+    """
+    import calendar
+
+    (epoch, cls), = parse_events([HALF_HOUR_LINE])
+    assert cls == "2xx"
+    assert epoch == calendar.timegm((1995, 6, 30, 18, 30, 1, 0, 0, 0))
+    # And the western half-hour zone, so the sign is not read off this one case either.
+    west = HALF_HOUR_LINE.replace("+0530", "-0530")
+    (epoch_west, _), = parse_events([west])
+    assert epoch_west == calendar.timegm((1995, 7, 1, 5, 30, 1, 0, 0, 0))
+    assert epoch_west - epoch == 2 * (5 * 3600 + 30 * 60)
+    # And a zone past nine hours, so the hour field is read as two digits rather than
+    # as whichever one happens to be last.
+    (epoch_far, _), = parse_events([HALF_HOUR_LINE.replace("+0530", "+1030")])
+    assert epoch_far == calendar.timegm((1995, 6, 30, 13, 30, 1, 0, 0, 0))
+
+
+def test_shifting_a_trace_that_does_not_start_at_zero():
+    """`shift_to` subtracts the first sample before adding the new start.
+
+    Every other test of it builds the series from `start=0`, where subtracting the
+    first timestamp and adding it are the same thing. The rig only ever calls it on a
+    1995 trace, where adding instead of subtracting lands the replay three decades in
+    the future and Datadog's intake refuses the lot.
+    """
+    s = events_to_counter([805_000_001], interval=5, start=805_000_000, end=805_000_010)
+    assert s.ts[0] == 805_000_000.0, "the fixture has to start somewhere other than 0"
+
+    moved = shift_to(s, 1_700_000_000.0)
+    assert list(moved.ts) == [1_700_000_000.0, 1_700_000_005.0, 1_700_000_010.0]
+    assert np.allclose(np.diff(moved.ts), np.diff(s.ts))
+    assert list(moved.vs) == list(s.vs)
+
+
+def test_the_bucket_totals_read_one_candidate_at_one_instant():
+    """`per_bucket_totals` filters twice, and the committed recording cannot show it.
+
+    Every candidate in the real run reports the same Datadog side -- that is why the
+    function may fix the candidate at all -- so a filter that selected the wrong one,
+    or inverted either comparison, returns the same totals from `dualwrite_aligned`
+    and fails nothing. The appendix's traffic figure is a derivation from this, so the
+    filtering is the part worth pinning, on rows built to disagree.
+
+    Two classes in one bucket are summed; a second bucket stays separate; the other
+    candidate and the other instant are excluded.
+    """
+    recording = {"rows": [
+        {"candidate": "wanted", "instant": "inside", "bucket": 0.0, "datadog": 1.0},
+        {"candidate": "other", "instant": "inside", "bucket": 0.0, "datadog": 100.0},
+        {"candidate": "wanted", "instant": "on the edge", "bucket": 0.0,
+         "datadog": 1000.0},
+        {"candidate": "wanted", "instant": "inside", "bucket": 60.0, "datadog": 2.0},
+        {"candidate": "wanted", "instant": "inside", "bucket": 0.0, "datadog": 3.0},
+    ]}
+    assert per_bucket_totals(recording) == [2.0, 4.0]
+    assert per_bucket_totals(recording, instant="on the edge") == [1000.0]
+
+
+def test_a_window_of_exactly_one_interval_is_the_shortest_allowed():
+    """The other side of `test_a_window_shorter_than_one_interval_is_refused`.
+
+    Two scrapes is one difference, which is the least that can be compared, and the
+    guard is `< 2` rather than `<= 2`. Only the refusal was tested, so a guard that
+    demanded three scrapes would have passed and quietly refused the shortest window
+    the replay is allowed to use.
+    """
+    s = events_to_counter([1.0], interval=10, start=0, end=10)
+    assert list(s.ts) == [0.0, 10.0]
+    assert list(s.vs) == [0.0, 1.0], "the event is counted by the scrape at 10"

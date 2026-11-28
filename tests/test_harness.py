@@ -15,8 +15,9 @@ import numpy as np
 import pytest
 
 from qlport.harness.prometheus import (
-    openmetrics, quantise, read_raw, series_from_response,
+    openmetrics, quantise, read_raw, series_from_response, write_raw,
 )
+from qlport.harness.workload import bursty, scrape, steady
 from qlport.metrics import reldiff
 from qlport.semantics import datadog_eval as dd
 from qlport.semantics import promql_eval as pq
@@ -449,3 +450,212 @@ def test_the_ranking_window_covers_the_first_sample(topk_run):
     """
     prov = topk_run["provenance"]
     assert prov["range_seconds"] > (prov["n_points"] - 1) * prov["step"]
+
+
+# --- the rig's own workload, which the caches are the only record of -------------------
+# `scripts/mutate.py` over `harness/workload.py`: 28 mutants, 7 killed, 13 surviving and
+# 8 on lines no test executed -- all eight of those inside `bursty`'s inner function, so
+# no test ever called a bursty rate function at all. The generator is the least tested
+# code in the package and the hardest to test, because the runs it feeds need Docker and
+# a Datadog trial that has lapsed.
+#
+# It does not need either. `scrape` is seeded, so a committed run's series is a pure
+# function of the parameters the rig holds, and the rig records which workload each run
+# used. Regenerating it and comparing against the cache turns every number in the
+# generator into something a mutation has to preserve -- the Poisson draw, the burst
+# multiplier, the restart fraction, the jitter and the scrape grid.
+#
+# `verify_anchored.series_for` is where those parameters live, so the test calls it
+# rather than restating them. Restating them would drift in the one direction that
+# matters: the cache stays put, the test keeps regenerating the old workload and
+# passing, and the rig produces something else.
+
+ALL_ANCHORED = sorted(ANCHORED.glob("*.json"))
+
+
+def _rig():
+    import sys as _sys
+
+    if str(ROOT / "scripts") not in _sys.path:
+        _sys.path.insert(0, str(ROOT / "scripts"))
+    import verify_anchored
+
+    return verify_anchored
+
+
+@pytest.mark.parametrize("path", ALL_ANCHORED, ids=lambda p: p.stem)
+def test_every_cached_run_is_the_workload_the_rig_still_generates(path):
+    """The series in each anchored cache, regenerated from the rig that wrote it.
+
+    This is the only check that the committed caches and the committed generator are
+    still about the same experiment. Every other test here reads the series out of the
+    cache, so a change to `scrape` or to a rate function moved nothing and failed
+    nothing -- the caches cannot be remade, and the code that made them was free.
+    """
+    rec = read_raw(path)
+    again = _rig().series_for(rec["workload"])
+    assert len(again.ts) == len(rec["series"]["ts"]), "a different number of scrapes"
+    assert np.allclose(again.ts, rec["series"]["ts"], rtol=0, atol=1e-9), (
+        f"{path.stem}: the scrape grid is not the one the rig generates")
+    assert np.allclose(again.vs, rec["series"]["vs"], rtol=0, atol=1e-9), (
+        f"{path.stem}: the counter is not the one the rig generates")
+    assert again.kind == "counter"
+
+
+def test_the_four_workloads_are_four_different_workloads():
+    """Otherwise the parametrisation above is one workload tested eight times.
+
+    Each name has to produce a series the others do not, and the two that share a rate
+    function have to differ by their restarts -- which is the branch in `scrape` that
+    zeroes the counter, and the only part of it a steady workload never reaches.
+    """
+    rig = _rig()
+    series = {name: rig.series_for(name) for name in rig.WORKLOADS}
+    assert len(series) == 4, f"{len(series)} workloads now, not four"
+    vs = {name: tuple(s.vs) for name, s in series.items()}
+    assert len(set(vs.values())) == 4, "two workloads generate the same counter"
+
+    # A restart shows as the counter going down; nothing else here does.
+    def drops(s) -> int:
+        return int(np.sum(np.diff(s.vs) < 0))
+
+    with_restarts = [n for n in series if "restart" in n]
+    assert with_restarts, "no workload exercises the restart branch of `scrape`"
+    for name in with_restarts:
+        assert drops(series[name]) > 0, f"{name} carries no counter reset"
+    for name in set(series) - set(with_restarts):
+        assert drops(series[name]) == 0, f"{name} resets without being asked to"
+
+
+def test_a_restart_exactly_on_a_scrape_belongs_to_that_scrape():
+    """`scrape`'s restart window is half-open, `(last, t]`, and both ends matter.
+
+    The committed workloads cannot settle this: they jitter their scrape times, so a
+    restart never lands exactly on one and all four comparisons in the two restart
+    lines agree. The convention is still a decision -- the same one
+    `test_an_event_exactly_on_a_scrape_is_counted_by_that_scrape` makes for the replay
+    -- so it is pinned on a workload built to reach the boundary: no jitter, and a
+    restart on the grid.
+
+    Reading the series: each window contributes `10 * 4` and the restart at 8 zeroes
+    the counter at the instant of that scrape, so the scrape at 8 reports only what
+    accrued after it, which is nothing. The scrape at 12 must then report a full
+    window and not a second application of the same restart.
+    """
+    s = scrape(steady(10), interval=4, duration=20, jitter=0.0, restarts=(8.0,))
+    assert list(s.ts) == [4.0, 8.0, 12.0, 16.0, 20.0]
+    assert list(s.vs) == [40.0, 0.0, 40.0, 80.0, 120.0]
+
+
+def test_a_burst_window_is_half_open_at_its_far_end():
+    """`bursty` multiplies while `mid % burst_every < burst_len`, strictly.
+
+    A window whose midpoint falls exactly on `burst_len` is outside the burst. As
+    above, no committed workload reaches that point, because the midpoints of jittered
+    scrapes are not round numbers.
+
+    Asserted as a magnitude rather than as a draw: the rate differs by `factor`, so a
+    burst window's increment is about a thousand times a quiet one's and the threshold
+    between them does not depend on the Poisson sample. The second assertion is the
+    other half -- a midpoint at `0 % burst_every` is inside the burst -- so the test
+    says where the boundary is and not merely that there is one.
+    """
+    s = scrape(bursty(1, 10, 2, 1000), interval=4, duration=20, jitter=0.0, seed=1)
+    assert [float((a + b) / 2) for a, b in zip([0.0, *s.ts], s.ts)][:3] == [2.0, 6.0, 10.0]
+    assert s.vs[0] < 100, "a midpoint exactly on burst_len counted as a burst"
+    assert s.vs[2] - s.vs[1] > 1000, "a midpoint on the burst's start was not a burst"
+
+
+# --- the ranking rig's own arithmetic -------------------------------------------------
+# `scripts/mutate.py` over `harness/ranking.py`: the five reducers and the tie guard
+# came back unconstrained. Both are reachable through `model_rank`, and both survive
+# there for the same reason -- `model_rank` returns an *order*, and the mutations are
+# order-preserving or fall outside the probed cuts.
+
+def test_each_ranking_reducer_is_the_aggregation_it_is_named_for():
+    """The five functions, by value rather than by the order they induce.
+
+    `model_rank` is the only caller, and it sorts -- so replacing the mean by
+    `sum * len` changes every score by the same factor and no ranking at all, and
+    reading `last` one sample early leaves the one series that moves still on top.
+    Both survive every test that goes through the ranking.
+
+    They are not equivalent to what they claim, and the claim is the point: §7 settles
+    `top()` by comparing Datadog's "aggregate each series over the queried range"
+    against these, so a `mean` that is not the mean compares the right ranking against
+    the wrong operator. Called with the default bounds, which `model_rank` never uses
+    and which are therefore also unconstrained from there.
+    """
+    from qlport.harness import ranking
+
+    assert ranking.score("mean", "a") == 100.0        # flat at 100 over the range
+    assert ranking.score("mean", "e") == pytest.approx(10.95)  # one spike, else 1
+    assert ranking.score("sum", "a") == 2000.0
+    assert ranking.score("max", "e") == 200.0         # the spike
+    assert ranking.score("min", "b") == 10.0          # the first sample of the riser
+    assert ranking.score("last", "b") == 181.0        # and its last
+    # `last` and `min` differ on the spike series, which is what makes `e` worth having.
+    assert ranking.score("last", "e") == 1.0
+    assert ranking.score("max", "e") != ranking.score("last", "e")
+
+
+def test_a_tie_at_the_cut_is_refused_rather_than_broken():
+    """The guard the workload's design rests on, which no probed cut reaches.
+
+    `model_rank`'s docstring says ties are refused because the five series are chosen
+    not to tie under any of the five functions -- over the *whole* range. Narrow the
+    range and they do: over the first eleven samples the riser has climbed to exactly
+    the flat series' 100, so `max` ties at the n=2 cut. That is the case the guard
+    exists for and the only one that pins which pair it compares.
+    """
+    from qlport.harness.ranking import N, SERIES, model_rank
+
+    with pytest.raises(ValueError, match="ties at the n=2 cut"):
+        model_rank("max", 2, lo=0, hi=11)
+    # The probed cuts are n=2 and n=3 over the whole range, and those do not tie.
+    for n in (2, 3):
+        assert len(model_rank("max", n)) == n
+    # A cut at every series is not a tie and must not index past the order.
+    assert model_rank("max", len(SERIES)) == sorted(SERIES)
+    assert N == 20, "the window the cuts above are quoted for"
+
+
+# --- the two helpers every cached run was written and read through --------------------
+
+def test_quantising_rejects_a_collision_and_keeps_a_one_second_grid():
+    """`quantise` rounds to the millisecond Prometheus stores and refuses a tie.
+
+    The refusal is what stops the server and the reference evaluators being handed two
+    different series. Its comparison is `diff > 0`, strictly, and every series in this
+    suite is scraped fifteen seconds apart -- so a mutation to `diff > 1` fails nothing
+    while rejecting any series sampled a second apart, which the rig is free to build.
+    """
+    def series(ts):
+        return Series({}, np.array(ts, dtype=float),
+                      np.arange(len(ts), dtype=float), kind="counter")
+
+    assert list(quantise(series([0.0, 1.0, 2.0])).ts) == [0.0, 1.0, 2.0]
+    assert list(quantise(series([0.0, 0.0014])).ts) == [0.0, 0.001], "not rounded to ms"
+    assert list(quantise(series([0.0])).ts) == [0.0], "a single sample has no gaps"
+    with pytest.raises(ValueError, match="collided"):
+        quantise(series([0.0, 0.0001]))
+
+
+def test_a_cache_is_written_in_the_form_the_committed_ones_are_in(tmp_path):
+    """`write_raw` wrote every cache under `data/raw/`, and no test called it.
+
+    Sorted keys, one-space indent and a trailing newline are why those files diff
+    line by line; reversing any of them leaves every cache readable and makes the next
+    commit that touches one show it as rewritten entirely. The parent directory is
+    created too, which is what a rig writing a new experiment's first run needs.
+    """
+    target = tmp_path / "made" / "up" / "run.json"
+    payload = {"z": 1, "a": {"n": 2}}
+    assert write_raw(target, payload) == target
+    text = target.read_text()
+    assert text.startswith('{\n "a": {\n  "n": 2\n },\n "z": 1'), text
+    assert text.endswith("}\n"), "no trailing newline"
+    assert read_raw(target) == payload
+    # A second run of the same rig writes beside the first, into a directory that now
+    # exists. `exist_ok` is what makes that the ordinary case rather than a crash.
+    assert write_raw(target.parent / "second.json", payload).exists()

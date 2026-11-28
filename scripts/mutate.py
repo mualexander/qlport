@@ -10,6 +10,7 @@ constrain, and a count of those is the only honest summary of what the tests are
     python scripts/mutate.py --list                # the mutants, applying none
     python scripts/mutate.py --only=383,384        # just the mutants on those lines
     python scripts/mutate.py --target=src/qlport/metrics.py
+    python scripts/mutate.py --map --target=a.py --also=b.py --also=c.py
 
 The reason this file exists rather than a number in a commit message: "66 of 225 mutants
 survive in corpus.py" was carried in ten consecutive messages and nobody but its author
@@ -36,6 +37,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -91,6 +93,64 @@ CACHE = ROOT / ".mutate-cache"
 #   fails on the `_` that follows, backtracks and matches `count_values` anyway. The
 #   comment claims the ordering is load-bearing and the anchor is what actually carries
 #   it. A test pins `count_values` being read whole either way.
+#
+#   In the seven rig modules, nineteen of 263 survive and four sit on lines no test
+#   reaches. Each is here for a reason that is a fact about the code rather than a gap:
+#
+#     Six `frozen=True` decorators, as above.
+#
+#     `calendar.timegm`'s last three fields in `replay.parse_events`. The weekday, year
+#     day and DST flag are ignored by `timegm`, which reads the first six.
+#
+#     `offset[3:5]` widened to `offset[3:6]` in the same parser. The regex captures
+#     `[-+]\\d{4}`, exactly five characters, so the wider slice reads the same two.
+#
+#     `end + interval / 2` widened to `interval / 3` in `events_to_counter`. Any
+#     divisor above one lands strictly inside the gap to the next grid point, and
+#     `arange`'s stop is exclusive, so both include `end` and nothing else.
+#
+#     `ts[-1]` read as `ts[-2]` for the scored window's end in `reset`. The window ends
+#     one interval past the last scrape, and while the scrape step is shorter than the
+#     interval -- which is the design -- the last bucket still starts before either
+#     end, so the cut falls in the same place.
+#
+#     The `1e-6` comparison in the same function, and `np.diff(ts) > 1`'s companion
+#     `len(ts) > 1` in `prometheus.quantise`: a tolerance boundary nothing lands on, and
+#     a guard whose mutation is absorbed because `np.all` of an empty array is true.
+#
+#     `got.exact and got.globs` in `shapes._value_matching`. `regex_to_globs` verifies
+#     before returning, so it never answers with globs and no exactness -- the one
+#     regex that could, the empty string, comes back with a glob for the empty string.
+#     The conjunction restates the contract rather than relying on it.
+#
+#     `n = group_values if free else 1` in `shapes.instantiate`. Raising it to two
+#     builds a second identical spec, and the loop below deduplicates on the spec's own
+#     key, so the duplicate never leaves the function.
+#
+#     `0 < x` raised to `1 < x` and `x < delta` to `x <= delta` in
+#     `datadog.interpret_closure`. The second can never fire -- `x` is a modulo of
+#     `delta` -- and the first needs a probe placed under a second into a bucket, where
+#     the rig places it half a bucket in.
+#
+#     `points[0]` read as `points[1]` in `interpret_default_aggregator`. The guard above
+#     it has already established that every point shares one bucket, so either index
+#     names the same bucket.
+#
+#   And four the vendor would have to be alive to reach: the branch that raises on a
+#   Datadog error payload, `load_dotenv`'s override flag, and the two `[:400]` truncations
+#   in HTTP error messages. A fake transport would reach them; a fake transport that
+#   returns what this one needs is a second implementation of the thing under test, and
+#   the trial account these were written against has lapsed.
+#
+#   In `harness/workload.py`, two of the twenty-eight. `seed: int = 681` as a default:
+#   every caller that feeds a committed cache passes the seed explicitly, and the two
+#   tests that omit it assert properties no seed changes, so the default's value is
+#   arbitrary. And `last < r` inside the `max(...)` on the restart line, which can
+#   never see a restart equal to `last` because the `any(...)` on the line above has
+#   already excluded that case with the same comparison. The two lines repeat one
+#   filter and only the first of them decides anything; the mutant is equivalent
+#   because of the duplication, which is the sort of thing a battery is good at
+#   pointing out and a worse thing to refactor on a battery's say-so.
 #
 #   `root=False` on the three recursive calls in `_grafana_panels`. Passing `root=True`
 #   there would re-walk `__elements` from a nested model, which duplicates queries only
@@ -236,17 +296,18 @@ _PLUGIN = '''
 import json, os, sys
 import pytest
 
-TARGET = os.environ["MUTATE_TARGET"]
+TARGETS = set(os.environ["MUTATE_TARGETS"].split(os.pathsep))
 CURRENT = [None]
 HITS = {}
 
 def _line(frame, event, arg):
     if event == "line" and CURRENT[0]:
-        HITS.setdefault(frame.f_lineno, set()).add(CURRENT[0])
+        key = frame.f_code.co_filename
+        HITS.setdefault(key, {}).setdefault(frame.f_lineno, set()).add(CURRENT[0])
     return _line
 
 def _trace(frame, event, arg):
-    if frame.f_code.co_filename != TARGET:
+    if frame.f_code.co_filename not in TARGETS:
         return None
     return _line
 
@@ -262,7 +323,8 @@ def pytest_runtest_call(item):
 
 def pytest_sessionfinish(session, exitstatus):
     with open(os.environ["MUTATE_MAP"], "w") as fh:
-        json.dump({str(k): sorted(v) for k, v in HITS.items()}, fh)
+        json.dump({f: {str(k): sorted(v) for k, v in lines.items()}
+                   for f, lines in HITS.items()}, fh)
 '''
 
 def fallback_tests(line_tests: dict[int, list[str]]) -> list[str]:
@@ -312,24 +374,45 @@ def import_lines(target: Path, module: str) -> set[int]:
     return set(json.loads(done.stdout.strip().splitlines()[-1]))
 
 
-def build_map(target: Path, out: Path) -> dict[int, list[str]]:
-    """One suite run with a line trace over `target`, as {line: [nodeid, ...]}."""
+def mapfile(target: Path) -> Path:
+    return CACHE / (target.name + ".map.json")
+
+
+def build_maps(targets: list[Path]) -> None:
+    """One traced suite run for all of `targets`, written to one cache file each.
+
+    Several at once because the trace hook is the expensive part and it costs the same
+    whether it is watching one file or seven: tracing the seven rig modules one at a
+    time is seven suite runs, and the first attempt at that was still on the first
+    module after twelve minutes.
+    """
+    CACHE.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
         (Path(tmp) / "mutmap.py").write_text(_PLUGIN)
-        env = {**_env(), "MUTATE_TARGET": str(target), "MUTATE_MAP": str(out),
-               "PYTHONPATH": tmp}
-        print(f"tracing {target.relative_to(ROOT)} over one suite run "
+        combined = Path(tmp) / "combined.json"
+        env = {**_env(),
+               "MUTATE_TARGETS": os.pathsep.join(str(t) for t in targets),
+               "MUTATE_MAP": str(combined), "PYTHONPATH": tmp}
+        names = ", ".join(t.name for t in targets)
+        print(f"tracing {names} over one suite run "
               f"(slow: the trace hook costs a few minutes)", flush=True)
         done = subprocess.run([PY, "-m", "pytest", "tests/", "-q", "--no-header",
                                "-p", "mutmap", "-p", "no:randomly"],
                               cwd=ROOT, capture_output=True, text=True, env=env)
         tail = done.stdout.strip().splitlines()[-1:] or ["(no output)"]
         print(f"  {tail[0]}", flush=True)
-    return {int(k): v for k, v in json.loads(out.read_text()).items()}
+        hits = json.loads(combined.read_text())
+    for target in targets:
+        lines = hits.get(str(target), {})
+        mapfile(target).write_text(json.dumps(lines))
+        print(f"  {target.name}: {len(lines)} lines executed by a test", flush=True)
+
+
+def load_map(target: Path) -> dict[int, list[str]]:
+    return {int(k): v for k, v in json.loads(mapfile(target).read_text()).items()}
 
 
 def _env() -> dict:
-    import os
     return dict(os.environ)
 
 
@@ -351,8 +434,11 @@ def shadow(target: Path, tmp: Path) -> Path:
     real module and the battery reported 43 survivors and no kills before anyone
     noticed the number was impossible.
     """
-    package = target.parent              # <ROOT>/src/qlport
-    src = package.parent                 # <ROOT>/src
+    src = ROOT / "src"                   # <ROOT>/src
+    # The top-level package, which is not the target's own directory once the target
+    # is inside a subpackage: `harness/datadog.py` has to be copied as part of
+    # `qlport`, not as a package called `harness`.
+    package = src / target.relative_to(src).parts[0]
     # A symlink farm that looks like the repository root, with the one package copied.
     # `grammar_audit.py` takes the repository root to be its own grandparent, so a
     # shadow that sits anywhere else sends every `ROOT / "data" / ...` read into a
@@ -366,7 +452,7 @@ def shadow(target: Path, tmp: Path) -> Path:
         if entry.name != package.name:
             (tmp / src.name / entry.name).symlink_to(entry)
     shutil.copytree(package, tmp / src.name / package.name, dirs_exist_ok=True)
-    return tmp / src.name / package.name / target.name
+    return tmp / src.name / target.relative_to(src)
 
 
 # Long enough for the fallback list, which for `corpus.py` runs nine modules and about a hundred
@@ -415,6 +501,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="comma-separated line numbers to mutate")
     ap.add_argument("--list", action="store_true", help="print the mutants and stop")
     ap.add_argument("--map", action="store_true", help="rebuild the line-to-test map")
+    ap.add_argument("--also", action="append", default=[], metavar="PATH",
+                    help="build these targets' maps in the same traced run")
     args = ap.parse_args(argv)
 
     target = (ROOT / args.target).resolve()
@@ -432,15 +520,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     CACHE.mkdir(exist_ok=True)
-    mapfile = CACHE / (target.name + ".map.json")
-    if args.map or not mapfile.exists():
-        line_tests = build_map(target, mapfile)
+    if args.map or not mapfile(target).exists():
+        build_maps([target, *(( ROOT / t).resolve() for t in args.also)])
     else:
-        line_tests = {int(k): v for k, v in json.loads(mapfile.read_text()).items()}
-        print(f"line map: {mapfile.relative_to(ROOT)} "
-              f"({len(line_tests)} lines, --map to rebuild)", flush=True)
+        print(f"line map: {mapfile(target).relative_to(ROOT)} "
+              f"({len(load_map(target))} lines, --map to rebuild)", flush=True)
+    line_tests = load_map(target)
 
-    module = "qlport." + target.stem
+    # The dotted name, from the path: `qlport.harness.datadog` and not
+    # `qlport.datadog`, which is what a target in a subpackage needs.
+    module = ".".join(target.relative_to(ROOT / "src").with_suffix("").parts)
     at_import = import_lines(target, module)
     spans = statement_spans(tree)
     fallback = fallback_tests(line_tests)
@@ -464,7 +553,10 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory(prefix="mutate-") as tmpdir:
         tmp = Path(tmpdir)
         stand_in = shadow(target, tmp)
-        shadow_path = stand_in.parent.parent
+        # The directory that goes on the path, which is the shadow's `src` and not
+        # the mutant's grandparent -- those coincide only for a module directly
+        # inside the package, and pointing it at `tmp/src/qlport` shadows nothing.
+        shadow_path = tmp / "src"
 
 
         # The control, and the one this battery cannot do without. Every mutant is
@@ -504,10 +596,21 @@ def main(argv: list[str] | None = None) -> int:
         print(f"control: a module poisoned to raise is caught by {by}", flush=True)
 
         for i, m in enumerate(muts, 1):
-            tests = reaching(m.lineno)
-            how = f"{len(tests)} tests reach it"
-            if not tests and imported(m.lineno):
+            # A line that runs at import takes the fallback list whether or not the map
+            # has something to say about it, because the map's answer there is a trap.
+            # A module imported inside a test function has its module-level lines
+            # attributed to whichever test imported it first, and Python caches the
+            # module, so every later test that depends on those constants executes none
+            # of them. `harness/ranking.py` is imported that way: its `N, STEP = 20, 60`
+            # mapped to the one test that does not check N or STEP, while the test that
+            # does check them ran later -- so both constants were reported as
+            # unconstrained when `test_the_workload_is_the_one_the_vendor_was_shown`
+            # pins them.
+            if imported(m.lineno):
                 tests, how = fallback, "import-time line, fallback list"
+            else:
+                tests = reaching(m.lineno)
+                how = f"{len(tests)} tests reach it"
             if not tests:
                 unreached.append(m)
                 print(f"[{i:3d}/{len(muts)}] UNREACHED {m}", flush=True)

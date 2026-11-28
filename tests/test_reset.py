@@ -151,3 +151,92 @@ def test_the_control_case_discriminates_nothing_and_is_in_the_run_anyway():
     assert observed[60.0] == (4.0, 4)
     got = consistent_policies(ts, vs, observed, INTERVAL)
     assert all(got[p]["consistent"] for p in POLICIES)
+
+
+# --- the arithmetic, at an epoch that is not zero -------------------------------------
+# `scripts/mutate.py` over `harness/reset.py` found both subtractions of `t0`
+# unconstrained -- `reset_index`'s and `value_at`'s. Neither is subtle: every schedule
+# in this file starts at `t0 = 0.0`, where `t - t0` and `t + t0` are the same
+# arithmetic, and the rig runs the model at a unix timestamp. Adding the epoch instead
+# of subtracting it puts the reset index at 2.3e8 and reads every value off the end of
+# the ramp, and nothing here could tell.
+
+def test_the_model_is_the_same_model_at_a_real_epoch():
+    """E1's schedule placed where the rig actually places it.
+
+    Same numbers as the first test in this file, which uses `t0 = 0`: the reset is the
+    sixth step, the ramp reaches `pre_reset` on the fifth, and the counter climbs by
+    one per step on either side of it.
+    """
+    t0 = 1_700_000_000.0
+    s = Schedule(t0=t0, step=STEP, reset_at=t0 + 5 * STEP, reset_to=100)
+    assert s.reset_index == 5
+    vs = [value_at(float(t0 + i * STEP), s) for i in range(12)]
+    assert vs[:5] == [996, 997, 998, 999, 1000]
+    assert vs[4] == s.pre_reset
+    assert vs[5] == 100
+    assert list(np.diff(vs[5:])) == [1] * (len(vs) - 6)
+    with pytest.raises(ValueError, match="precedes the schedule's start"):
+        value_at(t0 - STEP, s)
+
+
+def test_a_reset_one_step_in_is_the_earliest_the_schedule_allows():
+    """The warm-up guard's boundary, and the step guard beside it.
+
+    `test_the_reset_needs_warm_up_before_it` shows a reset at index 0 is refused; it
+    does not show that index 1 is allowed, so a guard rejecting one step of warm-up as
+    well would pass. One step is the stated minimum -- it is what makes the reset's
+    signed difference a known number rather than wherever the ramp had got to.
+    """
+    assert Schedule(t0=0.0, step=STEP, reset_at=STEP, reset_to=100).reset_index == 1
+    with pytest.raises(ValueError, match="warm-up"):
+        Schedule(t0=0.0, step=STEP, reset_at=0.0, reset_to=100)
+    # And a step of zero is refused before anything divides by it -- but only zero and
+    # below. "Positive" is the stated requirement, so a one-second grid is a schedule.
+    for bad in (0.0, -STEP):
+        with pytest.raises(ValueError, match="step must be positive"):
+            Schedule(t0=0.0, step=bad, reset_at=STEP, reset_to=100)
+    assert Schedule(t0=0.0, step=1.0, reset_at=5.0, reset_to=100).reset_index == 5
+
+
+def test_the_scored_window_runs_one_interval_past_the_last_scrape():
+    """`consistent_policies` scores the buckets the run covers, last one included.
+
+    The window ends at the last scrape plus one interval, because the bucket holding
+    that scrape is not finished at the scrape itself. Ending it at the last scrape
+    drops that bucket, and with twelve scrapes fifteen seconds apart it takes the
+    comparison from three buckets to two -- a third of the evidence, silently, with
+    every policy still coming out consistent.
+    """
+    s = ideal()
+    ts, vs = exposed(s)
+    # What a `zero` agent would have submitted, bucketed over the same window the
+    # function uses, so the observation is exactly what the prediction should match.
+    d = deltas_under(Series({}, ts, vs, kind="counter"), "zero")
+    observed = bucket_table(d.ts, d.vs, INTERVAL, 0.0, float(ts[-1]) + INTERVAL)
+    assert sorted(observed) == [0.0, 60.0, 120.0], sorted(observed)
+
+    got = consistent_policies(ts, vs, observed, INTERVAL)
+    assert got["zero"]["buckets_scored"] == 3, "the last bucket was dropped"
+    assert got["zero"]["consistent"] is True
+
+
+def test_the_disagreement_list_is_capped_and_the_verdict_is_not():
+    """A run long enough to disagree more than the report will print.
+
+    `disagreements` is a sample for a reader -- five of them -- while `consistent` is
+    the verdict over all of them. A cap that printed one more or one fewer would be
+    invisible on the twelve-scrape schedules above, which can only disagree three
+    times; this one has ten buckets and an observation that matches none of them.
+    """
+    s = ideal()
+    n = 40
+    ts = np.arange(n) * STEP
+    vs = np.array([value_at(float(t), s) for t in ts], dtype=float)
+    observed = {float(b): (0.0, 0)
+                for b in np.arange(0.0, ts[-1] + INTERVAL, INTERVAL)}
+
+    got = consistent_policies(ts, vs, observed, INTERVAL)
+    assert got["zero"]["buckets_scored"] == 10
+    assert len(got["zero"]["disagreements"]) == 5, "the printed sample is five"
+    assert got["zero"]["consistent"] is False, "the verdict is over all of them"

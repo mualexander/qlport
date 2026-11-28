@@ -339,6 +339,10 @@ def source(path: Path) -> str:
 RAW_READS = {
     'return files("qlport.grammars").joinpath(name).read_text()':
         "a Lark grammar, where % is not a comment",
+    "text = target.read_text()":
+        "the cache `write_raw` just wrote, read back verbatim: its layout is what makes "
+        "every committed run under data/raw diff line by line, so a reader that "
+        "normalised it would be checking nothing",
     'line = target.read_text(encoding="utf-8").strip()':
         "the line `write_queries` just wrote, read back verbatim: the committed corpus "
         "file's layout is the property under test, so a reader that normalised it "
