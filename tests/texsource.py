@@ -339,6 +339,10 @@ def source(path: Path) -> str:
 RAW_READS = {
     'return files("qlport.grammars").joinpath(name).read_text()':
         "a Lark grammar, where % is not a comment",
+    'line = target.read_text(encoding="utf-8").strip()':
+        "the line `write_queries` just wrote, read back verbatim: the committed corpus "
+        "file's layout is the property under test, so a reader that normalised it "
+        "would be checking nothing",
     "for node in ast.walk(ast.parse(path.read_text())):":
         "a Python module, read as a syntax tree",
     "src = Path(__file__).read_text()":

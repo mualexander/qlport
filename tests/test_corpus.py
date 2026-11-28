@@ -518,3 +518,421 @@ def test_every_promql_string_form_yields_its_matcher():
     q = ('node_filesystem_avail_bytes{instance="$node",fstype!~\'rootfs\','
          'mountpoint=~`/run/.*`,device=~"sd[a-z]"}')
     assert c.promql_matcher_values(q) == ["rootfs", "/run/.*", "sd[a-z]"]
+
+
+# --- what the escape decoder denotes, which no test reached --------------------------
+# `scripts/mutate.py` found the whole hex-escape branch of `unquote_promql` executed by
+# nothing: its three widths, its validity check, how far it advances and its fallback
+# were all free. Only `promql_matcher_values` reaches the function at all, and its one
+# test passed three patterns with no escape in any of them.
+#
+# What that costs is in the function's own docstring. §6 classifies regexes from what a
+# matcher *denotes*, and five corpus patterns were once classified from the undecoded
+# text instead: three two-word unions refused as inexpressible, and one alternation
+# reported as having a glob that matches nothing -- the only false positive the regex
+# work produced.
+#
+# `BS` rather than a raw string, because `r"A"` is six characters in a Python
+# source file and one character after several of the tools that might rewrite this
+# file, and a test whose meaning depends on that is not worth the brevity.
+BS = "\\"
+
+
+@pytest.mark.parametrize("body,denotes", [
+    (BS + "x41", "A"),                       # two hex digits
+    (BS + "u0041", "A"),                     # four
+    (BS + "U00000041", "A"),                 # eight
+    (BS + "x7e", "~"),
+    ("a" + BS + "x41b", "aAb"),              # and the decoder resumes after it
+    (BS + "n", "\n"),                        # the named escapes
+    (BS + "t", "\t"),
+    (BS + BS + ".", BS + "."),               # the docstring's own example
+    # Not a valid escape: too few digits for the width, or none at all. Prometheus
+    # rejects such a string, so the only safe reading is the literal one -- the
+    # backslash stays and decoding resumes at the character after it.
+    (BS + "x4", BS + "x4"),
+    (BS + "xZZ", BS + "xZZ"),
+    (BS + "u041", BS + "u041"),
+    (BS + "d+", BS + "d+"),                  # an unknown escape, as a regex would have
+    (BS, BS),                                # a trailing backslash, with nothing after
+])
+def test_a_quoted_matcher_denotes_the_escapes_it_carries(body, denotes):
+    assert c.unquote_promql(body, raw=False) == denotes
+
+
+def test_a_backtick_pattern_keeps_its_escapes_where_a_quoted_one_decodes_them():
+    """The raw/cooked split, through the public reader rather than the helper.
+
+    Both matchers carry the same six characters and they denote different regexes: the
+    quoted one an `A`, the backtick one a hex escape PromQL never decodes. A reader
+    that decoded both, or neither, would still pass every other test in this file.
+    """
+    q = 'up{a=~"' + BS + 'x41", b!~`' + BS + 'x41`}'
+    assert c.promql_matcher_values(q) == ["A", BS + "x41"]
+
+
+# --- the depth counter behind MULTI_QUERY --------------------------------------------
+
+def test_a_comma_after_a_closed_call_still_separates_two_queries():
+    """`MULTI_QUERY` where the first query carries a bracketed argument list.
+
+    The increment and the clamp in `_depth0_commas` were both free: every multi-query
+    form tested here put its comma before any bracket, and every bracketed form had no
+    depth-0 comma at all, so a counter that never came back to zero passed. It would
+    read the two queries below as one.
+    """
+    two = "top(avg:a{*} by {h}, 10, 'mean', 'desc'), avg:b{*}"
+    assert "MULTI_QUERY" in c.features("datadog", two)
+    # The control, which is the form the existing test already covers: the same call
+    # on its own has three commas and is still one query.
+    one = "top(avg:a{*} by {h}, 10, 'mean', 'desc')"
+    assert "MULTI_QUERY" not in c.features("datadog", one)
+
+
+def test_the_depth_counter_survives_an_unbalanced_closer():
+    """The clamp, which only malformed input reaches.
+
+    Tested on the helper rather than through `features`, because no well-formed query
+    can express it -- `_mask` blanks scope bodies, so a stray `)` outside a scope is
+    already a malformed query. Without the clamp the depth goes negative and every
+    later comma is invisible, which drops `MULTI_QUERY` from the rest of the query
+    rather than raising.
+    """
+    assert c._depth0_commas("a)b,c") == 1
+
+
+# --- the rest of what mutation found unconstrained -----------------------------------
+# One test per surviving mutant that was a real gap rather than an equivalent edit.
+# Each names, in its docstring, what the mutant would have changed and why that is a
+# claim the paper or the corpus rests on. The equivalent ones are recorded in
+# `scripts/mutate.py`'s own notes rather than killed with a contrived assertion.
+
+def test_a_longest_first_alternation_keeps_count_values_whole():
+    """The aggregation-operator alternation is sorted long names first.
+
+    `count` is a prefix of `count_values`, so a shortest-first alternation reads
+    `count_values("v", x)` as the operator `count` -- which is a different operator,
+    and §7's aggregation tallies are built from these names. The ordering carried a
+    comment and nothing else.
+    """
+    assert c.aggregation_ops("promql", 'count_values("v", x)') == {"count_values": 1}
+    assert c.aggregation_ops("promql", "count(x)") == {"count": 1}
+
+
+def test_a_colon_inside_a_tag_value_does_not_hide_the_glob_after_it():
+    """`SCOPE_GLOB` where the value itself carries a colon.
+
+    A colon inside a tag value is a documented corpus gap -- it is what the TAG_COLON
+    repair exists for -- and the split that reads the value takes only the first one.
+    Splitting on every colon instead leaves `a` as the value of `k:a:*`, which reads
+    a glob as an equality and moves an occurrence between two columns of §6's table.
+    """
+    assert "SCOPE_GLOB" in c.datadog_features("avg:m{k:a:*}")
+    assert "SCOPE_EQ" not in c.datadog_features("avg:m{k:a:*}")
+    # The plain forms either side of it, so the test is about the colon and not the glob.
+    assert "SCOPE_EQ" in c.datadog_features("avg:m{k:a:b}")
+    assert "SCOPE_GLOB" not in c.datadog_features("avg:m{k:a:b}")
+
+
+def test_the_seasonal_forecast_is_the_one_with_no_promql_counterpart():
+    """`forecast` is split by its second argument, and only by that.
+
+    The comment above `_NO_PROMQL_COUNTERPART` says the `seasonal` model has no
+    counterpart while the `linear` one is `predict_linear` up to the fitting window.
+    Nothing read either half: the feature is what §8 counts when it says how much of
+    the formula layer is out of reach, and a test that only used `anomalies` left the
+    whole `forecast` clause free.
+    """
+    seasonal = c.datadog_formula_features("forecast(query1, 'seasonal', 1)")
+    linear = c.datadog_formula_features("forecast(query1, 'linear', 1)")
+    assert "FORMULA_NO_PROMQL" in seasonal
+    assert "FORMULA_NO_PROMQL" not in linear
+    # And the other half of the condition: a name in the list needs no argument.
+    assert "FORMULA_NO_PROMQL" in c.datadog_formula_features("anomalies(query1, 'basic')")
+    assert "FORMULA_NO_PROMQL" not in c.datadog_formula_features("abs(query1)")
+
+
+def test_an_aggregation_operator_is_not_counted_among_the_functions():
+    """Both exclusions in `function_names`, which the paper's function tallies rest on.
+
+    `sum` is an operator and `by` is a keyword; neither is a function, and §7 lists the
+    most frequent functions by name. Dropping either exclusion puts `sum` or `by` in
+    that list, and the two were tested together only where neither appeared.
+    """
+    assert c.function_names("promql", "sum by (k) (rate(x[5m]))") == {"rate": 1}
+    assert c.function_names("promql", "topk(3, irate(x[1m]))") == {"irate": 1}
+
+
+def test_a_templated_subquery_step_is_a_templated_range():
+    """`TMPL_RANGE` where the variable is in the step and not the range.
+
+    The feature is read off the whole bracket, `[30m:$__interval]`, not off its first
+    group -- which is the range alone and carries no variable here. This form is in the
+    corpus: it is the one the normalisation test above uses.
+    """
+    assert "TMPL_RANGE" in c.promql_features("max_over_time(rate(x[1m])[30m:$__interval])")
+    assert "TMPL_RANGE" in c.promql_features("rate(x[$__rate_interval])")
+    # And a bracket with no variable at all is not a templated range.
+    assert "TMPL_RANGE" not in c.promql_features("max_over_time(rate(x[1m])[30m:1m])")
+
+
+def test_a_conditional_aggregator_only_excuses_its_own_occurrence():
+    """One `count(` discounted, not every later one.
+
+    `count(v: v>=0):m{*}` is an aggregator rather than a function, and the counter that
+    records that is decremented once per occurrence. Decrementing it further leaves it
+    truthy, so a genuine `count(` call in the same query is silently discounted too --
+    which is the same defect, in the same place, that put `count` in §7's ten most
+    frequent Datadog functions.
+    """
+    both = "count(v: v>0):m{*}, count(a{*})"
+    assert c.function_names("datadog", both)["count"] == 1
+
+
+def test_a_quoted_label_that_cannot_start_a_bare_name_gets_a_prefix():
+    """The QUOTED_LABEL repair has to produce a name the grammar accepts.
+
+    A quoted UTF-8 label name is quoted precisely because it uses characters a bare
+    LABEL forbids, and a name starting with a digit is one of those -- substituting it
+    unprefixed produces a repair that does not parse, which would report the gap as
+    unexplainable rather than as this one.
+    """
+    assert c._prom_legal_label("123abc") == "l123abc"
+    assert c._prom_legal_label("a-b") == "a_b"
+
+
+def test_the_quoted_label_repair_rewrites_both_positions():
+    """A quoted name in a matcher and in a label list, in one expression.
+
+    The repair is two substitutions and the second reaches inside a `by (...)` list,
+    stripping the quotes off each name it finds there. Both were free: the matcher half
+    was exercised and the list half was not, and an off-by-one in either leaves a quote
+    character in the name, which `_prom_legal_label` then turns into an underscore --
+    a repair that parses and denotes something else.
+    """
+    got = c._prom_unquote_labels('sum by ("a-b") (x{"c-d"=\'v\'})')
+    assert got == "sum by (a_b) (x{c_d='v'})"
+
+
+def test_a_parenthesised_scope_is_dropped_like_a_boolean_one():
+    """The BOOL_SCOPE repair drops a scope for three reasons, and parens is one.
+
+    A scope the v1 grammar cannot parse is replaced by `*` so the rest of the query
+    can be measured. Parentheses were the untested third of that condition, and a
+    scope left in place there explains the failure as something else.
+    """
+    assert c._dd_drop_boolean_scope("(a)") == "*"
+    assert c._dd_drop_boolean_scope("a OR b") == "*"
+    assert c._dd_drop_boolean_scope("k:v") == "k:v"
+
+
+def test_a_widget_with_no_title_is_cited_by_its_dashboard():
+    """Provenance, which is the whole reason `Query` carries more than its text.
+
+    A widget with no title of its own falls back to the dashboard's, in both
+    extractors. The fallback is an `or` over two strings; an `and` there makes the unit
+    empty for every untitled widget, and the paper cites queries by unit.
+    """
+    dd = {"title": "Board",
+          "widgets": [{"definition": {"requests": [{"q": "avg:a{*}"}]}}]}
+    assert [q.unit for q in c.datadog_dashboard_queries(dd, source="s", origin="o")] \
+        == ["Board"]
+    gf = {"title": "Board", "panels": [{"type": "timeseries",
+                                        "targets": [{"expr": "up"}]}]}
+    assert [q.unit for q in c.grafana_dashboard_queries(gf, source="s", origin="o")] \
+        == ["Board"]
+
+
+def test_a_blank_or_non_string_query_is_not_a_corpus_query():
+    """Both halves of the guard on every text the extractors keep.
+
+    An empty string and a number are both things a dashboard JSON can put where a
+    query goes, and either entering the corpus would move every count in the paper by
+    one. The guard is an `isinstance` and a `strip` joined by `and`; with `or` the
+    number passes on the strip and the blank passes on the isinstance.
+    """
+    dd = {"widgets": [{"definition": {"requests": [
+        {"q": "   "},
+        {"q": 5},
+        {"queries": [{"data_source": "metrics", "query": "  "}]},
+        {"queries": [{"data_source": "metrics", "query": "avg:a{*}"}],
+         "formulas": [{"formula": "  "}]},
+    ]}}]}
+    assert [q.text for q in c.datadog_dashboard_queries(dd, source="s", origin="o")] \
+        == ["avg:a{*}"]
+
+
+def test_a_rule_document_that_is_not_a_mapping_yields_nothing():
+    """The rule extractor is handed whatever the YAML file held.
+
+    A list, a string or `None` are all valid YAML documents, and the guard that rejects
+    them is the left half of an `or` whose right half calls `.get`. Joined by `and`
+    instead, a non-mapping document raises `AttributeError` mid-walk rather than being
+    skipped -- during a corpus fetch, over someone else's repository.
+    """
+    for doc in (["a"], "a", None, 7):
+        assert c.prometheus_rule_queries(doc, source="s", origin="o") == []
+    assert c.prometheus_rule_queries({"kind": "ConfigMap"}, source="s", origin="o") == []
+
+
+def test_the_corpus_file_is_written_in_a_stable_readable_form():
+    """`queries.jsonl` is committed, so its layout is a property and not a detail.
+
+    Sorted keys and unescaped UTF-8 are what make the file diffable and readable; with
+    either reversed the corpus round-trips exactly as well and every later commit that
+    rewrites it shows every line as changed. The parent directory is created too,
+    which is what a fresh checkout needs.
+    """
+    import json as _json
+    import tempfile
+    from pathlib import Path as _Path
+
+    with tempfile.TemporaryDirectory() as tmp:
+        # Two levels deeper than anything that exists, which is what `parents=True` is
+        # for and what a fresh checkout hands it.
+        target = _Path(tmp) / "nested" / "deeper" / "queries.jsonl"
+        q = c.Query("promql", 'up{k="café"}', "src", "origin", "unité", "panel")
+        assert c.write_queries(target, [q]) == 1
+        line = target.read_text(encoding="utf-8").strip()
+        assert "café" in line and "unité" in line, "non-ASCII was escaped away"
+        assert list(_json.loads(line)) == sorted(_json.loads(line)), "keys are not sorted"
+        assert c.read_queries(target) == [q]
+
+
+def test_a_formula_over_a_non_metric_request_is_counted_for_the_dilution_figure():
+    """`non_metric_formulas`, which no test reached at all.
+
+    §7 says what the formula-layer shares it used to quote were diluted with, and this
+    walk is where that number comes from. Its three guards -- a metric sibling
+    anywhere in the request, a dict formula, a non-blank text -- were all free, and
+    each one of them changes the count in a different direction.
+    """
+    import json as _json
+    import tempfile
+    from pathlib import Path as _Path
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tree = _Path(tmp)
+        d = tree / "pkg" / "assets" / "dashboards"
+        d.mkdir(parents=True)
+        (d / "board.json").write_text(_json.dumps({"widgets": [{"definition": {
+            "requests": [
+                # a log request: its formula is not a metric expression
+                {"queries": [{"data_source": "logs", "query": "source:x"}],
+                 "formulas": [{"formula": "query1 * 2"}, {"formula": "  "}, "nope"]},
+                # a metric request: its formula belongs to the corpus, not here
+                {"queries": [{"data_source": "metrics", "query": "avg:a{*}"}],
+                 "formulas": [{"formula": "query1"}]},
+                # a singular query object of another language, which is still not metric
+                {"query": {"data_source": "events", "query": "x"},
+                 "formulas": [{"formula": "query1 / 3"}]},
+            ]}}]}))
+        assert sorted(c.non_metric_formulas(tree)) == ["query1 * 2", "query1 / 3"]
+
+
+def test_an_unknown_language_is_reported_rather_than_raised():
+    """`parse_outcome` is documented never to raise, and the branch that keeps that
+    promise for an error which is not a parse error was unexecuted.
+
+    The excerpt is bounded as well, because §4's gap table prints it.
+    """
+    got = c.parse_outcome("klingon", "x")
+    assert got.ok is False
+    assert got.blocker == "ValueError"
+    assert "unknown language" in got.excerpt
+    assert len(c.parse_outcome("y" * 60, "q").excerpt) == 40
+
+
+def test_the_first_query_of_a_list_keeps_its_own_brackets():
+    """The QUERY_LIST repair cuts at the first depth-0 comma, not the first comma.
+
+    `_dd_first_query` carries its own copy of the depth counter and the same two
+    mutants lived in it: an increment that overshoots or a clamp that never returns to
+    zero cuts the query at the first comma inside its own argument list, which repairs
+    `top(a, 10, 'mean', 'desc'), avg:b{*}` to `top(a` and reports the gap as
+    unexplainable.
+    """
+    two = "top(avg:a{*}, 10, 'mean', 'desc'), avg:b{*}"
+    assert c._dd_first_query(two) == "top(avg:a{*}, 10, 'mean', 'desc')"
+    assert c._dd_first_query("avg:a{*}") == "avg:a{*}"
+
+
+def test_a_grafana_dashboard_yields_each_panel_once():
+    """`__elements` is walked at the top level only.
+
+    The recursion passes `root=False` precisely so that a nested model does not send
+    the walk back through the dashboard's `__elements` map; with `root=True` there, a
+    dashboard carrying both a library panel and a nested row yields its library
+    queries once per level of nesting. Duplicates in the corpus are not visible as
+    failures anywhere -- they inflate every count the paper reports.
+    """
+    g = {"title": "G",
+         "__elements": [{"model": {"type": "timeseries",
+                                   "targets": [{"expr": "up"}],
+                                   "panels": [{"type": "row",
+                                               "targets": [{"expr": "down"}]}]}}],
+         "panels": [{"type": "row",
+                     "panels": [{"type": "timeseries",
+                                 "targets": [{"expr": "inner"}]}]}]}
+    texts = [q.text for q in c.grafana_dashboard_queries(g, source="s", origin="o")]
+    assert sorted(texts) == ["down", "inner", "up"]
+
+
+def test_a_masked_query_keeps_the_delimiters_it_blanks_between():
+    """`_mask` is length-preserving and keeps the braces and quotes themselves.
+
+    Operator searches run over the mask and offsets found in it index the original, so
+    both properties are load-bearing; neither was asserted anywhere.
+    """
+    assert c._mask("avg:a{k:v}+1") == "avg:a{...}+1"
+    assert c._mask("""x{a="b+c"}""") == "x{.......}"
+    assert len(c._mask("""f('a,b') + g("c")""")) == len("""f('a,b') + g("c")""")
+
+
+def test_a_blocked_parse_names_its_terminal_and_bounds_its_excerpt():
+    """§4's gap table is one row per terminal the LALR table had no transition for, and
+    it prints the offending text beside it.
+
+    Both excerpts are bounded, by different numbers, and neither bound was exercised:
+    every failing query in the suite is short enough that the truncation never fires.
+    A window computed the other way round yields an empty excerpt, which would print
+    the table's every row with a blocker and no text.
+    """
+    token = c.parse_outcome("promql", "up " + "q" * 60)
+    assert token.blocker == "METRIC"
+    assert len(token.excerpt) == 40
+
+    chars = c.parse_outcome("promql", "up \xa7" + "x" * 40)
+    assert chars.blocker == "<no-token>"
+    assert len(chars.excerpt) == 20
+    assert chars.excerpt.startswith("\xa7"), "the excerpt starts at the offending char"
+
+
+def test_an_aggregation_operator_is_not_a_function_applied():
+    """`FUNC_APPLIED` excludes operators and keywords, and both exclusions were free.
+
+    This is the feature §7 counts when it says how many queries apply a function. `sum`
+    is an operator and `by` is a keyword; with the two exclusions disjoined instead of
+    conjoined, every aggregation in the corpus also counts as a function call, and with
+    either sense inverted no real call does.
+    """
+    assert "FUNC_APPLIED" in c.promql_features("rate(x[5m])")
+    assert "FUNC_APPLIED" not in c.promql_features("sum(x)")
+    assert "FUNC_APPLIED" not in c.promql_features("sum by (k) (x)")
+
+
+def test_a_nested_call_does_not_look_like_a_query_list():
+    """The depth counter steps back by one bracket, not two.
+
+    Both copies of it -- `_depth0_commas` and `_dd_first_query` -- clamp at zero, so a
+    single `)` undershooting is invisible on a query that never nests. Two levels of
+    brackets is where it shows: stepping back by two puts the counter at zero inside
+    the outer call, and the comma separating that call's own arguments then reads as
+    the separator between two queries.
+    """
+    nested = "top(abs(avg:a{*}), 10)"
+    assert c._depth0_commas(c._mask(nested)) == 0
+    assert "MULTI_QUERY" not in c.features("datadog", nested)
+    assert c._dd_first_query(nested) == nested
+    # And the same shape with a real second query after it, which must still split.
+    assert c._dd_first_query(nested + ", avg:b{*}") == nested

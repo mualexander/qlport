@@ -1706,3 +1706,38 @@ def test_the_build_variant_macros_are_the_ones_rendered_expands():
         f"BUILD_VARIANT names macros macros.tex does not define: "
         f"{sorted(set(BUILD_VARIANT) - defined)}"
     )
+
+
+def test_every_mutant_the_battery_generates_is_a_program():
+    """The other battery's harness, checked the way `perturb.py`'s anchors are.
+
+    `scripts/mutate.py` reports a mutation score for `corpus.py`, and a harness that
+    silently generates nothing reports every line as unconstrained -- or, worse,
+    reports a perfect score. Both have happened in one afternoon: the `not`-removal
+    operator produced trees `ast.unparse` refuses, and a run whose shadowed module was
+    never on the path judged 43 mutants and killed none of them.
+
+    So this applies every mutant to the tree, unparses it, compiles the result and puts
+    it back, which is seconds and needs no test run. It is not a substitute for running
+    the battery; it is the check that the battery still produces programs.
+    """
+    import ast as _ast
+
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import mutate
+
+    source = (ROOT / "src" / "qlport" / "corpus.py").read_text()
+    tree = _ast.parse(source)
+    clean = _ast.unparse(_ast.parse(source))
+    muts = mutate.mutations(tree)
+    assert len(muts) >= 225, f"the battery has shrunk to {len(muts)} mutants"
+
+    for m in muts:
+        m._apply()
+        try:
+            mutated = _ast.unparse(tree)
+            compile(mutated, "<mutant>", "exec")
+            assert mutated != clean, f"{m} changes nothing in the source it writes"
+        finally:
+            m._undo()
+        assert _ast.unparse(tree) == clean, f"{m} did not undo cleanly"
