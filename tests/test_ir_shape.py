@@ -101,3 +101,60 @@ def test_slots_see_both_sides_of_arithmetic():
 def test_an_unknown_node_is_refused_rather_than_silently_shaped():
     with pytest.raises(TypeError, match="unknown IR node"):
         shape("not an ir node")
+
+
+# --- what the abstraction keeps about a value, which is not nothing -------------------
+# `test_queries_differing_only_in_tag_value_share_a_shape` is the headline: a value is
+# not structure. But the canonicalisation is positional rather than blanket, and
+# mutation found the asymmetry that makes it so unconstrained -- swapping which
+# operator gets the blanket `*` changes no shape on any corpus query. It changes these.
+
+def test_two_matchers_pinned_to_one_value_are_a_different_shape_from_two_pinned_apart():
+    """Equality values are canonicalised by first appearance, not erased.
+
+    `{a="X", b="X"}` asks for two labels to agree; `{a="X", b="Y"}` does not. That is a
+    difference in what the query selects -- one is satisfiable by a single series only
+    if both labels carry the same value -- so §7 counts them as two experiments, and
+    `harness/shapes.py` instantiates them differently.
+
+    Over the corpus the distinction never fires: swapping the two branches of this
+    conditional leaves all 343 shapes exactly where they were, which is why nothing
+    noticed. It is still the difference between an abstraction that forgets a value and
+    one that forgets which values coincide.
+    """
+    same = q(matchers=(Matcher("a", "=", "X"), Matcher("b", "=", "X")))
+    apart = q(matchers=(Matcher("a", "=", "X"), Matcher("b", "=", "Y")))
+    assert shape(same) != shape(apart)
+    # And renaming the shared value changes nothing, because only the sharing matters.
+    assert shape(same) == shape(q(matchers=(Matcher("a", "=", "Z"),
+                                            Matcher("b", "=", "Z"))))
+
+
+def test_two_regex_matchers_share_a_shape_whether_or_not_their_patterns_agree():
+    """The other branch, and the reason it is the other branch.
+
+    A regex is not a value: `k=~"GET"` and `k=~"GET|LIST"` select different sets, and
+    neither selects by equality, so there is nothing for two of them to agree *on*.
+    They are abstracted to one token, and two queries carrying the same pattern twice
+    are the same experiment as two carrying different patterns.
+    """
+    same = q(matchers=(Matcher("a", "=~", "X"), Matcher("b", "=~", "X")))
+    apart = q(matchers=(Matcher("a", "=~", "X"), Matcher("b", "=~", "Y")))
+    assert shape(same) == shape(apart)
+    # Which is not to say the operator is forgotten: an equality is still not a regex.
+    assert shape(same) != shape(q(matchers=(Matcher("a", "=", "X"),
+                                            Matcher("b", "=", "X"))))
+
+
+def test_a_rollup_is_not_per_second_unless_the_lowering_says_so():
+    """`per_second` defaults to false, and the default is what most lowerings rely on.
+
+    It is the `.as_rate()` normalisation flag, so a rollup that acquired it by default
+    would divide by the interval on every query that never asked. The flag is part of
+    the shape, because whether the expression normalises is not a detail of which
+    metric it names.
+    """
+    plain = Rollup("avg", 60.0, Select("cpu", (), kind="counter"))
+    assert plain.per_second is False
+    rated = Rollup("avg", 60.0, Select("cpu", (), kind="counter"), per_second=True)
+    assert shape(plain) != shape(rated)

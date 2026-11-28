@@ -23,6 +23,15 @@ a trace hook over one suite run. The map is cached beside the battery; delete it
 `--map` to rebuild. A line no test executes at all is reported as `UNREACHED` rather than
 surviving, because the two call for different work: coverage, or an assertion.
 
+One battery at a time. The modules are independent and the shadows are separate, so
+running several at once looks safe and is not: the fallback list includes
+`tests/test_paper_builds.py`, whose perturbation dry-run applies and restores edits to
+files in the shared working tree. Nine batteries at once had six of them abort on the
+null control, each naming a different unrelated test, because they were rewriting each
+other's `paper/` and `tests/` files mid-run. The controls caught it; the diagnosis took
+longer, because a reformatted module breaking a behavioural test is a believable story
+and it was the wrong one.
+
 Nothing in the working tree is modified. A mutant is written into a throwaway copy of
 the package and the tests are run with that copy first on `PYTHONPATH`, which shadows
 the editable install -- so an interrupted run leaves a temporary directory behind and
